@@ -49,14 +49,11 @@ f_slice_sample(
 )
 }
 \arguments{
-\item{data}{Data frame}
+\item{data}{A data frame.}
 
 \item{i}{An \link{integer} vector of slice locations. \cr
-Expressions that refer to variables in the data will not work by group.
-For example \code{f_slice(data, which(x == max(y)), .by = g)} will not work properly
-but \code{f_slice(data, sample(1:10), .by = g)} will. \cr
-This is for speed purposes because expressions can usually be supplied through
-\code{f_filter()} which does accept the former type of expression.}
+Please see the details below on how \code{i} works as it
+only accepts simple integer vectors.}
 
 \item{.by}{(Optional). A selection of columns to group by for this operation.
 Columns are specified using tidy-select.}
@@ -94,19 +91,26 @@ A \code{data.frame} of specified rows.
 When there are lots of groups, the \code{f_slice()} functions are much faster.
 }
 \details{
-\code{f_slice()} and friends allow for more flexibility in how you order the by-group slicing. \cr
-Furthermore, you can control whether the returned data frame is sliced in
-the order of the supplied row indices, or whether the
-original order is retained (like \code{dplyr::filter()}).
+\subsection{Important note about the \code{i} argument in \code{f_slice}}{
 
-In \code{f_slice()}, when \code{length(n) == 1}, an optimised method is implemented
-that internally uses \code{list_subset()}, a fast function for extracting
-single elements from single-level lists that contain vectors of the same
-type, e.g. integer.
+\code{i} is first evaluated on an un-grouped basis and then searches for
+those locations in each group. Thus if you supply an expression
+of slice locations that vary by-group, this will not be respected nor checked.
+For example, \cr
+do \code{f_slice(data, 10:20, .by = group)} \cr
+not \code{f_slice(data, sample(1:10), .by = group)}. \cr
 
-\code{f_slice_head()} and \code{f_slice_tail()} are very fast with large numbers of groups.
+The former results in slice locations that do not vary by group but the latter
+will result in different within-group slice locations which \code{f_slice} cannot
+correctly compute.
 
-\code{f_slice_sample()} is arguably more intuitive as it by default
-resamples each entire group without replacement, without having to specify a
-maximum group size like in \code{dplyr::slice_sample()}.
+To do the the latter type of by-group slicing, use \code{f_filter}, e.g.
+\code{f_filter(data, row_number() \%in\% slices, .by = groups)}
+}
+
+\subsection{\code{f_slice_sample}}{
+
+The arguments of \code{f_slice_sample()} align more closely with \code{base::sample()} and thus
+by default re-samples each entire group without replacement.
+}
 }

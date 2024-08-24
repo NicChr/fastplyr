@@ -25,7 +25,7 @@ f_select <- function(data, ..., .cols = NULL){
 #' @export
 f_select.data.frame <- function(data, ..., .cols = NULL){
   pos <- tidy_select_pos(data, ..., .cols = .cols)
-  out <- cheapr::sset(data, j = pos)
+  out <- df_select(data, pos)
   names(out) <- names(pos)
   out
 }
@@ -68,9 +68,16 @@ f_select.grouped_df <- function(data, ..., .cols = NULL){
 #' @export
 f_select.data.table <- function(data, ..., .cols = NULL){
   pos <- tidy_select_pos(data, ..., .cols = .cols)
-  out <- cheapr::sset(data, j = pos)
+  out <- df_select(data, pos)
   names(out) <- names(pos)
-  collapse::qDT(out)
+  keys <- attr(data, "sorted")
+  out <- collapse::qDT(out)
+  if (all(keys %in% names(out))){
+    if (all(cpp_address_equal(df_select(out, keys), df_select(data, keys)))){
+      attr(out, "sorted") <- keys
+    }
+  }
+  out
 }
 #' @rdname f_select
 #' @export

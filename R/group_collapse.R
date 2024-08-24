@@ -1,18 +1,19 @@
-group_collapse <- function(data, ..., order = TRUE, sort = order,
+group_collapse <- function(data, ..., order = df_group_by_order_default(data),
+                           sort = order, .add = TRUE,
                            ascending = TRUE,
                            .by = NULL, .cols = NULL,
-                           id = TRUE,
+                           id = FALSE,
                            size = TRUE, loc = TRUE,
                            # loc_order = TRUE,
-                           start = TRUE, end = TRUE,
+                           start = FALSE, end = FALSE,
                            .drop = df_group_by_drop_default(data)){
   UseMethod("group_collapse")
 }
 raw_group_collapse <- function(data, order = TRUE, sort = order,
                                    ascending = TRUE,
-                                   id = TRUE,
+                                   id = FALSE,
                                    size = TRUE, loc = TRUE,
-                                   start = TRUE, end = TRUE,
+                                   start = FALSE, end = FALSE,
                                    .drop = df_group_by_drop_default(data)){
   if (is.factor(data)){
     return(
@@ -36,7 +37,7 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
             method = "auto",
             call = FALSE,
             .drop = .drop)
-  out <- list_as_df(as.list(GRP_groups(g)))
+  out <- list_as_tbl(as.list(GRP_groups(g)))
   if (id){
     out[[".group"]] <- df_seq_along(out)
   }
@@ -124,13 +125,15 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
   df_as_tbl(out)
 }
 #' @export
-group_collapse.data.frame <- function(data, ..., order = TRUE, sort = order,
+group_collapse.data.frame <- function(data, ..., order = df_group_by_order_default(data),
+                                      sort = order,
+                                      .add = TRUE,
                                       ascending = TRUE,
                                       .by = NULL, .cols = NULL,
-                                      id = TRUE,
+                                      id = FALSE,
                                       size = TRUE, loc = TRUE,
                                       # loc_order = TRUE,
-                                      start = TRUE, end = TRUE,
+                                      start = FALSE, end = FALSE,
                                       .drop = df_group_by_drop_default(data)){
   N <- df_nrow(data)
   group_info <- tidy_group_info(data, ..., .by = {{ .by }},
@@ -145,7 +148,7 @@ group_collapse.data.frame <- function(data, ..., order = TRUE, sort = order,
     rowids <- list(rowids)[ss]
     out <- new_tbl(".group" = integer(ss) + 1L)
     if (loc){
-      out[[".loc"]] <- list(rowids)
+      out[[".loc"]] <- rowids
     }
     if (start){
       out[[".start"]] <- integer(ss) + 1L
@@ -173,67 +176,121 @@ group_collapse.data.frame <- function(data, ..., order = TRUE, sort = order,
   out
 }
 #' @export
-group_collapse.grouped_df <- function(data, ..., order = TRUE, sort = order,
+group_collapse.grouped_df <- function(data, ..., order = df_group_by_order_default(data),
+                                      .add = TRUE, sort = order,
                                       ascending = TRUE,
                                       .by = NULL, .cols = NULL,
-                                      id = TRUE,
+                                      id = FALSE,
                                       size = TRUE, loc = TRUE,
                                       # loc_order = TRUE,
-                                      start = TRUE, end = TRUE,
+                                      start = FALSE, end = FALSE,
                                       .drop = df_group_by_drop_default(data)){
   n_dots <- dots_length(...)
-  # Error checking on .by
   check_by(data, .by = {{ .by }})
+  init_group_vars <- group_vars(data)
+
   # Special conditions where if met,
   # we can use dplyr grouping structure
-  if (n_dots == 0 &&
-      is.null(.cols) &&
-      order &&
-      ascending &&
-      sort &&
-      .drop == df_group_by_drop_default(data)){
-    out <- group_data(data)
-    out_nms <- names(out)
-    out <- f_rename(out, .cols = c(".loc" = ".rows"))
 
-    if (id){
-      out[[".group"]] <- df_seq_along(out, "rows")
-      ncol <- ncol(out)
-      out <- f_select(out, .cols = c(seq_len(ncol - 2L), ncol, ncol - 1L))
-    }
-    sizes <- cheapr::lengths_(out[[".loc"]])
-    if (start){
-      gstarts <- GRP_loc_starts(out[[".loc"]])
-      out[[".start"]] <- gstarts
-    }
-    if (end){
-      gends <- integer(length(sizes))
-      gends[which(sizes != 0L)] <- GRP_loc_ends(out[[".loc"]])
-      out[[".end"]] <- gends
-    }
-    if (size){
-      out[[".size"]] <- sizes
-    }
-    if (!loc){
-      out[[".loc"]] <- NULL
-    }
-  } else {
+  order_same <- order == df_group_by_order_default(data)
+  drop_same <- .drop == df_group_by_drop_default(data)
+  no_dot_cols <- is.null(.cols)
+  sort_same <- sort == order
+  no_dots <- n_dots == 0
+
+  # When defaults are unchanged we can use dplyr groups directly
+
+  defaults_unchanged <- no_dots && no_dot_cols && order_same && drop_same && sort_same && ascending && .add == TRUE
+
+  if (defaults_unchanged){
+    out <- group_data_collapse(data, id = id, size = size, loc = loc,
+                               start = start, end = start)
+  } else if (.add) {
     group_info <- tidy_group_info(data, ..., .by = {{ .by }},
                                   .cols = .cols,
                                   ungroup = TRUE,
                                   rename = TRUE)
+    extra_groups <- group_info[["extra_groups"]]
     all_groups <- group_info[["all_groups"]]
-    out <- raw_group_collapse(
-      f_select(group_info[["data"]], .cols = all_groups),
-      order = order, sort = sort,
-      id = id,
-      size = size, loc = loc,
-      ascending = ascending,
-      # loc_order = loc_order,
-      start = start, end = end,
-      .drop = .drop
-    )
+    groups_unchanged <- !group_info[["groups_changed"]]
+
+    # When .add is true we only recalculate the groups when there truly are
+    # extra groups being supplied or when the group data has been altered
+    # through data masking
+
+    # Same procedure as above..
+
+    if (.add && groups_unchanged && length(extra_groups) == 0){
+      out <- group_data_collapse(data, id = id, size = size, loc = loc,
+                                 start = start, end = start)
+    } else {
+      out <- raw_group_collapse(
+        f_select(group_info[["data"]], .cols = all_groups),
+        order = order, sort = sort,
+        id = id,
+        size = size, loc = loc,
+        ascending = ascending,
+        start = start, end = end,
+        .drop = .drop
+      )
+      attr(out, ".drop") <- .drop
+    }
+  } else {
+    group_info <- tidy_group_info(df_ungroup(data), ..., .by = {{ .by }},
+                                  .cols = .cols,
+                                  ungroup = TRUE,
+                                  rename = TRUE)
+    all_groups <- group_info[["all_groups"]]
+    if (length(all_groups) == 0){
+      out <- group_data_collapse(
+        df_ungroup(data), id = id, size = size, loc = loc,
+        start = start, end = start
+      )
+    } else {
+      out <- raw_group_collapse(
+        f_select(group_info[["data"]], .cols = all_groups),
+        order = order, sort = sort,
+        id = id,
+        size = size, loc = loc,
+        ascending = ascending,
+        start = start, end = end,
+        .drop = .drop
+      )
+    }
     attr(out, ".drop") <- .drop
+  }
+  out
+}
+
+# Take dplyr::group_data(data)
+# And add additional information basically
+
+group_data_collapse <- function(data, size = TRUE, loc = TRUE,
+                                id = FALSE, start = FALSE, end = FALSE){
+  out <- group_data(data)
+  out_nms <- names(out)
+  out <- f_rename(out, .cols = c(".loc" = ".rows"))
+
+  if (id){
+    out[[".group"]] <- df_seq_along(out, "rows")
+    ncol <- ncol(out)
+    out <- f_select(out, .cols = c(seq_len(ncol - 2L), ncol, ncol - 1L))
+  }
+  sizes <- cheapr::lengths_(out[[".loc"]])
+  if (start){
+    gstarts <- GRP_loc_starts(out[[".loc"]])
+    out[[".start"]] <- gstarts
+  }
+  if (end){
+    gends <- integer(length(sizes))
+    gends[which(sizes != 0L)] <- GRP_loc_ends(out[[".loc"]])
+    out[[".end"]] <- gends
+  }
+  if (size){
+    out[[".size"]] <- sizes
+  }
+  if (!loc){
+    out[[".loc"]] <- NULL
   }
   out
 }

@@ -4,29 +4,32 @@
 #' When there are lots of groups, the `f_slice()` functions are much faster.
 #'
 #' @details
-#' `f_slice()` and friends allow for more flexibility in how you order the by-group slicing. \cr
-#' Furthermore, you can control whether the returned data frame is sliced in
-#' the order of the supplied row indices, or whether the
-#' original order is retained (like `dplyr::filter()`).
 #'
-#' In `f_slice()`, when `length(n) == 1`, an optimised method is implemented
-#' that internally uses `list_subset()`, a fast function for extracting
-#' single elements from single-level lists that contain vectors of the same
-#' type, e.g. integer.
+#' ### Important note about the `i` argument in `f_slice`
 #'
-#' `f_slice_head()` and `f_slice_tail()` are very fast with large numbers of groups.
+#' `i` is first evaluated on an un-grouped basis and then searches for
+#' those locations in each group. Thus if you supply an expression
+#' of slice locations that vary by-group, this will not be respected nor checked.
+#' For example, \cr
+#' do `f_slice(data, 10:20, .by = group)` \cr
+#' not `f_slice(data, sample(1:10), .by = group)`. \cr
 #'
-#' `f_slice_sample()` is arguably more intuitive as it by default
-#' resamples each entire group without replacement, without having to specify a
-#' maximum group size like in `dplyr::slice_sample()`.
+#' The former results in slice locations that do not vary by group but the latter
+#' will result in different within-group slice locations which `f_slice` cannot
+#' correctly compute.
 #'
-#' @param data Data frame
+#' To do the the latter type of by-group slicing, use `f_filter`, e.g.
+#' `f_filter(data, row_number() %in% slices, .by = groups)`
+#'
+#' ### `f_slice_sample`
+#'
+#' The arguments of `f_slice_sample()` align more closely with `base::sample()` and thus
+#' by default re-samples each entire group without replacement.
+#'
+#' @param data A data frame.
 #' @param i An [integer] vector of slice locations. \cr
-#' Expressions that refer to variables in the data will not work by group.
-#' For example `f_slice(data, which(x == max(y)), .by = g)` will not work properly
-#' but `f_slice(data, sample(1:10), .by = g)` will. \cr
-#' This is for speed purposes because expressions can usually be supplied through
-#' `f_filter()` which does accept the former type of expression.
+#' Please see the details below on how `i` works as it
+#' only accepts simple integer vectors.
 #' @param keep_order Should the sliced data frame be returned in its original order?
 #' The default is `FALSE`.
 #' @param .by (Optional). A selection of columns to group by for this operation.
@@ -80,10 +83,14 @@ f_slice <- function(data, i, .by = NULL, keep_order = FALSE){
     }
   } else {
     groups <- data %>%
-      f_group_by(.cols = group_vars, order = df_group_by_order_default(data), .add = TRUE) %>%
-      group_data()
-    group_locs <- groups[[".rows"]]
-    group_sizes <- cheapr::lengths_(group_locs)
+      group_collapse(.cols = group_vars, .add = TRUE)
+    group_locs <- groups[[".loc"]]
+    group_sizes <- groups[[".size"]]
+    # groups <- data %>%
+    #   f_group_by(.cols = group_vars, order = df_group_by_order_default(data), .add = TRUE) %>%
+    #   group_data()
+    # group_locs <- groups[[".rows"]]
+    # group_sizes <- cheapr::lengths_(group_locs)
     # Constrain n to <= max GRPN
     GN <-  max(group_sizes)
     i <- i[which(dplyr::between(i, -GN, GN))]

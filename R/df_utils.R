@@ -267,7 +267,8 @@ df_cbind <- function(..., .repair_names = TRUE, .sep = "..."){
   if (isTRUE(nrow_range[1] != nrow_range[2])){
     stop("All data frames must be of equal size")
   }
-  out <- do.call(c, dots)
+  out <- unlist(dots, recursive = FALSE)
+  # out <- do.call(c, dots)
   if (.repair_names){
     names(out) <- unique_name_repair(names(out))
   }
@@ -299,6 +300,9 @@ df_cbind <- function(..., .repair_names = TRUE, .sep = "..."){
   out
 }
 unique_name_repair <- function(x, .sep = "..."){
+  if (is.null(x)){
+    return(x)
+  }
   x <- as.character(x)
   col_seq <- seq_along(x)
   which_dup <- which(collapse::fduplicated(x, all = TRUE))
@@ -306,19 +310,18 @@ unique_name_repair <- function(x, .sep = "..."){
   x
 }
 
-df_cross_join <- function(x, y){
-  df_cbind(df_rep_each(x, df_nrow(y)), df_rep(y, df_nrow(x)))
+df_cross_join <- function(x, y, .repair_names = TRUE){
+  df_cbind(df_rep_each(x, df_nrow(y)), df_rep(y, df_nrow(x)), .repair_names = .repair_names)
 }
 
 cross_join2 <- function(x, y){
-  if (!is_df(x)) x <- new_df(x = x)
-  if (!is_df(y)) y <- new_df(y = y)
-  df_cross_join(x, y)
-  # if (!is.list(x)) x <- list(x = x)
-  # if (!is.list(y)) y <- list(y = y)
-  # df_cross_join(list_as_df(x), list_as_df(y))
+  if (!is_df(x)) x <- new_tbl(x = x)
+  if (!is_df(y)) y <- new_tbl(y = y)
+  df_cross_join(x, y, .repair_names = FALSE)
 }
 cross_join <- function(...){
-  Reduce(cross_join2, list(...), simplify = FALSE)
+  out <- Reduce(cross_join2, list(...), simplify = FALSE)
+  names(out) <- unique_name_repair(names(out))
+  out
 }
 
