@@ -550,3 +550,9 @@ test_that("Additional seed tests", {
   expect_identical(current_seed, .Random.seed)
 })
 
+test_that("test asan issues", {
+  expect_equal(
+    f_slice(iris, c(3L, 0L, 0L, 2L, 0L, 0L, 0L, 10000L, 0L)),
+    cheapr::sset(iris, c(3L, 2L))
+  )
+})

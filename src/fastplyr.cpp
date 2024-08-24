@@ -275,6 +275,61 @@ SEXP cpp_reduce_logicals(SEXP x){
   Rf_unprotect(P);
   return out;
 }
+
+[[cpp11::register]]
+SEXP cpp_which_all(SEXP x){
+  if (!Rf_inherits(x, "data.frame")){
+    Rf_error("x must be a data frame");
+  }
+  const SEXP *p_x = VECTOR_PTR_RO(x);
+  int P = 0;
+  int n_true = 0;
+  // bool is_true;
+  unsigned int ncols = Rf_length(x); // ncols
+  unsigned int nrows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
+
+  SEXP out;
+  if (ncols == 0){
+    out = Rf_protect(Rf_allocVector(INTSXP, 0)); ++P;
+  } else if (ncols == 1){
+    cpp11::function cheapr_which = cpp11::package("cheapr")["which_"];
+    out = Rf_protect(cheapr_which(p_x[0])); ++P;
+  } else {
+    SEXP lgl = Rf_protect(Rf_allocVector(LGLSXP, nrows)); ++P;
+    int *p_lgl = LOGICAL(lgl);
+
+    SEXP first_lgl = Rf_protect(p_x[0]); ++P;
+    int *p_first = LOGICAL(first_lgl);
+    memmove(p_lgl, &p_first[0], sizeof(int) * nrows);
+
+    // Starting from 2nd col to 2nd last col
+    for (unsigned int i = 1; i < (ncols - 1); ++i) {
+      int *p_temp = LOGICAL(p_x[i]);
+      for (unsigned int j = 0; j < nrows; ++j){
+        p_lgl[j] = p_lgl[j] && p_temp[j];
+      }
+    }
+    // Last col
+    // This is where we count how many true vals are returned in the final vector
+    int *p_temp = LOGICAL(p_x[ncols - 1]);
+    for (unsigned int j = 0; j < nrows; ++j){
+      p_lgl[j] = p_lgl[j] && p_temp[j];
+      n_true += p_lgl[j];
+    }
+    // WHICH algo
+    out = Rf_protect(Rf_allocVector(INTSXP, n_true)); ++P;
+    int *p_out = INTEGER(out);
+    int whichi = 0;
+    int i = 0;
+    while (whichi < n_true){
+      p_out[whichi] = i + 1;
+      whichi += (p_lgl[i++] == TRUE);
+    }
+  }
+  Rf_unprotect(P);
+  return out;
+}
+
 // Taken from dplyr::group_indices,
 // All credits go to dplyr
 

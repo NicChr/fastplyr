@@ -19,6 +19,6 @@ f_filter <- function(data, ..., .by = NULL){
     data
   } else {
     stopifnot(all(vapply(filter_df, is.logical, FALSE)))
-    df_row_slice(data, cpp_reduce_logicals(filter_df))
+    df_row_slice(data, cpp_which_all(filter_df))
   }
 }

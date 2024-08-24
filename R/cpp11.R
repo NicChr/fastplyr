@@ -32,6 +32,10 @@ cpp_reduce_logicals <- function(x) {
   .Call(`_fastplyr_cpp_reduce_logicals`, x)
 }
 
+cpp_which_all <- function(x) {
+  .Call(`_fastplyr_cpp_which_all`, x)
+}
+
 cpp_df_group_indices <- function(rows, size) {
   .Call(`_fastplyr_cpp_df_group_indices`, rows, size)
 }
