@@ -23,14 +23,18 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL){
     frames[[i]] <- f_distinct(df_ungroup(dplyr::reframe(data2, !!!dots[i])))
   }
 
-
   if (length(group_vars) > 0){
     anon_join <- function(x, y){
-      join_on <- intersect(names(x), names(y))
-      collapse_join(x, y, how = "full", on = join_on, multiple = TRUE)
+      if (length(intersect(names(x), names(y))) > length(group_vars)){
+        stop("duplicate variable names supplied, please fix")
+      }
+      collapse_join(x, y, how = "full", on = group_vars, multiple = TRUE)
     }
     out <- Reduce(anon_join, frames, simplify = FALSE)
   } else {
+    if (prod(cpp_nrows(frames)) > .Machine$integer.max){
+      stop("expansion results in >= 2^31 rows, please supply less data")
+    }
     out <- do.call(cross_join, frames)
     # out <- Reduce(function(x, y) df_cross_join(x, y, .repair_names = FALSE), frames, simplify = FALSE)
   }

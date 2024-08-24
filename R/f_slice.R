@@ -30,6 +30,7 @@
 #' @param i An [integer] vector of slice locations. \cr
 #' Please see the details below on how `i` works as it
 #' only accepts simple integer vectors.
+#' @param ... A temporary argument to give the user an error if dots are used.
 #' @param keep_order Should the sliced data frame be returned in its original order?
 #' The default is `FALSE`.
 #' @param .by (Optional). A selection of columns to group by for this operation.
@@ -55,7 +56,8 @@
 #'
 #' @rdname f_slice
 #' @export
-f_slice <- function(data, i, .by = NULL, keep_order = FALSE){
+f_slice <- function(data, i = 0L, ..., .by = NULL, keep_order = FALSE){
+  rlang::check_dots_empty0(...)
   if (is.logical(i)){
     stop("i must be an integer vector, not a logical vector, use `f_filter()` instead")
   }
@@ -86,12 +88,6 @@ f_slice <- function(data, i, .by = NULL, keep_order = FALSE){
       group_collapse(.cols = group_vars, .add = TRUE)
     group_locs <- groups[[".loc"]]
     group_sizes <- groups[[".size"]]
-    # groups <- data %>%
-    #   f_group_by(.cols = group_vars, order = df_group_by_order_default(data), .add = TRUE) %>%
-    #   group_data()
-    # group_locs <- groups[[".rows"]]
-    # group_sizes <- cheapr::lengths_(group_locs)
-    # Constrain n to <= max GRPN
     GN <-  max(group_sizes)
     i <- i[which(dplyr::between(i, -GN, GN))]
     if (slice_sign >= 1){
@@ -102,7 +98,6 @@ f_slice <- function(data, i, .by = NULL, keep_order = FALSE){
     keep <- cheapr::which_val(size, 0, invert = TRUE)
     if (length(group_locs) - length(keep) > 0L){
       group_locs <- group_locs[keep]
-      row_lens <- row_lens[keep]
       size <- size[keep]
     }
     if (length(i) == 1 && slice_sign >= 1){
@@ -120,117 +115,6 @@ f_slice <- function(data, i, .by = NULL, keep_order = FALSE){
   }
   df_row_slice(data, data_locs)
 }
-# f_slice <- function(data, i, .by = NULL,
-#                     keep_order = FALSE,
-#                     sort_groups = df_group_by_order_default(data)){
-#   group_vars <- get_groups(data, .by = {{ .by }})
-#   temp <- data %>%
-#     f_group_by(.cols = group_vars, .add = TRUE, order = sort_groups) %>%
-#     dplyr::reframe({{ i }}) %>%
-#     f_group_by(.cols = group_vars, order = sort_groups)
-#   slice_var <- setdiff(names(temp), group_vars)
-#   if (is.logical(temp[[slice_var]])){
-#     stop("must be an integer vector, not a logical vector, use `f_filter()` instead")
-#   }
-#
-#   temp_groups <- group_data(temp)
-#   slice_counts <- df_count(temp)
-#
-#   ## Build the group IDS as a qG as collapse stat functions can run faster this way
-#   group_ids <- df_group_id(temp)
-#   attr(group_ids, "N.groups") <- nrow(temp_groups)
-#   attr(group_ids, "starts") <- list_subset(temp_groups[[".rows"]], 1L)
-#   attr(group_ids, "group.sizes") <- slice_counts[[ncol(slice_counts)]]
-#   class(group_ids) <- c("qG", "na.included")
-#   temp[[slice_var]] <- as.integer(temp[[slice_var]])
-#   slice_locs <- temp[[slice_var]]
-#
-#   slice_counts[["slice_means"]] <- collapse::fmean(slice_locs, g = group_ids, use.g.names = FALSE)
-#   slice_counts[["slice_mins"]] <- collapse::fmin(slice_locs, g = group_ids, use.g.names = FALSE)
-#   slice_counts[["slice_maxs"]] <- collapse::fmax(slice_locs, g = group_ids, use.g.names = FALSE)
-#
-#   ## The idea is if there is no variation in calculated by-group locs
-#   ## then we can use a much more efficient method to slice
-#
-#   use_simpler_slicing <- collapse::fnunique(f_select(slice_counts, .cols = 2:5)) == 1
-#
-#   if (!use_simpler_slicing){
-#     groups <- data %>%
-#       f_group_by(.cols = group_vars, order = sort_groups, .add = TRUE) %>%
-#       group_data()
-#
-#     group_locs <- groups[[".rows"]]
-#     # data_locs <- vector("list", nrow(groups))
-#     by_group_slice_locs <- gsplit2(slice_locs, group_ids)
-#
-#     # for (i in df_seq_along(groups)){
-#     #   data_locs[[i]] <- cpp_int_slice(group_locs[[i]], by_group_slice_locs[[i]], check = TRUE)
-#     # }
-#     data_locs <- unlist(cpp_slice_locs(group_locs, by_group_slice_locs))
-#   } else {
-#     if (is.logical(i)){
-#       stop("i must be an integer vector, not a logical vector, use `f_filter()` instead")
-#     }
-#     N <- df_nrow(data)
-#     if (length(i) == 0L){
-#       i <- 0L
-#     }
-#     rng <- collapse::frange(i, na.rm = FALSE)
-#     rng_sum <- sum(sign(1 / rng))
-#     if (abs(rng_sum) != 2){
-#       stop("Can't mix negative and positive locations")
-#     }
-#     slice_sign <- sign(rng_sum)
-#     # Groups
-#     # group_vars <- get_groups(data, .by = {{ .by }})
-#     if (length(group_vars) == 0L){
-#       if (any(abs(rng) > N)){
-#         slice_locs <- i[which(dplyr::between(i, -N, N))]
-#       } else {
-#         slice_locs <- i
-#       }
-#     } else {
-#       group_df <- group_collapse(data, .by = {{ .by }},
-#                                  order = sort_groups, sort = sort_groups,
-#                                  id = FALSE, loc = TRUE,
-#                                  size = TRUE, start = FALSE, end = FALSE)
-#       # Constrain n to <= max GRPN
-#       GN <-  max(group_df[[".size"]])
-#       i <- i[which(dplyr::between(i, -GN, GN))]
-#       rows <- group_df[[".loc"]]
-#       row_lens <- group_df[[".size"]]
-#       if (slice_sign >= 1){
-#         size <- pmin.int(max(i), row_lens)
-#       } else {
-#         size <- pmax.int(0L, row_lens - max(abs(i)))
-#       }
-#       keep <- cheapr::which_val(size, 0, invert = TRUE)
-#       if (length(rows) - length(keep) > 0L){
-#         rows <- rows[keep]
-#         row_lens <- row_lens[keep]
-#         size <- size[keep]
-#       }
-#       if (length(i) == 1 && slice_sign >= 1){
-#         data_locs <- list_subset(rows, i)
-#         data_locs <- data_locs[cheapr::which_not_na(data_locs)]
-#       } else {
-#         data_locs <- cpp_slice_locs(rows, i)
-#         # data_locs <- vector("list", length(rows))
-#         # for (j in seq_along(data_locs)){
-#         #   data_locs[[j]] <- cpp_int_slice(.subset2(rows, j), i, TRUE)
-#         # }
-#         # data_locs <- unlist(data_locs, use.names = FALSE, recursive = FALSE)
-#       }
-#       if (is.null(data_locs)){
-#         data_locs <- integer(0)
-#       }
-#     }
-#     if (keep_order){
-#       data_locs <- sort(data_locs)
-#     }
-#   }
-#   df_row_slice(data, data_locs)
-# }
 #' @rdname f_slice
 #' @export
 f_slice_head <- function(data, n, prop, .by = NULL, keep_order = FALSE){

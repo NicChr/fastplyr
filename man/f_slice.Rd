@@ -9,7 +9,7 @@
 \alias{f_slice_sample}
 \title{Faster \code{dplyr::slice()}}
 \usage{
-f_slice(data, i, .by = NULL, keep_order = FALSE)
+f_slice(data, i = 0L, ..., .by = NULL, keep_order = FALSE)
 
 f_slice_head(data, n, prop, .by = NULL, keep_order = FALSE)
 
@@ -54,6 +54,8 @@ f_slice_sample(
 \item{i}{An \link{integer} vector of slice locations. \cr
 Please see the details below on how \code{i} works as it
 only accepts simple integer vectors.}
+
+\item{...}{A temporary argument to give the user an error if dots are used.}
 
 \item{.by}{(Optional). A selection of columns to group by for this operation.
 Columns are specified using tidy-select.}

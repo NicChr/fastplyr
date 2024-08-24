@@ -15,7 +15,8 @@ Imports:
     tidyselect
 Suggests:
     nycflights13,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    tidyr
 LinkingTo: 
     cpp11
 Config/testthat/edition: 3
