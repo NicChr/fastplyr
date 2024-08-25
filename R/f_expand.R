@@ -8,21 +8,31 @@
 #' The default is `FALSE`.
 #' @param .by (Optional). A selection of columns to group by for this operation.
 #' Columns are specified using tidy-select.
+#' @param .cols (Optional) alternative to `...` that accepts
+#' a named character vector or numeric vector.
+#' If speed is an expensive resource, it is recommended to use this.
 #'
 #' @returns
 #' A `data.frame` of expanded groups.
 #'
 #' @rdname f_expand
 #' @export
-f_expand <- function(data, ..., sort = FALSE, .by = NULL){
+f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
   group_vars <- get_groups(data, {{ .by }})
   data2 <- f_group_by(data, .by = {{ .by }}, .add = TRUE)
-  dots <- rlang::enquos(...)
-  frames <- vector("list", length(dots))
-  for (i in seq_along(dots)){
-    frames[[i]] <- f_distinct(df_ungroup(dplyr::reframe(data2, !!!dots[i])))
+  if (!is.null(.cols)){
+    dot_vars <- col_select_pos(data, .cols = .cols)
+    frames <- vector("list", length(dot_vars))
+    for (i in seq_along(dot_vars)){
+      frames[[i]] <- f_distinct(data2, .cols = dot_vars[i])
+    }
+  } else {
+    dots <- rlang::enquos(...)
+    frames <- vector("list", length(dots))
+    for (i in seq_along(dots)){
+      frames[[i]] <- f_distinct(df_ungroup(dplyr::reframe(data2, !!!dots[i])))
+    }
   }
-
   if (length(group_vars) > 0){
     anon_join <- function(x, y){
       if (length(intersect(names(x), names(y))) > length(group_vars)){
@@ -49,9 +59,12 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL){
 }
 #' @rdname f_expand
 #' @export
-f_complete <- function(data, ...,  sort = FALSE, .by = NULL, fill = NA){
+f_complete <- function(data, ...,  sort = FALSE,
+                       .by = NULL, .cols = NULL,
+                       fill = NA){
   group_vars <- get_groups(data, {{ .by }})
-  expanded_df <- f_expand(data, ..., sort = FALSE, .by = {{ .by }})
+  expanded_df <- f_expand(data, ..., sort = FALSE,
+                          .by = {{ .by }}, .cols = .cols)
   fill_na <- any(!is.na(fill))
   out <- data
   # Full-join

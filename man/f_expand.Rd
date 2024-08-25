@@ -5,9 +5,9 @@
 \alias{f_complete}
 \title{Fast versions of \code{tidyr::expand()} and \code{tidyr::complete()}.}
 \usage{
-f_expand(data, ..., sort = FALSE, .by = NULL)
+f_expand(data, ..., sort = FALSE, .by = NULL, .cols = NULL)
 
-f_complete(data, ..., sort = FALSE, .by = NULL, fill = NA)
+f_complete(data, ..., sort = FALSE, .by = NULL, .cols = NULL, fill = NA)
 }
 \arguments{
 \item{data}{A data frame}
@@ -19,6 +19,10 @@ The default is \code{FALSE}.}
 
 \item{.by}{(Optional). A selection of columns to group by for this operation.
 Columns are specified using tidy-select.}
+
+\item{.cols}{(Optional) alternative to \code{...} that accepts
+a named character vector or numeric vector.
+If speed is an expensive resource, it is recommended to use this.}
 
 \item{fill}{A named list containing value-name pairs
 to fill the named implicit missing values.}
