@@ -64,6 +64,7 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
     out <- data
   }
   out <- f_select(out, .cols = out_vars)
+
   # Groups
   groups <- df_to_GRP(out, .cols = dup_vars,
                       return.order = FALSE,
@@ -79,9 +80,25 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
   if (sort){
     out <- f_arrange(out, .cols = dup_vars)
   }
+
   # Remove empty rows (rows with all NA values)
+
   if (.drop_empty){
     out <- df_drop_empty(out, .cols = dup_vars)
   }
+
+  # Adjust group sizes as they reflect the dup count + 1
+
+  if (.add_count && !.both_ways && df_nrow(out) > 0){
+    cheapr::set_subtract(out[[n_var_nm]], 1L)
+    which_zero <- cheapr::which_val(out[[n_var_nm]], 0L)
+    collapse::setv(
+      out[[n_var_nm]],
+      which_zero,
+      1L,
+      vind1 = TRUE
+    )
+  }
+
   reconstruct(data, out)
 }

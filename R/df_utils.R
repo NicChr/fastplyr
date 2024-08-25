@@ -325,3 +325,24 @@ cross_join <- function(...){
   out
 }
 
+## Mutate maybe some variables that aren't atomic or are exotic
+## using group_id methods
+
+df_mutate_exotic_to_ids <- function(x){
+  check_is_df(x)
+  is_exotic <- function(var){
+    isS4(var) || is.list(var)
+  }
+  which_exotic <- which(
+    vapply(x, is_exotic, FALSE, USE.NAMES = FALSE)
+  )
+  # message(
+  #   "data frame contains variables that collapse::GRP may not be able to handle\n",
+  #   "Converting these variables to group ids: \n",
+  #   paste(names(x)[which_exotic], collapse = ", ")
+  # )
+  for (i in which_exotic){
+    x[[i]] <- group_id(x[[i]])
+  }
+  x
+}

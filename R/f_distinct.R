@@ -58,7 +58,8 @@ f_distinct <- function(data, ..., .keep_all = FALSE,
       slice <- !(length(unique_locs) == df_nrow(out) &&
                    isTRUE(attr(o, "sorted")))
     } else {
-      groups <- group2(f_select(out, .cols = dup_vars))
+      # groups <- group2(f_select(out, .cols = dup_vars))
+      groups <- group3(f_select(out, .cols = dup_vars), starts = TRUE)
       unique_locs <- attr(groups, "starts")
       slice <- !(length(unique_locs) == df_nrow(out))
     }

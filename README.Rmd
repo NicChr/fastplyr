@@ -1,0 +1,46 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# fastplyr
+
+<!-- badges: start -->
+
+[![R-CMD-check](https://github.com/NicChr/fastplyr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/fastplyr/actions/workflows/R-CMD-check.yaml)
+
+<!-- badges: end -->
+
+fastplyr aims to provide a [tidyverse](https://www.tidyverse.org/learn) frontend using a [collapse](https://sebkrantz.github.io/collapse/articles/collapse_intro.html) backend. This means from a user's point of view the functions behave like the tidyverse equivalents and thus require little to no changes to existing code to convert.
+
+fastplyr is designed to handle operations that involve larger numbers of groups and generally larger data.
+
+## Installation
+
+You can install the development version of fastplyr from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("pak")
+pak::pak("NicChr/fastplyr")
+```
+
+Load packages
+
+```{r example}
+library(tidyverse)
+library(fastplyr)
+```
+
+## dplyr alternatives
+
+All tidyverse alternative functions are prefixed with 'f_'. For example, `dplyr::distinct` becomes `fastplyr::f_distinct`.

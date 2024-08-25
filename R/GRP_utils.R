@@ -12,8 +12,41 @@ GRP2 <- function(X, by = NULL, sort = TRUE, return.order = sort,
   }
 }
 
+# Two alternatives to collapse::group
+# They both handle nested data frames
+
 group2 <- function(X){
   group_id(X, order = FALSE, as_qg = TRUE)
+}
+group3 <- function(X, starts = FALSE, group.sizes = FALSE){
+  if (is.null(X)) {
+    return(NULL)
+  }
+  if (is_df(X)) {
+    if (df_ncol(X) == 0){
+      N <- df_nrow(X)
+      out <- rep_len(1L, N)
+      attr(out, "N.groups") <- min(1L, N)
+      if (starts) {
+        attr(out, "starts") <- if (N == 0)
+          integer()
+        else 1L
+      }
+      if (group.sizes) {
+        attr(out, "group.sizes") <- if (N == 0)
+          integer()
+        else N
+      }
+      attr(out, "class") <- c("qG", "na.included")
+      return(out)
+    } else {
+      X <- df_mutate_exotic_to_ids(X)
+    }
+  }
+  if (is.list(X) && length(X) == 0) {
+    return(NULL)
+  }
+  collapse::group(X, starts = starts, group.sizes = group.sizes)
 }
 
 # Is object a collapse GRP?
@@ -361,7 +394,7 @@ df_as_one_GRP <- function(data, order = TRUE,
 # Custom GRP method for data frames
 # Group starts is always returned
 df_to_GRP <- function(data, .cols = character(0),
-                      order = TRUE,
+                      order = df_group_by_order_default(data),
                       return.order = order,
                       return.groups = FALSE){
   dplyr_groups <- group_vars(data)
@@ -369,15 +402,30 @@ df_to_GRP <- function(data, .cols = character(0),
   extra_groups <- setdiff(cols, dplyr_groups)
   group_vars <- c(dplyr_groups, extra_groups)
   data <- f_select(data, .cols = group_vars)
+
   if (length(names(data)) == 0L){
     out <- df_as_one_GRP(data, order = order, return.order = return.order)
-  } else if (length(extra_groups) == 0L && order){
+  } else if (length(extra_groups) == 0L && order == df_group_by_order_default(data)){
     out <- df_as_GRP(data, return.order = return.order, return.groups = return.groups)
   } else {
-    out <- collapse::GRP(df_ungroup(data), sort = order,
+    data <- df_ungroup(data)
+    data2 <- df_mutate_exotic_to_ids(data)
+    out <- collapse::GRP(data2, sort = order,
                          return.order = return.order,
                          return.groups = return.groups,
                          call = FALSE)
+
+    # Basically if any addresses don't match,
+    # then df_mutate_exotic_to_ids() has converted some
+    # cols to group id cols.
+    # If this is the case we need to sset the distinct groups
+    # using the original data.
+
+    if (return.groups && !all(cpp_address_equal(data, data2))){
+      if (return.groups){
+        out[["groups"]] <- cheapr::sset(data, GRP_starts(out))
+      }
+    }
   }
   out
 }
@@ -527,6 +575,9 @@ radixorderv2 <- function(x, na.last = TRUE, decreasing = FALSE,
   }
   if (is_GRP(x)){
     return(GRP_order(x))
+  }
+  if (is_df(x)){
+    x <- df_mutate_exotic_to_ids(df_ungroup(x))
   }
   collapse::radixorderv(x, starts = starts, sort = sort, group.sizes = group.sizes,
                         na.last = na.last, decreasing = decreasing)

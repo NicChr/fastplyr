@@ -77,9 +77,16 @@ group_id.factor <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE)
 }
 #' @export
 group_id.list <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
-  warning("`group_id()` is not designed for plain lists, consider converting to data frame first")
+  is_list_df_like <- collapse::fnunique(cheapr::lengths_(data)) <= 1
+  if (!is_list_df_like){
+    stop("group_id.list can only accept data.frame-like lists")
+  }
+  data <- list_as_df(data)
+  if (is.null(names(data))){
+    names(data) <- paste0("V", seq_along(data))
+  }
   group_id(
-    as.data.frame(data),
+    data,
     order = order,
     ascending = ascending,
     as_qg = as_qg

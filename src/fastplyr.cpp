@@ -249,30 +249,30 @@ SEXP cpp_reduce_logicals(SEXP x){
     Rf_error("x must be a data frame");
   }
   const SEXP *p_x = VECTOR_PTR_RO(x);
-  int P = 0;
+  int NP = 0;
   int ncols = Rf_length(x); // ncols
   int nrows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
 
-  SEXP out = Rf_protect(Rf_allocVector(LGLSXP, nrows)); ++P;
+  SEXP out = Rf_protect(Rf_allocVector(LGLSXP, nrows)); ++NP;
   int *p_out = LOGICAL(out);
   if (ncols == 0){
     memset(p_out, 0, nrows * sizeof(int));
   } else {
-    SEXP first_lgl = Rf_protect(p_x[0]); ++P;
+    SEXP first_lgl = Rf_protect(p_x[0]); ++NP;
     int *p_first = LOGICAL(first_lgl);
     memmove(p_out, &p_first[0], sizeof(int) * nrows);
   }
 
   if (ncols > 1){
     for (int i = 1; i < ncols; ++i) {
-      SEXP temp = Rf_protect(p_x[i]); ++P;
+      SEXP temp = Rf_protect(p_x[i]); ++NP;
       int *p_temp = LOGICAL(temp);
       for (int j = 0; j < nrows; ++j){
         p_out[j] = p_out[j] && p_temp[j];
       }
     }
   }
-  Rf_unprotect(P);
+  Rf_unprotect(NP);
   return out;
 }
 
@@ -282,7 +282,7 @@ SEXP cpp_which_all(SEXP x){
     Rf_error("x must be a data frame");
   }
   const SEXP *p_x = VECTOR_PTR_RO(x);
-  int P = 0;
+  int NP = 0;
   int n_true = 0;
   // bool is_true;
   unsigned int ncols = Rf_length(x); // ncols
@@ -290,15 +290,15 @@ SEXP cpp_which_all(SEXP x){
 
   SEXP out;
   if (ncols == 0){
-    out = Rf_protect(Rf_allocVector(INTSXP, 0)); ++P;
+    out = Rf_protect(Rf_allocVector(INTSXP, 0)); ++NP;
   } else if (ncols == 1){
     cpp11::function cheapr_which = cpp11::package("cheapr")["which_"];
-    out = Rf_protect(cheapr_which(p_x[0])); ++P;
+    out = Rf_protect(cheapr_which(p_x[0])); ++NP;
   } else {
-    SEXP lgl = Rf_protect(Rf_allocVector(LGLSXP, nrows)); ++P;
+    SEXP lgl = Rf_protect(Rf_allocVector(LGLSXP, nrows)); ++NP;
     int *p_lgl = LOGICAL(lgl);
 
-    SEXP first_lgl = Rf_protect(p_x[0]); ++P;
+    SEXP first_lgl = Rf_protect(p_x[0]); ++NP;
     int *p_first = LOGICAL(first_lgl);
     memmove(p_lgl, &p_first[0], sizeof(int) * nrows);
 
@@ -317,7 +317,7 @@ SEXP cpp_which_all(SEXP x){
       n_true += p_lgl[j];
     }
     // WHICH algo
-    out = Rf_protect(Rf_allocVector(INTSXP, n_true)); ++P;
+    out = Rf_protect(Rf_allocVector(INTSXP, n_true)); ++NP;
     int *p_out = INTEGER(out);
     int whichi = 0;
     int i = 0;
@@ -326,7 +326,7 @@ SEXP cpp_which_all(SEXP x){
       whichi += (p_lgl[i++] == TRUE);
     }
   }
-  Rf_unprotect(P);
+  Rf_unprotect(NP);
   return out;
 }
 
@@ -365,7 +365,7 @@ SEXP cpp_int_slice(SEXP x, SEXP indices, bool check){
   int *pi = INTEGER(indices);
   int xn = Rf_length(x);
   int n = Rf_length(indices);
-  int P = 0;
+  int NP = 0;
   int zero_count = 0;
   int pos_count = 0;
   int oob_count = 0;
@@ -388,13 +388,13 @@ SEXP cpp_int_slice(SEXP x, SEXP indices, bool check){
   out_size = n - oob_count - zero_count;
   bool no_check = !check || (zero_count == 0 && oob_count == 0 && na_count == 0 && pos_count == n ) || neg_count > 0;
 
-  SEXP temp = neg_count > 0 ? Rf_protect(cpp11::package("cheapr")["neg_indices_to_pos"](indices, xn)) : Rf_protect(indices); ++P;
+  SEXP temp = neg_count > 0 ? Rf_protect(cpp11::package("cheapr")["neg_indices_to_pos"](indices, xn)) : Rf_protect(indices); ++NP;
   int *pi2 = INTEGER(temp);
   if (neg_count > 0){
     n = Rf_length(temp);
     out_size = n;
   }
-  SEXP out = Rf_protect(Rf_allocVector(TYPEOF(x), out_size)); ++P;
+  SEXP out = Rf_protect(Rf_allocVector(TYPEOF(x), out_size)); ++NP;
   int *p_x = INTEGER(x);
   int *p_out = INTEGER(out);
   if (no_check){
@@ -405,7 +405,7 @@ SEXP cpp_int_slice(SEXP x, SEXP indices, bool check){
       if (xi > 0 && xi <= xn) p_out[k++] = p_x[xi - 1];
     }
   }
-  Rf_unprotect(P);
+  Rf_unprotect(NP);
   return out;
 }
 
