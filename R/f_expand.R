@@ -30,7 +30,7 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL){
       }
       collapse_join(x, y, how = "full", on = group_vars, multiple = TRUE)
     }
-    out <- Reduce(anon_join, frames, simplify = FALSE)
+    out <- Reduce(anon_join, frames)
   } else {
     if (prod(cpp_nrows(frames)) > .Machine$integer.max){
       stop("expansion results in >= 2^31 rows, please supply less data")

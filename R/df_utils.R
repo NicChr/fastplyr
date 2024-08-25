@@ -320,7 +320,7 @@ cross_join2 <- function(x, y){
   df_cross_join(x, y, .repair_names = FALSE)
 }
 cross_join <- function(...){
-  out <- Reduce(cross_join2, list(...), simplify = FALSE)
+  out <- Reduce(cross_join2, list(...))
   names(out) <- unique_name_repair(names(out))
   out
 }
