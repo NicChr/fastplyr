@@ -79,7 +79,7 @@ group_id.factor <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE)
 group_id.list <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
   is_list_df_like <- collapse::fnunique(cheapr::lengths_(data)) <= 1
   if (!is_list_df_like){
-    stop("group_id.list can only accept data.frame-like lists")
+    stop("group_id.list can only accept data.frame-like lists containing elements of equal length")
   }
   data <- list_as_df(data)
   if (is.null(names(data))){
