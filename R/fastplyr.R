@@ -7,7 +7,6 @@
 #'
 #' \href{https://sebkrantz.github.io/collapse/articles/collapse_intro.html}{collapse}
 #'
-#' @importFrom dplyr %>%
 #' @importFrom dplyr .data
 #' @importFrom dplyr across
 #' @importFrom dplyr all_of
