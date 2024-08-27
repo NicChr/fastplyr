@@ -1,17 +1,72 @@
-GRP2 <- function(X, by = NULL, sort = TRUE, return.order = sort,
-                 return.groups = FALSE, ...){
+
+## GRP() with separate methods for data frames
+GRP2 <- function(X, by = NULL, sort = TRUE,
+                 return.order = sort, return.groups = FALSE,
+                 ...){
+  if (is_GRP(X))
+    return(X)
   if (is_df(X)){
     if (is.null(by)){
       by <- names(X)
     }
-    df_to_GRP(X, .cols = by, order = sort,
-              return.order = return.order,
-              return.groups = return.groups)
+    out <- df_to_GRP(X, .cols = by, order = sort,
+                     return.order = return.order,
+                     return.groups = return.groups)
   } else {
-    collapse::GRP(X, by = by, sort = sort, ...)
+    out <- GRP3(
+      X, by = by, sort = sort,
+      return.order = return.order,
+      return.groups = return.groups,
+      ...
+    )
+    out[["group.starts"]] <- GRP_starts(out)
   }
+  out
 }
 
+## GRP() but always returns group starts
+GRP3 <- function(X, by = NULL, sort = TRUE,
+                 return.order = sort,
+                 return.groups = FALSE,
+                 call = FALSE, ...){
+  if (is_GRP(X))
+    return(X)
+  if (!sort && !return.groups && !is.factor(X)) {
+    if (!is.null(by)) {
+      X <- f_select(X, .cols = by)
+    }
+    out <- add_names(
+      vector("list", 9),
+      c("N.groups", "group.id",
+        "group.sizes", "groups", "group.vars", "ordered",
+        "order", "group.starts", "call")
+    )
+    # groups <- group2(X)
+    groups <- group3(X, starts = TRUE, group.sizes = TRUE)
+    out[["N.groups"]] <- attr(groups, "N.groups")
+    out[["group.sizes"]] <- attr(groups, "group.sizes")
+    out[["group.starts"]] <- attr(groups, "starts")
+    if (is.factor(X)) {
+      out[["ordered"]] <- add_names(c(NA, TRUE), c("ordered",
+                                                   "sorted"))
+    }
+    else {
+      out[["ordered"]] <- add_names(c(FALSE, NA), c("ordered",
+                                                    "sorted"))
+    }
+    strip_attrs(groups, set = TRUE)
+    out[["group.id"]] <- groups
+    class(out) <- "GRP"
+  }
+  else {
+    out <- collapse::GRP(
+      X, by = by, sort = sort, return.order = return.order,
+      return.groups = return.groups, call = call, ...
+    )
+  }
+  out[["group.starts"]] <- GRP_starts(out)
+  out
+}
 # Two alternatives to collapse::group
 # They both handle nested data frames
 
@@ -325,10 +380,7 @@ df_as_GRP <- function(data, return.groups = TRUE, return.order = TRUE){
   group_id <- df_group_id(data)
   gsizes <- cheapr::lengths_(gdata[[".rows"]])
   if (return.order){
-    gorder <- collapse::radixorderv(group_id,
-                                    starts = TRUE,
-                                    sort = TRUE,
-                                    na.last = TRUE)
+    gorder <- unlist(gdata[[".rows"]])
     sorted <- attr(gorder, "sorted")
   } else {
     gorder <- NULL
@@ -410,16 +462,22 @@ df_to_GRP <- function(data, .cols = character(0),
   } else {
     data <- df_ungroup(data)
     data2 <- df_mutate_exotic_to_ids(data)
-    out <- collapse::GRP(data2, sort = order,
-                         return.order = return.order,
-                         return.groups = return.groups,
-                         call = FALSE)
+    out <- GRP3(
+      data2, sort = order,
+      return.order = return.order,
+      return.groups = return.groups,
+      call = FALSE
+    )
 
     # Basically if any addresses don't match,
     # then df_mutate_exotic_to_ids() has converted some
     # cols to group id cols.
     # If this is the case we need to sset the distinct groups
     # using the original data.
+
+    # Always add group starts as it's usually not too expensive
+
+    out[["group.starts"]] <- GRP_starts(out)
 
     if (return.groups && !all(cpp_address_equal(data, data2))){
       if (return.groups){
@@ -438,6 +496,21 @@ GRP.Interval <- function(X, ...){
     out[["groups"]] <- list(x = x[GRP_starts(out)])
   }
   out
+}
+
+# GRP.list turns X into a data frame and passes X ultimately to df_to_GRP()
+
+#' @exportS3Method collapse::GRP
+GRP.list <- function(X, ...){
+  is_list_df_like <- collapse::fnunique(cheapr::lengths_(X)) <= 1
+  if (!is_list_df_like){
+    stop("GRP.list() can only accept data.frame-like lists containing elements of equal length")
+  }
+  X <- list_as_df(X)
+  if (is.null(names(X))){
+    names(X) <- paste0("V", seq_along(X))
+  }
+  GRP2(X, ...)
 }
 #' @exportS3Method collapse::GRP
 GRP.NULL <- function(X, ...){
@@ -631,4 +704,27 @@ group_order_and_counts <- function(g = NULL){
     sizes <- attr(o, "group.sizes")
   }
   list(order = o, sizes = sizes)
+}
+
+## Construct a grouped data frame from a GRP object
+
+construct_grouped_df <- function(data, g){
+  groups <- GRP_groups(g)
+
+  if (is.null(groups)){
+    groups <- cheapr::sset(df_ungroup(data), GRP_starts(g))
+  }
+  group_locs <- GRP_loc(g)
+  groups[[".rows"]] <- vctrs_new_list_of(group_locs, integer())
+  attr(groups, ".drop") <- df_group_by_drop_default(data)
+  attr(groups, "sorted") <- df_group_by_order_default(data)
+  out <- data
+  attr(out, "groups") <- groups
+  class(out) <- c("grouped_df", "tbl_df", "tbl", "data.frame")
+  out
+}
+
+f_group_by2 <- function(data, .cols){
+  groups <- df_to_GRP(data, .cols, return.groups = FALSE, return.order = TRUE)
+  construct_grouped_df(data, groups)
 }

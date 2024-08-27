@@ -54,19 +54,19 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
                                 .cols = .cols,
                                 ungroup = TRUE,
                                 rename = TRUE)
-  out <- group_info[["data"]]
+  data_transformed <- group_info[["data"]]
   all_vars <- group_info[["all_groups"]]
-  N <- df_nrow(out)
+  N <- df_nrow(data_transformed)
   # Weights
   if (!rlang::quo_is_null(rlang::enquo(wt))){
-    out_info <- mutate_summary_grouped(out, !!rlang::enquo(wt))
+    out_info <- mutate_summary_grouped(data_transformed, !!rlang::enquo(wt))
     wt_var <- out_info[["cols"]]
-    out <- out_info[["data"]]
+    data_transformed <- out_info[["data"]]
   } else {
     wt_var <- character()
   }
   if (length(wt_var) > 0L){
-    wtv <- out[[wt_var]]
+    wtv <- data_transformed[[wt_var]]
   }
   use_only_grouped_df_groups <- !group_info[["groups_changed"]] && (
     length(all_vars) == 0L ||
@@ -75,16 +75,14 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
   if (use_only_grouped_df_groups){
     g <- df_to_GRP(data, return.order = FALSE, order = order, return.groups = TRUE)
   } else {
-    g <- df_to_GRP(out, .cols = all_vars, return.order = FALSE,
+    g <- df_to_GRP(data_transformed, .cols = all_vars, return.order = FALSE,
                    order = order, return.groups = TRUE)
   }
-  group_data <- GRP_groups(g)
-  if (is.null(group_data)){
-    out <- f_select(out, .cols = all_vars)
+  out <- GRP_groups(g)
+  if (is.null(out)){
+    out <- f_select(data_transformed, .cols = all_vars)
     gstarts <- GRP_starts(g)
     out <- df_row_slice(out, gstarts, reconstruct = FALSE)
-  } else {
-    out <- group_data
   }
   group_sizes <- GRP_group_sizes(g)
   if (length(all_vars) == 0L){

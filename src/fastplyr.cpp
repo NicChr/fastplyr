@@ -337,14 +337,14 @@ SEXP cpp_which_all(SEXP x){
 SEXP cpp_df_group_indices(SEXP rows, int size) {
   SEXP indices = Rf_protect(Rf_allocVector(INTSXP, size));
   int *p_indices = INTEGER(indices);
-  R_xlen_t ng = Rf_xlength(rows);
+  int ng = Rf_length(rows);
   const SEXP* p_rows = VECTOR_PTR_RO(rows);
 
-  for (R_xlen_t i = 0; i < ng; ++i) {
+  for (int i = 0; i < ng; ++i) {
     SEXP rows_i = p_rows[i];
-    R_xlen_t n_i = Rf_xlength(rows_i);
+    int n_i = Rf_length(rows_i);
     int *p_rows_i = INTEGER(rows_i);
-    for (R_xlen_t j = 0; j < n_i; j++, ++p_rows_i) {
+    for (int j = 0; j < n_i; j++, ++p_rows_i) {
       p_indices[*p_rows_i - 1] = i + 1;
     }
   }

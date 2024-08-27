@@ -145,7 +145,7 @@ add_group_id <- function(data, ...,
 #' @rdname group_id
 #' @export
 add_group_id.data.frame <- function(data, ...,
-                                    order = TRUE,
+                                    order = df_group_by_order_default(data),
                                     ascending = TRUE,
                                     .by = NULL, .cols = NULL,
                                     .name = NULL,
@@ -160,6 +160,9 @@ add_group_id.data.frame <- function(data, ...,
                                 ungroup = TRUE,
                                 rename = FALSE)
   all_groups <- group_info[["all_groups"]]
+  extra_groups <- group_info[["extra_groups"]]
+  groups_changed <- group_info[["groups_changed"]]
+
   # Usual Method for when data does not contain interval
   if (length(all_groups) == 0L){
     ids <- rep_len(1L, N)
@@ -174,15 +177,24 @@ add_group_id.data.frame <- function(data, ...,
                             ordered = order)
     }
   } else {
-    ids <- group_id(
-      f_select(group_info[["data"]], .cols = all_groups),
-      order = order,
-      ascending = ascending,
-      as_qg = as_qg
-    )
+    if (length(extra_groups) == 0 &&
+        !groups_changed &&
+        order == df_group_by_order_default(data) &&
+        ascending &&
+        !as_qg){
+      ids <- df_group_id(data)
+    } else {
+      ids <- group_id(
+        f_select(group_info[["data"]], .cols = all_groups),
+        order = order,
+        ascending = ascending,
+        as_qg = as_qg
+      )
+    }
   }
   col_to_add <- add_names(list(ids), .name)
-  dplyr::dplyr_col_modify(data, col_to_add)
+  out <- dplyr::dplyr_col_modify(df_ungroup(data), col_to_add)
+  reconstruct(data, out)
 }
 #' @rdname group_id
 #' @export
@@ -274,7 +286,8 @@ add_row_id.data.frame <- function(data, ..., ascending = TRUE,
     row_ids <- row_id(f_select(data, .cols = vars), ascending = ascending)
   }
   col_to_add <- add_names(list(row_ids), .name)
-  df_add_cols(data, col_to_add)
+  out <- dplyr::dplyr_col_modify(df_ungroup(data), col_to_add)
+  reconstruct(data, out)
 }
 
 group_id_to_qg <- function(x,

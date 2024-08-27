@@ -123,7 +123,9 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
       }
     }
   }
-  df_as_tbl(out)
+  out <- df_as_tbl(out)
+  # attr(out, "group_id") <- GRP_group_id(g)
+  out
 }
 #' @export
 group_collapse.data.frame <- function(data, ..., order = df_group_by_order_default(data),

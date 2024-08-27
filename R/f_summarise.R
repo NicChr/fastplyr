@@ -46,9 +46,13 @@ f_summarise <- function(data, ..., .by = NULL){
   collapse_fns <- paste0("f", base_fns)
   optimised_fns <- c(base_fns, collapse_fns)
   group_vars <- get_groups(data, {{ .by }})
-  data2 <- f_group_by(data, .by = {{ .by }}, .add = TRUE)
 
-  groups <- df_to_GRP(data2)
+  # groups <- quick_group(f_select(data, .cols = group_vars))
+  # groups <- df_to_GRP(data, .cols = group_vars,
+  #                     return.groups = TRUE, return.order = FALSE)
+  # data2 <- construct_grouped_df(data, groups)
+  data2 <- f_group_by(data, .by = {{ .by }}, .add = TRUE)
+  groups <- df_as_GRP(data2, return.order = FALSE, return.groups = FALSE)
 
   dots <- rlang::enquos(...)
   dot_nms <- names(dots)
@@ -63,6 +67,8 @@ f_summarise <- function(data, ..., .by = NULL){
     rlang::quo_is_call(x, "across", ns = c("", "dplyr"))
   }
 
+  # out <- cheapr::sset(df_ungroup(data), attr(groups, "starts"), j = group_vars)
+  # out <- groups$groups
   out <- f_select(group_data(data2), .cols = group_vars)
   out <- reconstruct(new_tbl(), out)
   for (i in seq_along(dots)){
@@ -120,6 +126,13 @@ f_summarise <- function(data, ..., .by = NULL){
       across_fns <- across_expr[[".fns"]]
       across_nms <- across_expr[[".names"]]
 
+#       ok <- vapply(eval(across_fns), is_anonymous_function, FALSE)
+#       call_args(across_fns)
+#       is_call(across_fns[[3]], optimised_fns, ns = c("", "base", "collapse", "dplyr"))
+
+      ## Ok... maybe we should try doing try(eval(call_args(across_fns)))
+      ## And work from there..
+
       across_fns_as_list <- rlang::is_call(across_fns, "list")
       vars <- names(tidyselect::eval_select(across_vars, data, env = dot_env))
 
@@ -147,7 +160,7 @@ f_summarise <- function(data, ..., .by = NULL){
                            nrow = length(vars),
                            ncol = length(fns))
       col_matrix[, which_fns] <- TRUE
-      across_res <- eval_across(data2, groups, vars, fast_fn_names, dot_env)
+      across_res <- fast_eval_across(data2, groups, vars, fast_fn_names, dot_env)
 
       if (length(which_other_fns) > 0){
         if (across_fns_as_list){
@@ -189,18 +202,26 @@ f_summarise <- function(data, ..., .by = NULL){
   reconstruct(df_ungroup(data), out)
 }
 
-eval_across <- function(data, g, .cols, .fns, env, .names = NULL){
+fast_eval_across <- function(data, g, .cols, .fns, env, .names = NULL){
   ncols <- length(.cols)
   nfns <- length(.fns)
   out <- vector("list", ncols * nfns)
   i <- 1L
+  # na.rm <- collapse::get_collapse("na.rm")
   for (f in .fns){
+    fun <- get_from_package(f, "collapse")
    for (col in .cols){
-     fun <- get_from_package(f, "collapse")
+     var <- .subset2(data, col)
      out[[i]] <- rlang::eval_tidy(
-       fun(data[[col]], g = g, use.g.names = FALSE),
+       fun(var, g = g, use.g.names = FALSE),
        env = env
      )
+     # Temporary adjustment
+     # if (!na.rm && is.integer(var) && identical(fun, collapse::fmean)){
+     #   n_missing <- GRP_group_sizes(g) -
+     #     collapse::fnobs(var, g = g, use.g.names = FALSE)
+     #   out[[i]][which(n_missing > 0L)] <- NA
+     # }
      i <- i + 1L
    }
   }
@@ -236,3 +257,9 @@ across_col_names <- function (.cols = NULL, .fns = NULL, .names = NULL){
   }
   out
 }
+
+is_anonymous_function <- function(x){
+  is.function(x) && identical(names(attributes(x)), "srcref")
+}
+
+

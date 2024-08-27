@@ -26,7 +26,7 @@ add_group_id(
 \method{add_group_id}{data.frame}(
   data,
   ...,
-  order = TRUE,
+  order = df_group_by_order_default(data),
   ascending = TRUE,
   .by = NULL,
   .cols = NULL,
