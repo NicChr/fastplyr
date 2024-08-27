@@ -41,6 +41,28 @@ library(tidyverse)
 library(fastplyr)
 ```
 
+While the syntax and user-interface of fastplyr aligns very closely with dplyr most of the time, there can be a few key differences.
+
+## Differences between fastplyr and dplyr
+
++---------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
+|                           | ### dplyr                                                                                                        | ### fastplyr                                                                                                              |
++===========================+==================================================================================================================+===========================================================================================================================+
+| `.by`                     | Groups are sorted by order of first appearance always when using `.by`                                           | Groups are always sorted by default, even when using `.by`. One can use the other sorting through `f_group_by(order = F)` |
++---------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| Many groups               | Generally slow for data with many groups.                                                                        | Designed to be fast for data with many groups.                                                                            |
++---------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| Handling of dots (`...`)  | dplyr almost always executes `...` expressions in a way that latter expressions depend on previous ones          | Some functions like `f_summarise` and `f_expand` execute the expressions in `...` independently.                          |
++---------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| Duplicate rows            | No dedicated function for this, solution using `group_by |> filter(n() > 1)` are generally slow for larger data. | Dedicated function `f_duplicates` can do this very fast and with fine control.                                            |
++---------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| Unique group IDs          | Achieved through `mutate(cur_group_id())`                                                                        | Dedicated fast function `add_group_id()`                                                                                  |
++---------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| Row slicing               | `slice()` supports data-masked expressions supplied to `...`                                                     | Data-masked expressions not supported in `f_slice_` functions. Use `f_filter()` for this behaviour.                       |
++---------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| Memory usage              | High memory usage                                                                                                | Lower usage compared to dplyr                                                                                             |
++---------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
+
 ## dplyr alternatives
 
-All tidyverse alternative functions are prefixed with 'f_'. For example, `dplyr::distinct` becomes `fastplyr::f_distinct`.
+All tidyverse alternative functions are prefixed with 'f\_'. For example, `dplyr::distinct` becomes `fastplyr::f_distinct`.

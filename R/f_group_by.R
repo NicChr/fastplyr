@@ -29,9 +29,9 @@
 #' @rdname f_group_by
 #' @export
 f_group_by <- function(data, ..., .add = FALSE,
-                      order = df_group_by_order_default(data),
-                      .by = NULL, .cols = NULL,
-                      .drop = df_group_by_drop_default(data)){
+                       order = df_group_by_order_default(data),
+                       .by = NULL, .cols = NULL,
+                       .drop = df_group_by_drop_default(data)){
   init_group_vars <- group_vars(data)
   group_info <- tidy_group_info(
     df_ungroup(data), ...,
