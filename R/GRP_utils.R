@@ -498,19 +498,13 @@ GRP.Interval <- function(X, ...){
   out
 }
 
-# GRP.list turns X into a data frame and passes X ultimately to df_to_GRP()
-
 #' @exportS3Method collapse::GRP
 GRP.list <- function(X, ...){
-  is_list_df_like <- collapse::fnunique(cheapr::lengths_(X)) <= 1
-  if (!is_list_df_like){
-    stop("GRP.list() can only accept data.frame-like lists containing elements of equal length")
-  }
-  X <- list_as_df(X)
-  if (is.null(names(X))){
-    names(X) <- paste0("V", seq_along(X))
-  }
-  GRP2(X, ...)
+  GRP2(group_id(X, as_qg = TRUE), ...)
+}
+#' @exportS3Method collapse::GRP
+GRP.vctrs_rcrd <- function(X, ...){
+  GRP2(list_as_df(X), ...)
 }
 #' @exportS3Method collapse::GRP
 GRP.NULL <- function(X, ...){

@@ -77,16 +77,8 @@ group_id.factor <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE)
 }
 #' @export
 group_id.list <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
-  is_list_df_like <- collapse::fnunique(cheapr::lengths_(data)) <= 1
-  if (!is_list_df_like){
-    stop("group_id.list can only accept data.frame-like lists containing elements of equal length")
-  }
-  data <- list_as_df(data)
-  if (is.null(names(data))){
-    names(data) <- paste0("V", seq_along(data))
-  }
   group_id(
-    data,
+    factor(data, levels = unique(data)),
     order = order,
     ascending = ascending,
     as_qg = as_qg
@@ -127,6 +119,16 @@ group_id.GRP <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
     }
   }
   out
+}
+#' @export
+group_id.vctrs_rcrd <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
+  group_id(
+    list_as_df(data),
+    order = order,
+    ascending = ascending,
+    as_qg = as_qg
+  )
+
 }
 #' @export
 group_id.NULL <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
