@@ -55,13 +55,6 @@ extern "C" SEXP _fastplyr_cpp_row_id(SEXP order, SEXP group_sizes, SEXP ascendin
   END_CPP11
 }
 // fastplyr.cpp
-SEXP cpp_reduce_logicals(SEXP x);
-extern "C" SEXP _fastplyr_cpp_reduce_logicals(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_reduce_logicals(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
-  END_CPP11
-}
-// fastplyr.cpp
 SEXP cpp_which_all(SEXP x);
 extern "C" SEXP _fastplyr_cpp_which_all(SEXP x) {
   BEGIN_CPP11
@@ -90,7 +83,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_group_locs",          (DL_FUNC) &_fastplyr_cpp_group_locs,          2},
     {"_fastplyr_cpp_list_subset",         (DL_FUNC) &_fastplyr_cpp_list_subset,         4},
     {"_fastplyr_cpp_nrows",               (DL_FUNC) &_fastplyr_cpp_nrows,               1},
-    {"_fastplyr_cpp_reduce_logicals",     (DL_FUNC) &_fastplyr_cpp_reduce_logicals,     1},
     {"_fastplyr_cpp_row_id",              (DL_FUNC) &_fastplyr_cpp_row_id,              3},
     {"_fastplyr_cpp_slice_locs",          (DL_FUNC) &_fastplyr_cpp_slice_locs,          2},
     {"_fastplyr_cpp_sorted_group_starts", (DL_FUNC) &_fastplyr_cpp_sorted_group_starts, 2},

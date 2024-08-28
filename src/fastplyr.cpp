@@ -242,39 +242,8 @@ SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
 // Takes a data frame of logical vectors
 // And reduces them to a single logical vector
 // Applying the && (AND) condition for each row
-
-[[cpp11::register]]
-SEXP cpp_reduce_logicals(SEXP x){
-  if (!Rf_inherits(x, "data.frame")){
-    Rf_error("x must be a data frame");
-  }
-  const SEXP *p_x = VECTOR_PTR_RO(x);
-  int NP = 0;
-  int ncols = Rf_length(x); // ncols
-  int nrows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
-
-  SEXP out = Rf_protect(Rf_allocVector(LGLSXP, nrows)); ++NP;
-  int *p_out = LOGICAL(out);
-  if (ncols == 0){
-    memset(p_out, 0, nrows * sizeof(int));
-  } else {
-    SEXP first_lgl = Rf_protect(p_x[0]); ++NP;
-    int *p_first = LOGICAL(first_lgl);
-    memmove(p_out, &p_first[0], sizeof(int) * nrows);
-  }
-
-  if (ncols > 1){
-    for (int i = 1; i < ncols; ++i) {
-      SEXP temp = Rf_protect(p_x[i]); ++NP;
-      int *p_temp = LOGICAL(temp);
-      for (int j = 0; j < nrows; ++j){
-        p_out[j] = p_out[j] && p_temp[j];
-      }
-    }
-  }
-  Rf_unprotect(NP);
-  return out;
-}
+// Then uses the cheapr::cpp_which algorithm
+// To find which rows are TRUE
 
 [[cpp11::register]]
 SEXP cpp_which_all(SEXP x){
@@ -306,14 +275,14 @@ SEXP cpp_which_all(SEXP x){
     for (unsigned int i = 1; i < (ncols - 1); ++i) {
       int *p_temp = LOGICAL(p_x[i]);
       for (unsigned int j = 0; j < nrows; ++j){
-        p_lgl[j] = p_lgl[j] && p_temp[j];
+        p_lgl[j] = p_lgl[j] == TRUE && p_temp[j] == TRUE;
       }
     }
     // Last col
     // This is where we count how many true vals are returned in the final vector
     int *p_temp = LOGICAL(p_x[ncols - 1]);
     for (unsigned int j = 0; j < nrows; ++j){
-      p_lgl[j] = p_lgl[j] && p_temp[j];
+      p_lgl[j] = (p_lgl[j] == TRUE) && (p_temp[j] == TRUE);
       n_true += p_lgl[j];
     }
     // WHICH algo

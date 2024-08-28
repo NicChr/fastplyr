@@ -28,10 +28,6 @@ cpp_row_id <- function(order, group_sizes, ascending) {
   .Call(`_fastplyr_cpp_row_id`, order, group_sizes, ascending)
 }
 
-cpp_reduce_logicals <- function(x) {
-  .Call(`_fastplyr_cpp_reduce_logicals`, x)
-}
-
 cpp_which_all <- function(x) {
   .Call(`_fastplyr_cpp_which_all`, x)
 }

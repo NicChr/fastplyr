@@ -9,7 +9,8 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.path = "man/figures/README-",
-  out.width = "100%"
+  out.width = "100%",
+  cache = TRUE
 )
 ```
 
@@ -39,6 +40,8 @@ Load packages
 ```{r example}
 library(tidyverse)
 library(fastplyr)
+library(nycflights13)
+library(bench)
 ```
 
 While the syntax and user-interface of fastplyr aligns very closely with dplyr most of the time, there can be a few key differences.
@@ -66,3 +69,183 @@ While the syntax and user-interface of fastplyr aligns very closely with dplyr m
 ## dplyr alternatives
 
 All tidyverse alternative functions are prefixed with 'f\_'. For example, `dplyr::distinct` becomes `fastplyr::f_distinct`.
+
+### distinct
+
+```{r}
+flights |> 
+  f_distinct(origin, dest)
+```
+
+`f_distinct` has an additional `sort` argument which is much faster than sorting afterwards.
+
+```{r}
+mark(
+  fastplyr_distinct_sort = flights |> 
+  f_distinct(origin, dest, tailnum, sort = TRUE),
+  dplyr_distinct_sort = flights |> 
+    distinct(origin, dest, tailnum) |> 
+    arrange_all()
+)
+```
+
+### group_by
+
+`f_group_by` operates very similarly with an additional feature that allows you to specify whether group data should be ordered or not. This ultimately controls if the groups end up sorted in expressions like `count` and `summarise`, but also in this case `f_count` and `f_summarise`.
+
+```{r}
+# Like dplyr
+flights |> 
+  f_group_by(month) |> 
+  f_count()
+
+# Group data is sorted by order-of-first appearance
+flights |> 
+  f_group_by(month, order = FALSE) |> 
+  f_count()
+```
+
+Just a reminder that all fastplyr functions are interchangeable with dplyr ones both ways
+
+```{r}
+
+### With dplyr::count
+
+flights |> 
+  f_group_by(month) |> 
+  count()
+```
+
+```{r}
+
+### With dplyr::group_by
+
+flights |> 
+  group_by(month) |> 
+  f_count()
+```
+
+### summarise
+
+`f_summarise` behaves like dplyr's `summarise` except for two things:
+
+-   It evaluates expressions independently
+-   There are optimisations for common statistical functions which are very fast for many groups
+
+```{r}
+grouped_flights <- flights |> 
+  group_by(across(where(is.character)))
+
+grouped_flights |> 
+  f_summarise(
+    n = n(), mean_dep_delay = mean(dep_delay)
+  )
+```
+
+And a benchmark
+
+```{r}
+mark(
+  fastplyr_summarise = grouped_flights |> 
+  f_summarise(
+    n = n(), mean_dep_delay = mean(dep_delay)
+  ),
+  dplyr_summarise = grouped_flights |> 
+  summarise(
+    n = n(), mean_dep_delay = mean(dep_delay, na.rm = TRUE),
+    .groups = "drop"
+  )
+)
+```
+
+### slice
+
+`f_slice` and other `f_slice_` functions are very fast for many groups.
+
+```{r}
+grouped_flights |> 
+  f_slice(1)
+
+grouped_flights |>
+  f_slice_head(3)
+```
+
+A quick benchmark to prove the point
+
+```{r}
+mark(
+    fastplyr_slice = grouped_flights |> 
+    f_slice_head(n = 3),
+    dplyr_slice = grouped_flights |>
+        slice_head(n = 3)
+)
+```
+
+### Group IDs
+
+In dplyr to work with group IDs you must use the `mutate()` + `cur_group_id()` paradigm.
+
+In fastplyr you can just use `add_group_id()` which is blazing fast.
+
+```{r}
+
+## Unique ID for each group
+
+grouped_flights |> 
+  add_group_id() |> 
+  f_select(group_id)
+
+```
+
+Another benchmark
+
+```{r}
+mark(
+  fastplyr_group_id = grouped_flights |> 
+  add_group_id() |> 
+  f_select(group_id),
+  dplyr_group_id = grouped_flights |> 
+  mutate(group_id = cur_group_id()) |> 
+  select(group_id)
+)
+```
+
+
+### expand
+
+Based closely on `tidyr::expand`, `f_expand()` can cross joins multiple vectors and data frames.
+
+```{r}
+mark(
+  fastplyr_expand = grouped_flights |> 
+  f_expand(month = 1:12),
+  tidyr_expand = grouped_flights |> 
+  expand(month = 1:12),
+  check = FALSE
+)
+```
+
+### duplicate rows
+
+Finding duplicate rows is a very common dataset operation and there is a 
+dedicated function `f_duplicates()` to do exactly this.
+
+```{r}
+flights |> 
+  f_duplicates(time_hour)
+```
+
+Benchmark against a common dplyr stratefy for finding duplicates
+
+```{r}
+mark(
+ fastplyr_duplicates = flights |> 
+   f_duplicates(time_hour, .both_ways = TRUE, .add_count = TRUE, .keep_all = TRUE),
+ dplyr_duplicates = flights |> 
+   add_count(time_hour) |> 
+   filter(n > 1)
+)
+```
+
+
+
