@@ -23,8 +23,8 @@
 #'
 #' @export
 f_distinct <- function(data, ..., .keep_all = FALSE,
-                      sort = FALSE, order = sort,
-                      .by = NULL, .cols = NULL){
+                        sort = FALSE, order = sort,
+                        .by = NULL, .cols = NULL){
   n_dots <- dots_length(...)
   group_info <- tidy_group_info(data, ..., .by = {{ .by }},
                                 .cols = .cols,
@@ -43,25 +43,40 @@ f_distinct <- function(data, ..., .keep_all = FALSE,
       out_vars <- dup_vars
     }
   }
-  if (length(group_info[["extra_groups"]]) == 0L && !group_info[["groups_changed"]]){
-    out <- data
-  }
-  out <- f_select(out, .cols = out_vars)
-  # Using sort algorithm but returning order-of-first appearance groups
-  if (order && !sort){
-    unique_locs <- cheapr::which_val(row_id(f_select(out, .cols = dup_vars)), 1L)
-    slice <- !(length(unique_locs) == df_nrow(out) && is_sorted(unique_locs))
-  } else {
-    if (order && sort){
-      o <- radixorderv2(f_select(out, .cols = dup_vars), starts = TRUE)
-      unique_locs <- o[attr(o, "starts")]
-      slice <- !(length(unique_locs) == df_nrow(out) &&
-                   isTRUE(attr(o, "sorted")))
-    } else {
-      # groups <- group2(f_select(out, .cols = dup_vars))
-      groups <- group3(f_select(out, .cols = dup_vars), starts = TRUE)
-      unique_locs <- attr(groups, "starts")
+  no_new_groups <- rlang::quo_is_null(rlang::enquo(.by)) &&
+    !group_info[["groups_changed"]] &&
+    identical(group_info[["dplyr_groups"]], dup_vars)
+
+  # If distinct variables are the same as group variables..
+
+  if (no_new_groups &&  sort == order && order == df_group_by_order_default(data)){
+    group_data <- group_data(data)
+    if (.keep_all){
+      unique_locs <- GRP_loc_starts(group_data(data)[[".rows"]])
       slice <- !(length(unique_locs) == df_nrow(out))
+    } else {
+      slice <- FALSE
+      out <- f_select(group_data, .cols = dup_vars)
+    }
+  } else {
+    out <- f_select(out, .cols = out_vars)
+    out_to_dedup <- f_select(out, .cols = dup_vars)
+    # Using sort algorithm but returning order-of-first appearance groups
+
+    if (order && !sort){
+      unique_locs <- cheapr::which_val(row_id(out_to_dedup), 1L)
+      slice <- !(length(unique_locs) == df_nrow(out) && is_sorted(unique_locs))
+    } else {
+      if (order && sort){
+        o <- radixorderv2(out_to_dedup, starts = TRUE)
+        unique_locs <- o[attr(o, "starts")]
+        slice <- !(length(unique_locs) == df_nrow(out) &&
+                     isTRUE(attr(o, "sorted")))
+      } else {
+        groups <- group3(out_to_dedup, starts = TRUE)
+        unique_locs <- attr(groups, "starts")
+        slice <- !(length(unique_locs) == df_nrow(out))
+      }
     }
   }
   if (slice){

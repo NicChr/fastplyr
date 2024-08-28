@@ -64,7 +64,7 @@ dplyr most of the time, there can be a few key differences.
 <table style="width:100%;">
 <colgroup>
 <col style="width: 10%" />
-<col style="width: 42%" />
+<col style="width: 43%" />
 <col style="width: 46%" />
 </colgroup>
 <thead>
