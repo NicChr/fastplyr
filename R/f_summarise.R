@@ -12,6 +12,29 @@
 #' @returns
 #' An un-grouped data frame of summaries by group.
 #'
+#' @details
+#' `f_summarise` behaves mostly like `dplyr::summarise` except that expressions
+#' supplied to `...` are evaluated independently.
+#'
+#' ### Optimised statistical functions
+#'
+#' Some functions are internally optimised using 'collapse'
+#' fast statistical functions. This makes execution on many groups very fast.
+#'
+#' List of currently optimised functions:
+#'
+#' `base::sum` \cr
+#' `base::prod` \cr
+#' `base::min` \cr
+#' `base::max` \cr
+#' `base::mode` \cr
+#' `stats::mean` \cr
+#' `stats::sd` \cr
+#' `stats::var` \cr
+#' `dplyr::first` \cr
+#' `dplyr::last` \cr
+#' `dplyr::n_distinct` \cr
+#'
 #' @examples
 #' library(fastplyr)
 #' library(nycflights13)
@@ -41,16 +64,13 @@
 #' collapse::set_collapse(na.rm = TRUE)
 #' @export
 f_summarise <- function(data, ..., .by = NULL){
-  base_fns <- c("sum", "mean", "min", "max", "first", "last",
-                "sd", "var")
+  base_fns <- c("sum", "prod", "mean", "min", "max", "first", "last",
+                "sd", "var", "mode", "n_distinct")
   collapse_fns <- paste0("f", base_fns)
+  collapse_fns[base_fns == "n_distinct"] <- "fndistinct"
   optimised_fns <- c(base_fns, collapse_fns)
   group_vars <- get_groups(data, {{ .by }})
 
-  # groups <- quick_group(f_select(data, .cols = group_vars))
-  # groups <- df_to_GRP(data, .cols = group_vars,
-  #                     return.groups = TRUE, return.order = FALSE)
-  # data2 <- construct_grouped_df(data, groups)
   data2 <- f_group_by(data, .by = {{ .by }}, .add = TRUE)
   groups <- df_as_GRP(data2, return.order = FALSE, return.groups = FALSE)
 
@@ -66,9 +86,6 @@ f_summarise <- function(data, ..., .by = NULL){
   is_across_call <- function(x) {
     rlang::quo_is_call(x, "across", ns = c("", "dplyr"))
   }
-
-  # out <- cheapr::sset(df_ungroup(data), attr(groups, "starts"), j = group_vars)
-  # out <- groups$groups
   out <- f_select(group_data(data2), .cols = group_vars)
   out <- reconstruct(new_tbl(), out)
   for (i in seq_along(dots)){

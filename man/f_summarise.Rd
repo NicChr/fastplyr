@@ -22,6 +22,29 @@ An un-grouped data frame of summaries by group.
 Like \code{dplyr::summarise()} but with some internal optimisations
 for common statistical functions.
 }
+\details{
+\code{f_summarise} behaves mostly like \code{dplyr::summarise} except that expressions
+supplied to \code{...} are evaluated independently.
+\subsection{Optimised statistical functions}{
+
+Some functions are internally optimised using 'collapse'
+fast statistical functions. This makes execution on many groups very fast.
+
+List of currently optimised functions:
+
+\code{base::sum} \cr
+\code{base::prod} \cr
+\code{base::min} \cr
+\code{base::max} \cr
+\code{base::mode} \cr
+\code{stats::mean} \cr
+\code{stats::sd} \cr
+\code{stats::var} \cr
+\code{dplyr::first} \cr
+\code{dplyr::last} \cr
+\code{dplyr::n_distinct} \cr
+}
+}
 \examples{
 library(fastplyr)
 library(nycflights13)
