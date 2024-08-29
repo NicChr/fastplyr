@@ -253,7 +253,7 @@ mark(
 
 In the wosrt case scenarios, `f_filter()` is about the same speed as `filter()` and
 in the best case is much faster and more efficient. This is especially true
-for large data where small subsets of the data are returned.
+for large data where small subsets of the data are returned. 
 
 ```{r}
 full <- tibble(x = rnorm(5e07))

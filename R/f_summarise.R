@@ -256,10 +256,7 @@ fast_eval_across <- function(data, g, .cols, .fns, env, .names = NULL){
     fun <- get_from_package(f, "collapse")
    for (col in .cols){
      var <- .subset2(data, col)
-     out[[i]] <- rlang::eval_tidy(
-       fun(var, g = g, use.g.names = FALSE),
-       env = env
-     )
+     out[[i]] <- do.call(fun, list(var, g = g, use.g.names = FALSE), envir = env)
      # Temporary adjustment
      # if (!na.rm && is.integer(var) && identical(fun, collapse::fmean)){
      #   n_missing <- GRP_group_sizes(g) -

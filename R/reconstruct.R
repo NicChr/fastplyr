@@ -11,7 +11,7 @@ reconstruct.data.frame <- function(template, data, copy_extra_attributes = TRUE)
   at[["names"]] <- names(data)
   at[["row.names"]] <- .row_names_info(data, type = 0L)
   if (!copy_extra_attributes){
-    at[setdiff(names(at), c("names", "row.names", "class"))] <- NULL
+    at[fast_setdiff(names(at), c("names", "row.names", "class"))] <- NULL
   }
   attributes(data) <- at
   data
@@ -42,7 +42,7 @@ reconstruct.grouped_df <- function(template, data, copy_extra_attributes = TRUE)
   if (!groups_are_identical){
     out_groups <- intersect(template_groups, names(data))
     if (length(out_groups) == 0L){
-      at[["class"]] <- setdiff(at[["class"]], "grouped_df")
+      at[["class"]] <- fast_setdiff(at[["class"]], "grouped_df")
       at[["groups"]] <- NULL
     } else {
       drop_by_default <- df_group_by_drop_default(template)
@@ -58,7 +58,7 @@ reconstruct.grouped_df <- function(template, data, copy_extra_attributes = TRUE)
                                .drop = drop_by_default)
       groups <- f_rename(groups, .cols = c(".rows" = ".loc"))
       attributes(groups[[".rows"]]) <- attributes(at[["groups"]][[".rows"]])
-      for (a in setdiff(names(attributes(groups)),
+      for (a in fast_setdiff(names(attributes(groups)),
                          c("row.names", "class", "names"))){
         attr(groups, a) <- NULL
       }
@@ -69,7 +69,7 @@ reconstruct.grouped_df <- function(template, data, copy_extra_attributes = TRUE)
     }
   }
   if (!copy_extra_attributes){
-    at[setdiff(names(at), c("names", "row.names", "class", "groups"))] <- NULL
+    at[fast_setdiff(names(at), c("names", "row.names", "class", "groups"))] <- NULL
   }
   attributes(data) <- at
   data
@@ -85,7 +85,7 @@ reconstruct.data.table <- function(template, data, copy_extra_attributes = TRUE)
   out <- collapse::qDT(data)
   out <- add_attr(out, "row.names", row_names, set = TRUE)
   if (copy_extra_attributes){
-    for (a in setdiff(names(at),
+    for (a in fast_setdiff(names(at),
                       c("row.names", "names", "class", "sorted", ".internal.selfref"))){
       out <- add_attr(out, a, at[[a]], set = TRUE)
     }

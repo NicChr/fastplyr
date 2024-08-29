@@ -16,7 +16,7 @@ df_ncol <- function(x){
 group_vars <- function(x){
   if (is_df(x)){
     if (inherits(x, "grouped_df")){
-      out <- setdiff(names(attr(x, "groups")), ".rows")
+      out <- fast_setdiff(names(attr(x, "groups")), ".rows")
     } else {
       out <- character()
     }
