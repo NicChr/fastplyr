@@ -85,7 +85,8 @@ f_slice <- function(data, i = 0L, ..., .by = NULL, keep_order = FALSE){
     }
   } else {
     groups <- data %>%
-      group_collapse(.cols = group_vars, .add = TRUE)
+      group_collapse(.cols = group_vars, .add = TRUE,
+                     order = df_group_by_order_default(data))
     group_locs <- groups[[".loc"]]
     group_sizes <- groups[[".size"]]
     GN <-  max(group_sizes)

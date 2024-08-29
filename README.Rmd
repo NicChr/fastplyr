@@ -9,8 +9,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.path = "man/figures/README-",
-  out.width = "100%",
-  cache = TRUE
+  out.width = "100%"
 )
 options(tibble.print_min = 5)
 options(tibble.print_max = 10)
@@ -248,6 +247,120 @@ mark(
    filter(n > 1)
 )
 ```
+
+## tidytable vs fastplyr
+
+Let's run some more benchmarks for fun, this time including tidytable
+which fastplyr is very similar to as it also uses a tidy frontend but a
+data.table backend
+
+### 10 million rows
+
+```{r}
+n_rows <- 10^7
+n_groups <- 10^6
+
+tbl <- tibble(x = rnorm(n_rows))
+tbl <- tbl |> 
+    mutate(y = as.character(round(x, 6)),
+           g = sample.int(n_groups, n_rows, TRUE))
+tbl
+```
+
+### slice benchmark
+
+For this we will be using the `.by` argument from each package.
+Because fastplyr still sorts the groups by default here we will set an internal
+option to use the alternative grouping algorithm that sorts groups 
+by order of first appearance. This will likely be revisited at some point.
+
+To read about the differences, see `?collapse::GRP`.
+
+```{r}
+library(tidytable)
+
+tidy_tbl <- as_tidytable(tbl)
+
+# Setting an internal option to set all grouping to use the non-sorted type
+options(.fastplyr.groups.sort = FALSE)
+
+mark(
+  fastplyr_slice = tbl |> 
+  f_slice(3:5, .by = g),
+  tidytable_slice = tidy_tbl |> 
+    slice(3:5, .by = g),
+  check = FALSE,
+  min_iterations = 3
+)
+```
+
+### slice_head & slice_tail
+ 
+```{r}
+mark(
+  fastplyr_slice_head = tbl |> 
+  f_slice_head(n = 3, .by = g),
+  tidytable_slice_head = tidy_tbl |> 
+    slice_head(n = 3, .by = g),
+  fastplyr_slice_tail = tbl |> 
+  f_slice_tail(n = 3, .by = g),
+  tidytable_slice_tail = tidy_tbl |> 
+    slice_tail(n = 3, .by = g),
+  check = FALSE,
+  min_iterations = 3
+)
+```
+
+### summarise benchmark
+
+Here we'll calculate the mean of x by each group of g
+
+Both tidytable and fastplyr have optimisations for `mean()` when it involves
+groups. tidytable internally uses data.table's 'gforce' mean function. 
+This is basically a dedicated C function to calculate means for many groups.
+
+```{r}
+mark(
+  fastplyr_sumarise = tbl |> 
+  f_summarise(mean = mean(x), .by = g),
+  tidytable_sumarise = tidy_tbl |> 
+  summarise(mean = mean(x), .by = g),
+  check = FALSE,
+  min_iterations = 3
+)
+```
+
+Benchmarking more statistical functions
+
+```{r}
+mark(
+  fastplyr_sumarise2 = tbl |> 
+  f_summarise(n = n(), mean = mean(x), min = min(x), max = max(x), .by = g),
+  tidytable_sumarise2 = tidy_tbl |> 
+  summarise(n = n(), mean = mean(x), min = min(x), max = max(x), .by = g),
+  check = FALSE,
+  min_iterations = 3
+)
+```
+
+### count benchmark
+
+```{r}
+mark(
+  fastplyr_count = tbl |> 
+    f_count(y, g),
+  tidytable_count = tidy_tbl |> 
+    count(y, g),
+  check = FALSE,
+  min_iterations = 3
+)
+```
+
+It's clear both fastplyr and tidytable are fast and each have their strengths 
+and weaknesses.
+
+
+ 
 
 
 

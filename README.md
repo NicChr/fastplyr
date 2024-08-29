@@ -164,8 +164,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                  min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>             <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_distinct_sort   10.6ms   11.5ms      84.5    2.95MB     4.33
-#> 2 dplyr_distinct_sort      23.7ms   24.3ms      40.4   11.38MB     7.13
+#> 1 fastplyr_distinct_sort   10.7ms   11.5ms      87.1    2.95MB     4.25
+#> 2 dplyr_distinct_sort      23.4ms   24.5ms      40.8   11.38MB     7.19
 ```
 
 ### group_by
@@ -298,8 +298,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_summarise   4.03ms   4.74ms    202.      1.89MB     3.97
-#> 2 dplyr_summarise    719.47ms 719.47ms      1.39    9.59MB    23.6
+#> 1 fastplyr_summarise   3.81ms   4.83ms    197.      1.89MB     3.97
+#> 2 dplyr_summarise    645.88ms 645.88ms      1.55    9.59MB    10.8
 ```
 
 ### slice
@@ -357,8 +357,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression          min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>     <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_slice  24.01ms   28.3ms    32.4      21.4MB     11.5
-#> 2 dplyr_slice       3.42s    3.42s     0.292    26.6MB     14.3
+#> 1 fastplyr_slice  26.09ms  29.42ms    31.9      21.4MB    15.9 
+#> 2 dplyr_slice       3.51s    3.51s     0.285    26.6MB     9.98
 ```
 
 ### Group IDs
@@ -404,8 +404,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression             min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>        <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_group_id   3.25ms    3.8ms    245.      1.46MB     3.99
-#> 2 dplyr_group_id    300.54ms  307.8ms      3.25    3.24MB    14.6
+#> 1 fastplyr_group_id    3.2ms   3.99ms    242.      1.46MB     3.99
+#> 2 dplyr_group_id     296.2ms 297.18ms      3.36    3.24MB    10.1
 ```
 
 ### expand
@@ -426,8 +426,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression           min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_expand  109.6ms  136.6ms    7.37      41.8MB     1.84
-#> 2 tidyr_expand       26.5s    26.5s    0.0378   183.5MB     2.91
+#> 1 fastplyr_expand  125.8ms  157.2ms    4.27      41.8MB     3.20
+#> 2 tidyr_expand       24.9s    24.9s    0.0402   183.5MB     4.14
 ```
 
 ### duplicate rows
@@ -462,6 +462,210 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_duplicates   18.4ms   19.9ms      49.7    45.1MB    49.7 
-#> 2 dplyr_duplicates      72.7ms   74.2ms      13.5    59.5MB     2.24
+#> 1 fastplyr_duplicates     19ms   24.8ms      42.3    45.1MB    21.2 
+#> 2 dplyr_duplicates      69.7ms     72ms      13.9    59.5MB     2.31
 ```
+
+## tidytable vs fastplyr
+
+Let’s run some more benchmarks for fun, this time including tidytable
+which fastplyr is very similar to as it also uses a tidy frontend but a
+data.table backend
+
+### 10 million rows
+
+``` r
+n_rows <- 10^7
+n_groups <- 10^6
+
+tbl <- tibble(x = rnorm(n_rows))
+tbl <- tbl |> 
+    mutate(y = as.character(round(x, 6)),
+           g = sample.int(n_groups, n_rows, TRUE))
+tbl
+#> # A tibble: 10,000,000 × 3
+#>        x y              g
+#>    <dbl> <chr>      <int>
+#> 1  0.864 0.863956  879642
+#> 2  1.21  1.214544  287673
+#> 3  0.894 0.89429   365297
+#> 4 -0.987 -0.987305 193298
+#> 5 -0.508 -0.508186 803893
+#> # ℹ 9,999,995 more rows
+```
+
+### slice benchmark
+
+For this we will be using the `.by` argument from each package. Because
+fastplyr still sorts the groups by default here we will set an internal
+option to use the alternative grouping algorithm that sorts groups by
+order of first appearance. This will likely be revisited at some point.
+
+To read about the differences, see `?collapse::GRP`.
+
+``` r
+library(tidytable)
+#> Warning: tidytable was loaded after dplyr.
+#> This can lead to most dplyr functions being overwritten by tidytable functions.
+#> Warning: tidytable was loaded after tidyr.
+#> This can lead to most tidyr functions being overwritten by tidytable functions.
+#> 
+#> Attaching package: 'tidytable'
+#> The following object is masked from 'package:fastplyr':
+#> 
+#>     desc
+#> The following objects are masked from 'package:dplyr':
+#> 
+#>     across, add_count, add_tally, anti_join, arrange, between,
+#>     bind_cols, bind_rows, c_across, case_match, case_when, coalesce,
+#>     consecutive_id, count, cross_join, cume_dist, cur_column, cur_data,
+#>     cur_group_id, cur_group_rows, dense_rank, desc, distinct, filter,
+#>     first, full_join, group_by, group_cols, group_split, group_vars,
+#>     if_all, if_any, if_else, inner_join, is_grouped_df, lag, last,
+#>     lead, left_join, min_rank, mutate, n, n_distinct, na_if, nest_by,
+#>     nest_join, nth, percent_rank, pick, pull, recode, reframe,
+#>     relocate, rename, rename_with, right_join, row_number, rowwise,
+#>     select, semi_join, slice, slice_head, slice_max, slice_min,
+#>     slice_sample, slice_tail, summarise, summarize, tally, top_n,
+#>     transmute, tribble, ungroup
+#> The following objects are masked from 'package:purrr':
+#> 
+#>     map, map_chr, map_dbl, map_df, map_dfc, map_dfr, map_int, map_lgl,
+#>     map_vec, map2, map2_chr, map2_dbl, map2_df, map2_dfc, map2_dfr,
+#>     map2_int, map2_lgl, map2_vec, pmap, pmap_chr, pmap_dbl, pmap_df,
+#>     pmap_dfc, pmap_dfr, pmap_int, pmap_lgl, pmap_vec, walk
+#> The following objects are masked from 'package:tidyr':
+#> 
+#>     complete, crossing, drop_na, expand, expand_grid, extract, fill,
+#>     nest, nesting, pivot_longer, pivot_wider, replace_na, separate,
+#>     separate_longer_delim, separate_rows, separate_wider_delim,
+#>     separate_wider_regex, tribble, uncount, unite, unnest,
+#>     unnest_longer, unnest_wider
+#> The following objects are masked from 'package:tibble':
+#> 
+#>     enframe, tribble
+#> The following objects are masked from 'package:stats':
+#> 
+#>     dt, filter, lag
+#> The following object is masked from 'package:base':
+#> 
+#>     %in%
+```
+
+``` r
+
+tidy_tbl <- as_tidytable(tbl)
+
+# Setting an internal option to set all grouping to use the non-sorted type
+options(.fastplyr.groups.sort = FALSE)
+
+mark(
+  fastplyr_slice = tbl |> 
+  f_slice(3:5, .by = g),
+  tidytable_slice = tidy_tbl |> 
+    slice(3:5, .by = g),
+  check = FALSE,
+  min_iterations = 3
+)
+#> Warning: Some expressions had a GC in every iteration; so filtering is
+#> disabled.
+#> # A tibble: 2 × 6
+#>   expression           min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 fastplyr_slice  941.81ms    1.02s     0.850     140MB    0.850
+#> 2 tidytable_slice    6.51s    6.64s     0.149     176MB    2.53
+```
+
+### slice_head & slice_tail
+
+``` r
+mark(
+  fastplyr_slice_head = tbl |> 
+  f_slice_head(n = 3, .by = g),
+  tidytable_slice_head = tidy_tbl |> 
+    slice_head(n = 3, .by = g),
+  fastplyr_slice_tail = tbl |> 
+  f_slice_tail(n = 3, .by = g),
+  tidytable_slice_tail = tidy_tbl |> 
+    slice_tail(n = 3, .by = g),
+  check = FALSE,
+  min_iterations = 3
+)
+#> Warning: Some expressions had a GC in every iteration; so filtering is
+#> disabled.
+#> # A tibble: 4 × 6
+#>   expression                min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>           <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 fastplyr_slice_head  848.51ms  925.2ms     1.03      191MB     1.37
+#> 2 tidytable_slice_head     1.6s    1.62s     0.532     175MB     1.77
+#> 3 fastplyr_slice_tail  837.12ms 904.64ms     1.05      194MB     1.05
+#> 4 tidytable_slice_tail    3.45s    3.51s     0.277     175MB     2.31
+```
+
+### summarise benchmark
+
+Here we’ll calculate the mean of x by each group of g
+
+Both tidytable and fastplyr have optimisations for `mean()` when it
+involves groups. tidytable internally uses data.table’s ‘gforce’ mean
+function. This is basically a dedicated C function to calculate means
+for many groups.
+
+``` r
+mark(
+  fastplyr_sumarise = tbl |> 
+  f_summarise(mean = mean(x), .by = g),
+  tidytable_sumarise = tidy_tbl |> 
+  summarise(mean = mean(x), .by = g),
+  check = FALSE,
+  min_iterations = 3
+)
+#> Warning: Some expressions had a GC in every iteration; so filtering is
+#> disabled.
+#> # A tibble: 2 × 6
+#>   expression              min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 fastplyr_sumarise     771ms    783ms      1.21     107MB    0.403
+#> 2 tidytable_sumarise    316ms    336ms      2.38     290MB    3.17
+```
+
+Benchmarking more statistical functions
+
+``` r
+mark(
+  fastplyr_sumarise2 = tbl |> 
+  f_summarise(n = n(), mean = mean(x), min = min(x), max = max(x), .by = g),
+  tidytable_sumarise2 = tidy_tbl |> 
+  summarise(n = n(), mean = mean(x), min = min(x), max = max(x), .by = g),
+  check = FALSE,
+  min_iterations = 3
+)
+#> # A tibble: 2 × 6
+#>   expression               min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 fastplyr_sumarise2     833ms    833ms      1.20     122MB     2.40
+#> 2 tidytable_sumarise2    366ms    366ms      2.73     305MB     5.47
+```
+
+### count benchmark
+
+``` r
+mark(
+  fastplyr_count = tbl |> 
+    f_count(y, g),
+  tidytable_count = tidy_tbl |> 
+    count(y, g),
+  check = FALSE,
+  min_iterations = 3
+)
+#> Warning: Some expressions had a GC in every iteration; so filtering is
+#> disabled.
+#> # A tibble: 2 × 6
+#>   expression           min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 fastplyr_count  342.47ms 451.66ms     2.15      229MB    1.43 
+#> 2 tidytable_count    3.73s    3.76s     0.259     496MB    0.259
+```
+
+It’s clear both fastplyr and tidytable are fast and each have their
+strengths and weaknesses.

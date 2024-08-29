@@ -248,6 +248,9 @@ df_group_by_drop_default <- function(x){
   }
 }
 df_group_by_order_default <- function(x){
+  if (!is.null(getOption(".fastplyr.groups.sort"))){
+    return(getOption(".fastplyr.groups.sort"))
+  }
   if (inherits(x, "grouped_df")){
     out <- attr(attr(x, "groups", TRUE), "sorted", TRUE)
   } else {
