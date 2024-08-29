@@ -71,7 +71,7 @@ f_group_by <- function(data, ..., .add = FALSE,
 }
 #' @rdname f_group_by
 #' @export
-are_groups_sorted <- function(data){
+group_sorted <- function(data){
   sorted <- attr(group_data(data), "sorted")
   if (is.null(sorted)){
     sorted <- NA

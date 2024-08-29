@@ -2,7 +2,7 @@
 % Please edit documentation in R/f_group_by.R
 \name{f_group_by}
 \alias{f_group_by}
-\alias{are_groups_sorted}
+\alias{group_sorted}
 \title{'collapse' version of \code{dplyr::group_by()}}
 \usage{
 f_group_by(
@@ -15,7 +15,7 @@ f_group_by(
   .drop = df_group_by_drop_default(data)
 )
 
-are_groups_sorted(data)
+group_sorted(data)
 }
 \arguments{
 \item{data}{data frame.}
