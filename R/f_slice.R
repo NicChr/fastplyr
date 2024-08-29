@@ -173,9 +173,11 @@ f_slice_min <- function(data, order_by, n, prop, .by = NULL,
                        with_ties = TRUE, na_rm = FALSE, keep_order = FALSE){
   group_vars <- get_groups(data, .by = {{ .by }})
   grp_nm1 <- unique_col_name(names(data), "g")
-  out <- df_ungroup(data)
-  g1 <- group_id(f_select(data, .cols = group_vars), order = df_group_by_order_default(data))
-  out[[grp_nm1]] <- g1
+  out <- data %>%
+    add_group_id(.name = grp_nm1, .cols = group_vars) %>%
+    df_ungroup()
+
+  g1 <- out[[grp_nm1]]
   out_info <- mutate_summary_grouped(out,
                                      !!rlang::enquo(order_by),
                                      .keep = "none",
@@ -219,9 +221,12 @@ f_slice_max <- function(data, order_by, n, prop, .by = NULL,
                        with_ties = TRUE, na_rm = FALSE, keep_order = FALSE){
   group_vars <- get_groups(data, .by = {{ .by }})
   grp_nm1 <- unique_col_name(names(data), "g")
-  out <- df_ungroup(data)
-  g1 <- group_id(f_select(data, .cols = group_vars), order = df_group_by_order_default(data))
-  out[[grp_nm1]] <- g1
+
+  out <- data %>%
+    add_group_id(.name = grp_nm1, .cols = group_vars) %>%
+    df_ungroup()
+
+  g1 <- out[[grp_nm1]]
   out_info <- mutate_summary_grouped(out,
                                      !!rlang::enquo(order_by),
                                      .keep = "none",
