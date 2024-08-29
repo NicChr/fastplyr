@@ -25,14 +25,15 @@
 #' @export
 f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
   group_vars <- get_groups(data, {{ .by }})
-  data2 <- f_group_by(data, .by = {{ .by }}, .add = TRUE)
   if (!is.null(.cols)){
-    dot_vars <- col_select_pos(data, .cols = .cols)
+    data2 <- df_ungroup(data)
+    dot_vars <- col_select_names(data2, .cols = .cols)
     frames <- vector("list", length(dot_vars))
     for (i in seq_along(dot_vars)){
-      frames[[i]] <- f_distinct(data2, .cols = dot_vars[i], sort = sort)
+      frames[[i]] <- f_distinct(data2, .cols = c(group_vars, dot_vars[i]), sort = sort)
     }
   } else {
+    data2 <- f_group_by(data, .by = {{ .by }}, .add = TRUE)
     dots <- rlang::enquos(...)
     frames <- vector("list", length(dots))
     for (i in seq_along(dots)){
@@ -59,7 +60,7 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
   }
   # If just empty list
   if (length(out) == 0){
-    out <- f_select(group_data(data2), .cols = group_vars)
+    out <- f_distinct(data2, .cols = group_vars, sort = sort)
   }
   reconstruct(data, out)
 }
@@ -113,87 +114,38 @@ crossing <- function(..., sort = FALSE){
   dots <- rlang::dots_list(..., .named = TRUE)
   for (i in seq_along(dots)){
     if (is_df(dots[[i]])){
-      dots[[i]] <- f_distinct(df_as_tbl(dots[[i]]), sort = sort)
+      dots[[i]] <- sort_unique(df_as_tbl(dots[[i]]), sort = sort)
     } else {
-      dots[[i]] <- f_distinct(`names<-`(new_tbl(dots[[i]]), names(dots)[i]), sort = sort)
+      dots[[i]] <- sort_unique(`names<-`(new_df(dots[[i]]), names(dots)[i]), sort = sort)
     }
   }
-  do.call(cross_join, dots)
+  df_as_tbl(do.call(cross_join, dots))
 }
 #' @rdname f_expand
 #' @export
 nesting <- function(..., sort = FALSE){
   dots <- rlang::dots_list(..., .named = TRUE)
   for (i in seq_along(dots)){
-    if (is_df(dots[[i]])){
-      dots[[i]] <- df_as_tbl(dots[[i]])
-    } else {
-      dots[[i]] <- `names<-`(new_tbl(dots[[i]]), names(dots)[i])
+    if (!is_df(dots[[i]])){
+      dots[[i]] <- `names<-`(new_df(dots[[i]]), names(dots)[i])
     }
   }
-  f_distinct(do.call(df_cbind, dots), sort = sort)
+  df_as_tbl(sort_unique(do.call(df_cbind, dots), sort = sort))
 }
-# f_crossing <- function(..., sort = FALSE){
-#   # dot_nms <- unlist(
-#   #   lapply(
-#   #     substitute(alist(...))[-1L], deparse
-#   #   ), recursive = FALSE,
-#   #   use.names = TRUE
-#   # )
-#   # dots <- list(...)
-#   # if (is.null(names(dots))){
-#   #   names(dots) <- dot_nms
-#   # }
-#   # names(dots)[!nzchar(names(dot_nms))] <- dot_nms[!nzchar(names(dot_nms))]
-#
-#   dots <- rlang::dots_list(..., .named = TRUE)
-#   # dots <- lapply(dots, sort_unique, sort)
-#   for (i in seq_along(dots)){
-#     if (is_df(dots[[i]])){
-#       dots[[i]] <- f_distinct(df_as_tbl(dots[[i]]), sort = sort)
-#     } else {
-#       dots[[i]] <- f_distinct(`names<-`(new_tbl(dots[[i]]), names(dots)[i]), sort = sort)
-#     }
-#   }
-#   do.call(cross_join, dots)
-#   # out <- do.call(cross_join, dots)
-#   # names(out) <- unique_name_repair(names(dots))
-#   # out
-#
-#   # do.call(cross_join, rlang::dots_list(..., .named = TRUE))
-# }
-# f_nesting <- function(..., sort = FALSE){
-#   # dot_nms <- unlist(
-#   #   lapply(
-#   #     substitute(alist(...))[-1L], deparse
-#   #   ), recursive = FALSE,
-#   #   use.names = TRUE
-#   # )
-#   # dots <- list(...)
-#   # if (is.null(names(dots))){
-#   #   names(dots) <- dot_nms
-#   # }
-#   # names(dots)[!nzchar(names(dot_nms))] <- dot_nms[!nzchar(names(dot_nms))]
-#   # names(dots) <- unique_name_repair(names(dots))
-#   dots <- rlang::dots_list(..., .named = TRUE)
-#   for (i in seq_along(dots)){
-#     if (is_df(dots[[i]])){
-#       dots[[i]] <- df_as_tbl(dots[[i]])
-#     } else {
-#       dots[[i]] <- `names<-`(new_tbl(dots[[i]]), names(dots)[i])
-#     }
-#   }
-#   # dots <- lapply(dots, function(x) if (is_df(x)) df_as_tbl(x) else new_tbl(x = x))
-#   # out <- list_as_tbl(dots)
-#   out <- do.call(df_cbind, dots)
-#   # names(out) <- unique_name_repair(names(dots))
-#   f_distinct(out, sort = sort)
-# }
 
+# Very fast unique function
 sort_unique <- function(x, sort = FALSE){
-  if (is_df(x)){
-    f_distinct(x, sort = sort)
+  if (sort){
+    o <- radixorderv2(x, starts = TRUE)
+    starts <- o[attr(o, "starts")]
+    subset <- !(length(starts) == NROW(x) && isTRUE(attr(o, "sorted")))
   } else {
-    collapse::funique(x, sort = sort)
+    starts <- attr(group3(x, starts = TRUE), "starts")
+    subset <- length(starts) != NROW(x)
+  }
+  if (subset){
+    cheapr::sset(x, starts)
+  } else {
+    x
   }
 }
