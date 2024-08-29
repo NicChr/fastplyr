@@ -140,19 +140,14 @@ example, `dplyr::distinct` becomes `fastplyr::f_distinct`.
 flights |> 
   f_distinct(origin, dest)
 #> # A tibble: 224 × 2
-#>    origin dest 
-#>    <chr>  <chr>
-#>  1 EWR    IAH  
-#>  2 LGA    IAH  
-#>  3 JFK    MIA  
-#>  4 JFK    BQN  
-#>  5 LGA    ATL  
-#>  6 EWR    ORD  
-#>  7 EWR    FLL  
-#>  8 LGA    IAD  
-#>  9 JFK    MCO  
-#> 10 LGA    ORD  
-#> # ℹ 214 more rows
+#>   origin dest 
+#>   <chr>  <chr>
+#> 1 EWR    IAH  
+#> 2 LGA    IAH  
+#> 3 JFK    MIA  
+#> 4 JFK    BQN  
+#> 5 LGA    ATL  
+#> # ℹ 219 more rows
 ```
 
 `f_distinct` has an additional `sort` argument which is much faster than
@@ -169,8 +164,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                  min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>             <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_distinct_sort     12ms   14.2ms      70.6    2.95MB     2.08
-#> 2 dplyr_distinct_sort      24.2ms   26.1ms      38.0   11.38MB    10.1
+#> 1 fastplyr_distinct_sort   10.6ms   11.5ms      84.5    2.95MB     4.33
+#> 2 dplyr_distinct_sort      23.7ms   24.3ms      40.4   11.38MB     7.13
 ```
 
 ### group_by
@@ -188,20 +183,14 @@ flights |>
   f_count()
 #> # A tibble: 12 × 2
 #> # Groups:   month [12]
-#>    month     n
-#>    <int> <int>
-#>  1     1 27004
-#>  2     2 24951
-#>  3     3 28834
-#>  4     4 28330
-#>  5     5 28796
-#>  6     6 28243
-#>  7     7 29425
-#>  8     8 29327
-#>  9     9 27574
-#> 10    10 28889
-#> 11    11 27268
-#> 12    12 28135
+#>   month     n
+#>   <int> <int>
+#> 1     1 27004
+#> 2     2 24951
+#> 3     3 28834
+#> 4     4 28330
+#> 5     5 28796
+#> # ℹ 7 more rows
 ```
 
 ``` r
@@ -212,20 +201,14 @@ flights |>
   f_count()
 #> # A tibble: 12 × 2
 #> # Groups:   month [12]
-#>    month     n
-#>    <int> <int>
-#>  1     1 27004
-#>  2    10 28889
-#>  3    11 27268
-#>  4    12 28135
-#>  5     2 24951
-#>  6     3 28834
-#>  7     4 28330
-#>  8     5 28796
-#>  9     6 28243
-#> 10     7 29425
-#> 11     8 29327
-#> 12     9 27574
+#>   month     n
+#>   <int> <int>
+#> 1     1 27004
+#> 2    10 28889
+#> 3    11 27268
+#> 4    12 28135
+#> 5     2 24951
+#> # ℹ 7 more rows
 ```
 
 Just a reminder that all fastplyr functions are interchangeable with
@@ -240,20 +223,14 @@ flights |>
   count()
 #> # A tibble: 12 × 2
 #> # Groups:   month [12]
-#>    month     n
-#>    <int> <int>
-#>  1     1 27004
-#>  2     2 24951
-#>  3     3 28834
-#>  4     4 28330
-#>  5     5 28796
-#>  6     6 28243
-#>  7     7 29425
-#>  8     8 29327
-#>  9     9 27574
-#> 10    10 28889
-#> 11    11 27268
-#> 12    12 28135
+#>   month     n
+#>   <int> <int>
+#> 1     1 27004
+#> 2     2 24951
+#> 3     3 28834
+#> 4     4 28330
+#> 5     5 28796
+#> # ℹ 7 more rows
 ```
 
 ``` r
@@ -265,20 +242,14 @@ flights |>
   f_count()
 #> # A tibble: 12 × 2
 #> # Groups:   month [12]
-#>    month     n
-#>    <int> <int>
-#>  1     1 27004
-#>  2     2 24951
-#>  3     3 28834
-#>  4     4 28330
-#>  5     5 28796
-#>  6     6 28243
-#>  7     7 29425
-#>  8     8 29327
-#>  9     9 27574
-#> 10    10 28889
-#> 11    11 27268
-#> 12    12 28135
+#>   month     n
+#>   <int> <int>
+#> 1     1 27004
+#> 2     2 24951
+#> 3     3 28834
+#> 4     4 28330
+#> 5     5 28796
+#> # ℹ 7 more rows
 ```
 
 ### summarise
@@ -298,19 +269,14 @@ grouped_flights |>
     n = n(), mean_dep_delay = mean(dep_delay)
   )
 #> # A tibble: 52,807 × 6
-#>    carrier tailnum origin dest      n mean_dep_delay
-#>    <chr>   <chr>   <chr>  <chr> <int>          <dbl>
-#>  1 9E      N146PQ  JFK    ATL       8           9.62
-#>  2 9E      N153PQ  JFK    ATL       5          -0.4 
-#>  3 9E      N161PQ  JFK    ATL       3          -2   
-#>  4 9E      N162PQ  EWR    DTW       1         160   
-#>  5 9E      N162PQ  JFK    ATL       1          -6   
-#>  6 9E      N170PQ  EWR    ATL       3          -5.67
-#>  7 9E      N170PQ  JFK    ATL       4          -0.75
-#>  8 9E      N176PQ  EWR    DTW       2           8.5 
-#>  9 9E      N176PQ  JFK    ATL       5          -3.8 
-#> 10 9E      N181PQ  EWR    DTW       2          -7.5 
-#> # ℹ 52,797 more rows
+#>   carrier tailnum origin dest      n mean_dep_delay
+#>   <chr>   <chr>   <chr>  <chr> <int>          <dbl>
+#> 1 9E      N146PQ  JFK    ATL       8           9.62
+#> 2 9E      N153PQ  JFK    ATL       5          -0.4 
+#> 3 9E      N161PQ  JFK    ATL       3          -2   
+#> 4 9E      N162PQ  EWR    DTW       1         160   
+#> 5 9E      N162PQ  JFK    ATL       1          -6   
+#> # ℹ 52,802 more rows
 ```
 
 And a benchmark
@@ -332,8 +298,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_summarise   4.37ms   5.89ms    166.      1.89MB     1.98
-#> 2 dplyr_summarise    723.96ms 723.96ms      1.38    9.57MB    23.5
+#> 1 fastplyr_summarise   4.03ms   4.74ms    202.      1.89MB     3.97
+#> 2 dplyr_summarise    719.47ms 719.47ms      1.39    9.59MB    23.6
 ```
 
 ### slice
@@ -345,19 +311,14 @@ grouped_flights |>
   f_slice(1)
 #> # A tibble: 52,807 × 19
 #> # Groups:   carrier, tailnum, origin, dest [52,807]
-#>     year month   day dep_time sched_dep_time dep_delay arr_time sched_arr_time
-#>    <int> <int> <int>    <int>          <int>     <dbl>    <int>          <int>
-#>  1  2013     1     7      614            615        -1      812            855
-#>  2  2013     1     8      612            615        -3      901            855
-#>  3  2013     1     9      615            615         0       NA            855
-#>  4  2013     1    25     1530           1250       160     1714           1449
-#>  5  2013     2    24      609            615        -6      835            855
-#>  6  2013     5     1     1140           1145        -5     1339           1403
-#>  7  2013     1    10      613            615        -2      840            855
-#>  8  2013     2     1     1301           1250        11     1458           1449
-#>  9  2013     1    17      612            615        -3      906            855
-#> 10  2013     1    11     1244           1250        -6     1459           1449
-#> # ℹ 52,797 more rows
+#>    year month   day dep_time sched_dep_time dep_delay arr_time sched_arr_time
+#>   <int> <int> <int>    <int>          <int>     <dbl>    <int>          <int>
+#> 1  2013     1     7      614            615        -1      812            855
+#> 2  2013     1     8      612            615        -3      901            855
+#> 3  2013     1     9      615            615         0       NA            855
+#> 4  2013     1    25     1530           1250       160     1714           1449
+#> 5  2013     2    24      609            615        -6      835            855
+#> # ℹ 52,802 more rows
 #> # ℹ 11 more variables: arr_delay <dbl>, carrier <chr>, flight <int>,
 #> #   tailnum <chr>, origin <chr>, dest <chr>, air_time <dbl>, distance <dbl>,
 #> #   hour <dbl>, minute <dbl>, time_hour <dttm>
@@ -369,19 +330,14 @@ grouped_flights |>
   f_slice_head(3)
 #> # A tibble: 125,770 × 19
 #> # Groups:   carrier, tailnum, origin, dest [52,807]
-#>     year month   day dep_time sched_dep_time dep_delay arr_time sched_arr_time
-#>    <int> <int> <int>    <int>          <int>     <dbl>    <int>          <int>
-#>  1  2013     1     7      614            615        -1      812            855
-#>  2  2013     1    13      612            615        -3      853            855
-#>  3  2013     2     3      617            615         2      902            855
-#>  4  2013     1     8      612            615        -3      901            855
-#>  5  2013     1    22      614            615        -1      857            855
-#>  6  2013     1    27      617            615         2      831            855
-#>  7  2013     1     9      615            615         0       NA            855
-#>  8  2013     1    12      613            615        -2      839            855
-#>  9  2013     2     5      611            615        -4      847            855
-#> 10  2013     1    25     1530           1250       160     1714           1449
-#> # ℹ 125,760 more rows
+#>    year month   day dep_time sched_dep_time dep_delay arr_time sched_arr_time
+#>   <int> <int> <int>    <int>          <int>     <dbl>    <int>          <int>
+#> 1  2013     1     7      614            615        -1      812            855
+#> 2  2013     1    13      612            615        -3      853            855
+#> 3  2013     2     3      617            615         2      902            855
+#> 4  2013     1     8      612            615        -3      901            855
+#> 5  2013     1    22      614            615        -1      857            855
+#> # ℹ 125,765 more rows
 #> # ℹ 11 more variables: arr_delay <dbl>, carrier <chr>, flight <int>,
 #> #   tailnum <chr>, origin <chr>, dest <chr>, air_time <dbl>, distance <dbl>,
 #> #   hour <dbl>, minute <dbl>, time_hour <dttm>
@@ -401,8 +357,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression          min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>     <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_slice   27.7ms   32.1ms    30.8      21.4MB     11.6
-#> 2 dplyr_slice       3.65s    3.65s     0.274    26.6MB     13.7
+#> 1 fastplyr_slice  24.01ms   28.3ms    32.4      21.4MB     11.5
+#> 2 dplyr_slice       3.42s    3.42s     0.292    26.6MB     14.3
 ```
 
 ### Group IDs
@@ -422,19 +378,14 @@ grouped_flights |>
 #> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
 #> # A tibble: 336,776 × 5
 #> # Groups:   carrier, tailnum, origin, dest [52,807]
-#>    carrier tailnum origin dest  group_id
-#>    <chr>   <chr>   <chr>  <chr>    <int>
-#>  1 UA      N14228  EWR    IAH      35951
-#>  2 UA      N24211  LGA    IAH      36937
-#>  3 AA      N619AA  JFK    MIA       8489
-#>  4 B6      N804JB  JFK    BQN      15462
-#>  5 DL      N668DN  LGA    ATL      20325
-#>  6 UA      N39463  EWR    ORD      39386
-#>  7 B6      N516JB  EWR    FLL      10606
-#>  8 EV      N829AS  LGA    IAD      33062
-#>  9 B6      N593JB  JFK    MCO      12483
-#> 10 AA      N3ALAA  LGA    ORD       4468
-#> # ℹ 336,766 more rows
+#>   carrier tailnum origin dest  group_id
+#>   <chr>   <chr>   <chr>  <chr>    <int>
+#> 1 UA      N14228  EWR    IAH      35951
+#> 2 UA      N24211  LGA    IAH      36937
+#> 3 AA      N619AA  JFK    MIA       8489
+#> 4 B6      N804JB  JFK    BQN      15462
+#> 5 DL      N668DN  LGA    ATL      20325
+#> # ℹ 336,771 more rows
 ```
 
 Another benchmark
@@ -453,8 +404,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression             min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>        <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_group_id   3.26ms   3.75ms    246.    149.63MB     3.99
-#> 2 dplyr_group_id    290.86ms 299.15ms      3.34    4.59MB    10.0
+#> 1 fastplyr_group_id   3.25ms    3.8ms    245.      1.46MB     3.99
+#> 2 dplyr_group_id    300.54ms  307.8ms      3.25    3.24MB    14.6
 ```
 
 ### expand
@@ -475,8 +426,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression           min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_expand  134.6ms  143.2ms    6.71      41.8MB     6.71
-#> 2 tidyr_expand       25.5s    25.5s    0.0392   183.5MB     4.32
+#> 1 fastplyr_expand  109.6ms  136.6ms    7.37      41.8MB     1.84
+#> 2 tidyr_expand       26.5s    26.5s    0.0378   183.5MB     2.91
 ```
 
 ### duplicate rows
@@ -488,19 +439,14 @@ dedicated function `f_duplicates()` to do exactly this.
 flights |> 
   f_duplicates(time_hour)
 #> # A tibble: 329,840 × 1
-#>    time_hour          
-#>    <dttm>             
-#>  1 2013-01-01 05:00:00
-#>  2 2013-01-01 05:00:00
-#>  3 2013-01-01 05:00:00
-#>  4 2013-01-01 05:00:00
-#>  5 2013-01-01 06:00:00
-#>  6 2013-01-01 06:00:00
-#>  7 2013-01-01 06:00:00
-#>  8 2013-01-01 06:00:00
-#>  9 2013-01-01 06:00:00
-#> 10 2013-01-01 06:00:00
-#> # ℹ 329,830 more rows
+#>   time_hour          
+#>   <dttm>             
+#> 1 2013-01-01 05:00:00
+#> 2 2013-01-01 05:00:00
+#> 3 2013-01-01 05:00:00
+#> 4 2013-01-01 05:00:00
+#> 5 2013-01-01 06:00:00
+#> # ℹ 329,835 more rows
 ```
 
 Benchmark against a common dplyr strategy for finding duplicates
@@ -513,11 +459,9 @@ mark(
    add_count(time_hour) |> 
    filter(n > 1)
 )
-#> Warning: Some expressions had a GC in every iteration; so filtering is
-#> disabled.
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_duplicates   23.4ms   27.7ms      23.1   180.4MB     19.2
-#> 2 dplyr_duplicates      75.3ms   83.3ms      12.1    60.7MB     12.1
+#> 1 fastplyr_duplicates   18.4ms   19.9ms      49.7    45.1MB    49.7 
+#> 2 dplyr_duplicates      72.7ms   74.2ms      13.5    59.5MB     2.24
 ```
