@@ -443,143 +443,18 @@ Another benchmark
 mark(
   fastplyr_group_id = grouped_flights |> 
   add_group_id() |> 
-  f_select(group_id),
+  f_select(all_of(group_vars(grouped_flights)), group_id),
   dplyr_group_id = grouped_flights |> 
   mutate(group_id = cur_group_id()) |> 
-  select(group_id)
+  select(all_of(group_vars(grouped_flights)), group_id)
 )
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: `carrier`, `tailnum`, `origin`, `dest`
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: 'carrier', 'tailnum', 'origin', 'dest'
-#> Adding missing grouping variables: `carrier`, `tailnum`, `origin`, `dest`
-#> Adding missing grouping variables: `carrier`, `tailnum`, `origin`, `dest`
 #> Warning: Some expressions had a GC in every iteration; so filtering is
 #> disabled.
 #> # A tibble: 2 × 6
 #>   expression             min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>        <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_group_id   3.11ms   3.94ms    240.      1.29MB     3.97
-#> 2 dplyr_group_id    319.88ms    320ms      3.13    3.77MB    12.5
+#> 1 fastplyr_group_id   3.26ms   3.75ms    246.    149.63MB     3.99
+#> 2 dplyr_group_id    290.86ms 299.15ms      3.34    4.59MB    10.0
 ```
 
 ### expand
@@ -628,7 +503,7 @@ flights |>
 #> # ℹ 329,830 more rows
 ```
 
-Benchmark against a common dplyr stratefy for finding duplicates
+Benchmark against a common dplyr strategy for finding duplicates
 
 ``` r
 mark(

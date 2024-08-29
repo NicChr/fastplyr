@@ -203,10 +203,10 @@ Another benchmark
 mark(
   fastplyr_group_id = grouped_flights |> 
   add_group_id() |> 
-  f_select(group_id),
+  f_select(all_of(group_vars(grouped_flights)), group_id),
   dplyr_group_id = grouped_flights |> 
   mutate(group_id = cur_group_id()) |> 
-  select(group_id)
+  select(all_of(group_vars(grouped_flights)), group_id)
 )
 ```
 
@@ -235,7 +235,7 @@ flights |>
   f_duplicates(time_hour)
 ```
 
-Benchmark against a common dplyr stratefy for finding duplicates
+Benchmark against a common dplyr strategy for finding duplicates
 
 ```{r}
 mark(
