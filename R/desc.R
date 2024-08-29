@@ -11,15 +11,13 @@
 #'
 #' @rdname desc
 #' @export
+desc <- function(x){
+  -asc(x)
+}
 asc <- function(x){
   if (is.numeric(x) && !isS4(x)){
     xtfrm(x)
   } else {
     strip_attrs(quick_group(x, order = TRUE, na_exclude = TRUE))
   }
-}
-#' @rdname desc
-#' @export
-desc <- function(x){
-  -asc(x)
 }
