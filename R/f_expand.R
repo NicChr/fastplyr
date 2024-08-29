@@ -15,6 +15,12 @@
 #' @returns
 #' A `data.frame` of expanded groups.
 #'
+#' @details
+#' `crossing` and `nesting` are helpers that are basically identical to
+#' tidyr's `crossing` and `nesting`.
+#'
+#'
+#'
 #' @rdname f_expand
 #' @export
 f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
@@ -101,4 +107,93 @@ f_complete <- function(data, ...,  sort = FALSE,
   out <- f_select(out, .cols = out_order)
   reconstruct(data, out)
 }
+#' @rdname f_expand
+#' @export
+crossing <- function(..., sort = FALSE){
+  dots <- rlang::dots_list(..., .named = TRUE)
+  for (i in seq_along(dots)){
+    if (is_df(dots[[i]])){
+      dots[[i]] <- f_distinct(df_as_tbl(dots[[i]]), sort = sort)
+    } else {
+      dots[[i]] <- f_distinct(`names<-`(new_tbl(dots[[i]]), names(dots)[i]), sort = sort)
+    }
+  }
+  do.call(cross_join, dots)
+}
+#' @rdname f_expand
+#' @export
+nesting <- function(..., sort = FALSE){
+  dots <- rlang::dots_list(..., .named = TRUE)
+  for (i in seq_along(dots)){
+    if (is_df(dots[[i]])){
+      dots[[i]] <- df_as_tbl(dots[[i]])
+    } else {
+      dots[[i]] <- `names<-`(new_tbl(dots[[i]]), names(dots)[i])
+    }
+  }
+  f_distinct(do.call(df_cbind, dots), sort = sort)
+}
+# f_crossing <- function(..., sort = FALSE){
+#   # dot_nms <- unlist(
+#   #   lapply(
+#   #     substitute(alist(...))[-1L], deparse
+#   #   ), recursive = FALSE,
+#   #   use.names = TRUE
+#   # )
+#   # dots <- list(...)
+#   # if (is.null(names(dots))){
+#   #   names(dots) <- dot_nms
+#   # }
+#   # names(dots)[!nzchar(names(dot_nms))] <- dot_nms[!nzchar(names(dot_nms))]
+#
+#   dots <- rlang::dots_list(..., .named = TRUE)
+#   # dots <- lapply(dots, sort_unique, sort)
+#   for (i in seq_along(dots)){
+#     if (is_df(dots[[i]])){
+#       dots[[i]] <- f_distinct(df_as_tbl(dots[[i]]), sort = sort)
+#     } else {
+#       dots[[i]] <- f_distinct(`names<-`(new_tbl(dots[[i]]), names(dots)[i]), sort = sort)
+#     }
+#   }
+#   do.call(cross_join, dots)
+#   # out <- do.call(cross_join, dots)
+#   # names(out) <- unique_name_repair(names(dots))
+#   # out
+#
+#   # do.call(cross_join, rlang::dots_list(..., .named = TRUE))
+# }
+# f_nesting <- function(..., sort = FALSE){
+#   # dot_nms <- unlist(
+#   #   lapply(
+#   #     substitute(alist(...))[-1L], deparse
+#   #   ), recursive = FALSE,
+#   #   use.names = TRUE
+#   # )
+#   # dots <- list(...)
+#   # if (is.null(names(dots))){
+#   #   names(dots) <- dot_nms
+#   # }
+#   # names(dots)[!nzchar(names(dot_nms))] <- dot_nms[!nzchar(names(dot_nms))]
+#   # names(dots) <- unique_name_repair(names(dots))
+#   dots <- rlang::dots_list(..., .named = TRUE)
+#   for (i in seq_along(dots)){
+#     if (is_df(dots[[i]])){
+#       dots[[i]] <- df_as_tbl(dots[[i]])
+#     } else {
+#       dots[[i]] <- `names<-`(new_tbl(dots[[i]]), names(dots)[i])
+#     }
+#   }
+#   # dots <- lapply(dots, function(x) if (is_df(x)) df_as_tbl(x) else new_tbl(x = x))
+#   # out <- list_as_tbl(dots)
+#   out <- do.call(df_cbind, dots)
+#   # names(out) <- unique_name_repair(names(dots))
+#   f_distinct(out, sort = sort)
+# }
 
+sort_unique <- function(x, sort = FALSE){
+  if (is_df(x)){
+    f_distinct(x, sort = sort)
+  } else {
+    collapse::funique(x, sort = sort)
+  }
+}

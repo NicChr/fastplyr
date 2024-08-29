@@ -270,7 +270,7 @@ df_cbind <- function(..., .repair_names = TRUE, .sep = "..."){
   if (isTRUE(nrow_range[1] != nrow_range[2])){
     stop("All data frames must be of equal size")
   }
-  out <- unlist(dots, recursive = FALSE)
+  out <- unlist(unname(dots), recursive = FALSE)
   # out <- do.call(c, dots)
   if (.repair_names){
     names(out) <- unique_name_repair(names(out))
@@ -322,8 +322,14 @@ cross_join2 <- function(x, y){
   if (!is_df(y)) y <- new_tbl(y = y)
   df_cross_join(x, y, .repair_names = FALSE)
 }
+
 cross_join <- function(...){
-  out <- Reduce(cross_join2, list(...))
+  dots <- rlang::dots_list(..., .named = TRUE)
+  out <- Reduce(cross_join2, dots)
+  if (!is_df(out)){
+    out <- new_tbl(x = out)
+    names(out) <- names(dots)
+  }
   names(out) <- unique_name_repair(names(out))
   out
 }

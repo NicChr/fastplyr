@@ -3,11 +3,17 @@
 \name{f_expand}
 \alias{f_expand}
 \alias{f_complete}
+\alias{crossing}
+\alias{nesting}
 \title{Fast versions of \code{tidyr::expand()} and \code{tidyr::complete()}.}
 \usage{
 f_expand(data, ..., sort = FALSE, .by = NULL, .cols = NULL)
 
 f_complete(data, ..., sort = FALSE, .by = NULL, .cols = NULL, fill = NA)
+
+crossing(..., sort = FALSE)
+
+nesting(..., sort = FALSE)
 }
 \arguments{
 \item{data}{A data frame}
@@ -32,4 +38,8 @@ A \code{data.frame} of expanded groups.
 }
 \description{
 Fast versions of \code{tidyr::expand()} and \code{tidyr::complete()}.
+}
+\details{
+\code{crossing} and \code{nesting} are helpers that are basically identical to
+tidyr's \code{crossing} and \code{nesting}.
 }
