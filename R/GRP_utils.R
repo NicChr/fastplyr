@@ -702,11 +702,11 @@ group_order_and_counts <- function(g = NULL){
 
 ## Construct a grouped data frame from a GRP object
 
-construct_grouped_df <- function(data, g){
+construct_grouped_df <- function(data, g, group_vars){
   groups <- GRP_groups(g)
 
   if (is.null(groups)){
-    groups <- cheapr::sset(df_ungroup(data), GRP_starts(g))
+    groups <- cheapr::sset(df_ungroup(data), GRP_starts(g), j = group_vars)
   }
   group_locs <- GRP_loc(g)
   groups[[".rows"]] <- vctrs_new_list_of(group_locs, integer())

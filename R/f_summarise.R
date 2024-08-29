@@ -71,8 +71,12 @@ f_summarise <- function(data, ..., .by = NULL){
   optimised_fns <- c(base_fns, collapse_fns)
   group_vars <- get_groups(data, {{ .by }})
 
-  data2 <- f_group_by(data, .by = {{ .by }}, .add = TRUE)
-  groups <- df_as_GRP(data2, return.order = FALSE, return.groups = FALSE)
+  groups <- df_to_GRP(data, .cols = group_vars,
+                      return.groups = TRUE, return.order = FALSE)
+
+  ## Flags so that we only construct grouped_df if we need to and do it once
+  # construct_grouped_df <- FALSE
+  grouped_df_has_been_constructed <- FALSE
 
   dots <- rlang::enquos(...)
   dot_nms <- names(dots)
@@ -86,7 +90,11 @@ f_summarise <- function(data, ..., .by = NULL){
   is_across_call <- function(x) {
     rlang::quo_is_call(x, "across", ns = c("", "dplyr"))
   }
-  out <- f_select(group_data(data2), .cols = group_vars)
+  if (is.null(groups[["groups"]])){
+    out <- cheapr::sset(df_ungroup(data), min(1L, df_nrow(data)), j = group_vars)
+  } else {
+    out <- groups[["groups"]]
+  }
   out <- reconstruct(new_tbl(), out)
   for (i in seq_along(dots)){
     dot <- dots[[i]]
@@ -96,10 +104,10 @@ f_summarise <- function(data, ..., .by = NULL){
       dot_nm <- dot_label
     }
     dot_env <- rlang::quo_get_env(dot)
-    dot_args <- rlang::call_args(dot)
     if (is_n_call(dot)){
       out[[dot_nm]] <- GRP_group_sizes(groups)
     } else if (is_optimised_call(dot)){
+      dot_args <- rlang::call_args(dot)
       var <- as.character(dot_args[[1]])
       fun_name <- unlist(stringr::str_match_all(dot_label, base_fns))
       fun_name <- collapse_fns[match(fun_name, base_fns)]
@@ -115,10 +123,15 @@ f_summarise <- function(data, ..., .by = NULL){
         out[[dot_nm]] <- res
 
       } else {
-        temp <- dplyr::summarise(data2, !!!dots[i])
+        if (!grouped_df_has_been_constructed){
+          data <- construct_grouped_df(data, groups, group_vars)
+        }
+        grouped_df_has_been_constructed <- TRUE
+        temp <- dplyr::summarise(data, !!!dots[i])
         out[[dot_nm]] <- f_select(temp, .cols = df_ncol(temp))
       }
     } else if (is_across_call(dot)){
+      dot_args <- rlang::call_args(dot)
       across_expr <- match.call(
         definition = dplyr::across,
         call = rlang::quo_get_expr(dot),
@@ -143,9 +156,9 @@ f_summarise <- function(data, ..., .by = NULL){
       across_fns <- across_expr[[".fns"]]
       across_nms <- across_expr[[".names"]]
 
-#       ok <- vapply(eval(across_fns), is_anonymous_function, FALSE)
-#       call_args(across_fns)
-#       is_call(across_fns[[3]], optimised_fns, ns = c("", "base", "collapse", "dplyr"))
+      #       ok <- vapply(eval(across_fns), is_anonymous_function, FALSE)
+      #       call_args(across_fns)
+      #       is_call(across_fns[[3]], optimised_fns, ns = c("", "base", "collapse", "dplyr"))
 
       ## Ok... maybe we should try doing try(eval(call_args(across_fns)))
       ## And work from there..
@@ -177,19 +190,23 @@ f_summarise <- function(data, ..., .by = NULL){
                            nrow = length(vars),
                            ncol = length(fns))
       col_matrix[, which_fns] <- TRUE
-      across_res <- fast_eval_across(data2, groups, vars, fast_fn_names, dot_env)
+      across_res <- fast_eval_across(data, groups, vars, fast_fn_names, dot_env)
 
       if (length(which_other_fns) > 0){
         if (across_fns_as_list){
           dplyr_res <- dplyr::summarise(
-            data2, dplyr::across(
+            data, dplyr::across(
               dplyr::all_of(vars),
               rlang::eval_tidy(across_fns, env = dot_env)[which_other_fns]
             ), .groups = "drop"
           )
         } else {
+          if (!grouped_df_has_been_constructed){
+            data <- construct_grouped_df(data, groups, group_vars)
+          }
+          grouped_df_has_been_constructed <- TRUE
           dplyr_res <- dplyr::summarise(
-            data2, dplyr::across(
+            data, dplyr::across(
               dplyr::all_of(vars),
               rlang::eval_tidy(across_fns, env = dot_env)
             ), .groups = "drop"
@@ -212,7 +229,11 @@ f_summarise <- function(data, ..., .by = NULL){
         out <- df_cbind(out, list_as_df(full_res))
       }
     } else {
-      temp <- dplyr::summarise(data2, !!!dots[i], .groups = "drop")
+      if (!grouped_df_has_been_constructed){
+        data <- construct_grouped_df(data, groups, group_vars)
+      }
+      grouped_df_has_been_constructed <- TRUE
+      temp <- dplyr::summarise(data, !!!dots[i], .groups = "drop")
       out <- df_cbind(out, f_select(temp, .cols = setdiff(names(temp), group_vars)))
     }
   }

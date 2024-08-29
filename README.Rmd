@@ -69,7 +69,7 @@ While the syntax and user-interface of fastplyr aligns very closely with dplyr m
 
 ## dplyr alternatives
 
-All tidyverse alternative functions are prefixed with 'f\_'. For example, `dplyr::distinct` becomes `fastplyr::f_distinct`.
+All tidyverse alternative functions are prefixed with 'f\_'. For example, `dplyr::distinct` becomes `fastplyr::f_distinct`. 
 
 ### distinct
 
