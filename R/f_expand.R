@@ -24,13 +24,16 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
     dot_vars <- col_select_pos(data, .cols = .cols)
     frames <- vector("list", length(dot_vars))
     for (i in seq_along(dot_vars)){
-      frames[[i]] <- f_distinct(data2, .cols = dot_vars[i])
+      frames[[i]] <- f_distinct(data2, .cols = dot_vars[i], sort = sort)
     }
   } else {
     dots <- rlang::enquos(...)
     frames <- vector("list", length(dots))
     for (i in seq_along(dots)){
-      frames[[i]] <- f_distinct(df_ungroup(dplyr::reframe(data2, !!!dots[i])))
+      frames[[i]] <- f_distinct(
+        df_ungroup(dplyr::reframe(data2, !!!dots[i])),
+        sort = sort
+      )
     }
   }
   if (length(group_vars) > 0){
@@ -51,9 +54,6 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
   # If just empty list
   if (length(out) == 0){
     out <- f_select(group_data(data2), .cols = group_vars)
-  }
-  if (sort){
-    out <- f_arrange_all(out)
   }
   reconstruct(data, out)
 }

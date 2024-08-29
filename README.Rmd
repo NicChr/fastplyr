@@ -248,6 +248,36 @@ mark(
 )
 ```
 
+
+### filter
+
+In the wosrt case scenarios, `f_filter()` is about the same speed as `filter()` and
+in the best case is much faster and more efficient. This is especially true
+for large data where small subsets of the data are returned.
+
+```{r}
+full <- tibble(x = rnorm(5e07))
+
+# A worst case scenario
+
+mark(
+  fastplyr_filter = full |> 
+    f_filter(abs(x) > 0),
+  dplyr_filter = full |> 
+    filter(abs(x) > 0)
+)
+
+# Best case scenario - filter results in small subset
+
+mark(
+  fastplyr_filter = full |> 
+    f_filter(x > 4),
+  dplyr_filter = full |> 
+    filter(x > 4)
+)
+```
+
+
 ## tidytable vs fastplyr
 
 Let's run some more benchmarks for fun, this time including tidytable

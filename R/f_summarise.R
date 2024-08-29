@@ -109,7 +109,13 @@ f_summarise <- function(data, ..., .by = NULL){
     } else if (is_optimised_call(dot)){
       dot_args <- rlang::call_args(dot)
       var <- as.character(dot_args[[1]])
-      fun_name <- unlist(stringr::str_match_all(dot_label, base_fns))
+      fun_name <- unlist(
+        stringr::str_match_all(
+          stringr::str_remove(
+            dot_label, stringr::fixed(paste0("(", var, ")"))
+          ), base_fns
+        )
+      )
       fun_name <- collapse_fns[match(fun_name, base_fns)]
       fun <- get_from_package(fun_name, "collapse")
       fun_args <- dot_args[-1]
