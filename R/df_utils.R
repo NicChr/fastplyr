@@ -262,46 +262,6 @@ df_group_by_order_default <- function(x){
     out
   }
 }
-# Like dplyr::bind_cols() but written in mostly base R
-# and simpler..
-df_cbind <- function(..., .repair_names = TRUE, .sep = "..."){
-  dots <- list3(...)
-  nrow_range <- collapse::.range(cpp_nrows(dots), na.rm = TRUE)
-  if (isTRUE(nrow_range[1] != nrow_range[2])){
-    stop("All data frames must be of equal size")
-  }
-  out <- unlist(unname(dots), recursive = FALSE)
-  # out <- do.call(c, dots)
-  if (.repair_names){
-    names(out) <- unique_name_repair(names(out))
-  }
-  out <- list_as_df(out)
-  if (length(dots) == 1){
-    out <- dots[[1L]]
-  } else if (length(dots) > 1){
-    N <- nrow_range[1L]
-    # Adjustment for 0-column only data frames
-    if (df_nrow(out) != N){
-      attr(out, "row.names") <- .set_row_names(N)
-    }
-    template <- dots[[1L]]
-
-    # Special method for grouped_df because
-    # we don't need to recalculate groups
-    # Since we're not rearranging or renaming variables
-    # except in the case of duplicates.
-
-    if (inherits(template, "grouped_df") &&
-        all(group_vars(template) %in% names(out))){
-      out <- reconstruct(df_ungroup(template), out)
-      class(out) <- class(template)
-      attr(out, "groups") <- attr(template, "groups")
-    } else {
-      out <- reconstruct(template, out)
-    }
-  }
-  out
-}
 unique_name_repair <- function(x, .sep = "..."){
   if (is.null(x)){
     return(x)
@@ -314,7 +274,7 @@ unique_name_repair <- function(x, .sep = "..."){
 }
 
 df_cross_join <- function(x, y, .repair_names = TRUE){
-  df_cbind(df_rep_each(x, df_nrow(y)), df_rep(y, df_nrow(x)), .repair_names = .repair_names)
+  f_bind_cols(df_rep_each(x, df_nrow(y)), df_rep(y, df_nrow(x)), .repair_names = .repair_names)
 }
 
 cross_join2 <- function(x, y){

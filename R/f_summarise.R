@@ -232,7 +232,7 @@ f_summarise <- function(data, ..., .by = NULL){
         stop("Expressions must return exactly 1 row per `f_summarise()` group")
       }
       if (length(full_res) > 0){
-        out <- df_cbind(out, list_as_df(full_res))
+        out <- f_bind_cols(out, list_as_df(full_res))
       }
     } else {
       if (!grouped_df_has_been_constructed){
@@ -240,7 +240,7 @@ f_summarise <- function(data, ..., .by = NULL){
       }
       grouped_df_has_been_constructed <- TRUE
       temp <- dplyr::summarise(data, !!!dots[i], .groups = "drop")
-      out <- df_cbind(out, f_select(temp, .cols = setdiff(names(temp), group_vars)))
+      out <- f_bind_cols(out, f_select(temp, .cols = setdiff(names(temp), group_vars)))
     }
   }
   reconstruct(df_ungroup(data), out)

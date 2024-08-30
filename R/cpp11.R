@@ -8,6 +8,10 @@ cpp_nrows <- function(x) {
   .Call(`_fastplyr_cpp_nrows`, x)
 }
 
+cpp_ncols <- function(x) {
+  .Call(`_fastplyr_cpp_ncols`, x)
+}
+
 cpp_list_subset <- function(x, ptype, i, default_value) {
   .Call(`_fastplyr_cpp_list_subset`, x, ptype, i, default_value)
 }

@@ -37,7 +37,7 @@ SEXP cpp_address_equal(SEXP x, SEXP y) {
 }
 
 
-// nrows of a list of data frames, typically supplied through ...
+// nrows/ncols of a list of data frames, typically supplied through ...
 
 [[cpp11::register]]
 SEXP cpp_nrows(SEXP x) {
@@ -47,7 +47,29 @@ SEXP cpp_nrows(SEXP x) {
   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
   int *p_out = INTEGER(out);
   for (int i = 0; i < n; ++i) {
+    if (!Rf_isFrame(p_x[i])){
+      Rf_unprotect(2);
+      Rf_error("All inputs must be data frames");
+    }
     p_out[i] = Rf_length(Rf_getAttrib(p_x[i], R_RowNamesSymbol));
+  }
+  Rf_unprotect(2);
+  return out;
+}
+
+[[cpp11::register]]
+SEXP cpp_ncols(SEXP x) {
+  Rf_protect(x = Rf_coerceVector(x, VECSXP));
+  const SEXP *p_x = VECTOR_PTR_RO(x);
+  int n = Rf_length(x);
+  SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
+  int *p_out = INTEGER(out);
+  for (int i = 0; i < n; ++i){
+    if (!Rf_isFrame(p_x[i])){
+      Rf_unprotect(2);
+      Rf_error("All inputs must be data frames");
+    }
+    p_out[i] = Rf_length(p_x[i]);
   }
   Rf_unprotect(2);
   return out;

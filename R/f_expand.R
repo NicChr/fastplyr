@@ -81,7 +81,7 @@ f_complete <- function(data, ...,  sort = FALSE,
       cheapr::sset(out, j = names(expanded_df))
     )
     if (df_nrow(extra) > 0){
-      extra <- df_cbind(
+      extra <- f_bind_cols(
         extra,
         df_init(cheapr::sset(out, j = setdiff(names(out), names(expanded_df))),
                 df_nrow(extra))
@@ -130,7 +130,7 @@ nesting <- function(..., sort = FALSE){
       dots[[i]] <- `names<-`(new_df(dots[[i]]), names(dots)[i])
     }
   }
-  df_as_tbl(sort_unique(do.call(df_cbind, dots), sort = sort))
+  df_as_tbl(sort_unique(do.call(f_bind_cols, dots), sort = sort))
 }
 
 # Very fast unique function
