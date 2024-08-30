@@ -720,7 +720,13 @@ construct_grouped_df <- function(data, g, group_vars){
   out
 }
 
-f_group_by2 <- function(data, .cols){
-  groups <- df_to_GRP(data, .cols, return.groups = FALSE, return.order = TRUE)
-  construct_grouped_df(data, groups)
+GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
+  g_names <- collapse::GRPnames(GRP, force.char = force.char,
+                                sep = sep)
+  if (expand && !is.null(g_names)) {
+    g_names[GRP_group_id(GRP)]
+  }
+  else {
+    g_names
+  }
 }
