@@ -126,7 +126,7 @@ f_slice_head <- function(data, n, prop, .by = NULL, keep_order = FALSE){
   group_sizes <- slice_info[["group_sizes"]]
   slice_sizes <- slice_info[["slice_sizes"]]
   # Start indices of sequences
-  start <- calc_sorted_group_starts(group_sizes)
+  start <- sorted_group_starts(group_sizes)
   # Vectorised sequences
   if (length(slice_sizes) == 1){
     i <- seq_len(slice_sizes)
@@ -152,7 +152,7 @@ f_slice_tail <- function(data, n, prop, .by = NULL, keep_order = FALSE){
                                  default_n = 1L)
   group_sizes <- slice_info[["group_sizes"]]
   slice_sizes <- slice_info[["slice_sizes"]]
-  start <- calc_sorted_group_ends(group_sizes)
+  start <- sorted_group_ends(group_sizes)
   sequences <- sequence(slice_sizes, from = start - slice_sizes + 1L, by = 1L)
   if (length(slice_sizes) == 1){
     i <- (start -slice_sizes + 1L):start
@@ -321,7 +321,7 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
   }
   rows <- unlist(rows, use.names = FALSE, recursive = FALSE)
   if (length(rows) > 0L){
-    rows <- rows + rep.int(calc_sorted_group_starts(group_sizes, 0L),
+    rows <- rows + rep.int(sorted_group_starts(group_sizes, 0L),
                            times = slice_sizes)
   }
   i <- unlist(slice_info[["rows"]], use.names = FALSE, recursive = FALSE)[rows]

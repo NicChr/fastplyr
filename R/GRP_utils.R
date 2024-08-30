@@ -180,10 +180,10 @@ GRP_which_duplicated <- function(GRP, all = FALSE){
     cheapr::which_val(row_id(GRP), 1L, invert = TRUE)
   }
 }
-calc_sorted_group_starts <- function(group_sizes, init_loc = 1L){
+sorted_group_starts <- function(group_sizes, init_loc = 1L){
   cpp_sorted_group_starts(as.integer(group_sizes), init_loc)
 }
-calc_sorted_group_ends <- function(group_sizes){
+sorted_group_ends <- function(group_sizes){
   collapse::fcumsum(group_sizes)
 }
 GRP_starts <- function(GRP, use.g.names = FALSE){
@@ -195,7 +195,7 @@ GRP_starts <- function(GRP, use.g.names = FALSE){
       if (!is.null(sorted_starts)){
         out <- sorted_starts
       } else {
-        out <- calc_sorted_group_starts(GRP_sizes)
+        out <- sorted_group_starts(GRP_sizes)
       }
       # For factors with 0 size, replace calculated group starts with 0
       out[cheapr::which_val(GRP_sizes, 0L)] <- 0L
@@ -223,7 +223,7 @@ GRP_ends <- function(GRP, use.g.names = FALSE,
                      loc = NULL){
   GRP_sizes <- GRP_group_sizes(GRP)
   if (GRP_is_sorted(GRP)){
-    out <- calc_sorted_group_ends(GRP_sizes)
+    out <- sorted_group_ends(GRP_sizes)
     # For factors with 0 size, replace 0 with NA
     out[cheapr::which_val(GRP_sizes, 0L)] <- 0L
   } else {
@@ -256,7 +256,7 @@ GRP_order <- function(GRP){
       out <- seq_along(group_id)
       sizes <- GRP_group_sizes(GRP)
       if (is.null(GRP[["group.starts"]])){
-        starts <- calc_sorted_group_starts(sizes)
+        starts <- sorted_group_starts(sizes)
       } else {
         starts <- GRP[["group.starts"]]
       }
@@ -533,7 +533,7 @@ sorted_group_id_to_GRP <- function(x,
     ),
     class = "GRP"
   )
-  gstarts <- calc_sorted_group_starts(group_sizes)
+  gstarts <- sorted_group_starts(group_sizes)
   if (group.starts){
     out[["group.starts"]] <- gstarts
   }
@@ -585,7 +585,7 @@ sort_data_by_GRP <- function(x, g, sorted_group_starts = TRUE){
     if (groups_are_sorted){
       sorted_group_starts <- GRP_starts(g)
     } else {
-      sorted_group_starts <- calc_sorted_group_starts(group_sizes)
+      sorted_group_starts <- sorted_group_starts(group_sizes)
     }
   } else {
     sorted_group_starts <- NULL
