@@ -19,7 +19,6 @@ GRP2 <- function(X, by = NULL, sort = TRUE,
       return.groups = return.groups,
       ...
     )
-    out[["group.starts"]] <- GRP_starts(out)
   }
   out
 }
@@ -29,8 +28,9 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
                  return.order = sort,
                  return.groups = FALSE,
                  call = FALSE, ...){
-  if (is_GRP(X))
+  if (is_GRP(X)){
     return(X)
+  }
   if (!sort && !return.groups && !is.factor(X)) {
     if (!is.null(by)) {
       X <- f_select(X, .cols = by)
@@ -64,7 +64,9 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
       return.groups = return.groups, call = call, ...
     )
   }
-  out[["group.starts"]] <- GRP_starts(out)
+  if (!is.null(out)){
+    out[["group.starts"]] <- GRP_starts(out)
+  }
   out
 }
 # Two alternatives to collapse::group
