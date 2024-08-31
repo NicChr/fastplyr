@@ -66,10 +66,12 @@ While the syntax and user-interface of fastplyr aligns very closely with dplyr m
 +--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
 | Memory usage             | High memory usage                                                                                                | Lower usage compared to dplyr                                                                                             |
 +--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| joins                    | Accepts different types of joins, e.g. rolling and equality joins.                                               | Accepts only equality joins of the form `x == y`                                                                          |
++--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
 
 ## dplyr alternatives
 
-All tidyverse alternative functions are prefixed with 'f\_'. For example, `dplyr::distinct` becomes `fastplyr::f_distinct`. 
+All tidyverse alternative functions are prefixed with 'f\_'. For example, `dplyr::distinct` becomes `fastplyr::f_distinct`.
 
 ### distinct
 
@@ -159,6 +161,81 @@ mark(
 )
 ```
 
+### Joins
+
+Joins work much the same way as in dplyr.
+
+```{r}
+left <- flights |> 
+  f_select(origin, dest, time_hour)
+hours <- sample(unique(left$time_hour), 5000)
+right <- as.data.frame(unclass(as.POSIXlt(hours)))
+right$time_hour <- hours
+
+# Left join
+
+left |> 
+  f_left_join(right)
+
+# inner join
+
+left |> 
+  f_inner_join(right)
+
+# Anti join
+
+left |> 
+  f_anti_join(right)
+
+# Semi join
+
+left |> 
+  f_semi_join(right)
+
+# full join
+
+left |> 
+  f_full_join(right)
+```
+
+And a benchmark comparing fastplyr and dplyr joins
+
+```{r}
+mark(
+  fastplyr_left_join = f_left_join(left, right, by = "time_hour"),
+  dplyr_left_join = left_join(left, right, by = "time_hour")
+)
+```
+
+```{r}
+mark(
+  fastplyr_inner_join = f_inner_join(left, right, by = "time_hour"),
+  dplyr_inner_join = inner_join(left, right, by = "time_hour")
+)
+```
+
+```{r}
+mark(
+  fastplyr_anti_join = f_anti_join(left, right, by = "time_hour"),
+  dplyr_anti_join = anti_join(left, right, by = "time_hour")
+)
+```
+
+```{r}
+mark(
+  fastplyr_semi_join = f_semi_join(left, right, by = "time_hour"),
+  dplyr_semi_join = semi_join(left, right, by = "time_hour")
+)
+```
+
+```{r}
+mark(
+  fastplyr_full_join = f_full_join(left, right, by = "time_hour"),
+  dplyr_full_join = full_join(left, right, by = "time_hour")
+)
+```
+
+
 ### slice
 
 `f_slice` and other `f_slice_` functions are very fast for many groups.
@@ -211,7 +288,6 @@ mark(
 )
 ```
 
-
 ### expand
 
 Based closely on `tidyr::expand`, `f_expand()` can cross joins multiple vectors and data frames.
@@ -228,8 +304,7 @@ mark(
 
 ### duplicate rows
 
-Finding duplicate rows is a very common dataset operation and there is a 
-dedicated function `f_duplicates()` to do exactly this.
+Finding duplicate rows is a very common dataset operation and there is a dedicated function `f_duplicates()` to do exactly this.
 
 ```{r}
 flights |> 
@@ -248,12 +323,9 @@ mark(
 )
 ```
 
-
 ### filter
 
-In the wosrt case scenarios, `f_filter()` is about the same speed as `filter()` and
-in the best case is much faster and more efficient. This is especially true
-for large data where small subsets of the data are returned. 
+In the wosrt case scenarios, `f_filter()` is about the same speed as `filter()` and in the best case is much faster and more efficient. This is especially true for large data where small subsets of the data are returned.
 
 ```{r}
 full <- tibble(x = rnorm(5e07))
@@ -295,13 +367,9 @@ mark(
 )
 ```
 
-
-
 ## tidytable vs fastplyr
 
-Let's run some more benchmarks for fun, this time including tidytable
-which fastplyr is very similar to as it also uses a tidy frontend but a
-data.table backend
+Let's run some more benchmarks for fun, this time including tidytable which fastplyr is very similar to as it also uses a tidy frontend but a data.table backend
 
 ### 10 million rows
 
@@ -318,10 +386,7 @@ tbl
 
 ### slice benchmark
 
-For this we will be using the `.by` argument from each package.
-Because fastplyr still sorts the groups by default here we will set an internal
-option to use the alternative grouping algorithm that sorts groups 
-by order of first appearance. This will likely be revisited at some point.
+For this we will be using the `.by` argument from each package. Because fastplyr still sorts the groups by default here we will set an internal option to use the alternative grouping algorithm that sorts groups by order of first appearance. This will likely be revisited at some point.
 
 To read about the differences, see `?collapse::GRP`.
 
@@ -344,7 +409,7 @@ mark(
 ```
 
 ### slice_head & slice_tail
- 
+
 ```{r}
 mark(
   fastplyr_slice_head = tbl |> 
@@ -364,9 +429,7 @@ mark(
 
 Here we'll calculate the mean of x by each group of g
 
-Both tidytable and fastplyr have optimisations for `mean()` when it involves
-groups. tidytable internally uses data.table's 'gforce' mean function. 
-This is basically a dedicated C function to calculate means for many groups.
+Both tidytable and fastplyr have optimisations for `mean()` when it involves groups. tidytable internally uses data.table's 'gforce' mean function. This is basically a dedicated C function to calculate means for many groups.
 
 ```{r}
 mark(
@@ -405,11 +468,4 @@ mark(
 )
 ```
 
-It's clear both fastplyr and tidytable are fast and each have their strengths 
-and weaknesses.
-
-
- 
-
-
-
+It's clear both fastplyr and tidytable are fast and each have their strengths and weaknesses.
