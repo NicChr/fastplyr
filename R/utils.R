@@ -16,7 +16,7 @@ which <- cheapr::which_
 
 check_length <- function(x, size){
   if (length(x) != size){
-    stop(paste(deparse1(substitute(x)), "must be of length", size))
+    stop(paste(deparse2(substitute(x)), "must be of length", size))
   }
 }
 
@@ -372,7 +372,7 @@ quo_select_info <- function(quos, data){
   quo_is_null <- add_names(logical(length(quos)), quo_nms)
   for (i in seq_along(quos)){
     quo <- quos[[i]]
-    quo_text[[i]] <- deparse1(rlang::quo_get_expr(quo))
+    quo_text[[i]] <- deparse2(rlang::quo_get_expr(quo))
     # quo_text[[i]] <- rlang::expr_name(rlang::quo_get_expr(quo))
     quo_is_null[[i]] <- rlang::quo_is_null(quo)
   }
@@ -393,7 +393,7 @@ quo_mutate_info <- function(quos, data){
   quo_is_null <- add_names(logical(length(quos)), quo_nms)
   for (i in seq_along(quos)){
     quo <- quos[[i]]
-    quo_text[[i]] <- deparse1(rlang::quo_get_expr(quo))
+    quo_text[[i]] <- deparse2(rlang::quo_get_expr(quo))
     quo_is_null[[i]] <- rlang::quo_is_null(quo) && !nzchar(quo_nms[[i]])
   }
   quo_text <- quo_text[!quo_is_null]
@@ -420,9 +420,9 @@ slice_sign <- function(x){
   as.integer(sign(rng_sum))
 }
 
-# Taken from base R to avoid needing R >= 4
-deparse1 <- function(expr, collapse = " ", width.cutoff = 500L, ...){
-  paste(deparse(expr, width.cutoff, ...), collapse = collapse)
+# Like deparse1 but has a cutoff in case of massive strings
+deparse2 <- function(expr, collapse = " ", width.cutoff = 500L, nlines = 5L, ...){
+  paste(deparse(expr, width.cutoff, nlines = nlines, ...), collapse = collapse)
 }
 
 strip_attrs <- function(x){
@@ -453,7 +453,7 @@ add_names <- function(x, value){
 interval_separate <- function(x){
   start <- attr(x, "start")
   end <- start + strip_attrs(x)
-  list(start = start, end = end)
+  new_df(start = start, end = end)
 }
 is_sorted <- function(x){
   isTRUE(!is.unsorted(x))
@@ -509,19 +509,6 @@ all_integerable <- function(x, shift = 0){
   )
 }
 
-# Simple wrapper around collapse::join
-collapse_join <- function(x, y, on, how, sort = FALSE, ...){
-  out <- collapse::join(x, y,
-                        on = on, sort = sort, how = how,
-                        verbose = FALSE,
-                        keep.col.order = FALSE,
-                        drop.dup.cols = FALSE,
-                        overid = 2,
-                        ...)
-  f_select(out,
-          .cols = c(names(x), intersect(setdiff(names(y), names(x)), names(out))))
-}
-
 # setdiff but no deduplicating
 fast_setdiff <- function(x, y){
   x[match(x, y, nomatch = 0L) == 0L]
@@ -531,7 +518,7 @@ fast_setdiff <- function(x, y){
 ## Used in the below named_dots()
 
 dot_expr_names <- function(...){
-  vapply(substitute(alist(...))[-1L], deparse1, "", USE.NAMES = FALSE)
+  vapply(substitute(alist(...))[-1L], deparse2, "", USE.NAMES = FALSE)
 }
 
 named_dots <- function(...){

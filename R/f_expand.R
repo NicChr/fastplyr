@@ -48,7 +48,7 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
       if (length(intersect(names(x), names(y))) > length(group_vars)){
         stop("duplicate variable names supplied, please fix")
       }
-      collapse_join(x, y, how = "full", on = group_vars, multiple = TRUE)
+      f_full_join(x, y, by = group_vars)
     }
     out <- Reduce(anon_join, frames)
   } else {
@@ -56,7 +56,6 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
       stop("expansion results in >= 2^31 rows, please supply less data")
     }
     out <- do.call(cross_join, frames)
-    # out <- Reduce(function(x, y) df_cross_join(x, y, .repair_names = FALSE), frames, simplify = FALSE)
   }
   # If just empty list
   if (length(out) == 0){

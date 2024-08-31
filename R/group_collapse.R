@@ -85,9 +85,6 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
             names(factors)
           )
         )
-        # missed <- collapse_join(
-        #   full, group_out, how = "anti", on = names(full)
-        # )
         missed <- cheapr::setdiff_(full, group_out)
         for (non_factor in names(group_out)[which(is_factor, invert = TRUE)]){
           missed[[non_factor]] <- group_out[[non_factor]][NA_integer_]
