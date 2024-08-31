@@ -13,6 +13,8 @@ set_rm_attr <- get_from_package("cpp_set_rm_attr", "cheapr")
 set_rm_attributes <- get_from_package("cpp_set_rm_attributes", "cheapr")
 df_select <- get_from_package("df_select", "cheapr")
 which <- cheapr::which_
+which_not_in <- get_from_package("which_not_in", "cheapr")
+which_in <- get_from_package("which_in", "cheapr")
 
 check_length <- function(x, size){
   if (length(x) != size){

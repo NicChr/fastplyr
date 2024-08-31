@@ -23,6 +23,8 @@ f_join <- function(x, y, by, suffix, join_type, ...){
     stop("Please specify variables to join on")
   }
 
+  semi_or_anti <- join_type %in% c("semi", "anti")
+
   if (is.null(names(by))){
     join_cols_left <- by
   } else {
@@ -42,10 +44,18 @@ f_join <- function(x, y, by, suffix, join_type, ...){
   non_joined_common_cols_left <- setdiff(common_cols, join_cols_left)
   non_joined_common_cols_right <- setdiff(common_cols, join_cols_right)
 
-  names(x)[names(x) %in% non_joined_common_cols_left] <-
-    paste0(names(x)[names(x) %in% non_joined_common_cols_left], suffix[1L])
-  names(y)[names(y) %in% non_joined_common_cols_right] <-
-    paste0(names(y)[names(y) %in% non_joined_common_cols_right], suffix[2L])
+  # Add suffixes
+
+  if (!semi_or_anti){
+
+    names(x)[names(x) %in% non_joined_common_cols_left] <-
+      paste0(names(x)[names(x) %in% non_joined_common_cols_left], suffix[1L])
+    names(y)[names(y) %in% non_joined_common_cols_right] <-
+      paste0(names(y)[names(y) %in% non_joined_common_cols_right], suffix[2L])
+
+  }
+
+  # Convert vars collapse::join() can't handle into group IDs
 
   left <- df_mutate_exotic_to_ids(x)
   right <- df_mutate_exotic_to_ids(y)
@@ -58,35 +68,56 @@ f_join <- function(x, y, by, suffix, join_type, ...){
   right_exotic_cols <- names(y)[!cpp_address_equal(y, right)]
   right_exotic_cols <- setdiff(right_exotic_cols, left_exotic_cols)
 
-  out <- collapse::join(
-    left, right, how = join_type,
-    on = by,
-    multiple = TRUE,
-    drop.dup.cols = FALSE,
-    keep.col.order = FALSE,
-    verbose = FALSE,
-    suffix = "",
-    overid = 2L,
-    ...
-  )
+  # Join
+
+  if (join_type == "anti"){
+    out <- cheapr::sset(
+      left, which_not_in(
+        f_select(left, .cols = join_cols_left),
+        f_select(right, .cols = join_cols_right))
+    )
+  } else if (join_type == "semi"){
+    out <- cheapr::sset(
+      left, which_in(
+        f_select(left, .cols = join_cols_left),
+        f_select(right, .cols = join_cols_right))
+    )
+  } else {
+    out <- collapse::join(
+      left, right, how = join_type,
+      on = by,
+      multiple = TRUE,
+      drop.dup.cols = FALSE,
+      keep.col.order = FALSE,
+      verbose = FALSE,
+      suffix = "",
+      overid = 2L,
+      ...
+    )
+  }
+
   # Names ordered correctly
+
   out_nms <- c(names(left), intersect(setdiff(names(right), names(left)), names(out)))
   out <- f_select(out, .cols = out_nms)
 
+
   # Match group IDs back to original variables
+
   if (length(left_exotic_cols) > 0){
     for (col in left_exotic_cols){
       matches <- collapse::fmatch(out[[col]], left[[col]], overid = 2L)
       out[[col]] <- cheapr::sset(x[[col]], matches)
     }
   }
-
+if (!semi_or_anti){
   if (length(right_exotic_cols) > 0){
     for (col in right_exotic_cols){
       matches <- collapse::fmatch(out[[col]], right[[col]], overid = 2L)
       out[[col]] <- cheapr::sset(y[[col]], matches)
     }
   }
+}
 
   out
 }
