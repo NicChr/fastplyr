@@ -313,28 +313,12 @@ group_locs <- function(x){
 # index locations are also assumed to be sorted
 GRP_loc_starts <- function(loc){
   list_subset(loc, 1L, default = 0L)
-  # unlist(
-  #   collapse::ffirst(
-  #     loc,
-  #     use.g.names = FALSE,
-  #     na.rm = FALSE
-  #   )
-  #   , use.names = FALSE, recursive = FALSE
-  # )
 }
 GRP_loc_ends <- function(loc, sizes = NULL){
   if (is.null(sizes)){
     sizes <- cheapr::lengths_(loc)
   }
   list_subset(loc, sizes, default = 0L)
-  # unlist(
-  #   collapse::flast(
-  #     loc,
-  #     use.g.names = FALSE,
-  #     na.rm = FALSE
-  #   )
-  #   , use.names = FALSE, recursive = FALSE
-  # )
 }
 GRP_ordered <- function(GRP){
   GRP[["ordered"]]
@@ -512,38 +496,6 @@ GRP.vctrs_rcrd <- function(X, ...){
 GRP.NULL <- function(X, ...){
   NULL
 }
-# Use this to turn a sorted group ID into a GRP when you have basic group information
-sorted_group_id_to_GRP <- function(x,
-                                   n_groups,
-                                   group_sizes,
-                                   group.starts = TRUE,
-                                   groups = NULL,
-                                   group.vars = NULL){
-  out <- structure(
-    list(
-      "N.groups" = n_groups,
-      "group.id" = x,
-      "group.sizes" = group_sizes,
-      "groups" = groups,
-      "group.vars" = group.vars,
-      "ordered" = c("ordered" = TRUE, "sorted" = TRUE),
-      "order" = seq_along(x),
-      "group.starts" = NULL,
-      "call" = NULL
-    ),
-    class = "GRP"
-  )
-  gstarts <- sorted_group_starts(group_sizes)
-  if (group.starts){
-    out[["group.starts"]] <- gstarts
-  }
-  attributes(out[["order"]]) <- list(starts = gstarts,
-                                     maxgrpn = collapse::fmax(group_sizes),
-                                     sorted = TRUE)
-  # Alternative way of getting group starts is:
-  # c(1L, which(x) != collapse::flag(x))
-  out
-}
 gsplit2 <- function(x = NULL, g = NULL, use.g.names = FALSE, ...){
   if (is.null(g)){
     if (is.null(x)){
@@ -553,74 +505,6 @@ gsplit2 <- function(x = NULL, g = NULL, use.g.names = FALSE, ...){
     }
   } else {
     collapse::gsplit(x, g = g, use.g.names = use.g.names, ...)
-  }
-}
-# Sorts data by groups and returns key info
-sort_data_by_GRP <- function(x, g, sorted_group_starts = TRUE){
-  has_groups <- !is.null(g)
-  if (!has_groups){
-    return(list(
-      x = x,
-      n_groups = min(NROW(x), 1L),
-      group_sizes = NROW(x),
-      GRP = NULL,
-      sorted_GRP = NULL,
-      sorted = TRUE,
-      group_order = NULL,
-      has_groups = FALSE
-    ))
-  }
-  g <- GRP2(g)
-  check_data_GRP_size(x, g)
-  group_id <- GRP_group_id(g)
-  group_sizes <- GRP_group_sizes(g)
-  n_groups <- GRP_n_groups(g)
-  group_order <- GRP_order(g)
-  groups_are_sorted <- isTRUE(attr(group_order, "sorted"))
-  if (!groups_are_sorted){
-    x <- cheapr::sset(x, group_order)
-    group_id <- cheapr::sset(group_id, group_order)
-  }
-  if (sorted_group_starts){
-    if (groups_are_sorted){
-      sorted_group_starts <- GRP_starts(g)
-    } else {
-      sorted_group_starts <- sorted_group_starts(group_sizes)
-    }
-  } else {
-    sorted_group_starts <- NULL
-  }
-  sorted_GRP <- sorted_group_id_to_GRP(
-    group_id,
-    n_groups = n_groups,
-    group_sizes = group_sizes,
-    group.starts = FALSE
-  )
-  sorted_GRP[["group.starts"]] <- sorted_group_starts
-  list(x = x,
-       n_groups = n_groups,
-       group_sizes = group_sizes,
-       GRP = g,
-       sorted_GRP = sorted_GRP,
-       sorted = groups_are_sorted,
-       group_order = group_order,
-       has_groups = has_groups)
-
-}
-# greorder but x can be a data frame or list
-greorder2 <- function(x, g, ...){
-  if (is.null(g)){
-    return(x)
-  }
-  if (is.list(x)){
-    cheapr::sset(
-      x,
-      collapse::greorder(
-        seq_len(NROW(x)), g = g, ...
-      )
-    )
-  } else {
-    collapse::greorder(x, g = g, ...)
   }
 }
 
@@ -687,19 +571,6 @@ new_GRP <- function(N.groups = NULL,
   )
   class(out) <- "GRP"
   out
-}
-
-# A wrapper to grab the order and counts of groups
-# Specifically for the c++ rolling calculations
-group_order_and_counts <- function(g = NULL){
-  o <- radixorderv2(g, starts = FALSE, sort = FALSE, group.sizes = TRUE)
-  if (is_GRP(g)){
-    # Accounting for factors
-    sizes <- val_rm(GRP_group_sizes(g), 0L)
-  } else {
-    sizes <- attr(o, "group.sizes")
-  }
-  list(order = o, sizes = sizes)
 }
 
 ## Construct a grouped data frame from a GRP object
