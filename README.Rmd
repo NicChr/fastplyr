@@ -277,6 +277,25 @@ mark(
 )
 ```
 
+## bind rows and cols
+
+Binding columns is particular much faster but binding rows is also sufficiently faster
+
+```{r}
+mark(
+  fastplyr_bind_cols = f_bind_cols(grouped_flights, grouped_flights),
+  dplyr_bind_cols = suppressMessages(
+    bind_cols(grouped_flights, grouped_flights)
+    )
+)
+
+mark(
+  fastplyr_bind_rows = f_bind_rows(grouped_flights, grouped_flights),
+  dplyr_bind_rows = bind_rows(grouped_flights, grouped_flights)
+)
+```
+
+
 
 ## tidytable vs fastplyr
 
