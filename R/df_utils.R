@@ -284,7 +284,7 @@ cross_join2 <- function(x, y){
 }
 
 cross_join <- function(...){
-  dots <- rlang::dots_list(..., .named = TRUE)
+  dots <- named_dots(...)
   out <- Reduce(cross_join2, dots)
   if (!is_df(out)){
     out <- new_tbl(x = out)

@@ -526,3 +526,26 @@ collapse_join <- function(x, y, on, how, sort = FALSE, ...){
 fast_setdiff <- function(x, y){
   x[match(x, y, nomatch = 0L) == 0L]
 }
+
+## Turn dot expressions into names
+## Used in the below named_dots()
+
+dot_expr_names <- function(...){
+  vapply(substitute(alist(...))[-1L], deparse1, "", USE.NAMES = FALSE)
+}
+
+named_dots <- function(...){
+  dots <- list(...)
+
+  dot_nms <- names(dots)
+
+  if (is.null(dot_nms)){
+    names(dots) <- dot_expr_names(...)
+  } else if (!all(nzchar(dot_nms))){
+    empty <- which(!nzchar(dot_nms))
+    expr_names <- dot_expr_names(...)
+    dot_nms[empty] <- expr_names[empty]
+    names(dots) <- dot_nms
+  }
+  dots
+}
