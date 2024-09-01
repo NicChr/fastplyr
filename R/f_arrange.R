@@ -58,6 +58,3 @@ f_arrange <- function(data, ..., .by = NULL, .by_group = FALSE,
     df_row_slice(data, out_order)
   }
 }
-f_arrange_all <- function(data){
-  f_arrange(data, .cols = names(data))
-}
