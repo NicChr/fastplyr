@@ -22,6 +22,7 @@
 #' @rdname f_expand
 #' @export
 f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
+  check_cols(dots_length(...), .cols = .cols)
   group_vars <- get_groups(data, {{ .by }})
   if (!is.null(.cols)){
     data2 <- df_ungroup(data)
