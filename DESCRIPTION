@@ -5,7 +5,7 @@ Authors@R:
     person("Nick", "Christofides", , "nick.christofides.r@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9743-7342"))
 Description: A full set of fast data manipulation tools with a tidy
-    frontend and a fast backend using 'collapse' and 'cheapr'.
+    front-end and a fast back-end using 'collapse' and 'cheapr'.
 License: MIT + file LICENSE
 Imports: 
     cheapr (>= 0.9.3),
