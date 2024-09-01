@@ -181,21 +181,6 @@ SEXP cpp_sorted_group_starts(SEXP group_sizes, int init_loc = 1){
   return out;
 }
 
-// x here must be a list
-
-[[cpp11::register]]
-SEXP is_s3_atomic(SEXP x){
-  const SEXP *p_x = VECTOR_PTR_RO(x);
-  int n = Rf_length(x);
-  SEXP out = Rf_protect(Rf_allocVector(LGLSXP, n));
-  int *p_out = LOGICAL(out);
-  for (int i = 0; i < n; ++i) {
-    p_out[i] = (!Rf_isS4(p_x[i]) && Rf_isVectorAtomic(p_x[i]));
-  }
-  Rf_unprotect(1);
-  return out;
-}
-
 [[cpp11::register]]
 SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
   unsigned int n = Rf_length(order);

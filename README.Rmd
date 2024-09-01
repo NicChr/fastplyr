@@ -13,6 +13,7 @@ knitr::opts_chunk$set(
 )
 options(tibble.print_min = 5)
 options(tibble.print_max = 10)
+set.seed(949958487)
 ```
 
 # fastplyr
@@ -342,7 +343,7 @@ mark(
 In the worst-case scenarios, `f_filter()` is about the same speed as `filter()` and in the best-case is much faster and more efficient. This is especially true for large data where small subsets of the data are returned.
 
 ```{r}
-full <- tibble(x = rnorm(5e07))
+full <- new_tbl(x = rnorm(5e07))
 
 # A worst case scenario
 
@@ -363,7 +364,7 @@ mark(
 )
 ```
 
-## bind rows and cols
+### bind rows and cols
 
 Binding columns is particular much faster but binding rows is also sufficiently faster
 
@@ -451,7 +452,7 @@ Let's run some more benchmarks for fun, this time including tidytable which fast
 n_rows <- 10^7
 n_groups <- 10^6
 
-tbl <- tibble(x = rnorm(n_rows))
+tbl <- new_tbl(x = rnorm(n_rows))
 tbl <- tbl |> 
     mutate(y = as.character(round(x, 6)),
            g = sample.int(n_groups, n_rows, TRUE))
