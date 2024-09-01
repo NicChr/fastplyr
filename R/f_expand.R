@@ -19,8 +19,6 @@
 #' `crossing` and `nesting` are helpers that are basically identical to
 #' tidyr's `crossing` and `nesting`.
 #'
-#'
-#'
 #' @rdname f_expand
 #' @export
 f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
@@ -55,6 +53,8 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
     if (prod(cpp_nrows(frames)) > .Machine$integer.max){
       stop("expansion results in >= 2^31 rows, please supply less data")
     }
+    # Alternative but duplicate names aren't handled properly
+    # out <- Reduce(df_cross_join, frames)
     out <- do.call(cross_join, frames)
   }
   # If just empty list
