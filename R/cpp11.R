@@ -20,10 +20,6 @@ cpp_sorted_group_starts <- function(group_sizes, init_loc) {
   .Call(`_fastplyr_cpp_sorted_group_starts`, group_sizes, init_loc)
 }
 
-is_s3_atomic <- function(x) {
-  .Call(`_fastplyr_is_s3_atomic`, x)
-}
-
 cpp_group_locs <- function(order, group_sizes) {
   .Call(`_fastplyr_cpp_group_locs`, order, group_sizes)
 }
