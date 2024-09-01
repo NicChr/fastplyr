@@ -1,5 +1,24 @@
-## R CMD check results
+* First release!
 
-0 errors | 0 warnings | 1 note
+* Checked and passed using rhub v2.0.0 in the following environments:
 
-* This is a new release.
+## Test environments
+- R-hubv2 windows (R-devel)
+- R-hubv2 linux (R-devel)
+- R-hubv2 macos (R-devel)
+- R-hubv2 clang-asan
+- R-hubv2 ubuntu-gcc12
+
+Additionally checked on win-builder.r-project.org:
+
+- windows (R-devel)
+- windows (R-release)
+- windows (R-old release)
+
+and R-CMD-check github actions:
+
+- macos-latest (release)
+- ubuntu-latest (devel)
+- ubuntu-latest (oldrel-1)
+- ubuntu-latest (release)
+- windows-latest (release)
