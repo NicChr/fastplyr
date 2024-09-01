@@ -4,7 +4,7 @@
 \name{fastplyr-package}
 \alias{fastplyr}
 \alias{fastplyr-package}
-\title{fastplyr: Fast Alternatives to 'dplyr' Functions}
+\title{fastplyr: Fast Alternatives to 'tidyverse' Functions}
 \description{
 fastplyr is a tidy frontend using a faster and more efficient backend based
 on two packages, collapse and cheapr.

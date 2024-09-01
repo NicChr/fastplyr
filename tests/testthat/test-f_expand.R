@@ -4,8 +4,8 @@ test_that("Compared to tidyr", {
     f_count(dest, origin, time_hour, tailnum, carrier, flight)
   expect_equal(
     testdf %>%
-      f_expand(), new_tbl(..N = 1)
-  ) # tidyr result makes less sense
+      f_expand(), new_tbl(.nrows = 1)
+  )
   expect_equal(
     testdf %>%
       f_expand(origin, dest, time_hour, sort = TRUE),

@@ -116,31 +116,39 @@ list_as_tbl <- function(x){
 }
 
 # Create new df with no name checks or length checks
-# ..N is there purely to create an (n > 0) x 0 data frame
-new_df <- function(..., ..N = NULL, .recycle = FALSE){
+# .nrows is there purely to create an (n > 0) x 0 data frame
+new_df <- function(..., .nrows = NULL,
+                   .recycle = FALSE, .name_repair = FALSE){
+
+  out <- list_rm_null(named_dots(...))
+
+  # Recycle
   if (.recycle){
-    out <- cheapr::recycle(...)
-  } else {
-    out <- list3(...)
+    out <- do.call(function(...) cheapr::recycle(..., length = .nrows), out)
   }
-  if (is.null(..N)){
+
+  if (is.null(.nrows)){
     if (length(out) == 0L){
       row_names <- integer()
     } else {
-      N <- length(.subset2(out, 1L))
+      N <- NROW(.subset2(out, 1L))
       row_names <- c(NA_integer_, -N)
     }
   } else {
-    row_names <- .set_row_names(..N)
+    row_names <- .set_row_names(.nrows)
   }
-  attr(out, "names") <- as.character(attr(out, "names", TRUE))
+
+  out_names <- as.character(attr(out, "names", TRUE))
+  if (.name_repair){
+    out_names <- unique_name_repair(out_names)
+  }
+
+  attr(out, "names") <- out_names
   attr(out, "row.names") <- row_names
   class(out) <- "data.frame"
   out
 }
-new_tbl <- function(..., ..N = NULL, .recycle = FALSE){
-  df_as_tbl(new_df(..., ..N = ..N, .recycle = .recycle))
-}
+
 # Safe ungroup for any data type
 df_ungroup <- function(data){
   if (inherits(data, "grouped_df")){
@@ -173,7 +181,7 @@ df_as_tbl <- function(x){
 df_init <- function(x, size = 1L){
   ncols <- df_ncol(x)
   if (ncols == 0){
-    init_df <- new_df(..N = size)
+    init_df <- new_df(.nrows = size)
   } else {
     init_df <- list_as_df(
       lapply(x, function(y) rep(y[NA_integer_], size))
