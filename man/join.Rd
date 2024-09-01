@@ -9,27 +9,81 @@
 \alias{f_semi_join}
 \title{Fast SQL joins}
 \usage{
-f_left_join(x, y, by = NULL, suffix = c(".x", ".y"), ...)
+f_left_join(
+  x,
+  y,
+  by = NULL,
+  suffix = c(".x", ".y"),
+  multiple = TRUE,
+  keep = FALSE,
+  ...
+)
 
-f_right_join(x, y, by = NULL, suffix = c(".x", ".y"), ...)
+f_right_join(
+  x,
+  y,
+  by = NULL,
+  suffix = c(".x", ".y"),
+  multiple = TRUE,
+  keep = FALSE,
+  ...
+)
 
-f_inner_join(x, y, by = NULL, suffix = c(".x", ".y"), ...)
+f_inner_join(
+  x,
+  y,
+  by = NULL,
+  suffix = c(".x", ".y"),
+  multiple = TRUE,
+  keep = FALSE,
+  ...
+)
 
-f_full_join(x, y, by = NULL, suffix = c(".x", ".y"), ...)
+f_full_join(
+  x,
+  y,
+  by = NULL,
+  suffix = c(".x", ".y"),
+  multiple = TRUE,
+  keep = FALSE,
+  ...
+)
 
-f_anti_join(x, y, by = NULL, suffix = c(".x", ".y"), ...)
+f_anti_join(
+  x,
+  y,
+  by = NULL,
+  suffix = c(".x", ".y"),
+  multiple = TRUE,
+  keep = FALSE,
+  ...
+)
 
-f_semi_join(x, y, by = NULL, suffix = c(".x", ".y"), ...)
+f_semi_join(
+  x,
+  y,
+  by = NULL,
+  suffix = c(".x", ".y"),
+  multiple = TRUE,
+  keep = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{Left data frame.}
 
 \item{y}{Right data frame.}
 
-\item{by}{Columns to join on.}
+\item{by}{\code{character(1)} - Columns to join on.}
 
-\item{suffix}{Suffix to paste onto common cols
+\item{suffix}{\code{character(2)} - Suffix to paste onto common cols
 between \code{x} and \code{y} in the joined output.}
+
+\item{multiple}{\code{logical(1)} - Should multiple matches be returned?
+If \code{FALSE} the first match in y is used. Default is \code{TRUE}.}
+
+\item{keep}{\code{logical(1)} - Should join columns from
+both data frames be kept? Default is \code{FALSE}.}
 
 \item{...}{Additional arguments passed to \code{collapse::join()}.}
 }

@@ -294,11 +294,25 @@ Based closely on `tidyr::expand`, `f_expand()` can cross joins multiple vectors 
 
 ```{r}
 mark(
-  fastplyr_expand = grouped_flights |> 
-  f_expand(month = 1:12),
-  tidyr_expand = grouped_flights |> 
-  expand(month = 1:12),
-  check = FALSE
+    fastplyr_expand = flights |> 
+        f_group_by(origin, tailnum) |> 
+        f_expand(month = 1:12),
+    tidyr_expand = flights |> 
+        group_by(origin, tailnum) |> 
+        expand(month = 1:12),
+    check = FALSE
+)
+
+
+# Using `.cols` in `f_expand()` is very fast!
+mark(
+    fastplyr_expand = flights |> 
+        f_group_by(origin, dest) |> 
+        f_expand(.cols = c("year", "month", "day")),
+    tidyr_expand = flights |> 
+        group_by(origin, dest) |> 
+        expand(year, month, day),
+    check = FALSE
 )
 ```
 
@@ -325,7 +339,7 @@ mark(
 
 ### filter
 
-In the wosrt case scenarios, `f_filter()` is about the same speed as `filter()` and in the best case is much faster and more efficient. This is especially true for large data where small subsets of the data are returned.
+In the worst-case scenarios, `f_filter()` is about the same speed as `filter()` and in the best-case is much faster and more efficient. This is especially true for large data where small subsets of the data are returned.
 
 ```{r}
 full <- tibble(x = rnorm(5e07))
@@ -366,6 +380,66 @@ mark(
   dplyr_bind_rows = bind_rows(grouped_flights, grouped_flights)
 )
 ```
+
+
+### Quantiles
+
+A typical tidy approach might use a mixture of `reframe()` and `enframe()`
+which is a perfectly tidy and neat solution
+
+```{r}
+probs <- seq(0, 1, 0.25)
+
+mtcars <- as_tbl(mtcars)
+
+mtcars |> 
+ group_by(cyl) |> 
+ reframe(enframe(quantile(mpg, probs), "quantile", "mpg"))
+```
+
+fastplyr though has a dedicated function for quantile calculation, 
+`tidy_quantiles()` which requires less code to type
+
+```{r}
+
+# Wide
+mtcars |> 
+  tidy_quantiles(mpg, .by = cyl)
+
+# Long
+mtcars |> 
+  tidy_quantiles(mpg, .by = cyl, pivot = "long")
+```
+
+Not only can you choose how to pivot as shown above, you can also calculate
+quantiles for multiple variables.
+
+```{r}
+multiple_quantiles <- mtcars |> 
+  tidy_quantiles(across(where(is.numeric)), pivot = "long")
+multiple_quantiles
+
+# Quantile names is a convenient factor
+multiple_quantiles$.quantile
+```
+
+### Quantile benchmark for many groups
+
+`tidy_quantiles()` of course is fast when many groups are involved.
+
+```{r}
+mark(
+  fastplyr_quantiles = flights |> 
+    f_group_by(year, month, day, origin) |> 
+  tidy_quantiles(dep_delay, pivot = "long"),
+  dplyr_quantiles = flights |> 
+     group_by(year, month, day, origin) |> 
+    reframe(enframe(quantile(dep_delay, seq(0, 1, 0.25), na.rm = TRUE))),
+  check = FALSE
+)
+```
+
+
 
 ## tidytable vs fastplyr
 

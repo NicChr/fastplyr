@@ -1,4 +1,4 @@
-f_join <- function(x, y, by, suffix, join_type, ...){
+f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
   if (!is.character(suffix) || length(suffix) != 2){
     stop("suffix must be a character vector of length 2")
   }
@@ -53,7 +53,24 @@ f_join <- function(x, y, by, suffix, join_type, ...){
     names(y)[names(y) %in% non_joined_common_cols_right] <-
       paste0(names(y)[names(y) %in% non_joined_common_cols_right], suffix[2L])
 
+    # If keep join cols from both data frames
+
+    if (keep){
+      names(x)[names(x) %in% join_cols_left] <-
+        paste0(names(x)[names(x) %in% join_cols_left], suffix[1L])
+      names(y)[names(y) %in% join_cols_right] <-
+        paste0(names(y)[names(y) %in% join_cols_right], suffix[2L])
+
+      join_cols_left <- paste0(join_cols_left, suffix[1L])
+      join_cols_right <- paste0(join_cols_right, suffix[2L])
+
+    }
   }
+
+  # Creating a named vector specifying left and right join cols
+
+  join_by <- join_cols_right
+  names(join_by) <- join_cols_left
 
   # Convert vars collapse::join() can't handle into group IDs
 
@@ -64,9 +81,9 @@ f_join <- function(x, y, by, suffix, join_type, ...){
   # in left or right that collapse can't handle
   # We turn these into group IDs and then match them back at the end
 
-  left_exotic_cols <- names(x)[!cpp_address_equal(x, left)]
-  right_exotic_cols <- names(y)[!cpp_address_equal(y, right)]
-  right_exotic_cols <- setdiff(right_exotic_cols, left_exotic_cols)
+  exotic_cols_left <- names(x)[!cpp_address_equal(x, left)]
+  exotic_cols_right <- names(y)[!cpp_address_equal(y, right)]
+  exotic_cols_right <- setdiff(exotic_cols_right, exotic_cols_left)
 
   # Join
 
@@ -85,8 +102,8 @@ f_join <- function(x, y, by, suffix, join_type, ...){
   } else {
     out <- collapse::join(
       left, right, how = join_type,
-      on = by,
-      multiple = TRUE,
+      on = join_by,
+      multiple = multiple,
       drop.dup.cols = FALSE,
       keep.col.order = FALSE,
       verbose = FALSE,
@@ -94,6 +111,11 @@ f_join <- function(x, y, by, suffix, join_type, ...){
       overid = 2L,
       ...
     )
+    if (keep){
+      inverse_join_by <- names(join_by)
+      names(inverse_join_by) <- unname(join_by)
+      out <- f_select(out, .cols = c(names(out), inverse_join_by))
+    }
   }
 
   # Names ordered correctly
@@ -104,21 +126,20 @@ f_join <- function(x, y, by, suffix, join_type, ...){
 
   # Match group IDs back to original variables
 
-  if (length(left_exotic_cols) > 0){
-    for (col in left_exotic_cols){
+  if (length(exotic_cols_left) > 0){
+    for (col in exotic_cols_left){
       matches <- collapse::fmatch(out[[col]], left[[col]], overid = 2L)
       out[[col]] <- cheapr::sset(x[[col]], matches)
     }
   }
 if (!semi_or_anti){
-  if (length(right_exotic_cols) > 0){
-    for (col in right_exotic_cols){
+  if (length(exotic_cols_right) > 0){
+    for (col in exotic_cols_right){
       matches <- collapse::fmatch(out[[col]], right[[col]], overid = 2L)
       out[[col]] <- cheapr::sset(y[[col]], matches)
     }
   }
 }
-
   out
 }
 
@@ -132,45 +153,67 @@ if (!semi_or_anti){
 #'
 #' @param x Left data frame.
 #' @param y Right data frame.
-#' @param by Columns to join on.
-#' @param suffix Suffix to paste onto common cols
+#' @param by `character(1)` - Columns to join on.
+#' @param suffix `character(2)` - Suffix to paste onto common cols
 #' between `x` and `y` in the joined output.
+#' @param multiple `logical(1)` - Should multiple matches be returned?
+#' If `FALSE` the first match in y is used. Default is `TRUE`.
+#' @param keep `logical(1)` - Should join columns from
+#' both data frames be kept? Default is `FALSE`.
 #' @param ... Additional arguments passed to `collapse::join()`.
 #'
 #' @rdname join
 #' @export
 f_left_join <- function(x, y, by = NULL,
-                        suffix = c(".x", ".y"), ...){
-  f_join(x, y, by = by, suffix = suffix, join_type = "left", ...)
+                        suffix = c(".x", ".y"),
+                        multiple = TRUE, keep = FALSE, ...){
+  f_join(x, y, by = by, suffix = suffix,
+         multiple = multiple, keep = keep,
+         join_type = "left", ...)
 }
 #' @rdname join
 #' @export
 f_right_join <- function(x, y, by = NULL,
-                        suffix = c(".x", ".y"), ...){
-  f_join(x, y, by = by, suffix = suffix, join_type = "right", ...)
+                        suffix = c(".x", ".y"),
+                        multiple = TRUE, keep = FALSE, ...){
+  f_join(x, y, by = by, suffix = suffix,
+         multiple = multiple, keep = keep,
+         join_type = "right", ...)
 }
 #' @rdname join
 #' @export
 f_inner_join <- function(x, y, by = NULL,
-                         suffix = c(".x", ".y"), ...){
-  f_join(x, y, by = by, suffix = suffix, join_type = "inner", ...)
+                         suffix = c(".x", ".y"),
+                         multiple = TRUE, keep = FALSE, ...){
+  f_join(x, y, by = by, suffix = suffix,
+         multiple = multiple, keep = keep,
+         join_type = "inner", ...)
 }
 #' @rdname join
 #' @export
 f_full_join <- function(x, y, by = NULL,
-                         suffix = c(".x", ".y"), ...){
-  f_join(x, y, by = by, suffix = suffix, join_type = "full", ...)
+                        suffix = c(".x", ".y"),
+                        multiple = TRUE, keep = FALSE, ...){
+  f_join(x, y, by = by, suffix = suffix,
+         multiple = multiple, keep = keep,
+         join_type = "full", ...)
 }
 #' @rdname join
 #' @export
 f_anti_join <- function(x, y, by = NULL,
-                        suffix = c(".x", ".y"), ...){
-  f_join(x, y, by = by, suffix = suffix, join_type = "anti", ...)
+                        suffix = c(".x", ".y"),
+                        multiple = TRUE, keep = FALSE, ...){
+  f_join(x, y, by = by, suffix = suffix,
+         multiple = multiple, keep = keep,
+         join_type = "anti", ...)
 }
 #' @rdname join
 #' @export
 f_semi_join <- function(x, y, by = NULL,
-                        suffix = c(".x", ".y"), ...){
-  f_join(x, y, by = by, suffix = suffix, join_type = "semi", ...)
+                        suffix = c(".x", ".y"),
+                        multiple = TRUE, keep = FALSE, ...){
+  f_join(x, y, by = by, suffix = suffix,
+         multiple = multiple, keep = keep,
+         join_type = "semi", ...)
 }
 
