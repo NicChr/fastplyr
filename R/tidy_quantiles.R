@@ -48,13 +48,12 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   pivot <- rlang::arg_match(pivot)
   wide <- pivot == "wide"
   group_info <- tidy_group_info(
-    data, ..., .by = {{ .by }}, .cols = .cols,
-    ungroup = TRUE, rename = TRUE, unique_groups = FALSE
+    data, ..., .by = {{ .by }}, .cols = .cols, ungroup = TRUE
   )
   group_vars <- group_info[["dplyr_groups"]]
   dot_vars <- group_info[["extra_groups"]]
-  non_group_dot_vars <- setdiff(dot_vars, group_vars)
-  data2 <- group_info[["data"]]
+
+  # Constructing quantile info
   quantile_probs <- probs
   quantile_ties <- paste0("q", type)
   q_prcnts <- quantile_probs * 100
@@ -62,14 +61,16 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
                          q_prcnts)
   quantile_out_nms <- structure(strip_attrs(collapse::group(q_prcnts)),
                                 levels = collapse::funique(quantile_nms), class = "factor")
+
+  data2 <- group_info[["data"]]
   groups <- df_to_GRP(data2, .cols = group_vars, order = df_group_by_order_default(data))
   n_groups <- GRP_n_groups(groups)
   group_starts <- GRP_starts(groups)
-  data2 <- f_select(data2, .cols = c(group_vars, non_group_dot_vars))
+  data2 <- f_select(data2, .cols = c(group_vars, dot_vars))
 
   # Some special cases
 
-  if (wide && length(non_group_dot_vars) == 0){
+  if (wide && length(dot_vars) == 0){
     empty_quantile_df <-
       cheapr::new_list(
         length(quantile_nms),
@@ -100,16 +101,17 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   data2 <- df_add_cols(data2, add_names(list(GRP_group_id(groups)), group_id_nm))
   q_df <- df_row_slice(data2, group_starts)
   group_lookup <- f_select(q_df, .cols = c(group_id_nm, group_vars))
-  q_df <- df_rep(f_select(q_df, .cols = c(group_id_nm, non_group_dot_vars)), length(probs))
+  q_df <- df_rep(f_select(q_df, .cols = c(group_id_nm, dot_vars)), length(probs))
   q_df[[".quantile"]] <- rep(quantile_out_nms, each = df_nrow(q_df)/length(probs))
-  if (length(non_group_dot_vars) > 0) {
-    q_df <- dplyr::mutate(q_df, across(all_of(non_group_dot_vars), as.double))
+  if (length(dot_vars) > 0) {
+    q_df <- dplyr::mutate(q_df, across(all_of(dot_vars), as.double))
   }
-  for (.col in non_group_dot_vars) {
+  seq_groups <- seq_len(n_groups)
+  for (.col in dot_vars) {
     k <- 0L
     probi <- 0L
     for (p in probs) {
-      p_seq <- seq_len(n_groups) + probi
+      p_seq <- seq_groups + probi
       probi <- probi + n_groups
       k <- k + 1L
       if (p == 0) {
@@ -140,7 +142,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     }
   }
   if (wide){
-      q_df <- collapse::pivot(q_df, how = "wider", values = non_group_dot_vars,
+      q_df <- collapse::pivot(q_df, how = "wider", values = dot_vars,
                               names = ".quantile", sort = FALSE)
       out_nms <- c(group_vars, setdiff(names(q_df), c(group_vars, group_id_nm)))
   } else {
@@ -148,7 +150,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
       group_vars,
       setdiff(names(q_df),
               c(group_vars, dot_vars, group_id_nm)),
-      non_group_dot_vars
+      dot_vars
     )
   }
 
