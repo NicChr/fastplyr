@@ -66,17 +66,38 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   n_groups <- GRP_n_groups(groups)
   group_starts <- GRP_starts(groups)
   data2 <- f_select(data2, .cols = c(group_vars, non_group_dot_vars))
-  group_id_nm <- unique_col_name(data2, "group_id")
-  data2 <- df_add_cols(data2, add_names(list(GRP_group_id(groups)), group_id_nm))
-  if (wide && length(group_info[["all_groups"]]) == 0){
-    return(reconstruct(data, new_df()))
+
+  # Some special cases
+
+  if (wide && length(non_group_dot_vars) == 0){
+    empty_quantile_df <-
+      cheapr::new_list(
+        length(quantile_nms),
+        default = numeric()
+      )
+    names(empty_quantile_df) <- quantile_nms
+    empty_quantile_df <- as.data.frame(empty_quantile_df)
+    if (length(group_vars) > 0){
+      out <- df_row_slice(data2, group_starts)
+      out <- f_bind_cols(out, df_init(empty_quantile_df, length(group_starts)))
+    } else {
+      out <- empty_quantile_df
+    }
+    return(reconstruct(data, out))
   }
   if (wide && (df_nrow(data) == 0L || length(probs) == 0L)) {
-    q_df <- matrix(integer(), ncol = length(quantile_out_nms),
-                   nrow = 0)
-    colnames(q_df) <- quantile_nms
-    return(reconstruct(data, as.data.frame(q_df)))
+    if (length(group_vars) == 0){
+      out <- matrix(integer(), ncol = length(quantile_out_nms),
+                    nrow = 0)
+      colnames(out) <- quantile_nms
+      out <- reconstruct(data, as.data.frame(out))
+    } else {
+      out <- reconstruct(data, df_row_slice(f_select(data2, .cols = group_vars), group_starts))
+    }
+    return(out)
   }
+  group_id_nm <- unique_col_name(data2, "group_id")
+  data2 <- df_add_cols(data2, add_names(list(GRP_group_id(groups)), group_id_nm))
   q_df <- df_row_slice(data2, group_starts)
   group_lookup <- f_select(q_df, .cols = c(group_id_nm, group_vars))
   q_df <- df_rep(f_select(q_df, .cols = c(group_id_nm, non_group_dot_vars)), length(probs))
@@ -107,7 +128,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
             )
           )
       }
-      if (p > 0 & p < 1) {
+      if (p > 0 && p < 1) {
         q_df[[.col]][p_seq] <-
           as.double(
             collapse::fnth(
@@ -118,17 +139,10 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
       }
     }
   }
-  if (wide) {
-    if (length(non_group_dot_vars) == 0) {
-      q_df <- collapse::pivot(q_df, how = "wider", values = group_id_nm,
-                              names = ".quantile", sort = FALSE)
-      out_nms <- c(group_vars, setdiff(names(q_df), c(group_vars, group_id_nm, quantile_nms)))
-    }
-    else {
+  if (wide){
       q_df <- collapse::pivot(q_df, how = "wider", values = non_group_dot_vars,
                               names = ".quantile", sort = FALSE)
       out_nms <- c(group_vars, setdiff(names(q_df), c(group_vars, group_id_nm)))
-    }
   } else {
     out_nms <- c(
       group_vars,

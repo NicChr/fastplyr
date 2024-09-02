@@ -183,9 +183,7 @@ df_init <- function(x, size = 1L){
   if (ncols == 0){
     init_df <- new_df(.nrows = size)
   } else {
-    init_df <- list_as_df(
-      lapply(x, function(y) rep(y[NA_integer_], size))
-    )
+    init_df <- list_as_df(lapply(x, na_init, size))
   }
   reconstruct(x, init_df)
 }

@@ -127,9 +127,17 @@ f_slice_head <- function(data, n, prop, .by = NULL, keep_order = FALSE){
   slice_sizes <- slice_info[["slice_sizes"]]
   # Start indices of sequences
   start <- sorted_group_starts(group_sizes)
+
+  slice <- TRUE # Should data be sliced at the end?
+  i <- integer()
+
   # Vectorised sequences
   if (length(slice_sizes) == 1){
-    i <- seq_len(slice_sizes)
+    if (slice_sizes < df_nrow(data)){
+      i <- seq_len(slice_sizes)
+    } else {
+      slice <- FALSE
+    }
   } else {
     sequences <- sequence(slice_sizes, from = start, by = 1L)
     if (length(slice_sizes) > 1L){
@@ -141,7 +149,11 @@ f_slice_head <- function(data, n, prop, .by = NULL, keep_order = FALSE){
   if (keep_order){
     i <- sort(i)
   }
-  df_row_slice(data, i)
+  if (slice){
+    df_row_slice(data, i)
+  } else {
+    data
+  }
 }
 #' @rdname f_slice
 #' @export
@@ -153,10 +165,10 @@ f_slice_tail <- function(data, n, prop, .by = NULL, keep_order = FALSE){
   group_sizes <- slice_info[["group_sizes"]]
   slice_sizes <- slice_info[["slice_sizes"]]
   start <- sorted_group_ends(group_sizes)
-  sequences <- sequence(slice_sizes, from = start - slice_sizes + 1L, by = 1L)
   if (length(slice_sizes) == 1){
-    i <- (start -slice_sizes + 1L):start
+    i <- (start - slice_sizes + 1L):start
   } else {
+    sequences <- sequence(slice_sizes, from = start - slice_sizes + 1L, by = 1L)
     if (length(slice_sizes) > 1L){
       i <- unlist(slice_info[["rows"]], recursive = FALSE, use.names = FALSE)[sequences]
     } else {

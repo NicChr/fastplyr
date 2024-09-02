@@ -20,7 +20,10 @@ f_bind_rows <- function(...){
     dots[[1L]]
   } else {
     template <- dots[[1L]]
-    dots <- lapply(dots, df_ungroup)
+    template_names <- names(template)
+    dots <- lapply(
+      dots, function(x) f_select(df_ungroup(x), .cols = template_names)
+    )
     if (!cpp_any_frames_exotic(dots)){
 
       # We can use collapse::rowbind if data frames
@@ -32,17 +35,16 @@ f_bind_rows <- function(...){
       reconstruct(template, do.call(rowbind, dots))
     } else {
 
-      var_names <- names(template)
       # Combine each variable separately
 
       out <- new_df(.nrows = sum(cpp_nrows(dots, FALSE)))
       for (j in seq_len(ncols[1])){
         temp <- vector("list", length(dots))
         for (i in seq_along(dots)){
-          temp[[i]] <- dots[[i]][[var_names[j]]]
+          temp[[i]] <- dots[[i]][[j]]
         }
         out[[j]] <- do.call(f_union_all, temp)
-        names(out)[j] <- var_names[j]
+        names(out)[j] <- template_names[[j]]
       }
       reconstruct(template, out)
     }

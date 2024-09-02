@@ -541,3 +541,10 @@ named_dots <- function(...){
   }
   dots
 }
+na_init <- function(x, size = 1L){
+  if (is_df(x)){
+    df_init(x, size)
+  } else {
+    rep(x[NA_integer_], size)
+  }
+}
