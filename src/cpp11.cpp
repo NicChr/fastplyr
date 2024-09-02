@@ -13,17 +13,17 @@ extern "C" SEXP _fastplyr_cpp_address_equal(SEXP x, SEXP y) {
   END_CPP11
 }
 // fastplyr.cpp
-SEXP cpp_nrows(SEXP x);
-extern "C" SEXP _fastplyr_cpp_nrows(SEXP x) {
+SEXP cpp_nrows(SEXP x, bool check_rows_equal);
+extern "C" SEXP _fastplyr_cpp_nrows(SEXP x, SEXP check_rows_equal) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cpp_nrows(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+    return cpp11::as_sexp(cpp_nrows(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<bool>>(check_rows_equal)));
   END_CPP11
 }
 // fastplyr.cpp
-SEXP cpp_ncols(SEXP x);
-extern "C" SEXP _fastplyr_cpp_ncols(SEXP x) {
+SEXP cpp_ncols(SEXP x, bool check_cols_equal);
+extern "C" SEXP _fastplyr_cpp_ncols(SEXP x, SEXP check_cols_equal) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cpp_ncols(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+    return cpp11::as_sexp(cpp_ncols(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<bool>>(check_cols_equal)));
   END_CPP11
 }
 // fastplyr.cpp
@@ -98,8 +98,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_group_locs",          (DL_FUNC) &_fastplyr_cpp_group_locs,          2},
     {"_fastplyr_cpp_is_exotic",           (DL_FUNC) &_fastplyr_cpp_is_exotic,           1},
     {"_fastplyr_cpp_list_subset",         (DL_FUNC) &_fastplyr_cpp_list_subset,         4},
-    {"_fastplyr_cpp_ncols",               (DL_FUNC) &_fastplyr_cpp_ncols,               1},
-    {"_fastplyr_cpp_nrows",               (DL_FUNC) &_fastplyr_cpp_nrows,               1},
+    {"_fastplyr_cpp_ncols",               (DL_FUNC) &_fastplyr_cpp_ncols,               2},
+    {"_fastplyr_cpp_nrows",               (DL_FUNC) &_fastplyr_cpp_nrows,               2},
     {"_fastplyr_cpp_row_id",              (DL_FUNC) &_fastplyr_cpp_row_id,              3},
     {"_fastplyr_cpp_slice_locs",          (DL_FUNC) &_fastplyr_cpp_slice_locs,          2},
     {"_fastplyr_cpp_sorted_group_starts", (DL_FUNC) &_fastplyr_cpp_sorted_group_starts, 2},

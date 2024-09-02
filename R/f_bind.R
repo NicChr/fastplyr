@@ -13,7 +13,7 @@
 f_bind_rows <- function(...){
   dots <- list3(...)
   n_dots <- length(dots)
-  ncols <- cpp_ncols(dots)
+  ncols <- cpp_ncols(dots, TRUE)
   if (n_dots == 0){
     new_df()
   } else if (n_dots == 1){
@@ -32,16 +32,17 @@ f_bind_rows <- function(...){
       reconstruct(template, do.call(rowbind, dots))
     } else {
 
+      var_names <- names(template)
       # Combine each variable separately
 
-      out <- new_df(.nrows = sum(cpp_nrows(dots)))
+      out <- new_df(.nrows = sum(cpp_nrows(dots, FALSE)))
       for (j in seq_len(ncols[1])){
         temp <- vector("list", length(dots))
         for (i in seq_along(dots)){
-          temp[[i]] <- dots[[i]][[j]]
+          temp[[i]] <- dots[[i]][[var_names[j]]]
         }
         out[[j]] <- do.call(f_union_all, temp)
-        names(out)[j] <- names(dots[[i]])[j]
+        names(out)[j] <- var_names[j]
       }
       reconstruct(template, out)
     }
@@ -51,7 +52,7 @@ f_bind_rows <- function(...){
 #' @export
 f_bind_cols <- function(..., .repair_names = TRUE, .sep = "..."){
   dots <- list3(...)
-  nrows <- cpp_nrows(dots)
+  nrows <- cpp_nrows(dots, TRUE)
   out <- unlist(unname(dots), recursive = FALSE)
   if (.repair_names){
     names(out) <- unique_name_repair(names(out))

@@ -4,12 +4,12 @@ cpp_address_equal <- function(x, y) {
   .Call(`_fastplyr_cpp_address_equal`, x, y)
 }
 
-cpp_nrows <- function(x) {
-  .Call(`_fastplyr_cpp_nrows`, x)
+cpp_nrows <- function(x, check_rows_equal) {
+  .Call(`_fastplyr_cpp_nrows`, x, check_rows_equal)
 }
 
-cpp_ncols <- function(x) {
-  .Call(`_fastplyr_cpp_ncols`, x)
+cpp_ncols <- function(x, check_cols_equal) {
+  .Call(`_fastplyr_cpp_ncols`, x, check_cols_equal)
 }
 
 cpp_is_exotic <- function(x) {

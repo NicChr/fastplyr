@@ -51,7 +51,7 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
     }
     out <- Reduce(anon_join, frames)
   } else {
-    if (prod(cpp_nrows(frames)) > .Machine$integer.max){
+    if (prod(cpp_nrows(frames, FALSE)) > .Machine$integer.max){
       stop("expansion results in >= 2^31 rows, please supply less data")
     }
     df_cj <- function(x, y){
@@ -81,18 +81,7 @@ f_complete <- function(data, ...,  sort = FALSE,
   out <- data
   # Full-join
   if (df_nrow(expanded_df) > 0 && df_ncol(expanded_df) > 0){
-    extra <- f_anti_join(expanded_df, cheapr::sset(out, j = names(expanded_df)))
-    if (df_nrow(extra) > 0){
-      extra <- f_bind_cols(
-        extra,
-        df_init(cheapr::sset(out, j = setdiff(names(out), names(expanded_df))),
-                df_nrow(extra))
-      )
-      out <- f_bind_rows(out, extra)
-    }
-    if (sort){
-      out <- f_arrange(out, .cols = c(group_vars, setdiff(names(expanded_df), group_vars)))
-    }
+    out <- f_full_join(out, expanded_df, by = names(expanded_df), sort = sort)
   }
   # Replace NA with fill
   if (fill_na){

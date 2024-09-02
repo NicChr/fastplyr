@@ -40,36 +40,80 @@ SEXP cpp_address_equal(SEXP x, SEXP y) {
 // nrows/ncols of a list of data frames, typically supplied through ...
 
 [[cpp11::register]]
-SEXP cpp_nrows(SEXP x) {
+SEXP cpp_nrows(SEXP x, bool check_rows_equal) {
   Rf_protect(x = Rf_coerceVector(x, VECSXP));
   const SEXP *p_x = VECTOR_PTR_RO(x);
   int n = Rf_length(x);
   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
   int *p_out = INTEGER(out);
-  for (int i = 0; i < n; ++i) {
-    if (!Rf_isFrame(p_x[i])){
+  if (n < 2){
+    for (int i = 0; i < n; ++i) {
+      if (!Rf_isFrame(p_x[i])){
+        Rf_unprotect(2);
+        Rf_error("All inputs must be data frames");
+      }
+      p_out[i] = Rf_length(Rf_getAttrib(p_x[i], R_RowNamesSymbol));
+    }
+  } else {
+    // First data frame
+    if (!Rf_isFrame(p_x[0])){
       Rf_unprotect(2);
       Rf_error("All inputs must be data frames");
     }
-    p_out[i] = Rf_length(Rf_getAttrib(p_x[i], R_RowNamesSymbol));
+    int nrows = Rf_length(Rf_getAttrib(p_x[0], R_RowNamesSymbol));
+    p_out[0] = nrows;
+    // All others
+    for (int i = 1; i < n; ++i) {
+      if (!Rf_isFrame(p_x[i])){
+        Rf_unprotect(2);
+        Rf_error("All inputs must be data frames");
+      }
+      p_out[i] = Rf_length(Rf_getAttrib(p_x[i], R_RowNamesSymbol));
+      if (check_rows_equal && p_out[i] != nrows){
+        Rf_unprotect(2);
+        Rf_error("All inputs data frames must have the same number of rows");
+      }
+    }
   }
   Rf_unprotect(2);
   return out;
 }
 
 [[cpp11::register]]
-SEXP cpp_ncols(SEXP x) {
+SEXP cpp_ncols(SEXP x, bool check_cols_equal) {
   Rf_protect(x = Rf_coerceVector(x, VECSXP));
   const SEXP *p_x = VECTOR_PTR_RO(x);
   int n = Rf_length(x);
   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
   int *p_out = INTEGER(out);
-  for (int i = 0; i < n; ++i){
-    if (!Rf_isFrame(p_x[i])){
+  if (n < 2){
+    for (int i = 0; i < n; ++i) {
+      if (!Rf_isFrame(p_x[i])){
+        Rf_unprotect(2);
+        Rf_error("All inputs must be data frames");
+      }
+      p_out[i] = Rf_length(p_x[i]);
+    }
+  } else {
+    // First data frame
+    if (!Rf_isFrame(p_x[0])){
       Rf_unprotect(2);
       Rf_error("All inputs must be data frames");
     }
-    p_out[i] = Rf_length(p_x[i]);
+    int ncols = Rf_length(p_x[0]);
+    p_out[0] = ncols;
+    // All others
+    for (int i = 1; i < n; ++i) {
+      if (!Rf_isFrame(p_x[i])){
+        Rf_unprotect(2);
+        Rf_error("All inputs must be data frames");
+      }
+      p_out[i] = Rf_length(p_x[i]);
+      if (check_cols_equal && p_out[i] != ncols){
+        Rf_unprotect(2);
+        Rf_error("All inputs data frames must have the same number of cols");
+      }
+    }
   }
   Rf_unprotect(2);
   return out;
