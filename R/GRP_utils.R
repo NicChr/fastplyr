@@ -97,7 +97,7 @@ group3 <- function(X, starts = FALSE, group.sizes = FALSE){
       attr(out, "class") <- c("qG", "na.included")
       return(out)
     } else {
-      X <- df_mutate_exotic_to_ids(X)
+      X <- df_mutate_exotic_to_ids(X, order = FALSE)
     }
   }
   if (is.list(X) && length(X) == 0) {
@@ -447,7 +447,7 @@ df_to_GRP <- function(data, .cols = character(0),
     out <- df_as_GRP(data, return.order = return.order, return.groups = return.groups)
   } else {
     data <- df_ungroup(data)
-    data2 <- df_mutate_exotic_to_ids(data)
+    data2 <- df_mutate_exotic_to_ids(data, order = order)
     out <- GRP3(
       data2, sort = order,
       return.order = return.order,
@@ -530,7 +530,7 @@ radixorderv2 <- function(x, na.last = TRUE, decreasing = FALSE,
     return(GRP_order(x))
   }
   if (is_df(x)){
-    x <- df_mutate_exotic_to_ids(df_ungroup(x))
+    x <- df_mutate_exotic_to_ids(df_ungroup(x), order = TRUE)
   }
   collapse::radixorderv(x, starts = starts, sort = sort, group.sizes = group.sizes,
                         na.last = na.last, decreasing = decreasing)

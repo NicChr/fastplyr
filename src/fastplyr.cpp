@@ -75,6 +75,29 @@ SEXP cpp_ncols(SEXP x) {
   return out;
 }
 
+[[cpp11::register]]
+bool cpp_is_exotic(SEXP x){
+  return Rf_isVectorList(x) || Rf_isS4(x);
+}
+
+// Specifically applied to a list of data frames, used in `f_bind_rows()`
+
+[[cpp11::register]]
+bool cpp_any_frames_exotic(SEXP x){
+  bool out = false;
+  int n_dots = Rf_length(x);
+  for (int i = 0; i < n_dots; ++i){
+    int ncol = Rf_length(VECTOR_ELT(x, i));
+    for (int j = 0; j < ncol; ++j){
+      if (cpp_is_exotic(VECTOR_ELT(VECTOR_ELT(x, i), j))){
+        out = true;
+        break;
+      }
+    }
+  }
+  return out;
+}
+
 // Fast extract 1 element from each list element
 
 [[cpp11::register]]

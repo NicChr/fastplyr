@@ -511,9 +511,12 @@ all_integerable <- function(x, shift = 0){
   )
 }
 
-# setdiff but no deduplicating
+# setdiff and intersect but no deduplicating
 fast_setdiff <- function(x, y){
   x[match(x, y, nomatch = 0L) == 0L]
+}
+fast_intersect <- function(x, y){
+  x[match(x, y, nomatch = 0L) != 0L]
 }
 
 ## Turn dot expressions into names

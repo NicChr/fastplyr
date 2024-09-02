@@ -67,18 +67,20 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
 
   # Groups
   groups <- df_to_GRP(out, .cols = dup_vars,
-                      return.order = FALSE,
+                      return.order = sort,
                       return.groups = FALSE,
-                      order = FALSE)
+                      order = sort)
   if (.add_count){
     group_sizes <- GRP_expanded_group_sizes(groups)
     n_var_nm <- unique_count_col(out)
     out[[n_var_nm]] <- group_sizes
   }
   which_dup <- GRP_which_duplicated(groups, all = .both_ways)
-  out <- cheapr::sset(out, which_dup)
+
   if (sort){
-    out <- f_arrange(out, .cols = dup_vars)
+    out <- cheapr::sset(out, which_dup[order(GRP_group_id(groups)[which_dup])])
+  } else {
+    out <- cheapr::sset(out, which_dup)
   }
 
   # Remove empty rows (rows with all NA values)

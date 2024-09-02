@@ -81,17 +81,14 @@ f_complete <- function(data, ...,  sort = FALSE,
   out <- data
   # Full-join
   if (df_nrow(expanded_df) > 0 && df_ncol(expanded_df) > 0){
-    extra <- cheapr::setdiff_(
-      expanded_df,
-      cheapr::sset(out, j = names(expanded_df))
-    )
+    extra <- f_anti_join(expanded_df, cheapr::sset(out, j = names(expanded_df)))
     if (df_nrow(extra) > 0){
       extra <- f_bind_cols(
         extra,
         df_init(cheapr::sset(out, j = setdiff(names(out), names(expanded_df))),
                 df_nrow(extra))
       )
-      out <- collapse::rowbind(out, extra)
+      out <- f_bind_rows(out, extra)
     }
     if (sort){
       out <- f_arrange(out, .cols = c(group_vars, setdiff(names(expanded_df), group_vars)))

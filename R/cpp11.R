@@ -12,6 +12,14 @@ cpp_ncols <- function(x) {
   .Call(`_fastplyr_cpp_ncols`, x)
 }
 
+cpp_is_exotic <- function(x) {
+  .Call(`_fastplyr_cpp_is_exotic`, x)
+}
+
+cpp_any_frames_exotic <- function(x) {
+  .Call(`_fastplyr_cpp_any_frames_exotic`, x)
+}
+
 cpp_list_subset <- function(x, ptype, i, default_value) {
   .Call(`_fastplyr_cpp_list_subset`, x, ptype, i, default_value)
 }

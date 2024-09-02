@@ -54,7 +54,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   group_vars <- group_info[["dplyr_groups"]]
   dot_vars <- group_info[["extra_groups"]]
   non_group_dot_vars <- setdiff(dot_vars, group_vars)
-  out <- group_info[["data"]]
+  data2 <- group_info[["data"]]
   quantile_probs <- probs
   quantile_ties <- paste0("q", type)
   q_prcnts <- quantile_probs * 100
@@ -62,12 +62,12 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
                          q_prcnts)
   quantile_out_nms <- structure(strip_attrs(collapse::group(q_prcnts)),
                                 levels = collapse::funique(quantile_nms), class = "factor")
-  groups <- df_to_GRP(out, .cols = group_vars, order = df_group_by_order_default(data))
+  groups <- df_to_GRP(data2, .cols = group_vars, order = df_group_by_order_default(data))
   n_groups <- GRP_n_groups(groups)
   group_starts <- GRP_starts(groups)
-  out <- f_select(out, .cols = c(group_vars, non_group_dot_vars))
-  group_id_nm <- unique_col_name(out, "group_id")
-  out <- df_add_cols(out, add_names(list(GRP_group_id(groups)), group_id_nm))
+  data2 <- f_select(data2, .cols = c(group_vars, non_group_dot_vars))
+  group_id_nm <- unique_col_name(data2, "group_id")
+  data2 <- df_add_cols(data2, add_names(list(GRP_group_id(groups)), group_id_nm))
   if (wide && length(group_info[["all_groups"]]) == 0){
     return(reconstruct(data, new_df()))
   }
@@ -77,8 +77,9 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     colnames(q_df) <- quantile_nms
     return(reconstruct(data, as.data.frame(q_df)))
   }
-  q_df <- df_row_slice(out, group_starts)
-  q_df <- df_rep(q_df, length(probs))
+  q_df <- df_row_slice(data2, group_starts)
+  group_lookup <- f_select(q_df, .cols = c(group_id_nm, group_vars))
+  q_df <- df_rep(f_select(q_df, .cols = c(group_id_nm, non_group_dot_vars)), length(probs))
   q_df[[".quantile"]] <- rep(quantile_out_nms, each = df_nrow(q_df)/length(probs))
   if (length(non_group_dot_vars) > 0) {
     q_df <- dplyr::mutate(q_df, across(all_of(non_group_dot_vars), as.double))
@@ -94,7 +95,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
         q_df[[.col]][p_seq] <-
           as.double(
             collapse::fmin(
-              out[[.col]], g = groups, na.rm = na.rm, use.g.names = FALSE
+              data2[[.col]], g = groups, na.rm = na.rm, use.g.names = FALSE
             )
           )
       }
@@ -102,7 +103,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
         q_df[[.col]][p_seq] <-
           as.double(
             collapse::fmax(
-              out[[.col]], g = groups, na.rm = na.rm, use.g.names = FALSE
+              data2[[.col]], g = groups, na.rm = na.rm, use.g.names = FALSE
             )
           )
       }
@@ -110,7 +111,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
         q_df[[.col]][p_seq] <-
           as.double(
             collapse::fnth(
-              out[[.col]], n = p, g = groups, na.rm = na.rm,
+              data2[[.col]], n = p, g = groups, na.rm = na.rm,
               use.g.names = FALSE, ties = quantile_ties
             )
           )
@@ -128,8 +129,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
                               names = ".quantile", sort = FALSE)
       out_nms <- c(group_vars, setdiff(names(q_df), c(group_vars, group_id_nm)))
     }
-  }
-  else {
+  } else {
     out_nms <- c(
       group_vars,
       setdiff(names(q_df),
@@ -137,7 +137,11 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
       non_group_dot_vars
     )
   }
-  out <- f_select(q_df, .cols = out_nms)
+
+  # Join groups back onto final data frame
+  out <- f_left_join(q_df, group_lookup, by = group_id_nm, multiple = FALSE)
+
+  out <- f_select(out, .cols = out_nms)
   if (!.drop_groups){
     out <- reconstruct(data, out)
   }

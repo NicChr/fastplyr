@@ -19,10 +19,32 @@ f_bind_rows <- function(...){
   } else if (n_dots == 1){
     dots[[1L]]
   } else {
-    rowbind <- function(...){
-      collapse::rowbind(..., return = "data.frame")
+    template <- dots[[1L]]
+    dots <- lapply(dots, df_ungroup)
+    if (!cpp_any_frames_exotic(dots)){
+
+      # We can use collapse::rowbind if data frames
+      # contain simple atomic vectors
+
+      rowbind <- function(...){
+        collapse::rowbind(..., return = "data.frame")
+      }
+      reconstruct(template, do.call(rowbind, dots))
+    } else {
+
+      # Combine each variable separately
+
+      out <- new_df(.nrows = sum(cpp_nrows(dots)))
+      for (j in seq_len(ncols[1])){
+        temp <- vector("list", length(dots))
+        for (i in seq_along(dots)){
+          temp[[i]] <- dots[[i]][[j]]
+        }
+        out[[j]] <- do.call(f_union_all, temp)
+        names(out)[j] <- names(dots[[i]])[j]
+      }
+      reconstruct(template, out)
     }
-    reconstruct(dots[[1L]], do.call(rowbind, dots))
   }
 }
 #' @rdname f_bind_rows
@@ -64,3 +86,25 @@ f_bind_cols <- function(..., .repair_names = TRUE, .sep = "..."){
   }
   out
 }
+
+# f_bind_rows <- function(...){
+#   dots <- list3(...)
+#   n_dots <- length(dots)
+#   ncols <- cpp_ncols(dots)
+#   if (n_dots == 0){
+#     new_df()
+#   } else if (n_dots == 1){
+#     dots[[1L]]
+#   } else {
+#     template <- dots[[1L]]
+#     dots <- lapply(dots, df_ungroup)
+#     if (cpp_any_frames_exotic(dots)){
+#       reconstruct(template, do.call(bind_rows, dots))
+#     } else {
+#       rowbind <- function(...){
+#         collapse::rowbind(..., return = "data.frame")
+#       }
+#       reconstruct(template, do.call(rowbind, dots))
+#     }
+#   }
+# }

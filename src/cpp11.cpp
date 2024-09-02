@@ -27,6 +27,20 @@ extern "C" SEXP _fastplyr_cpp_ncols(SEXP x) {
   END_CPP11
 }
 // fastplyr.cpp
+bool cpp_is_exotic(SEXP x);
+extern "C" SEXP _fastplyr_cpp_is_exotic(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_is_exotic(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// fastplyr.cpp
+bool cpp_any_frames_exotic(SEXP x);
+extern "C" SEXP _fastplyr_cpp_any_frames_exotic(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_any_frames_exotic(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// fastplyr.cpp
 SEXP cpp_list_subset(SEXP x, SEXP ptype, SEXP i, SEXP default_value);
 extern "C" SEXP _fastplyr_cpp_list_subset(SEXP x, SEXP ptype, SEXP i, SEXP default_value) {
   BEGIN_CPP11
@@ -79,8 +93,10 @@ extern "C" SEXP _fastplyr_cpp_slice_locs(SEXP group_locs, SEXP locs) {
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_address_equal",       (DL_FUNC) &_fastplyr_cpp_address_equal,       2},
+    {"_fastplyr_cpp_any_frames_exotic",   (DL_FUNC) &_fastplyr_cpp_any_frames_exotic,   1},
     {"_fastplyr_cpp_df_group_indices",    (DL_FUNC) &_fastplyr_cpp_df_group_indices,    2},
     {"_fastplyr_cpp_group_locs",          (DL_FUNC) &_fastplyr_cpp_group_locs,          2},
+    {"_fastplyr_cpp_is_exotic",           (DL_FUNC) &_fastplyr_cpp_is_exotic,           1},
     {"_fastplyr_cpp_list_subset",         (DL_FUNC) &_fastplyr_cpp_list_subset,         4},
     {"_fastplyr_cpp_ncols",               (DL_FUNC) &_fastplyr_cpp_ncols,               1},
     {"_fastplyr_cpp_nrows",               (DL_FUNC) &_fastplyr_cpp_nrows,               1},

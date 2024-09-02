@@ -13,7 +13,7 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
   }
 
   if (is.null(by)){
-    by <- intersect(names(x), names(y))
+    by <- fast_intersect(names(x), names(y))
     if (length(by) == 0){
       stop("No common variables, please specify variables to join on")
     }
@@ -32,17 +32,17 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
   }
   join_cols_right <- unname(by)
 
-  common_cols <- intersect(names(x), names(y))
+  common_cols <- fast_intersect(names(x), names(y))
 
-  unjoinable_cols <- c(setdiff(join_cols_left, names(x)),
-                       setdiff(join_cols_right, names(y)))
+  unjoinable_cols <- c(fast_setdiff(join_cols_left, names(x)),
+                       fast_setdiff(join_cols_right, names(y)))
 
   if (length(unjoinable_cols) > 0){
     stop(paste0("Unable to join by '", unjoinable_cols[1], "' as it does not exist"))
   }
 
-  non_joined_common_cols_left <- setdiff(common_cols, join_cols_left)
-  non_joined_common_cols_right <- setdiff(common_cols, join_cols_right)
+  non_joined_common_cols_left <- fast_setdiff(common_cols, join_cols_left)
+  non_joined_common_cols_right <- fast_setdiff(common_cols, join_cols_right)
 
   # Add suffixes
 
@@ -63,7 +63,6 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
 
       join_cols_left <- paste0(join_cols_left, suffix[1L])
       join_cols_right <- paste0(join_cols_right, suffix[2L])
-
     }
   }
 
@@ -83,7 +82,7 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
 
   exotic_cols_left <- names(x)[!cpp_address_equal(x, left)]
   exotic_cols_right <- names(y)[!cpp_address_equal(y, right)]
-  exotic_cols_right <- setdiff(exotic_cols_right, exotic_cols_left)
+  exotic_cols_right <- fast_setdiff(exotic_cols_right, exotic_cols_left)
 
   # Join
 
@@ -120,7 +119,7 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
 
   # Names ordered correctly
 
-  out_nms <- c(names(left), intersect(setdiff(names(right), names(left)), names(out)))
+  out_nms <- c(names(left), fast_intersect(fast_setdiff(names(right), names(left)), names(out)))
   out <- f_select(out, .cols = out_nms)
 
 
@@ -132,14 +131,14 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
       out[[col]] <- cheapr::sset(x[[col]], matches)
     }
   }
-if (!semi_or_anti){
-  if (length(exotic_cols_right) > 0){
-    for (col in exotic_cols_right){
-      matches <- collapse::fmatch(out[[col]], right[[col]], overid = 2L)
-      out[[col]] <- cheapr::sset(y[[col]], matches)
+  if (!semi_or_anti){
+    if (length(exotic_cols_right) > 0){
+      for (col in exotic_cols_right){
+        matches <- collapse::fmatch(out[[col]], right[[col]], overid = 2L)
+        out[[col]] <- cheapr::sset(y[[col]], matches)
+      }
     }
   }
-}
   out
 }
 
@@ -215,5 +214,23 @@ f_semi_join <- function(x, y, by = NULL,
   f_join(x, y, by = by, suffix = suffix,
          multiple = multiple, keep = keep,
          join_type = "semi", ...)
+}
+#' @rdname join
+#' @export
+f_union_all <- function(x, y, ...){
+  if (is_df(x)){
+    f_bind_rows(x, y)
+  } else {
+    c(x, y)
+  }
+}
+#' @rdname join
+#' @export
+f_union <- function(x, y, ...){
+  if (is_df(x)){
+    f_distinct(f_union_all(x, y))
+  } else {
+    unique(c(x, y))
+  }
 }
 

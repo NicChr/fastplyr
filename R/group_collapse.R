@@ -85,7 +85,7 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
             names(factors)
           )
         )
-        missed <- cheapr::setdiff_(full, group_out)
+        missed <- f_anti_join(full, group_out)
         for (non_factor in names(group_out)[which(is_factor, invert = TRUE)]){
           missed[[non_factor]] <- group_out[[non_factor]][NA_integer_]
         }
@@ -105,7 +105,7 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
         if (size){
           missed[[".size"]] <- 0L
         }
-        out <- collapse::rowbind(out, missed, return = "data.frame")
+        out <- f_bind_rows(out, missed)
         if (id){
           out[[".group"]] <- group_id(f_select(out, .cols = group_names),
                                       order = order)
