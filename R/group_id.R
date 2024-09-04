@@ -77,12 +77,31 @@ group_id.factor <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE)
 }
 #' @export
 group_id.list <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
-  group_id(
-    factor(data, levels = unique(data)),
-    order = order,
-    ascending = ascending,
-    as_qg = as_qg
-  )
+
+  # vctrs internal hashing on lists is very good
+
+  out <- as.integer(vctrs::vec_group_id(as.list(data)))
+  if (as_qg){
+    out <- group_id(out, order = FALSE, ascending = ascending, as_qg = as_qg)
+  }
+  out
+
+  # 4 Alternate methods
+  # apply group_id(, order = F) on the below
+
+  # xxhash64 on serialized data
+  # hash_serialized_list(
+  #   lapply(data, serialize, NULL, FALSE), 287572358
+  # )
+
+  ## xxh3 also using R's native serialization
+  # xxhash_r_list_(data)
+
+  # Using R match + unique
+  # factor(data, levels = unique(data))
+
+  # rlang's xxhash128
+  # vapply(data, rlang::hash, "", USE.NAMES = FALSE)
 }
 # No need to have this anymore as there is a collapse::GRP.interval method..
 #' @export

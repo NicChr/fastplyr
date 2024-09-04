@@ -7,6 +7,8 @@ Authors@R:
 Description: A full set of fast data manipulation tools with a tidy
     front-end and a fast back-end using 'collapse' and 'cheapr'.
 License: MIT + file LICENSE
+Depends: 
+    R (>= 3.6.1)
 Imports: 
     cheapr (>= 0.9.3),
     collapse (>= 2.0.0),
@@ -14,7 +16,8 @@ Imports:
     magrittr,
     rlang,
     stringr,
-    tidyselect
+    tidyselect,
+    vctrs
 Suggests:
     nycflights13,
     testthat (>= 3.0.0),

@@ -1,13 +1,4 @@
-#include <cpp11.hpp>
-#include <Rinternals.h>
-
-#ifndef R_NO_REMAP
-#define R_NO_REMAP
-#endif
-
-#ifndef VECTOR_PTR_RO
-#define VECTOR_PTR_RO(x) ((const SEXP*) DATAPTR_RO(x))
-#endif
+#include "fastplyr.h"
 
 
 SEXP cpp_r_obj_address(SEXP x) {
@@ -466,17 +457,3 @@ SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
   Rf_unprotect(1);
   return out;
 }
-// SEXP cpp_slice_locs(SEXP group_locs, SEXP slice_locs){
-//   int n_groups = Rf_length(group_locs);
-//
-//   const SEXP *p_groups = VECTOR_PTR_RO(group_locs);
-//   const SEXP *p_slices = VECTOR_PTR_RO(slice_locs);
-//
-//   SEXP out = Rf_protect(Rf_allocVector(VECSXP, n_groups));
-//
-//   for (int i = 0; i < n_groups; ++i){
-//     SET_VECTOR_ELT(out, i, cpp_int_slice(p_groups[i], p_slices[i], true));
-//   }
-//   Rf_unprotect(1);
-//   return out;
-// }

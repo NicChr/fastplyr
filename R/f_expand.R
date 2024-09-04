@@ -82,6 +82,17 @@ f_complete <- function(data, ...,  sort = FALSE,
   # Full-join
   if (df_nrow(expanded_df) > 0 && df_ncol(expanded_df) > 0){
     out <- f_full_join(out, expanded_df, by = names(expanded_df), sort = sort)
+
+    # Alternative method using essentially setdiff() + rbind()
+    # extra <- f_anti_join(expanded_df, f_select(out, .cols = names(expanded_df)))
+    # if (df_nrow(extra) > 0){
+    #   extra <- f_bind_cols(
+    #     extra,
+    #     df_init(f_select(out, .cols = setdiff(names(out), names(expanded_df))),
+    #             df_nrow(extra))
+    #   )
+    #   out <- f_bind_rows(out, extra)
+    # }
   }
   # Replace NA with fill
   if (fill_na){
