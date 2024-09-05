@@ -17,7 +17,7 @@ Imports:
     rlang,
     stringr,
     tidyselect,
-    vctrs
+    vctrs (>= 0.6.0)
 Suggests:
     nycflights13,
     testthat (>= 3.0.0),
