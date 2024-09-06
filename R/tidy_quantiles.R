@@ -158,8 +158,9 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   out <- f_left_join(q_df, group_lookup, by = group_id_nm, multiple = FALSE)
 
   out <- f_select(out, .cols = out_nms)
-  if (!.drop_groups){
-    out <- reconstruct(data, out)
+  if (.drop_groups){
+    reconstruct(df_ungroup(data), out)
+  } else {
+    reconstruct(data, out)
   }
-  out
 }
