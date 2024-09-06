@@ -93,6 +93,10 @@ both data frames be kept? Default is \code{FALSE}.}
 
 \item{...}{Additional arguments passed to \code{collapse::join()}.}
 }
+\value{
+A joined data frame on the columns specified with \code{by}, using an
+equality join.
+}
 \description{
 Mostly a wrapper around \code{collapse::join()} that behaves more like
 dplyr's joins. List columns, lubridate intervals and vctrs rcrds

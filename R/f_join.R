@@ -161,6 +161,10 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
 #' both data frames be kept? Default is `FALSE`.
 #' @param ... Additional arguments passed to `collapse::join()`.
 #'
+#' @returns
+#' A joined data frame on the columns specified with `by`, using an
+#' equality join.
+#'
 #' @rdname join
 #' @export
 f_left_join <- function(x, y, by = NULL,
@@ -227,10 +231,6 @@ f_union_all <- function(x, y, ...){
 #' @rdname join
 #' @export
 f_union <- function(x, y, ...){
-  if (is_df(x)){
-    f_distinct(f_union_all(x, y))
-  } else {
-    unique(c(x, y))
-  }
+  sort_unique(f_union_all(x, y))
 }
 

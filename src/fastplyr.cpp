@@ -62,7 +62,7 @@ SEXP cpp_nrows(SEXP x, bool check_rows_equal) {
       p_out[i] = Rf_length(Rf_getAttrib(p_x[i], R_RowNamesSymbol));
       if (check_rows_equal && p_out[i] != nrows){
         Rf_unprotect(2);
-        Rf_error("All inputs data frames must have the same number of rows");
+        Rf_error("All input data frames must have the same number of rows");
       }
     }
   }
@@ -102,7 +102,7 @@ SEXP cpp_ncols(SEXP x, bool check_cols_equal) {
       p_out[i] = Rf_length(p_x[i]);
       if (check_cols_equal && p_out[i] != ncols){
         Rf_unprotect(2);
-        Rf_error("All inputs data frames must have the same number of cols");
+        Rf_error("All input data frames must have the same number of cols");
       }
     }
   }
@@ -112,7 +112,7 @@ SEXP cpp_ncols(SEXP x, bool check_cols_equal) {
 
 [[cpp11::register]]
 bool cpp_is_exotic(SEXP x){
-  return Rf_isVectorList(x) || Rf_isS4(x);
+  return Rf_isVectorList(x) || Rf_isS4(x) || !Rf_isVector(x);
 }
 
 // Specifically applied to a list of data frames, used in `f_bind_rows()`

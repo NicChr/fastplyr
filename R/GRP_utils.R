@@ -72,14 +72,17 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
 # Two alternatives to collapse::group
 # They both handle nested data frames
 
+# group2() is simpler (and better) but has 'large' overhead
 group2 <- function(X){
   group_id(X, order = FALSE, as_qg = TRUE)
 }
+# Lower overhead than group2() and is essentially an extension
+# to collapse::group() for list objects, etc
 group3 <- function(X, starts = FALSE, group.sizes = FALSE){
   if (is.null(X)) {
     return(NULL)
   }
-  if (is_df(X)) {
+  if (inherits(X, "data.frame")) {
     if (df_ncol(X) == 0){
       N <- df_nrow(X)
       out <- rep_len(1L, N)
@@ -99,9 +102,17 @@ group3 <- function(X, starts = FALSE, group.sizes = FALSE){
     } else {
       X <- df_mutate_exotic_to_ids(X, order = FALSE)
     }
-  }
-  if (is.list(X) && length(X) == 0) {
-    return(NULL)
+  } else if (cpp_is_exotic(X)){
+
+    # Essentially group2() as above
+    out <- group_id(X, order = FALSE, as_qg = TRUE)
+    if (!starts){
+      attr(out, "starts") <- NULL
+    }
+    if (!group.sizes){
+      attr(out, "group.sizes") <- NULL
+    }
+    return(out)
   }
   collapse::group(X, starts = starts, group.sizes = group.sizes)
 }
@@ -513,24 +524,27 @@ radixorderv2 <- function(x, na.last = TRUE, decreasing = FALSE,
   if (is.null(x)){
     return(NULL)
   }
-  if (is_df(x) && df_ncol(x) == 0){
-    N <- df_nrow(x)
-    out <- seq_len(N)
-    if (starts){
-      attr(out, "starts") <- if (N == 0) integer() else 1L
-    }
-    if (group.sizes){
-      attr(out, "group.sizes") <- if (N == 0) integer() else N
-    }
-    attr(out, "maxgrpn") <- N
-    attr(out, "sorted") <- TRUE
-    return(out)
-  }
   if (is_GRP(x)){
     return(GRP_order(x))
   }
   if (is_df(x)){
-    x <- df_mutate_exotic_to_ids(df_ungroup(x), order = TRUE)
+    if (df_ncol(x) == 0){
+      N <- df_nrow(x)
+      out <- seq_len(N)
+      if (starts){
+        attr(out, "starts") <- if (N == 0) integer() else 1L
+      }
+      if (group.sizes){
+        attr(out, "group.sizes") <- if (N == 0) integer() else N
+      }
+      attr(out, "maxgrpn") <- N
+      attr(out, "sorted") <- TRUE
+      return(out)
+    } else {
+      x <- df_mutate_exotic_to_ids(df_ungroup(x), order = TRUE)
+    }
+  } else if (cpp_is_exotic(x)){
+    x <- group_id(x, order = TRUE)
   }
   collapse::radixorderv(x, starts = starts, sort = sort, group.sizes = group.sizes,
                         na.last = na.last, decreasing = decreasing)

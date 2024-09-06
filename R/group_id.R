@@ -46,6 +46,17 @@ group_id <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
 }
 #' @export
 group_id.default <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
+
+  # Use hashing for S4 objects and non-data frame lists
+
+  if (!is_df(data) && cpp_is_exotic(data)){
+    return(
+      group_id_hash(
+        data, order = order, ascending = ascending, as_qg = as_qg
+      )
+    )
+  }
+
   g <- GRP2(df_ungroup(data),
             sort = order,
             decreasing = !ascending,
@@ -77,10 +88,13 @@ group_id.factor <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE)
 }
 #' @export
 group_id.list <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
+  group_id_hash(as.list(data), order = FALSE, as_qg = as_qg)
+}
+group_id_hash <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
 
   # vctrs internal hashing on lists is very good
 
-  out <- as.integer(vctrs::vec_group_id(as.list(data)))
+  out <- as.integer(vctrs::vec_group_id(data))
   if (as_qg){
     out <- group_id(out, order = FALSE, ascending = ascending, as_qg = as_qg)
   }

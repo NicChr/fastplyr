@@ -132,20 +132,3 @@ nesting <- function(..., sort = FALSE){
   }
   df_as_tbl(sort_unique(do.call(f_bind_cols, dots), sort = sort))
 }
-
-# Very fast unique function
-sort_unique <- function(x, sort = FALSE){
-  if (sort){
-    o <- radixorderv2(x, starts = TRUE)
-    starts <- o[attr(o, "starts")]
-    subset <- !(length(starts) == NROW(x) && isTRUE(attr(o, "sorted")))
-  } else {
-    starts <- attr(group3(x, starts = TRUE), "starts")
-    subset <- length(starts) != NROW(x)
-  }
-  if (subset){
-    cheapr::sset(x, starts)
-  } else {
-    x
-  }
-}

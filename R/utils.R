@@ -159,7 +159,9 @@ mutate_summary_ungrouped <- function(.data, ...,
     "class",
     "dplyr_by"
   )
-  cols <- mutate_cols(bare_data, dplyr_quosures(...),
+  dplyr_quos <- dplyr_quosures(...)
+  # names(dplyr_quos) <- dot_expr_names(...)
+  cols <- mutate_cols(bare_data, dplyr_quos,
                       by = by, error_call = error_call)
   out_data <- dplyr::dplyr_col_modify(bare_data, cols)
   final_cols <- names(cols)
@@ -183,7 +185,9 @@ mutate_summary_grouped <- function(.data, ...,
   by <- compute_by(by = {{ .by }}, data = .data,
                    by_arg = ".by", data_arg = ".data")
   group_vars <- get_groups(.data, .by = {{ .by }})
-  cols <- mutate_cols(.data, dplyr_quosures(...),
+  dplyr_quos <- dplyr_quosures(...)
+  # names(dplyr_quos) <- dot_expr_names(...)
+  cols <- mutate_cols(.data, dplyr_quos,
                       by = by, error_call = error_call)
   out_data <- dplyr::dplyr_col_modify(.data, cols)
   final_cols <- names(cols)
@@ -523,6 +527,8 @@ fast_intersect <- function(x, y){
 ## Used in the below named_dots()
 
 dot_expr_names <- function(...){
+  # as.character(substitute(c(...))[-1L])
+  # vapply(substitute(alist(...))[-1L], deparse1, "", USE.NAMES = FALSE)
   vapply(substitute(alist(...))[-1L], deparse2, "", USE.NAMES = FALSE)
 }
 
@@ -546,5 +552,27 @@ na_init <- function(x, size = 1L){
     df_init(x, size)
   } else {
     rep(x[NA_integer_], size)
+  }
+}
+
+# Very fast unique function
+sort_unique <- function(x, sort = FALSE){
+  if (sort){
+    o <- radixorderv2(x, starts = TRUE, sort = TRUE)
+    starts <- NULL
+    sorted_starts <- attr(o, "starts")
+    sorted <- isTRUE(attr(o, "sorted"))
+    subset <- !(length(sorted_starts) == NROW(x) && sorted)
+    if (subset){
+      starts <- o[sorted_starts]
+    }
+  } else {
+    starts <- attr(group3(x, starts = TRUE), "starts")
+    subset <- length(starts) != NROW(x)
+  }
+  if (subset){
+    cheapr::sset(x, starts)
+  } else {
+    x
   }
 }
