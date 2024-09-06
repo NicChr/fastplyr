@@ -52,7 +52,7 @@
 #' If left `NULL` (the default), then the seed is never modified.
 #'
 #' @returns
-#' A `data.frame` of specified rows.
+#' A `data.frame` filtered on the specified row indices.
 #'
 #' @rdname f_slice
 #' @export

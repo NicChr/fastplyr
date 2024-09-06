@@ -162,7 +162,7 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
 #' @param ... Additional arguments passed to `collapse::join()`.
 #'
 #' @returns
-#' A joined data frame on the columns specified with `by`, using an
+#' A joined data frame, joined on the columns specified with `by`, using an
 #' equality join.
 #'
 #' @rdname join

@@ -64,7 +64,7 @@ f_bind_cols <- function(..., .repair_names = TRUE, .sep = "..."){
   nrows <- cpp_nrows(dots, TRUE)
   out <- unlist(unname(dots), recursive = FALSE)
   if (.repair_names){
-    names(out) <- unique_name_repair(names(out))
+    names(out) <- unique_name_repair(names(out), .sep = .sep)
   }
   out <- list_as_df(out)
   if (length(dots) == 1){

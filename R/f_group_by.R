@@ -24,7 +24,7 @@
 #' signify if the groups are sorted or not.
 #'
 #' @returns
-#' A `grouped_df`.
+#' A `grouped_df` that can be used further for grouped calculations.
 #'
 #' @rdname f_group_by
 #' @export

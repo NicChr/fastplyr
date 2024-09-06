@@ -94,7 +94,7 @@ both data frames be kept? Default is \code{FALSE}.}
 \item{...}{Additional arguments passed to \code{collapse::join()}.}
 }
 \value{
-A joined data frame on the columns specified with \code{by}, using an
+A joined data frame, joined on the columns specified with \code{by}, using an
 equality join.
 }
 \description{

@@ -87,7 +87,7 @@ is restored to ensure seed continuity.
 If left \code{NULL} (the default), then the seed is never modified.}
 }
 \value{
-A \code{data.frame} of specified rows.
+A \code{data.frame} filtered on the specified row indices.
 }
 \description{
 When there are lots of groups, the \code{f_slice()} functions are much faster.
