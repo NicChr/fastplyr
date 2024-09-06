@@ -17,6 +17,13 @@ Default is \code{TRUE}.}
 
 \item{.sep}{Separator to use for creating unique column names.}
 }
+\value{
+\code{f_bind_rows()} performs a union of the data frames specified via \code{...} and
+joins the rows of all the data frames, without removing duplicates.
+
+\code{f_bind_cols} joins the columns, creating unique column names if there are
+any duplicates by default.
+}
 \description{
 Faster bind rows and columns.
 }
