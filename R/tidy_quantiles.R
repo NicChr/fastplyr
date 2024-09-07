@@ -54,6 +54,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   dot_vars <- group_info[["extra_groups"]]
 
   # Constructing quantile info
+  n_probs <- length(probs)
   quantile_probs <- probs
   quantile_ties <- paste0("q", type)
   q_prcnts <- quantile_probs * 100
@@ -101,18 +102,16 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   data2 <- df_add_cols(data2, add_names(list(GRP_group_id(groups)), group_id_nm))
   q_df <- df_row_slice(data2, group_starts)
   group_lookup <- f_select(q_df, .cols = c(group_id_nm, group_vars))
-  q_df <- df_rep(f_select(q_df, .cols = c(group_id_nm, dot_vars)), length(probs))
-  q_df[[".quantile"]] <- rep(quantile_out_nms, each = df_nrow(q_df)/length(probs))
+  q_df <- df_rep_each(f_select(q_df, .cols = c(group_id_nm, dot_vars)), n_probs)
+  q_df[[".quantile"]] <- rep(quantile_out_nms, df_nrow(q_df) / n_probs)
   if (length(dot_vars) > 0) {
     q_df <- dplyr::mutate(q_df, across(all_of(dot_vars), as.double))
   }
-  seq_groups <- seq_len(n_groups)
+  quantile_starts <- (length(probs) * (0:(max(n_groups - 1L, 0L)))) + 1L
   for (.col in dot_vars) {
     k <- 0L
-    probi <- 0L
     for (p in probs) {
-      p_seq <- seq_groups + probi
-      probi <- probi + n_groups
+      p_seq <- quantile_starts + k
       k <- k + 1L
       if (p == 0) {
         q_df[[.col]][p_seq] <-
@@ -141,6 +140,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
       }
     }
   }
+  group_lookup <- f_select(group_lookup, .cols = group_vars)
   if (wide){
       q_df <- collapse::pivot(q_df, how = "wider", values = dot_vars,
                               names = ".quantile", sort = FALSE)
@@ -152,10 +152,16 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
               c(group_vars, dot_vars, group_id_nm)),
       dot_vars
     )
+    group_lookup <- df_rep_each(group_lookup, n_probs)
   }
 
   # Join groups back onto final data frame
-  out <- f_left_join(q_df, group_lookup, by = group_id_nm, multiple = FALSE)
+  # Left join is obviously simplest but we don't need to do the match
+  # because we already know exactly how to join
+  # out <- f_left_join(q_df, group_lookup, by = group_id_nm, multiple = FALSE)
+
+
+  out <- f_bind_cols(q_df, group_lookup)
 
   out <- f_select(out, .cols = out_nms)
   if (.drop_groups){

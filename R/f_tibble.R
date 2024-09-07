@@ -68,12 +68,19 @@ f_deframe <- function(x){
 as_tbl <- function(x){
   if (is_df(x)){
     out <- df_as_tbl(x)
-  } else if (is.atomic(x)){
+  } else if (is.atomic(x) && length(dim(x)) < 2){
     out <- list3(name = names(x), value = x)
     attr(out, "row.names") <- .set_row_names(NROW(x))
     class(out) <- c("tbl_df", "tbl", "data.frame")
   } else {
-    out <- list_as_tbl(do.call(cheapr::recycle, as.list(x)))
+    # Plain list
+    if (!is.object(x) && is.list(x)){
+      out <- list_as_tbl(do.call(cheapr::recycle, as.list(x)))
+    } else {
+      out <- df_as_tbl(
+        as.data.frame(x, stringsAsFactors = FALSE)
+      )
+    }
     if (is.null(names(out))){
       names(out) <- paste0("col_", seq_along(out))
     }
