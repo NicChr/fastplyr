@@ -196,6 +196,7 @@ add_group_id.data.frame <- function(data, ...,
                                 rename = FALSE)
   all_groups <- group_info[["all_groups"]]
   extra_groups <- group_info[["extra_groups"]]
+  group_vars <- group_info[["dplyr_groups"]]
   groups_changed <- group_info[["groups_changed"]]
 
   # Usual Method for when data does not contain interval
@@ -213,6 +214,7 @@ add_group_id.data.frame <- function(data, ...,
     }
   } else {
     if (length(extra_groups) == 0 &&
+        length(group_vars) == length(group_vars(data)) &&
         !groups_changed &&
         order == df_group_by_order_default(data) &&
         ascending &&

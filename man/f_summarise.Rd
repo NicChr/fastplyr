@@ -2,9 +2,12 @@
 % Please edit documentation in R/f_summarise.R
 \name{f_summarise}
 \alias{f_summarise}
+\alias{f_summarize}
 \title{Summarise each group down to one row}
 \usage{
-f_summarise(data, ..., .by = NULL)
+f_summarise(data, ..., .by = NULL, .optimise = TRUE)
+
+f_summarize(data, ..., .by = NULL, .optimise = TRUE)
 }
 \arguments{
 \item{data}{A data frame.}
@@ -14,6 +17,9 @@ f_summarise(data, ..., .by = NULL)
 
 \item{.by}{(Optional). A selection of columns to group by for this operation.
 Columns are specified using tidy-select.}
+
+\item{.optimise}{(Optionally) turn off optimisations for common statistical
+functions by setting to \code{FALSE}. Default is \code{TRUE} which uses optimisations.}
 }
 \value{
 An un-grouped data frame of summaries by group.
@@ -30,19 +36,21 @@ supplied to \code{...} are evaluated independently.
 Some functions are internally optimised using 'collapse'
 fast statistical functions. This makes execution on many groups very fast.
 
-List of currently optimised functions:
+For fast quantiles (percentiles) by group, see \link{tidy_quantiles}
 
-\code{base::sum} \cr
-\code{base::prod} \cr
-\code{base::min} \cr
-\code{base::max} \cr
-\code{base::mode} \cr
-\code{stats::mean} \cr
-\code{stats::sd} \cr
-\code{stats::var} \cr
-\code{dplyr::first} \cr
-\code{dplyr::last} \cr
-\code{dplyr::n_distinct} \cr
+List of currently optimised functions and their equivalent
+'collapse' function
+
+\code{base::sum} -> \code{collapse::fsum} \cr
+\code{base::prod} -> \code{collapse::fprod} \cr
+\code{base::min} -> \code{collapse::fmin} \cr
+\code{base::max} -> \code{collapse::fmax} \cr
+\code{stats::mean} -> \code{collapse::fmean} \cr
+\code{stats::sd} -> \code{collapse::fsd} \cr
+\code{stats::var} -> \code{collapse::fvar} \cr
+\code{dplyr::first} -> \code{collapse::ffirst} \cr
+\code{dplyr::last} -> \code{collapse::flast} \cr
+\code{dplyr::n_distinct} -> \code{collapse::fndistinct} \cr
 }
 }
 \examples{
@@ -72,4 +80,7 @@ flights |>
     .by = origin
   )
 collapse::set_collapse(na.rm = TRUE)
+}
+\seealso{
+\link{tidy_quantiles}
 }

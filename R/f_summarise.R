@@ -8,6 +8,10 @@
 #' `across()` are also accepted.
 #' @param .by (Optional). A selection of columns to group by for this operation.
 #' Columns are specified using tidy-select.
+#' @param .optimise (Optionally) turn off optimisations for common statistical
+#' functions by setting to `FALSE`. Default is `TRUE` which uses optimisations.
+#'
+#' @seealso [tidy_quantiles]
 #'
 #' @returns
 #' An un-grouped data frame of summaries by group.
@@ -21,19 +25,22 @@
 #' Some functions are internally optimised using 'collapse'
 #' fast statistical functions. This makes execution on many groups very fast.
 #'
-#' List of currently optimised functions:
+#' For fast quantiles (percentiles) by group, see [tidy_quantiles]
 #'
-#' `base::sum` \cr
-#' `base::prod` \cr
-#' `base::min` \cr
-#' `base::max` \cr
-#' `base::mode` \cr
-#' `stats::mean` \cr
-#' `stats::sd` \cr
-#' `stats::var` \cr
-#' `dplyr::first` \cr
-#' `dplyr::last` \cr
-#' `dplyr::n_distinct` \cr
+#'
+#' List of currently optimised functions and their equivalent
+#' 'collapse' function
+#'
+#' `base::sum` -> `collapse::fsum` \cr
+#' `base::prod` -> `collapse::fprod` \cr
+#' `base::min` -> `collapse::fmin` \cr
+#' `base::max` -> `collapse::fmax` \cr
+#' `stats::mean` -> `collapse::fmean` \cr
+#' `stats::sd` -> `collapse::fsd` \cr
+#' `stats::var` -> `collapse::fvar` \cr
+#' `dplyr::first` -> `collapse::ffirst` \cr
+#' `dplyr::last` -> `collapse::flast` \cr
+#' `dplyr::n_distinct` -> `collapse::fndistinct` \cr
 #'
 #' @examples
 #' library(fastplyr)
@@ -62,10 +69,11 @@
 #'     .by = origin
 #'   )
 #' collapse::set_collapse(na.rm = TRUE)
+#' @rdname f_summarise
 #' @export
-f_summarise <- function(data, ..., .by = NULL){
+f_summarise <- function(data, ..., .by = NULL, .optimise = TRUE){
   base_fns <- c("sum", "prod", "mean", "min", "max", "first", "last",
-                "sd", "var", "mode", "n_distinct")
+                "sd", "var", "n_distinct", "ndistinct")
   collapse_fns <- paste0("f", base_fns)
   collapse_fns[base_fns == "n_distinct"] <- "fndistinct"
   optimised_fns <- c(base_fns, collapse_fns)
@@ -104,11 +112,16 @@ f_summarise <- function(data, ..., .by = NULL){
       dot_nm <- dot_label
     }
     dot_env <- rlang::quo_get_env(dot)
-    if (is_n_call(dot)){
-      out[[dot_nm]] <- GRP_group_sizes(groups)
-    } else if (is_optimised_call(dot)){
-      dot_args <- rlang::call_args(dot)
+    dot_args <- rlang::call_args(dot)
+    if (length(dot_args) == 0){
+      var <- character()
+    } else {
       var <- as.character(dot_args[[1]])
+    }
+    var_not_nested <- length(var) <= 1
+    if (.optimise && is_n_call(dot) && var_not_nested){
+      out[[dot_nm]] <- GRP_group_sizes(groups)
+    } else if (.optimise && is_optimised_call(dot) && var_not_nested){
       fun_name <- unlist(
         stringr::str_match_all(
           stringr::str_remove(
@@ -136,7 +149,7 @@ f_summarise <- function(data, ..., .by = NULL){
         temp <- dplyr::summarise(data, !!!dots[i])
         out[[dot_nm]] <- f_select(temp, .cols = df_ncol(temp))
       }
-    } else if (is_across_call(dot)){
+    } else if (.optimise && is_across_call(dot)){
       dot_args <- rlang::call_args(dot)
       across_expr <- match.call(
         definition = dplyr::across,
@@ -245,6 +258,9 @@ f_summarise <- function(data, ..., .by = NULL){
   }
   reconstruct(df_ungroup(data), out)
 }
+#' @rdname f_summarise
+#' @export
+f_summarize <- f_summarise
 
 fast_eval_across <- function(data, g, .cols, .fns, env, .names = NULL){
   ncols <- length(.cols)
