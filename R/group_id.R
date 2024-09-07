@@ -277,15 +277,10 @@ row_id.GRP <- function(data, ascending = TRUE){
     }
     out <- sequence(group_sizes, from = start, by = every)
   } else {
-    if (!ascending){
-      out <- cpp_row_id(order = GRP_order(data),
-                        group_sizes = group_sizes,
-                        ascending = FALSE)
-    } else {
-      out <- cpp_row_id(order = GRP_order(data),
-                        group_sizes = group_sizes,
-                        ascending = TRUE)
-    }
+    group_order <- GRP_order(data)
+    out <- cpp_row_id(order = group_order,
+                      group_sizes = group_sizes,
+                      ascending = ascending)
   }
   out
 }
@@ -379,8 +374,6 @@ quick_group <- function(x, order = TRUE, ascending = TRUE, na_exclude = FALSE){
         first_na_loc <- cheapr::which_na(unique_ids)
         is_na_last_group <- first_na_loc == n_groups
         if (!is_na_last_group){
-          # ids_after_na <- (first_na_loc + 1L):n_groups
-          # id_locs <- which_not_na(collapse::fmatch(out, ids_after_na, overid = 2L))
           id_locs <- which(out > first_na_loc)
           out[id_locs] <- out[id_locs] - 1L
         }

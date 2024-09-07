@@ -123,33 +123,29 @@ is_GRP <- function(GRP){
 }
 # Number of groups
 GRP_n_groups <- function(GRP){
-  .subset2(GRP, "N.groups")
-  # GRP[["N.groups"]]
+  GRP[["N.groups"]]
 }
 # Group IDs (integer)
 GRP_group_id <- function(GRP){
-  .subset2(GRP, "group.id")
-  # GRP[["group.id"]]
+  GRP[["group.id"]]
 }
 GRP_data_size <- function(GRP){
   length(GRP_group_id(GRP))
 }
 # Group sizes
 GRP_group_sizes <- function(GRP){
-  # GRP[["group.sizes"]]
-  .subset2(GRP, "group.sizes")
+  GRP[["group.sizes"]]
 }
 GRP_expanded_group_sizes <- function(GRP){
   GRP_group_sizes(GRP)[GRP_group_id(GRP)]
 }
 # Groups
 GRP_groups <- function(GRP){
-  # GRP[["groups"]]
-  .subset2(GRP, "groups")
+  GRP[["groups"]]
 }
 # Group variable names
 GRP_group_vars <- function(GRP){
-  .subset2(GRP, "group.vars")
+  GRP[["group.vars"]]
 }
 check_GRP_has_groups <- function(GRP){
   if (is_GRP(GRP) && is.null(GRP_groups(GRP))){
@@ -177,7 +173,7 @@ GRP_duplicated <- function(GRP, all = FALSE){
   out
 }
 # Alternative that just returns dup indices
-# The commented-out code is simpler but cheapr::which_val is more efficient
+# The commented-out code is simpler but which_val is more efficient
 # Especially with data that contains few duplicates
 # GRP_which_duplicated <- function(GRP, all = FALSE){
 #   which(GRP_duplicated(GRP, all))
@@ -188,7 +184,7 @@ GRP_which_duplicated <- function(GRP, all = FALSE){
   if (all){
     which((sizes > 1L)[group_id])
   } else {
-    cheapr::which_val(row_id(GRP), 1L, invert = TRUE)
+    which_val(row_id(GRP), 1L, invert = TRUE)
   }
 }
 sorted_group_starts <- function(group_sizes, init_loc = 1L){
@@ -209,13 +205,13 @@ GRP_starts <- function(GRP, use.g.names = FALSE){
         out <- sorted_group_starts(GRP_sizes)
       }
       # For factors with 0 size, replace calculated group starts with 0
-      out[cheapr::which_val(GRP_sizes, 0L)] <- 0L
+      out[which_val(GRP_sizes, 0L)] <- 0L
     } else {
       o <- GRP_order(GRP)
       starts <- attr(o, "starts")
       if (collapse::anyv(GRP_sizes, 0L)){
         out <- integer(GRP_n_groups(GRP))
-        out[cheapr::which_val(GRP_sizes, 0L, invert = TRUE)] <- o[starts]
+        out[which_val(GRP_sizes, 0L, invert = TRUE)] <- o[starts]
       } else {
         out <- o[starts]
       }
@@ -236,7 +232,7 @@ GRP_ends <- function(GRP, use.g.names = FALSE,
   if (GRP_is_sorted(GRP)){
     out <- sorted_group_ends(GRP_sizes)
     # For factors with 0 size, replace 0 with NA
-    out[cheapr::which_val(GRP_sizes, 0L)] <- 0L
+    out[which_val(GRP_sizes, 0L)] <- 0L
   } else {
     if (is.null(loc)){
       loc <- GRP_loc(GRP, use.g.names = FALSE)
@@ -271,13 +267,6 @@ GRP_order <- function(GRP){
       } else {
         starts <- GRP[["group.starts"]]
       }
-      # This should not be used unless through radixorderv
-      # if (group.sizes){
-      #   attributes(out) <- list("starts" = GRP_starts(GRP),
-      #                           "group.sizes" = GRP_group_sizes(GRP),
-      #                           "maxgrpn" = collapse::fmax(GRP_group_sizes(GRP)),
-      #                           "sorted" = TRUE)
-      # } else {
       attributes(out) <- list(starts = starts,
                               maxgrpn = collapse::fmax(sizes),
                               sorted = TRUE)

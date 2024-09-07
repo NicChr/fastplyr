@@ -96,7 +96,7 @@ f_slice <- function(data, i = 0L, ..., .by = NULL, keep_order = FALSE){
     } else {
       size <- pmax.int(0L, group_sizes - max(abs(i)))
     }
-    keep <- cheapr::which_val(size, 0, invert = TRUE)
+    keep <- which_val(size, 0, invert = TRUE)
     if (length(group_locs) - length(keep) > 0L){
       group_locs <- group_locs[keep]
       size <- size[keep]

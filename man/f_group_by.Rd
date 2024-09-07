@@ -2,7 +2,7 @@
 % Please edit documentation in R/f_group_by.R
 \name{f_group_by}
 \alias{f_group_by}
-\alias{group_sorted}
+\alias{group_ordered}
 \title{'collapse' version of \code{dplyr::group_by()}}
 \usage{
 f_group_by(
@@ -15,7 +15,7 @@ f_group_by(
   .drop = df_group_by_drop_default(data)
 )
 
-group_sorted(data)
+group_ordered(data)
 }
 \arguments{
 \item{data}{data frame.}
@@ -39,7 +39,14 @@ If speed is an expensive resource, it is recommended to use this.}
 \item{.drop}{Should unused factor levels be dropped? Default is \code{TRUE}.}
 }
 \value{
-A \code{grouped_df} that can be used further for grouped calculations.
+\code{f_group_by()} returns a \code{grouped_df} that can be used
+for further for grouped calculations.
+
+\code{group_ordered()} returns \code{TRUE} if the group data are sorted,
+i.e if \code{attr(attr(data, "groups"), "ordered") == TRUE}. If sorted,
+which is usually the default, this leads to summary calculations
+like \code{f_summarise()} or \code{dplyr::summarise()} producing sorted groups.
+If \code{FALSE} they are returned based on order-of-first appearance in the data.
 }
 \description{
 This works the exact same as \code{dplyr::group_by()} and typically
@@ -49,4 +56,51 @@ performs around the same speed but uses slightly less memory.
 \code{f_group_by()} works almost exactly like the 'dplyr' equivalent.
 An attribute "sorted" (\code{TRUE} or \code{FALSE}) is added to the group data to
 signify if the groups are sorted or not.
+\subsection{Ordered vs Sorted}{
+
+The distinction between ordered and sorted is somewhat subtle.
+Functions in fastplyr that use a \code{sort} argument generally refer
+to the top-level dataset being sorted in some way, either by sorting
+the group columns like in \code{f_expand()} or \code{f_distinct()}, or
+some other columns, like the count column in \code{f_count()}.
+
+The \code{order} argument, when set to \code{TRUE} (the default),
+is used to mean that the group data will be calculated
+using a sort-based algorithm, leading to sorted group data.
+When \code{order} is \code{FALSE}, the group data will be returned based on
+the order-of-first appearance of the groups in the data.
+This order-of-first appearance may still naturally be sorted
+depending on the data.
+For example, \code{group_id(1:3, order = T)} results in the same group IDs
+as \code{group_id(1:3, order = F)} because 1, 2, and 3 appear in the data in
+ascending sequence whereas \code{group_id(3:1, order = T)} does not equal
+\code{group_id(3:1, order = F)}
+
+Part of the reason for the distinction is that internally fastplyr
+can in theory calculate group data
+using the sort-based algorithm and still return unsorted groups,
+though this combination is only available to the user in limited places like
+\code{f_distinct(order = TRUE, sort = FALSE)}.
+
+The other reason is to prevent confusion in the meaning
+of \code{sort} and \code{order} so that \code{order} always refers to the
+algorithm specified, resulting in sorted groups, and \code{sort} implies a
+physical sorting of the returned data. It's also worth mentioning that
+in most functions, \code{sort} will implicitly utilise the sort-based algorithm
+specified via \code{order = TRUE}.
+}
+
+\subsection{Using the order-of-first appearance algorithm for speed}{
+
+In many situations (not all) it can be faster to use the
+order-of-first appearance algorithm, specified via \code{order = FALSE}.
+
+This can generally be accessed by first calling
+\code{f_group_by(data, ..., order = FALSE)} and then
+performing your calculations.
+
+To utilise this algorithm more globally and package-wide,
+set the '.fastplyr.order.groups' option to \code{FALSE} using the code:
+\code{options(.fastplyr.order.groups = FALSE)}.
+}
 }

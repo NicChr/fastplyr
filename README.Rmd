@@ -471,7 +471,7 @@ library(tidytable)
 tidy_tbl <- as_tidytable(tbl)
 
 # Setting an internal option to set all grouping to use the non-sorted type
-options(.fastplyr.groups.sort = FALSE)
+options(.fastplyr.order.groups = FALSE)
 
 mark(
   fastplyr_slice = tbl |> 

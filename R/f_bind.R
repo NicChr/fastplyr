@@ -96,25 +96,3 @@ f_bind_cols <- function(..., .repair_names = TRUE, .sep = "..."){
   }
   out
 }
-
-# f_bind_rows <- function(...){
-#   dots <- list3(...)
-#   n_dots <- length(dots)
-#   ncols <- cpp_ncols(dots)
-#   if (n_dots == 0){
-#     new_df()
-#   } else if (n_dots == 1){
-#     dots[[1L]]
-#   } else {
-#     template <- dots[[1L]]
-#     dots <- lapply(dots, df_ungroup)
-#     if (cpp_any_frames_exotic(dots)){
-#       reconstruct(template, do.call(bind_rows, dots))
-#     } else {
-#       rowbind <- function(...){
-#         collapse::rowbind(..., return = "data.frame")
-#       }
-#       reconstruct(template, do.call(rowbind, dots))
-#     }
-#   }
-# }
