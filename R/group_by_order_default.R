@@ -6,5 +6,8 @@
 #'
 #' @param x A data frame.
 #'
+#' @returns
+#' A logical of length 1, either `TRUE` or `FALSE`.
+#'
 #' @export
 group_by_order_default <- df_group_by_order_default

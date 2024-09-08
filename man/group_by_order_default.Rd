@@ -9,6 +9,9 @@ group_by_order_default(x)
 \arguments{
 \item{x}{A data frame.}
 }
+\value{
+A logical of length 1, either \code{TRUE} or \code{FALSE}.
+}
 \description{
 A default value, \code{TRUE} or \code{FALSE} that controls which algorithm to use
 for calculating groups. See \link{f_group_by} for more details.
