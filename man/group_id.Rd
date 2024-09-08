@@ -81,10 +81,10 @@ and if one already exists, a unique name will be used.}
 An integer vector.
 }
 \description{
-These are tidy-based functions for calculating group IDs, row IDs and
-group orders. \cr
+These are tidy-based functions for calculating group IDs and row IDs. \cr
 \itemize{
-\item \code{group_id()} returns an integer vector of group IDs the same size as the data.
+\item \code{group_id()} returns an integer vector of group IDs
+the same size as the data.
 \item \code{row_id()} returns an integer vector of row IDs.
 }
 
