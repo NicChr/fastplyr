@@ -1,10 +1,20 @@
 ##### Data frame helpers #####
 
+
+# df checkers -------------------------------------------------------------
+
+
+is_df <- function(x){
+  inherits(x, "data.frame")
+}
+
 check_is_df <- function(x){
   if (!is_df(x)){
     stop(paste(deparse2(substitute(x)), "must be a data.frame"))
   }
 }
+
+
 # Fast nrow/ncol for data frames
 df_nrow <- function(x){
   length(attr(x, "row.names", TRUE))
@@ -12,6 +22,10 @@ df_nrow <- function(x){
 df_ncol <- function(x){
   length(attr(x, "names", TRUE))
 }
+
+
+# Group metadata ----------------------------------------------------------
+
 # Slightly faster dplyr::group_vars
 group_vars <- function(x){
   if (is_df(x)){
@@ -53,6 +67,79 @@ get_groups <- function(data, .by = NULL){
 }
 
 
+
+# df/list constructors ----------------------------------------------------
+
+# list() that removes NULL elements
+list3 <- function(...){
+  list_rm_null(list(...))
+}
+# list3() but always a named list
+list_named <- function(...){
+  list_rm_null(named_dots(...))
+}
+
+# Turns df into plain df
+df_as_df <- function(x){
+  list_as_df(x)
+}
+
+# Converts df into plain tbl
+df_as_tbl <- function(x){
+  out <- list_as_df(x)
+  class(out) <- c("tbl_df", "tbl", "data.frame")
+  out
+}
+
+# list to tbl
+# No checks are done so use with caution
+# Cannot contain duplicate names
+# or different length list elements
+list_as_tbl <- function(x){
+  df_as_tbl(list_as_df(x))
+}
+
+# Light df constructor
+# .nrows is there purely to create an (n > 0) x 0 data frame
+new_df <- function(
+    ..., .nrows = NULL,
+    .recycle = FALSE,
+    .name_repair = FALSE
+){
+
+  out <- list_named(...)
+
+  # Recycle
+  if (.recycle){
+    out <- do.call(function(...) cheapr::recycle(..., length = .nrows), out)
+  }
+
+  if (is.null(.nrows)){
+    if (length(out) == 0L){
+      row_names <- integer()
+    } else {
+      N <- NROW(.subset2(out, 1L))
+      row_names <- c(NA_integer_, -N)
+    }
+  } else {
+    row_names <- .set_row_names(.nrows)
+  }
+
+  out_names <- as.character(attr(out, "names", TRUE))
+
+  if (.name_repair){
+    out_names <- unique_name_repair(out_names)
+  }
+
+  attr(out, "names") <- out_names
+  attr(out, "row.names") <- row_names
+  class(out) <- "data.frame"
+  out
+}
+
+
+# df manipulation helpers -------------------------------------------------
+
 # Row slice
 df_row_slice <- function(data, i, reconstruct = TRUE){
   out <- cheapr::sset(data, i)
@@ -60,6 +147,9 @@ df_row_slice <- function(data, i, reconstruct = TRUE){
     out <- reconstruct(data, out)
   }
   out
+}
+df_add_cols <- function(data, cols){
+  dplyr::dplyr_col_modify(data, cols)
 }
 df_rm_cols <- function(data, .cols){
   cols_to_remove <- col_select_names(data, .cols = .cols)
@@ -93,61 +183,6 @@ df_rep_each <- function(data, each){
   }
   df_rep(data, each)
 }
-# Convenience function
-is_df <- function(x){
-  inherits(x, "data.frame")
-}
-df_n_distinct <- function(data){
-  GRP_n_groups(
-    df_to_GRP(data, .cols = names(data),
-              return.groups = FALSE, return.order = FALSE)
-  )
-}
-# list() that removes NULL elements
-list3 <- function(...){
-  list_rm_null(list(...))
-}
-# list to tibble/DT
-# No checks are done so use with caution
-# Cannot contain duplicate names
-# or different length list elements
-list_as_tbl <- function(x){
-  df_as_tbl(list_as_df(x))
-}
-
-# Create new df with no name checks or length checks
-# .nrows is there purely to create an (n > 0) x 0 data frame
-new_df <- function(..., .nrows = NULL,
-                   .recycle = FALSE, .name_repair = FALSE){
-
-  out <- list_rm_null(named_dots(...))
-
-  # Recycle
-  if (.recycle){
-    out <- do.call(function(...) cheapr::recycle(..., length = .nrows), out)
-  }
-
-  if (is.null(.nrows)){
-    if (length(out) == 0L){
-      row_names <- integer()
-    } else {
-      N <- NROW(.subset2(out, 1L))
-      row_names <- c(NA_integer_, -N)
-    }
-  } else {
-    row_names <- .set_row_names(.nrows)
-  }
-
-  out_names <- as.character(attr(out, "names", TRUE))
-  if (.name_repair){
-    out_names <- unique_name_repair(out_names)
-  }
-
-  attr(out, "names") <- out_names
-  attr(out, "row.names") <- row_names
-  class(out) <- "data.frame"
-  out
-}
 
 # Safe ungroup for any data type
 df_ungroup <- function(data){
@@ -167,15 +202,6 @@ df_paste_names <- function(data,  sep = "_", .cols = names(data)){
                    list(sep = sep)))
 }
 
-df_as_df <- function(x){
-  list_as_df(x)
-}
-# Faster as_tibble
-df_as_tbl <- function(x){
-  out <- list_as_df(x)
-  class(out) <- c("tbl_df", "tbl", "data.frame")
-  out
-}
 # Theoretically safe data frame initialisation
 # for all objs with a rep() and [ method
 df_init <- function(x, size = 1L){
@@ -210,10 +236,6 @@ df_drop_empty <- function(data, .cols = names(data)){
   } else {
     df_row_slice(data, which_not_empty)
   }
-}
-
-df_add_cols <- function(data, cols){
-  dplyr::dplyr_col_modify(data, cols)
 }
 
 # Extremely simple count functions for grouped_df
@@ -255,18 +277,18 @@ df_group_by_drop_default <- function(x){
 }
 df_group_by_order_default <- function(x){
   order_groups <- getOption(".fastplyr.order.groups")
-  if (!is.null(order_groups)){
-    return(order_groups)
+  if (!is.null(order_groups) &&
+      !(is.logical(order_groups) &&
+        length(order_groups) == 1 &&
+        order_groups %in% c(TRUE, FALSE))){
+    stop("'.fastplyr.order.groups' option must either `TRUE` or `FALSE`")
   }
-  if (inherits(x, "grouped_df")){
-    out <- attr(attr(x, "groups", TRUE), "sorted", TRUE)
-  } else {
-    out <- TRUE
-  }
-  if (is.null(out)){
+  out <- attr(attr(x, "groups", TRUE), "ordered", TRUE)
+  if (is.null(out) && inherits(x, "grouped_df")){
+    # This implies an implicit ordering through dplyr::group_by()
     TRUE
   } else {
-    out
+    out %||% (order_groups %||% TRUE)
   }
 }
 unique_name_repair <- function(x, .sep = "..."){

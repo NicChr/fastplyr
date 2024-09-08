@@ -399,7 +399,7 @@ mtcars |>
 ```
 
 fastplyr though has a dedicated function for quantile calculation, 
-`tidy_quantiles()` which requires less code to type
+`tidy_quantiles()` which requires less code to type 
 
 ```{r}
 

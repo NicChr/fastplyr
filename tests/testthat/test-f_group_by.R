@@ -5,6 +5,6 @@ test_that("groups", {
   result <- iris %>%
     f_group_by(Species) %>%
     f_group_by(max(Sepal.Length), .add = TRUE)
-  attr(attr(result, "groups"), "sorted") <- NULL
+  attr(attr(result, "groups"), "ordered") <- NULL
   expect_equal(result, target)
 })

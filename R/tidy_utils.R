@@ -18,10 +18,6 @@ check_cols <- function(n_dots, .cols = NULL){
   }
 }
 
-get_from_package <- function(x, package){
-  get(x, asNamespace(package), inherits = FALSE)
-}
-
 # Quosure text/var check for select()
 # NULL is removed.
 quo_select_info <- function(quos, data){

@@ -54,7 +54,7 @@ performs around the same speed but uses slightly less memory.
 }
 \details{
 \code{f_group_by()} works almost exactly like the 'dplyr' equivalent.
-An attribute "sorted" (\code{TRUE} or \code{FALSE}) is added to the group data to
+An attribute "ordered" (\code{TRUE} or \code{FALSE}) is added to the group data to
 signify if the groups are sorted or not.
 \subsection{Ordered vs Sorted}{
 

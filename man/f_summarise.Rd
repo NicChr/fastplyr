@@ -58,15 +58,15 @@ library(fastplyr)
 library(nycflights13)
 
 # Number of flights per month, including first and last day
-flights |>
-  f_group_by(year, month) |>
+flights \%>\%
+  f_group_by(year, month) \%>\%
   f_summarise(first_day = first(day),
               last_day = last(day),
               num_flights = n())
 
 ## Fast mean summary using `across()`
 
-flights |>
+flights \%>\%
   f_summarise(
     across(where(is.double), mean),
     .by = tailnum
@@ -74,7 +74,7 @@ flights |>
 
 # To ignore or keep NAs, use collapse::set_collapse(na.rm)
 collapse::set_collapse(na.rm = FALSE)
-flights |>
+flights \%>\%
   f_summarise(
     across(where(is.double), mean),
     .by = origin

@@ -587,7 +587,7 @@ construct_grouped_df <- function(data, g, group_vars){
   group_locs <- GRP_loc(g)
   groups[[".rows"]] <- vctrs_new_list_of(group_locs, integer())
   attr(groups, ".drop") <- df_group_by_drop_default(data)
-  attr(groups, "sorted") <- df_group_by_order_default(data)
+  attr(groups, "ordered") <- df_group_by_order_default(data)
   out <- data
   attr(out, "groups") <- groups
   class(out) <- c("grouped_df", "tbl_df", "tbl", "data.frame")

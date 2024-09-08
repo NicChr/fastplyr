@@ -1,5 +1,7 @@
 #' @noRd
 
+# General 'abc' utilities for fastplyr
+
 get_from_package <- function(x, package){
   get(x, asNamespace(package), inherits = FALSE)
 }
@@ -90,16 +92,6 @@ dots_length <- function(...){
   nargs()
 }
 
-packageName <- function (env = parent.frame()){
-  if (!is.environment(env))
-    stop("'env' must be an environment")
-  env <- topenv(env)
-  if (!is.null(pn <- get0(".packageName", envir = env, inherits = FALSE)))
-    pn
-  else if (identical(env, .BaseNamespaceEnv))
-    "base"
-}
-
 # Check if signs are all equal
 # Special function to handle -0 selection
 # Returns 1 or -1, with special handling of -0 to allow slicing of all rows
@@ -155,28 +147,28 @@ is_sorted <- function(x){
   isTRUE(!is.unsorted(x))
 }
 
-first_obs <- function(x, n = 1L){
-  check_length(n, 1)
-  N <- NROW(x)
-  if (n >= 0) {
-    size <- min(n, N)
-  }
-  else {
-    size <- max(0L, N + n)
-  }
-  cheapr::sset(x, seq_len(size))
-}
-last_obs <- function (x, n = 1L){
-  check_length(n, 1)
-  N <- NROW(x)
-  if (n >= 0) {
-    size <- min(n, N)
-  }
-  else {
-    size <- max(0L, N + n)
-  }
-  cheapr::sset(x, seq.int(from = N - size + 1L, by = 1L, length.out = size))
-}
+# first_obs <- function(x, n = 1L){
+#   check_length(n, 1)
+#   N <- NROW(x)
+#   if (n >= 0) {
+#     size <- min(n, N)
+#   }
+#   else {
+#     size <- max(0L, N + n)
+#   }
+#   cheapr::sset(x, seq_len(size))
+# }
+# last_obs <- function (x, n = 1L){
+#   check_length(n, 1)
+#   N <- NROW(x)
+#   if (n >= 0) {
+#     size <- min(n, N)
+#   }
+#   else {
+#     size <- max(0L, N + n)
+#   }
+#   cheapr::sset(x, seq.int(from = N - size + 1L, by = 1L, length.out = size))
+# }
 list_subset <- function(x, i, default = NA){
   check_length(default, 1)
   if (length(x) == 0){
@@ -189,9 +181,9 @@ list_subset <- function(x, i, default = NA){
   cpp_list_subset(x, ptype, as.integer(i), default)
 }
 
-is_integerable <- function(x){
-  abs(x) <= .Machine$integer.max
-}
+# is_integerable <- function(x){
+#   abs(x) <= .Machine$integer.max
+# }
 all_integerable <- function(x, shift = 0){
   all(
     (abs(collapse::frange(x, na.rm = TRUE)) + shift ) <= .Machine$integer.max,
@@ -211,8 +203,8 @@ fast_intersect <- function(x, y){
 ## Used in the below named_dots()
 
 dot_expr_names <- function(...){
+  # The below is fast but can sometimes stall with long strings?
   # as.character(substitute(c(...))[-1L])
-  # vapply(substitute(alist(...))[-1L], deparse1, "", USE.NAMES = FALSE)
   vapply(substitute(alist(...))[-1L], deparse2, "", USE.NAMES = FALSE)
 }
 

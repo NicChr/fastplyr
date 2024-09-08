@@ -113,7 +113,7 @@ f_complete <- function(data, ...,  sort = FALSE,
 #' @rdname f_expand
 #' @export
 crossing <- function(..., sort = FALSE){
-  dots <- named_dots(...)
+  dots <- list_named(...)
   for (i in seq_along(dots)){
     if (!is_df(dots[[i]])){
       dots[[i]] <- sort_unique(`names<-`(new_df(dots[[i]]), names(dots)[i]), sort = sort)
@@ -124,7 +124,7 @@ crossing <- function(..., sort = FALSE){
 #' @rdname f_expand
 #' @export
 nesting <- function(..., sort = FALSE){
-  dots <- named_dots(...)
+  dots <- list_named(...)
   for (i in seq_along(dots)){
     if (!is_df(dots[[i]])){
       dots[[i]] <- `names<-`(new_df(dots[[i]]), names(dots)[i])

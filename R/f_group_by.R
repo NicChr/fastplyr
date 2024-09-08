@@ -31,7 +31,7 @@
 #'
 #' @details
 #' `f_group_by()` works almost exactly like the 'dplyr' equivalent.
-#' An attribute "sorted" (`TRUE` or `FALSE`) is added to the group data to
+#' An attribute "ordered" (`TRUE` or `FALSE`) is added to the group data to
 #' signify if the groups are sorted or not.
 #'
 #' ### Ordered vs Sorted
@@ -121,7 +121,7 @@ f_group_by <- function(data, ..., .add = FALSE,
     groups <- f_rename(groups, .cols = c(".rows" = ".loc"))
     groups[[".rows"]] <- vctrs_new_list_of(groups[[".rows"]], integer())
     attr(groups, ".drop") <- .drop
-    attr(groups, "sorted") <- order
+    attr(groups, "ordered") <- order
     attr(out, "groups") <- groups
     class(out) <- c("grouped_df", "tbl_df", "tbl", "data.frame")
   }

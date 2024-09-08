@@ -25,19 +25,19 @@
 #' # Normal distributed samples by group using the group value as the mean
 #' # and sqrt(groups) as the sd
 #'
-#' samples <- tibble(groups) |>
-#'   reframe(x = rnorm(100, mean = groups, sd = sqrt(groups)), .by = groups) |>
+#' samples <- tibble(groups) %>%
+#'   reframe(x = rnorm(100, mean = groups, sd = sqrt(groups)), .by = groups) %>%
 #'   f_group_by(groups)
 #'
 #' # Fast means and quantiles by group
 #'
-#' quantiles <- samples |>
+#' quantiles <- samples %>%
 #'   tidy_quantiles(x)
 #'
-#' means <- samples |>
+#' means <- samples %>%
 #'   f_summarise(mean = mean(x))
 #'
-#' means |>
+#' means %>%
 #'   f_left_join(quantiles)
 #' @export
 tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
@@ -107,7 +107,8 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   if (length(dot_vars) > 0) {
     q_df <- dplyr::mutate(q_df, across(all_of(dot_vars), as.double))
   }
-  quantile_starts <- (length(probs) * (0:(max(n_groups - 1L, 0L)))) + 1L
+  # quantile_starts <- (length(probs) * (0:(max(n_groups - 1L, 0L)))) + 1L
+  quantile_starts <- ( length(probs) * (seq_len(n_groups) - 1L) ) + 1L
   for (.col in dot_vars) {
     k <- 0L
     for (p in probs) {
