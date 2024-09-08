@@ -26,7 +26,7 @@ set.seed(949958487)
 
 fastplyr aims to provide a [tidyverse](https://www.tidyverse.org/learn) frontend using a [collapse](https://sebkrantz.github.io/collapse/articles/collapse_intro.html) backend. This means from a user's point of view the functions behave like the tidyverse equivalents and thus require little to no changes to existing code to convert. 
 
-fastplyr is designed to handle operations that involve larger numbers of groups and generally larger data.
+fastplyr is designed to handle operations that involve larger numbers of groups and generally larger data. 
 
 ## Installation
 
@@ -511,7 +511,7 @@ mark(
   fastplyr_sumarise = tbl |> 
   f_summarise(mean = mean(x), .by = g),
   tidytable_sumarise = tidy_tbl |> 
-  summarise(mean = mean(x), .by = g),
+  summarise(mean = mean(x), .by = g, .sort = FALSE),
   check = FALSE,
   min_iterations = 3
 )
@@ -524,7 +524,8 @@ mark(
   fastplyr_sumarise2 = tbl |> 
   f_summarise(n = n(), mean = mean(x), min = min(x), max = max(x), .by = g),
   tidytable_sumarise2 = tidy_tbl |> 
-  summarise(n = n(), mean = mean(x), min = min(x), max = max(x), .by = g),
+  summarise(n = n(), mean = mean(x), min = min(x), max = max(x), 
+            .by = g, .sort = FALSE),
   check = FALSE,
   min_iterations = 3
 )
