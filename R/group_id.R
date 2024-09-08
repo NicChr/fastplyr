@@ -1,10 +1,10 @@
 #' Fast group and row IDs
 #'
 #' @description
-#' These are tidy-based functions for calculating group IDs, row IDs and
-#' group orders. \cr
+#' These are tidy-based functions for calculating group IDs and row IDs. \cr
 #'
-#' *  `group_id()` returns an integer vector of group IDs the same size as the data.
+#' *  `group_id()` returns an integer vector of group IDs
+#' the same size as the data.
 #' *  `row_id()` returns an integer vector of row IDs.
 #'
 #' The `add_` variants add a column of group IDs/row IDs.
