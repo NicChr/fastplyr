@@ -64,12 +64,15 @@ f_slice <- function(data, i = 0L, ..., .by = NULL, keep_order = FALSE){
   if (length(i) == 0L){
     i <- 0L
   }
+  i <- as.integer(i)
   N <- df_nrow(data)
 
-  rng <- collapse::frange(i, na.rm = FALSE)
-  rng_sum <- sum(sign(1 / rng))
+  rng <- collapse::frange(i, na.rm = TRUE)
+  rng_sum <- sum(sign(rng))
   if (abs(rng_sum) != 2){
-    stop("Can't mix negative and positive locations")
+    if (!any(rng == 0)){
+      stop("Can't mix negative and positive locations")
+    }
   }
   slice_sign <- sign(rng_sum)
 
@@ -81,7 +84,7 @@ f_slice <- function(data, i = 0L, ..., .by = NULL, keep_order = FALSE){
     if (any(abs(rng) > N)){
       data_locs <- i[which(dplyr::between(i, -N, N))]
     } else {
-      data_locs <- i
+      data_locs <- cheapr::na_rm(i)
     }
   } else {
     groups <- data %>%
@@ -89,21 +92,11 @@ f_slice <- function(data, i = 0L, ..., .by = NULL, keep_order = FALSE){
                      order = df_group_by_order_default(data))
     group_locs <- groups[[".loc"]]
     group_sizes <- groups[[".size"]]
-    GN <-  max(group_sizes)
+    GN <- max(group_sizes)
     i <- i[which(dplyr::between(i, -GN, GN))]
-    if (slice_sign >= 1){
-      size <- pmin.int(max(i), group_sizes)
-    } else {
-      size <- pmax.int(0L, group_sizes - max(abs(i)))
-    }
-    keep <- which_val(size, 0, invert = TRUE)
-    if (length(group_locs) - length(keep) > 0L){
-      group_locs <- group_locs[keep]
-      size <- size[keep]
-    }
+
     if (length(i) == 1 && slice_sign >= 1){
-      data_locs <- list_subset(group_locs, i)
-      data_locs <- cheapr::na_rm(data_locs)
+      data_locs <- cheapr::na_rm(list_subset(group_locs, i))
     } else {
       data_locs <- unlist(cpp_slice_locs(group_locs, i))
     }

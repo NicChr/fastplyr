@@ -434,6 +434,7 @@ SEXP cpp_int_slice(SEXP x, SEXP indices, bool check){
   if (no_check){
     for (int i = 0; i < n; ++i) p_out[k++] = p_x[pi2[i] - 1];
   } else {
+    // TODO - Make sure this works with NAs
     for (int i = 0; i < n; ++i){
       int xi = pi2[i];
       if (xi > 0 && xi <= xn) p_out[k++] = p_x[xi - 1];
