@@ -127,11 +127,53 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
       overid = 2L,
       ...
     )
+
+    ## keep all join cols? difficult with collapse::join()
+
     if (keep){
+
       inverse_join_by <- names(join_by)
       names(inverse_join_by) <- unname(join_by)
       out <- f_select(out, .cols = c(names(out), inverse_join_by))
       out_nms <- c(names(left), names(right))
+
+      # collapse::join() doesn't keep all join cols
+      # So we lose the information on which rows didn't match..
+
+      if (join_type == "left"){
+        na_locs <- which_not_in(
+          f_select(out, .cols = join_cols_left),
+          f_select(right, .cols = add_names(join_cols_right, join_cols_left))
+        )
+        for (col in join_cols_right){
+          out[[col]][na_locs] <- NA
+        }
+      } else if (join_type == "right"){
+        na_locs <- which_not_in(
+          f_select(out, .cols = join_cols_left),
+          f_select(left, .cols = join_cols_left)
+        )
+        for (col in join_cols_left){
+          out[[col]][na_locs] <- NA
+        }
+      } else if (join_type == "full"){
+        na_locs_right <- which_not_in(
+          f_select(out, .cols = join_cols_left),
+          f_select(right, .cols = add_names(join_cols_right, join_cols_left))
+        )
+        na_locs_left <- which_not_in(
+          f_select(out, .cols = join_cols_left),
+          f_select(left, .cols = join_cols_left)
+        )
+        for (col in join_cols_right){
+          out[[col]][na_locs_right] <- NA
+        }
+        for (col in join_cols_left){
+          out[[col]][na_locs_left] <- NA
+        }
+      } else {
+        which_na <- integer()
+      }
     } else {
       out_nms <- c(names(left), fast_setdiff(names(right), join_cols_right))
     }
@@ -139,18 +181,14 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
   }
   # Match group IDs back to original variables
 
-  if (length(exotic_cols_left) > 0){
-    for (col in exotic_cols_left){
-      matches <- collapse::fmatch(out[[col]], left[[col]], overid = 2L)
-      out[[col]] <- cheapr::sset(x[[col]], matches)
-    }
+  for (col in exotic_cols_left){
+    matches <- collapse::fmatch(out[[col]], left[[col]], overid = 2L)
+    out[[col]] <- cheapr::sset(x[[col]], matches)
   }
   if (!semi_or_anti){
-    if (length(exotic_cols_right) > 0){
-      for (col in exotic_cols_right){
-        matches <- collapse::fmatch(out[[col]], right[[col]], overid = 2L)
-        out[[col]] <- cheapr::sset(y[[col]], matches)
-      }
+    for (col in exotic_cols_right){
+      matches <- collapse::fmatch(out[[col]], right[[col]], overid = 2L)
+      out[[col]] <- cheapr::sset(y[[col]], matches)
     }
   }
   out
