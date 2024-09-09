@@ -1,7 +1,12 @@
-f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
-  if (!is.character(suffix) || length(suffix) != 2){
+check_suffix <- function(x){
+  if (!is.character(x) || length(x) != 2){
     stop("suffix must be a character vector of length 2")
   }
+}
+
+f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
+
+  check_suffix(suffix)
 
   if (inherits(by, "dplyr_join_by")){
     dplyr_by <- unclass(by)
@@ -217,6 +222,9 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
 #' A joined data frame, joined on the columns specified with `by`, using an
 #' equality join.
 #'
+#' `f_cross_join()` returns all possible combinations
+#' between the two data frames.
+#'
 #' @rdname join
 #' @export
 f_left_join <- function(x, y, by = NULL,
@@ -270,6 +278,15 @@ f_semi_join <- function(x, y, by = NULL,
   f_join(x, y, by = by, suffix = suffix,
          multiple = multiple, keep = keep,
          join_type = "semi", ...)
+}
+#' @rdname join
+#' @export
+f_cross_join <- function(x, y, suffix = c(".x", ".y"), ...){
+  rlang::check_dots_empty0(...)
+  check_suffix(suffix)
+  names(x) <- unique_suffix_cols(names(x), names(x), suffix[1L])
+  names(y) <- unique_suffix_cols(names(y), names(y), suffix[2L])
+  df_cross_join(x, y, .repair_names = FALSE)
 }
 #' @rdname join
 #' @export

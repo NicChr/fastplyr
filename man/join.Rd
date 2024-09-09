@@ -7,6 +7,7 @@
 \alias{f_full_join}
 \alias{f_anti_join}
 \alias{f_semi_join}
+\alias{f_cross_join}
 \alias{f_union_all}
 \alias{f_union}
 \title{Fast SQL joins}
@@ -71,6 +72,8 @@ f_semi_join(
   ...
 )
 
+f_cross_join(x, y, suffix = c(".x", ".y"), ...)
+
 f_union_all(x, y, ...)
 
 f_union(x, y, ...)
@@ -96,6 +99,9 @@ both data frames be kept? Default is \code{FALSE}.}
 \value{
 A joined data frame, joined on the columns specified with \code{by}, using an
 equality join.
+
+\code{f_cross_join()} returns all possible combinations
+between the two data frames.
 }
 \description{
 Mostly a wrapper around \code{collapse::join()} that behaves more like

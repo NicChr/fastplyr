@@ -54,7 +54,8 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
 
     which_suffix_names <- which(grepl(".fastplyr.suffix", names(out), fixed = TRUE))
     names(out)[which_suffix_names] <-
-      gsub(".fastplyr.suffix", "", names(out)[which_suffix_names])
+      gsub(".fastplyr.suffix", "", names(out)[which_suffix_names],
+           fixed = TRUE)
   } else {
     if (prod(cpp_nrows(frames, FALSE)) > .Machine$integer.max){
       stop("expansion results in >= 2^31 rows, please supply less data")
