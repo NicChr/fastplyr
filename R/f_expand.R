@@ -44,12 +44,17 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
   }
   if (length(group_vars) > 0){
     anon_join <- function(x, y){
-      if (length(intersect(names(x), names(y))) > length(group_vars)){
-        stop("duplicate variable names supplied, please fix")
-      }
-      f_full_join(x, y, by = group_vars)
+      f_full_join(x, y, by = group_vars, suffix = c("", ".fastplyr.suffix"),
+                  keep = FALSE)
     }
     out <- Reduce(anon_join, frames)
+
+    ## Here we remove the distinct join suffix and use unique_name_repair()
+    ## for duplicate col names
+
+    which_suffix_names <- which(grepl(".fastplyr.suffix", names(out), fixed = TRUE))
+    names(out)[which_suffix_names] <-
+      gsub(".fastplyr.suffix", "", names(out)[which_suffix_names])
   } else {
     if (prod(cpp_nrows(frames, FALSE)) > .Machine$integer.max){
       stop("expansion results in >= 2^31 rows, please supply less data")
@@ -58,11 +63,11 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
       df_cross_join(x, y, .repair_names = FALSE)
     }
     out <- Reduce(df_cj, frames)
-    names(out) <- unique_name_repair(names(out))
 
     # Alternative
     # out <- do.call(cross_join, frames)
   }
+  names(out) <- unique_name_repair(names(out))
   # If just empty list
   if (length(out) == 0){
     out <- f_distinct(data2, .cols = group_vars, sort = sort)
