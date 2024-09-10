@@ -458,3 +458,38 @@ SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
   Rf_unprotect(1);
   return out;
 }
+
+// SEXP cpp_run_id(SEXP x){
+//   int n = Rf_xlength(x);
+//   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
+//   int *p_out = INTEGER(out);
+//   switch (TYPEOF(x)){
+//   case LGLSXP:
+//   case INTSXP: {
+//     int *p_x = INTEGER(x);
+//     if (n >= 1){
+//      p_out[0] = 1;
+//     }
+//     for (int i = 1; i < n; ++i){
+//     p_out[i] = p_out[i - 1] + (p_x[i] != p_x[i - 1]);
+//   }
+//     break;
+//   }
+//   case REALSXP: {
+//     double *p_x = REAL(x);
+//     if (n >= 1){
+//       p_out[0] = 1;
+//     }
+//     double x1;
+//     double x2;
+//     for (R_xlen_t i = 1; i < n; ++i){
+//       x1 = p_x[i - 1];
+//       x2 = p_x[i];
+//       p_out[i] = x1 != x1 && x2 != x2 ? p_out[i - 1] : p_out[i - 1] + (p_x[i] != p_x[i - 1]);
+//     }
+//     break;
+//   }
+//   }
+//   Rf_unprotect(1);
+//   return out;
+// }
