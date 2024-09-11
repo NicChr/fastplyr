@@ -1,5 +1,8 @@
 #include "fastplyr.h"
 
+// bool r_doubles_equal(double x, double y){
+//   return x == y;
+// }
 
 SEXP cpp_r_obj_address(SEXP x) {
   static char buf[1000];
@@ -459,37 +462,322 @@ SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
   return out;
 }
 
-// SEXP cpp_run_id(SEXP x){
-//   int n = Rf_xlength(x);
-//   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
+bool is_compact_seq(SEXP x){
+  if (!ALTREP(x)) return false;
+  SEXP alt_attribs = Rf_protect(Rf_coerceVector(ATTRIB(ALTREP_CLASS(x)), VECSXP));
+  SEXP alt_class_nm = Rf_protect(STRING_ELT(Rf_coerceVector(VECTOR_ELT(alt_attribs, 0), STRSXP), 0));
+  SEXP alt_pkg_nm = Rf_protect(STRING_ELT(Rf_coerceVector(VECTOR_ELT(alt_attribs, 1), STRSXP), 0));
+  SEXP intseq_char = Rf_protect(Rf_mkChar("compact_intseq"));
+  SEXP realseq_char = Rf_protect(Rf_mkChar("compact_realseq"));
+  SEXP base_char = Rf_protect(Rf_mkChar("base"));
+  bool out = (alt_class_nm == intseq_char ||
+              alt_class_nm == realseq_char) &&
+              alt_pkg_nm == base_char;
+  Rf_unprotect(6);
+  return out;
+}
+
+[[cpp11::register]]
+SEXP cpp_run_id(SEXP x){
+  R_xlen_t n = Rf_xlength(x);
+  if (is_compact_seq(x)){
+    return cpp11::package("base")[":"](1, n);
+  }
+  SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
+  int *p_out = INTEGER(out);
+
+#define FP_RUN_ID for (R_xlen_t i = 1; i < n; ++i) p_out[i] = p_out[i - 1] + (p_x[i] != p_x[i - 1]);
+
+  if (n >= 1){
+    p_out[0] = 1;
+  }
+
+  switch (TYPEOF(x)){
+  case LGLSXP:
+  case INTSXP: {
+    int *p_x = INTEGER(x);
+    FP_RUN_ID;
+    break;
+  }
+  case REALSXP: {
+    long long *p_x = (long long*) REAL(x);
+    FP_RUN_ID;
+    // double *p_x = REAL(x);
+    // double x1 = 0, x2 = 0;
+    // for (R_xlen_t i = 1; i < n; ++i){
+    //   x1 = p_x[i - 1];
+    //   x2 = p_x[i];
+    //   p_out[i] = x1 != x1 && x2 != x2 ? p_out[i - 1] : p_out[i - 1] + (x1 != x2);
+    // }
+    break;
+  }
+  case STRSXP: {
+    const SEXP *p_x = STRING_PTR_RO(x);
+    FP_RUN_ID;
+    break;
+  }
+  case CPLXSXP: {
+    Rcomplex *p_x = COMPLEX(x);
+    long long x1_re = 0, x2_re = 0, x1_im = 0, x2_im = 0;
+    for (R_xlen_t i = 1; i < n; ++i){
+      x1_re = p_x[i - 1].r;
+      x2_re = p_x[i].r;
+      x1_im = p_x[i - 1].i;
+      x2_im = p_x[i].i;
+      p_out[i] = x1_re == x2_re && x1_im == x2_im ? p_out[i - 1] : p_out[i - 1] + 1;
+    }
+    // double x1_re = 0, x2_re = 0, x1_im = 0, x2_im = 0;
+    // bool re_both_na = false;
+    // bool im_both_na = false;
+    // bool re_same = false;
+    // bool im_same = false;
+    // for (R_xlen_t i = 1; i < n; ++i){
+    //   x1_re = p_x[i - 1].r;
+    //   x2_re = p_x[i].r;
+    //   x1_im = p_x[i - 1].i;
+    //   x2_im = p_x[i].i;
+    //   re_both_na = (x2_re != x2_re) && (x1_re != x1_re);
+    //   im_both_na = (x2_im != x2_im) && (x1_im != x1_im);
+    //   re_same = re_both_na || x2_re == x1_re;
+    //   im_same = im_both_na || x2_im == x1_im;
+    //   p_out[i] = re_same && im_same ? p_out[i - 1] : p_out[i - 1] + 1;
+    // }
+    break;
+  }
+  default: {
+    Rf_unprotect(1);
+    Rf_error("%s cannot handle an object of type %s", __func__, Rf_type2char(TYPEOF(x)));
+  }
+  }
+  Rf_unprotect(1);
+  return out;
+}
+
+// Alternate version
+// SEXP cpp_df_run_id(SEXP x){
+//   int n_cols = Rf_length(x);
+//   int n_rows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
+//
+//   cpp11::function fastplyr_df_mutate_exotic_to_ids =
+//     cpp11::package("fastplyr")["df_mutate_exotic_to_ids"];
+//
+//   Rf_protect(x = fastplyr_df_mutate_exotic_to_ids(x));
+//   const SEXP *p_x = VECTOR_PTR_RO(x);
+//
+//   if (n_cols == 1){
+//     Rf_unprotect(1);
+//     return cpp_run_id(VECTOR_ELT(x, 0));
+//   }
+//
+//   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n_rows));
 //   int *p_out = INTEGER(out);
-//   switch (TYPEOF(x)){
-//   case LGLSXP:
-//   case INTSXP: {
-//     int *p_x = INTEGER(x);
-//     if (n >= 1){
-//      p_out[0] = 1;
+//
+//   if (n_cols < 1){
+//     for (int i = 0; i < n_rows; ++i) p_out[i] = 1;
+//     Rf_unprotect(2);
+//     return out;
+//   }
+//
+//   SEXP diff_vec = Rf_protect(Rf_allocVector(LGLSXP, n_rows));
+//   int *p_diff = LOGICAL(diff_vec);
+//
+//   bool diff = false;
+//
+//   memset(p_diff, 0, n_rows * sizeof(int));
+//
+//   if (n_rows >= 1){
+//     p_out[0] = 1;
+//     p_diff[0] = 1;
+//   }
+//
+//
+//   for (int j = 0; j < n_cols; ++j){
+//
+//     switch (TYPEOF(p_x[j])){
+//     case LGLSXP:
+//     case INTSXP: {
+//       int *p_xj = INTEGER(p_x[j]);
+//       if (j < (n_cols - 1)){
+//         for (int i = 1; i < n_rows; ++i){
+//           if (!p_diff[i] && (p_xj[i] != p_xj[i - 1])){
+//             p_diff[i] = 1;
+//           }
+//         }
+//       } else {
+//         for (int i = 1; i < n_rows; ++i){
+//           diff = p_diff[i] || (p_xj[i] != p_xj[i - 1]);
+//           p_out[i] = diff ? p_out[i - 1] + 1 : p_out[i - 1];
+//         }
+//       }
+//       break;
 //     }
-//     for (int i = 1; i < n; ++i){
-//     p_out[i] = p_out[i - 1] + (p_x[i] != p_x[i - 1]);
-//   }
-//     break;
-//   }
-//   case REALSXP: {
-//     double *p_x = REAL(x);
-//     if (n >= 1){
-//       p_out[0] = 1;
+//     case REALSXP: {
+//       double x1 = 0, x2 = 0;
+//       // double *p_xj = REAL(p_x[j]);
+//       long long *p_xj = (long long *) REAL(p_x[j]);
+//       if (j < (n_cols - 1)){
+//         for (int i = 1; i < n_rows; ++i){
+//           if (!p_diff[i] && p_xj[i] != p_xj[i - 1]){
+//             p_diff[i] = 1;
+//           }
+//           // x1 = p_xj[i - 1];
+//           // x2 = p_xj[i];
+//           // // diff = !( (x1 != x1 && x2 != x2 ) || x1 == x2 );
+//           // if (!p_diff[i] && !( (x1 != x1 && x2 != x2 ) || x1 == x2 )){
+//           //   p_diff[i] = 1;
+//           // }
+//         }
+//       } else {
+//         for (int i = 1; i < n_rows; ++i){
+//           x1 = p_xj[i - 1];
+//           x2 = p_xj[i];
+//           diff = p_diff[i] || !( (x1 != x1 && x2 != x2 ) || x1 == x2 );
+//           p_out[i] = diff ? p_out[i - 1] + 1 : p_out[i - 1];
+//         }
+//       }
+//       break;
 //     }
-//     double x1;
-//     double x2;
-//     for (R_xlen_t i = 1; i < n; ++i){
-//       x1 = p_x[i - 1];
-//       x2 = p_x[i];
-//       p_out[i] = x1 != x1 && x2 != x2 ? p_out[i - 1] : p_out[i - 1] + (p_x[i] != p_x[i - 1]);
+//     case STRSXP: {
+//       const SEXP *p_xj = STRING_PTR_RO(p_x[j]);
+//       if (j < (n_cols - 1)){
+//         for (int i = 1; i < n_rows; ++i){
+//           if (!p_diff[i] && (p_xj[i] != p_xj[i - 1])){
+//             p_diff[i] = 1;
+//           }
+//         }
+//       } else {
+//         for (int i = 1; i < n_rows; ++i){
+//           diff = p_diff[i] || (p_xj[i] != p_xj[i - 1]);
+//           p_out[i] = diff ? p_out[i - 1] + 1 : p_out[i - 1];
+//         }
+//       }
+//       break;
 //     }
-//     break;
+//     case CPLXSXP: {
+//       Rcomplex *p_xj = COMPLEX(p_x[j]);
+//
+//       double x1_re = 0, x2_re = 0, x1_im = 0, x2_im = 0;
+//       bool re_both_na = false;
+//       bool im_both_na = false;
+//       bool re_same = false;
+//       bool im_same = false;
+//
+//       if (j < (n_cols - 1)){
+//         for (int i = 1; i < n_rows; ++i){
+//           x1_re = p_xj[i - 1].r;
+//           x2_re = p_xj[i].r;
+//           x1_im = p_xj[i - 1].i;
+//           x2_im = p_xj[i].i;
+//           re_both_na = (x2_re != x2_re) && (x1_re != x1_re);
+//           im_both_na = (x2_im != x2_im) && (x1_im != x1_im);
+//           re_same = re_both_na || x2_re == x1_re;
+//           im_same = im_both_na || x2_im == x1_im;
+//           diff = !(re_same && im_same);
+//           if (!p_diff[i] && diff){
+//             p_diff[i] = 1;
+//           }
+//         }
+//       } else {
+//         for (int i = 1; i < n_rows; ++i){
+//           x1_re = p_xj[i - 1].r;
+//           x2_re = p_xj[i].r;
+//           x1_im = p_xj[i - 1].i;
+//           x2_im = p_xj[i].i;
+//           re_both_na = (x2_re != x2_re) && (x1_re != x1_re);
+//           im_both_na = (x2_im != x2_im) && (x1_im != x1_im);
+//           re_same = re_both_na || x2_re == x1_re;
+//           im_same = im_both_na || x2_im == x1_im;
+//           diff = !(re_same && im_same);
+//           diff = p_diff[i] || diff;
+//           p_out[i] = diff ? p_out[i - 1] + 1 : p_out[i - 1];
+//         }
+//       }
+//       break;
+//     }
+//     default: {
+//       Rf_unprotect(3);
+//       Rf_error("%s cannot handle an object of type %s", __func__, Rf_type2char(TYPEOF(p_x[j])));
+//     }
+//     }
 //   }
-//   }
-//   Rf_unprotect(1);
+//   Rf_unprotect(3);
 //   return out;
 // }
+
+[[cpp11::register]]
+SEXP cpp_df_run_id(SEXP x){
+  int n_cols = Rf_length(x);
+  int n_rows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
+
+  cpp11::function fastplyr_df_mutate_exotic_to_ids =
+    cpp11::package("fastplyr")["df_mutate_exotic_to_ids"];
+
+  Rf_protect(x = fastplyr_df_mutate_exotic_to_ids(x));
+  const SEXP *p_x = VECTOR_PTR_RO(x);
+
+  if (n_cols == 1){
+    Rf_unprotect(1);
+    return cpp_run_id(VECTOR_ELT(x, 0));
+  }
+
+  SEXP out = Rf_protect(Rf_allocVector(INTSXP, n_rows));
+  int *p_out = INTEGER(out);
+
+  if (n_cols < 1){
+    for (int i = 0; i < n_rows; ++i) p_out[i] = 1;
+    Rf_unprotect(2);
+    return out;
+  }
+
+  int k = 1;
+  bool diff = false;
+
+  if (n_rows >= 1){
+    p_out[0] = 1;
+  }
+
+
+  for (int i = 1; i < n_rows; ++i){
+   diff = false;
+   int j = 0;
+    while (j++ < n_cols && !diff){
+      switch (TYPEOF(p_x[j])){
+      case LGLSXP:
+      case INTSXP: {
+        int *p_xj = INTEGER(p_x[j]);
+          diff = (p_xj[i] != p_xj[i - 1]);
+          p_out[i] = (k += diff);
+          break;
+        }
+      case REALSXP: {
+        long long *p_xj = (long long*) REAL(p_x[j]);
+        diff = (p_xj[i] != p_xj[i - 1]);
+        p_out[i] = (k += diff);
+        break;
+      }
+      case STRSXP: {
+        const SEXP *p_xj = STRING_PTR_RO(p_x[j]);
+        diff = (p_xj[i] != p_xj[i - 1]);
+        p_out[i] = (k += diff);
+        break;
+      }
+      case CPLXSXP: {
+        Rcomplex *p_xj = COMPLEX(p_x[j]);
+        long long x1_re = p_xj[i - 1].r;
+        long long x2_re = p_xj[i].r;
+        long long x1_im = p_xj[i - 1].i;
+        long long x2_im = p_xj[i].i;
+        diff = (x1_re != x2_re) || (x1_im != x2_im);
+        p_out[i] = (k += diff);
+        break;
+      }
+      default: {
+        Rf_unprotect(2);
+        Rf_error("%s cannot handle an object of type %s", __func__, Rf_type2char(TYPEOF(p_x[j])));
+      }
+      }
+    }
+  }
+  Rf_unprotect(2);
+  return out;
+}
