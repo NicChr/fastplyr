@@ -97,10 +97,10 @@ extern "C" SEXP _fastplyr_cpp_run_id(SEXP x) {
   END_CPP11
 }
 // fastplyr.cpp
-SEXP cpp_df_run_id(SEXP x);
+SEXP cpp_df_run_id(cpp11::writable::list x);
 extern "C" SEXP _fastplyr_cpp_df_run_id(SEXP x) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cpp_df_run_id(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+    return cpp11::as_sexp(cpp_df_run_id(cpp11::as_cpp<cpp11::decay_t<cpp11::writable::list>>(x)));
   END_CPP11
 }
 // fastplyr.cpp

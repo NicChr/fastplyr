@@ -16,7 +16,7 @@ An integer vector of consecutive run IDs in the range \verb{[1, n + 1)}.
 \code{f_consecutive_id()}, an alternative to \code{dplyr::consecutive_id()}
 creates an integer vector with values in the range \verb{[1, n + 1)} where
 \code{n} is the length of the vector or number of rows of the data frame.
-It increments the ID when \code{x[i] != x[i - 1]} thus giving information on
+The ID increments every time \code{x[i] != x[i - 1]} thus giving information on
 when there is a change in value.
 }
 \details{
