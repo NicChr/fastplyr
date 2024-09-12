@@ -12,6 +12,9 @@
 #' @details
 #' 'ALTREP' compact sequences are supported as well.
 #'
+#' To mimic `dplyr::consecutive_id()` where multiple variables are selected,
+#' just use `dplyr::pick()`.
+#'
 #' @returns
 #' An integer vector of consecutive run IDs in the range `[1, n + 1)`.
 #'

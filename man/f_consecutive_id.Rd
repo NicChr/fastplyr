@@ -21,4 +21,7 @@ when there is a change in value.
 }
 \details{
 'ALTREP' compact sequences are supported as well.
+
+To mimic \code{dplyr::consecutive_id()} where multiple variables are selected,
+just use \code{dplyr::pick()}.
 }
