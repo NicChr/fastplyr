@@ -568,7 +568,7 @@ SEXP cpp_run_id(SEXP x){
     break;
   }
   case RAWSXP: {
-  const Rbyte *p_x = RAW_RO(x);
+  Rbyte *p_x = RAW(x);
     for (R_xlen_t i = 1; i < n; ++i){
       p_out[i] = memcmp(&p_x[i - 1], &p_x[i], sizeof(Rbyte)) == 0 ?
       p_out[i - 1] : p_out[i - 1] + 1;
