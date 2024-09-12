@@ -70,21 +70,28 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
     # If keep join cols from both data frames
 
     if (keep){
-      which_left <- match(join_cols_left, names(x))
-      join_cols_left <- unique_suffix_cols(
+      which_common_join <- which(join_cols_left == join_cols_right)
+      common_join_cols_left <- join_cols_left[which_common_join]
+      common_join_cols_right <- join_cols_left[which_common_join]
+
+      which_left <- match(common_join_cols_left, names(x))
+      common_join_cols_left <- unique_suffix_cols(
         c(names(x), names(y)),
-        join_cols_left,
+        common_join_cols_left,
         suffix[1L]
       )
-      names(x)[which_left] <- join_cols_left
+      names(x)[which_left] <- common_join_cols_left
 
-      which_right <- match(join_cols_right, names(y))
-      join_cols_right <- unique_suffix_cols(
+      which_right <- match(common_join_cols_right, names(y))
+      common_join_cols_right <- unique_suffix_cols(
         c(names(x), names(y)),
-        join_cols_right,
+        common_join_cols_right,
         suffix[2L]
       )
-      names(y)[which_right] <- join_cols_right
+      names(y)[which_right] <- common_join_cols_right
+
+      join_cols_left[which_common_join] <- common_join_cols_left
+      join_cols_right[which_common_join] <- common_join_cols_right
     }
   }
 
@@ -95,15 +102,54 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
 
   # Convert vars collapse::join() can't handle into group IDs
 
-  left <- df_mutate_exotic_to_ids(x)
-  right <- df_mutate_exotic_to_ids(y)
+  # Need to use all data from x and y to produce accurate group IDs for matching
+  # specifically on the joined variables
+
+
+  exotic_cols_left <- names(x)[vapply(x, cpp_is_exotic, FALSE, USE.NAMES = FALSE)]
+  exotic_cols_right <- names(y)[vapply(y, cpp_is_exotic, FALSE, USE.NAMES = FALSE)]
+
+  exotic_join_cols_left <- fast_intersect(join_cols_left, exotic_cols_left)
+  exotic_join_cols_right <- fast_intersect(join_cols_right, exotic_cols_right)
+
+  exotic_non_join_cols_left <- fast_setdiff(exotic_cols_left, exotic_join_cols_left)
+  exotic_non_join_cols_right <- fast_setdiff(exotic_cols_right, exotic_join_cols_right)
+
+  left <- x
+  right <- y
+
+  for (i in seq_along(exotic_join_cols_left)){
+    group_ids <- group_id(
+      f_union_all(
+        left[[exotic_join_cols_left[i]]], right[[exotic_join_cols_right[i]]]
+      ),
+      order = FALSE
+    )
+    left[[exotic_join_cols_left[i]]] <- cheapr::sset(group_ids, df_seq_along(left))
+    right[[exotic_join_cols_right[i]]] <- cheapr::sset(group_ids, (df_nrow(left) + 1L):length(group_ids))
+  }
+
+  # For the non joining variables, we can just convert directly to IDs
+
+  # # exotic_non_joined_cols_left <- fast_setdiff(
+  #   non_joined_cols_left[vapply(f_select(x, .cols = non_joined_cols_left), cpp_is_exotic, FALSE, USE.NAMES = FALSE)]
+  # exotic_non_join_cols_right <-
+  #   non_joined_cols_right[vapply(f_select(y, .cols = non_joined_cols_right), cpp_is_exotic, FALSE, USE.NAMES = FALSE)]
+  #
+  for (col in exotic_non_join_cols_left){
+    left[[col]] <- group_id(left[[col]], order = FALSE)
+  }
+  for (col in exotic_non_join_cols_right){
+    right[[col]] <- group_id(right[[col]], order = FALSE)
+  }
 
   # If any addresses have been changed then yes there are vars
   # in left or right that collapse can't handle
   # We turn these into group IDs and then match them back at the end
 
-  exotic_cols_left <- names(x)[!cpp_address_equal(x, left)]
-  exotic_cols_right <- names(y)[!cpp_address_equal(y, right)]
+  # exotic_cols_left <- names(x)[!cpp_address_equal(x, left)]
+  # exotic_cols_right <- names(y)[!cpp_address_equal(y, right)]
+
   exotic_cols_right <- fast_setdiff(exotic_cols_right, exotic_cols_left)
 
   # Join
@@ -191,7 +237,7 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
     out[[col]] <- cheapr::sset(x[[col]], matches)
   }
   if (!semi_or_anti){
-    for (col in exotic_cols_right){
+    for (col in fast_intersect(exotic_cols_right, names(out))){
       matches <- collapse::fmatch(out[[col]], right[[col]], overid = 2L)
       out[[col]] <- cheapr::sset(y[[col]], matches)
     }

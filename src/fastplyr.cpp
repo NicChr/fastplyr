@@ -587,13 +587,6 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
   int n_cols = Rf_length(x);
   int n_rows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
 
-  if (n_cols == 1){
-    SEXP x1 = Rf_protect(VECTOR_ELT(x, 0)); ++NP;
-    SEXP out = Rf_protect(cpp_run_id(x1)); ++NP;
-    Rf_unprotect(NP);
-    return out;
-  }
-
   cpp11::function fastplyr_group_id = cpp11::package("fastplyr")["group_id"];
 
   const SEXP *p_x = VECTOR_PTR_RO(x);
@@ -606,10 +599,17 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
       return out;
     }
     if (cpp_is_exotic(p_x[l])){
-      cpp11::integers group_ids = Rf_protect(fastplyr_group_id(p_x[l], cpp11::named_arg("order") = false));
+      SEXP group_ids = Rf_protect(fastplyr_group_id(p_x[l], cpp11::named_arg("order") = false));
       x[l] = group_ids;
       Rf_unprotect(1);
     }
+  }
+
+  if (n_cols == 1){
+    SEXP x1 = Rf_protect(VECTOR_ELT(x, 0)); ++NP;
+    SEXP out = Rf_protect(cpp_run_id(x1)); ++NP;
+    Rf_unprotect(NP);
+    return out;
   }
 
   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n_rows)); ++NP;
