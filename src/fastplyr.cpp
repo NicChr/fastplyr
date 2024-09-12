@@ -567,6 +567,14 @@ SEXP cpp_run_id(SEXP x){
     }
     break;
   }
+  case RAWSXP: {
+  const Rbyte *p_x = RAW_RO(x);
+    for (R_xlen_t i = 1; i < n; ++i){
+      p_out[i] = memcmp(&p_x[i - 1], &p_x[i], sizeof(Rbyte)) == 0 ?
+      p_out[i - 1] : p_out[i - 1] + 1;
+    }
+   break;
+  }
   default: {
     Rf_unprotect(1);
     Rf_error("%s cannot handle an object of type %s", __func__, Rf_type2char(TYPEOF(x)));
@@ -610,7 +618,6 @@ SEXP cpp_df_run_id(SEXP x){
     p_out[0] = 1;
   }
 
-
   for (int i = 1; i < n_rows; ++i){
    diff = false;
    int j = 0;
@@ -644,6 +651,12 @@ SEXP cpp_df_run_id(SEXP x){
         diff = (x1_re != x2_re) || (x1_im != x2_im);
         p_out[i] = (k += diff);
         break;
+      }
+      case RAWSXP: {
+        Rbyte *p_xj = RAW(p_x[j]);
+        diff = memcmp(&p_xj[i], &p_xj[i - 1], sizeof(Rbyte)) != 0;
+        p_out[i] = (k += diff);
+       break;
       }
       default: {
         Rf_unprotect(2);
