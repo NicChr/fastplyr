@@ -586,28 +586,45 @@ SEXP cpp_run_id(SEXP x){
 
 [[cpp11::register]]
 SEXP cpp_df_run_id(SEXP x){
+  int NP = 0;
   int n_cols = Rf_length(x);
   int n_rows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
+
+  // cpp11::function fastplyr_group_id = cpp11::package("fastplyr")["group_id"];
 
   cpp11::function fastplyr_df_mutate_exotic_to_ids =
     cpp11::package("fastplyr")["df_mutate_exotic_to_ids"];
 
-  Rf_protect(x = fastplyr_df_mutate_exotic_to_ids(x));
+  Rf_protect(x = fastplyr_df_mutate_exotic_to_ids(x)); ++NP;
   const SEXP *p_x = VECTOR_PTR_RO(x);
 
   if (n_cols == 1){
-    SEXP x1 = Rf_protect(VECTOR_ELT(x, 0));
-    SEXP out = Rf_protect(cpp_run_id(x1));
-    Rf_unprotect(3);
+    SEXP x1 = Rf_protect(VECTOR_ELT(x, 0)); ++NP;
+    SEXP out = Rf_protect(cpp_run_id(x1)); ++NP;
+    Rf_unprotect(NP);
     return out;
   }
 
-  SEXP out = Rf_protect(Rf_allocVector(INTSXP, n_rows));
+  for (int l = n_cols - 1; l >= 0; --l){
+    if (is_compact_seq(p_x[l])){
+      SEXP compact_seq = Rf_protect(p_x[l]); ++NP;
+      SEXP out = Rf_protect(cpp_run_id(compact_seq)); ++NP;
+      Rf_unprotect(NP);
+      return out;
+    }
+    // if (cpp_is_exotic(p_x[l])){
+    //   SEXP group_ids = Rf_protect(fastplyr_group_id(p_x[l], cpp11::named_arg("order") = false));
+    //   SET_VECTOR_ELT(x, l, group_ids);
+    //   Rf_unprotect(1);
+    // }
+  }
+
+  SEXP out = Rf_protect(Rf_allocVector(INTSXP, n_rows)); ++NP;
   int *p_out = INTEGER(out);
 
   if (n_cols < 1){
     for (int i = 0; i < n_rows; ++i) p_out[i] = 1;
-    Rf_unprotect(2);
+    Rf_unprotect(NP);
     return out;
   }
 
@@ -659,14 +676,14 @@ SEXP cpp_df_run_id(SEXP x){
        break;
       }
       default: {
-        Rf_unprotect(2);
+        Rf_unprotect(NP);
         Rf_error("%s cannot handle an object of type %s", __func__, Rf_type2char(TYPEOF(p_x[j])));
       }
       }
       ++j;
     }
   }
-  Rf_unprotect(2);
+  Rf_unprotect(NP);
   return out;
 }
 
