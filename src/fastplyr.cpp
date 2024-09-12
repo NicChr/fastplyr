@@ -558,18 +558,14 @@ SEXP cpp_run_id(SEXP x){
   }
   case CPLXSXP: {
     Rcomplex *p_x = COMPLEX(x);
-    long long x1_re = 0, x2_re = 0, x1_im = 0, x2_im = 0;
     for (R_xlen_t i = 1; i < n; ++i){
-      x1_re = p_x[i - 1].r;
-      x2_re = p_x[i].r;
-      x1_im = p_x[i - 1].i;
-      x2_im = p_x[i].i;
-      p_out[i] = x1_re == x2_re && x1_im == x2_im ? p_out[i - 1] : p_out[i - 1] + 1;
+      p_out[i] = memcmp(&p_x[i - 1], &p_x[i], sizeof(Rcomplex)) == 0 ?
+      p_out[i - 1] : p_out[i - 1] + 1;
     }
     break;
   }
   case RAWSXP: {
-  Rbyte *p_x = RAW(x);
+    Rbyte *p_x = RAW(x);
     for (R_xlen_t i = 1; i < n; ++i){
       p_out[i] = memcmp(&p_x[i - 1], &p_x[i], sizeof(Rbyte)) == 0 ?
       p_out[i - 1] : p_out[i - 1] + 1;
@@ -658,11 +654,7 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
       }
       case CPLXSXP: {
         Rcomplex *p_xj = COMPLEX(p_x[j]);
-        long long x1_re = p_xj[i - 1].r;
-        long long x2_re = p_xj[i].r;
-        long long x1_im = p_xj[i - 1].i;
-        long long x2_im = p_xj[i].i;
-        diff = (x1_re != x2_re) || (x1_im != x2_im);
+        diff = memcmp(&p_xj[i], &p_xj[i - 1], sizeof(Rcomplex)) != 0;
         p_out[i] = (k += diff);
         break;
       }
