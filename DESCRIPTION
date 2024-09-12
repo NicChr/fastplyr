@@ -7,6 +7,7 @@ Authors@R:
 Description: A full set of fast data manipulation tools with a tidy
     front-end and a fast back-end using 'collapse' and 'cheapr'.
 License: MIT + file LICENSE
+BugReports: https://github.com/NicChr/fastplyr/issues
 Depends: 
     R (>= 3.6.1)
 Imports: 

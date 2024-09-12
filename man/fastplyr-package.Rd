@@ -25,6 +25,13 @@ using the links below.
 
 \href{https://github.com/NicChr/cheapr}{cheapr}
 }
+\seealso{
+Useful links:
+\itemize{
+  \item Report bugs at \url{https://github.com/NicChr/fastplyr/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Nick Christofides \email{nick.christofides.r@gmail.com} (\href{https://orcid.org/0000-0002-9743-7342}{ORCID})
 
