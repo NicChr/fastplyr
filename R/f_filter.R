@@ -22,3 +22,4 @@ f_filter <- function(data, ..., .by = NULL){
     df_row_slice(data, cpp_which_all(filter_df))
   }
 }
+

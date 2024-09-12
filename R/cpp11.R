@@ -55,3 +55,7 @@ cpp_run_id <- function(x) {
 cpp_df_run_id <- function(x) {
   .Call(`_fastplyr_cpp_df_run_id`, x)
 }
+
+cpp_consecutive_id <- function(x) {
+  .Call(`_fastplyr_cpp_consecutive_id`, x)
+}

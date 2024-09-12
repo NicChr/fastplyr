@@ -321,7 +321,7 @@ SEXP cpp_which_all(SEXP x){
   const SEXP *p_x = VECTOR_PTR_RO(x);
   int NP = 0;
   int n_true = 0;
-  // bool is_true;
+
   unsigned int ncols = Rf_length(x); // ncols
   unsigned int nrows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
 
@@ -366,6 +366,52 @@ SEXP cpp_which_all(SEXP x){
   Rf_unprotect(NP);
   return out;
 }
+
+// Alternative that goes row-wise through x
+// SEXP cpp_which_all(SEXP x){
+//   if (!Rf_inherits(x, "data.frame")){
+//     Rf_error("x must be a data frame");
+//   }
+//   const SEXP *p_x = VECTOR_PTR_RO(x);
+//   int NP = 0;
+//   int n_true = 0;
+//   int n_cols = Rf_length(x); // ncols
+//   int n_rows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
+//
+//   SEXP out;
+//
+//   if (n_cols == 0){
+//     out = Rf_protect(Rf_allocVector(INTSXP, 0)); ++NP;
+//   } else if (n_cols == 1){
+//     cpp11::function cheapr_which = cpp11::package("cheapr")["which_"];
+//     out = Rf_protect(cheapr_which(p_x[0])); ++NP;
+//   } else {
+//     SEXP lgl = Rf_protect(Rf_allocVector(LGLSXP, n_rows)); ++NP;
+//     int *p_lgl = LOGICAL(lgl);
+//     memset(p_lgl, 0, n_rows * sizeof(int));
+//
+//     bool is_true = false;
+//     for (int i = 0; i < n_rows; ++i){
+//       is_true = true;
+//       int j = n_cols - 1;
+//       while (j >= 0 && is_true){
+//         is_true = LOGICAL(p_x[j--])[i] == TRUE;
+//       }
+//       n_true += is_true;
+//       p_lgl[i] = is_true;
+//     }
+//     out = Rf_protect(Rf_allocVector(INTSXP, n_true)); ++NP;
+//     int *p_out = INTEGER(out);
+//     int whichi = 0;
+//     int i = 0;
+//     while (whichi < n_true){
+//       p_out[whichi] = i + 1;
+//       whichi += (p_lgl[i++] == TRUE);
+//     }
+//   }
+//   Rf_unprotect(NP);
+//   return out;
+// }
 
 // Taken from dplyr::group_indices,
 // All credits go to dplyr
@@ -502,13 +548,6 @@ SEXP cpp_run_id(SEXP x){
   case REALSXP: {
     long long *p_x = (long long*) REAL(x);
     FP_RUN_ID;
-    // double *p_x = REAL(x);
-    // double x1 = 0, x2 = 0;
-    // for (R_xlen_t i = 1; i < n; ++i){
-    //   x1 = p_x[i - 1];
-    //   x2 = p_x[i];
-    //   p_out[i] = x1 != x1 && x2 != x2 ? p_out[i - 1] : p_out[i - 1] + (x1 != x2);
-    // }
     break;
   }
   case STRSXP: {
@@ -526,22 +565,6 @@ SEXP cpp_run_id(SEXP x){
       x2_im = p_x[i].i;
       p_out[i] = x1_re == x2_re && x1_im == x2_im ? p_out[i - 1] : p_out[i - 1] + 1;
     }
-    // double x1_re = 0, x2_re = 0, x1_im = 0, x2_im = 0;
-    // bool re_both_na = false;
-    // bool im_both_na = false;
-    // bool re_same = false;
-    // bool im_same = false;
-    // for (R_xlen_t i = 1; i < n; ++i){
-    //   x1_re = p_x[i - 1].r;
-    //   x2_re = p_x[i].r;
-    //   x1_im = p_x[i - 1].i;
-    //   x2_im = p_x[i].i;
-    //   re_both_na = (x2_re != x2_re) && (x1_re != x1_re);
-    //   im_both_na = (x2_im != x2_im) && (x1_im != x1_im);
-    //   re_same = re_both_na || x2_re == x1_re;
-    //   im_same = im_both_na || x2_im == x1_im;
-    //   p_out[i] = re_same && im_same ? p_out[i - 1] : p_out[i - 1] + 1;
-    // }
     break;
   }
   default: {
@@ -552,157 +575,6 @@ SEXP cpp_run_id(SEXP x){
   Rf_unprotect(1);
   return out;
 }
-
-// Alternate version
-// SEXP cpp_df_run_id(SEXP x){
-//   int n_cols = Rf_length(x);
-//   int n_rows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
-//
-//   cpp11::function fastplyr_df_mutate_exotic_to_ids =
-//     cpp11::package("fastplyr")["df_mutate_exotic_to_ids"];
-//
-//   Rf_protect(x = fastplyr_df_mutate_exotic_to_ids(x));
-//   const SEXP *p_x = VECTOR_PTR_RO(x);
-//
-//   if (n_cols == 1){
-//     Rf_unprotect(1);
-//     return cpp_run_id(VECTOR_ELT(x, 0));
-//   }
-//
-//   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n_rows));
-//   int *p_out = INTEGER(out);
-//
-//   if (n_cols < 1){
-//     for (int i = 0; i < n_rows; ++i) p_out[i] = 1;
-//     Rf_unprotect(2);
-//     return out;
-//   }
-//
-//   SEXP diff_vec = Rf_protect(Rf_allocVector(LGLSXP, n_rows));
-//   int *p_diff = LOGICAL(diff_vec);
-//
-//   bool diff = false;
-//
-//   memset(p_diff, 0, n_rows * sizeof(int));
-//
-//   if (n_rows >= 1){
-//     p_out[0] = 1;
-//     p_diff[0] = 1;
-//   }
-//
-//
-//   for (int j = 0; j < n_cols; ++j){
-//
-//     switch (TYPEOF(p_x[j])){
-//     case LGLSXP:
-//     case INTSXP: {
-//       int *p_xj = INTEGER(p_x[j]);
-//       if (j < (n_cols - 1)){
-//         for (int i = 1; i < n_rows; ++i){
-//           if (!p_diff[i] && (p_xj[i] != p_xj[i - 1])){
-//             p_diff[i] = 1;
-//           }
-//         }
-//       } else {
-//         for (int i = 1; i < n_rows; ++i){
-//           diff = p_diff[i] || (p_xj[i] != p_xj[i - 1]);
-//           p_out[i] = diff ? p_out[i - 1] + 1 : p_out[i - 1];
-//         }
-//       }
-//       break;
-//     }
-//     case REALSXP: {
-//       double x1 = 0, x2 = 0;
-//       // double *p_xj = REAL(p_x[j]);
-//       long long *p_xj = (long long *) REAL(p_x[j]);
-//       if (j < (n_cols - 1)){
-//         for (int i = 1; i < n_rows; ++i){
-//           if (!p_diff[i] && p_xj[i] != p_xj[i - 1]){
-//             p_diff[i] = 1;
-//           }
-//           // x1 = p_xj[i - 1];
-//           // x2 = p_xj[i];
-//           // // diff = !( (x1 != x1 && x2 != x2 ) || x1 == x2 );
-//           // if (!p_diff[i] && !( (x1 != x1 && x2 != x2 ) || x1 == x2 )){
-//           //   p_diff[i] = 1;
-//           // }
-//         }
-//       } else {
-//         for (int i = 1; i < n_rows; ++i){
-//           x1 = p_xj[i - 1];
-//           x2 = p_xj[i];
-//           diff = p_diff[i] || !( (x1 != x1 && x2 != x2 ) || x1 == x2 );
-//           p_out[i] = diff ? p_out[i - 1] + 1 : p_out[i - 1];
-//         }
-//       }
-//       break;
-//     }
-//     case STRSXP: {
-//       const SEXP *p_xj = STRING_PTR_RO(p_x[j]);
-//       if (j < (n_cols - 1)){
-//         for (int i = 1; i < n_rows; ++i){
-//           if (!p_diff[i] && (p_xj[i] != p_xj[i - 1])){
-//             p_diff[i] = 1;
-//           }
-//         }
-//       } else {
-//         for (int i = 1; i < n_rows; ++i){
-//           diff = p_diff[i] || (p_xj[i] != p_xj[i - 1]);
-//           p_out[i] = diff ? p_out[i - 1] + 1 : p_out[i - 1];
-//         }
-//       }
-//       break;
-//     }
-//     case CPLXSXP: {
-//       Rcomplex *p_xj = COMPLEX(p_x[j]);
-//
-//       double x1_re = 0, x2_re = 0, x1_im = 0, x2_im = 0;
-//       bool re_both_na = false;
-//       bool im_both_na = false;
-//       bool re_same = false;
-//       bool im_same = false;
-//
-//       if (j < (n_cols - 1)){
-//         for (int i = 1; i < n_rows; ++i){
-//           x1_re = p_xj[i - 1].r;
-//           x2_re = p_xj[i].r;
-//           x1_im = p_xj[i - 1].i;
-//           x2_im = p_xj[i].i;
-//           re_both_na = (x2_re != x2_re) && (x1_re != x1_re);
-//           im_both_na = (x2_im != x2_im) && (x1_im != x1_im);
-//           re_same = re_both_na || x2_re == x1_re;
-//           im_same = im_both_na || x2_im == x1_im;
-//           diff = !(re_same && im_same);
-//           if (!p_diff[i] && diff){
-//             p_diff[i] = 1;
-//           }
-//         }
-//       } else {
-//         for (int i = 1; i < n_rows; ++i){
-//           x1_re = p_xj[i - 1].r;
-//           x2_re = p_xj[i].r;
-//           x1_im = p_xj[i - 1].i;
-//           x2_im = p_xj[i].i;
-//           re_both_na = (x2_re != x2_re) && (x1_re != x1_re);
-//           im_both_na = (x2_im != x2_im) && (x1_im != x1_im);
-//           re_same = re_both_na || x2_re == x1_re;
-//           im_same = im_both_na || x2_im == x1_im;
-//           diff = !(re_same && im_same);
-//           diff = p_diff[i] || diff;
-//           p_out[i] = diff ? p_out[i - 1] + 1 : p_out[i - 1];
-//         }
-//       }
-//       break;
-//     }
-//     default: {
-//       Rf_unprotect(3);
-//       Rf_error("%s cannot handle an object of type %s", __func__, Rf_type2char(TYPEOF(p_x[j])));
-//     }
-//     }
-//   }
-//   Rf_unprotect(3);
-//   return out;
-// }
 
 [[cpp11::register]]
 SEXP cpp_df_run_id(SEXP x){
@@ -716,8 +588,10 @@ SEXP cpp_df_run_id(SEXP x){
   const SEXP *p_x = VECTOR_PTR_RO(x);
 
   if (n_cols == 1){
-    Rf_unprotect(1);
-    return cpp_run_id(VECTOR_ELT(x, 0));
+    SEXP x1 = Rf_protect(VECTOR_ELT(x, 0));
+    SEXP out = Rf_protect(cpp_run_id(x1));
+    Rf_unprotect(3);
+    return out;
   }
 
   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n_rows));
@@ -740,7 +614,7 @@ SEXP cpp_df_run_id(SEXP x){
   for (int i = 1; i < n_rows; ++i){
    diff = false;
    int j = 0;
-    while (j++ < n_cols && !diff){
+    while (j < n_cols && !diff){
       switch (TYPEOF(p_x[j])){
       case LGLSXP:
       case INTSXP: {
@@ -776,8 +650,24 @@ SEXP cpp_df_run_id(SEXP x){
         Rf_error("%s cannot handle an object of type %s", __func__, Rf_type2char(TYPEOF(p_x[j])));
       }
       }
+      ++j;
     }
   }
   Rf_unprotect(2);
   return out;
+}
+
+[[cpp11::register]]
+SEXP cpp_consecutive_id(SEXP x){
+  if (Rf_inherits(x, "data.frame")){
+    return cpp_df_run_id(x);
+  } else if (cpp_is_exotic(x)){
+    cpp11::function fastplyr_group_id = cpp11::package("fastplyr")["group_id"];
+    SEXP group_ids = Rf_protect(fastplyr_group_id(x, cpp11::named_arg("order") = false));
+    SEXP out = Rf_protect(cpp_run_id(group_ids));
+    Rf_unprotect(2);
+    return out;
+  } else {
+    return cpp_run_id(x);
+  }
 }
