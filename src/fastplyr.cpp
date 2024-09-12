@@ -437,6 +437,7 @@ SEXP cpp_df_group_indices(SEXP rows, int size) {
 
 
 // Slice integers (only in-bounds data is returned)
+// indices must NOT INCLUDE NA values
 
 SEXP cpp_int_slice(SEXP x, SEXP indices, bool check){
   if (!Rf_isInteger(x)){
@@ -452,7 +453,6 @@ SEXP cpp_int_slice(SEXP x, SEXP indices, bool check){
   int zero_count = 0;
   int pos_count = 0;
   int oob_count = 0;
-  int na_count = 0;
   int neg_count = 0;
   int k = 0;
   int out_size;
@@ -460,16 +460,15 @@ SEXP cpp_int_slice(SEXP x, SEXP indices, bool check){
     for (int j = 0; j < n; ++j){
       zero_count += (pi[j] == 0);
       pos_count += (pi[j] > 0);
-      na_count += pi[j] == NA_INTEGER;
       oob_count += (std::abs(pi[j]) > xn);
     }
-    neg_count = n - pos_count - zero_count - na_count;
+    neg_count = n - pos_count - zero_count;
     if ( pos_count > 0 && neg_count > 0){
       Rf_error("Cannot mix positive and negative indices");
     }
   }
   out_size = n - oob_count - zero_count;
-  bool no_check = !check || (zero_count == 0 && oob_count == 0 && na_count == 0 && pos_count == n ) || neg_count > 0;
+  bool no_check = !check || (zero_count == 0 && oob_count == 0 && pos_count == n ) || neg_count > 0;
 
   SEXP temp = neg_count > 0 ? Rf_protect(cpp11::package("cheapr")["neg_indices_to_pos"](indices, xn)) : Rf_protect(indices); ++NP;
   int *pi2 = INTEGER(temp);
@@ -477,16 +476,18 @@ SEXP cpp_int_slice(SEXP x, SEXP indices, bool check){
     n = Rf_length(temp);
     out_size = n;
   }
-  SEXP out = Rf_protect(Rf_allocVector(TYPEOF(x), out_size)); ++NP;
+  SEXP out = Rf_protect(Rf_allocVector(INTSXP, out_size)); ++NP;
   int *p_x = INTEGER(x);
   int *p_out = INTEGER(out);
   if (no_check){
     for (int i = 0; i < n; ++i) p_out[k++] = p_x[pi2[i] - 1];
   } else {
-    // TODO - Make sure this works with NAs
+    unsigned int rng = xn - 1;
+    int xi = 0;
     for (int i = 0; i < n; ++i){
-      int xi = pi2[i];
-      if (xi > 0 && xi <= xn) p_out[k++] = p_x[xi - 1];
+      xi = pi2[i];
+      if ((unsigned)(xi - 1) <= rng) p_out[k++] = p_x[xi - 1];
+      // if (xi > 0 && xi <= xn) p_out[k++] = p_x[xi - 1];
     }
   }
   Rf_unprotect(NP);

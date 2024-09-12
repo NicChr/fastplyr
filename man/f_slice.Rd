@@ -106,8 +106,11 @@ The former results in slice locations that do not vary by group but the latter
 will result in different within-group slice locations which \code{f_slice} cannot
 correctly compute.
 
-To do the the latter type of by-group slicing, use \code{f_filter}, e.g.
+To do the the latter type of by-group slicing, use \code{f_filter}, e.g. \cr
 \code{f_filter(data, row_number() \%in\% slices, .by = groups)}
+or even faster: \cr
+\code{library(cheapr)} \cr
+\code{f_filter(data, row_number() \%in_\% slices, .by = groups)}
 }
 
 \subsection{\code{f_slice_sample}}{

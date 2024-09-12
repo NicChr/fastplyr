@@ -18,8 +18,11 @@
 #' will result in different within-group slice locations which `f_slice` cannot
 #' correctly compute.
 #'
-#' To do the the latter type of by-group slicing, use `f_filter`, e.g.
+#' To do the the latter type of by-group slicing, use `f_filter`, e.g. \cr
 #' `f_filter(data, row_number() %in% slices, .by = groups)`
+#' or even faster: \cr
+#' `library(cheapr)` \cr
+#' `f_filter(data, row_number() %in_% slices, .by = groups)`
 #'
 #' ### `f_slice_sample`
 #'
