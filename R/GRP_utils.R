@@ -162,30 +162,46 @@ check_data_GRP_size <- function(x, GRP){
   }
 }
 
+# Alternate mixed method
+# GRP_duplicated <- function(GRP, all = FALSE){
+#   sizes <- GRP_group_sizes(GRP)
+#   group_id <- GRP_group_id(GRP)
+#   if (is.null(GRP[["order"]])){
+#     out <- (sizes > 1L)[group_id]
+#     if (!all){
+#       out[GRP_starts(GRP)] <- FALSE
+#     }
+#   } else {
+#     if (all){
+#       out <- (sizes > 1L)[group_id]
+#     } else {
+#       out <- row_id(GRP) > 1L
+#     }
+#   }
+#   out
+# }
+
 GRP_duplicated <- function(GRP, all = FALSE){
   sizes <- GRP_group_sizes(GRP)
   group_id <- GRP_group_id(GRP)
-  if (all){
-    out <- (sizes > 1L)[group_id]
-  } else {
-    out <- row_id(GRP) > 1L
+  out <- (sizes > 1L)[group_id]
+  if (!all){
+    out[GRP_starts(GRP)] <- FALSE
   }
   out
 }
-# Alternative that just returns dup indices
-# The commented-out code is simpler but which_val is more efficient
-# Especially with data that contains few duplicates
+# Alternate version
 # GRP_which_duplicated <- function(GRP, all = FALSE){
-#   which(GRP_duplicated(GRP, all))
+#   sizes <- GRP_group_sizes(GRP)
+#   group_id <- GRP_group_id(GRP)
+#   if (all){
+#     which((sizes > 1L)[group_id])
+#   } else {
+#     which_val(row_id(GRP), 1L, invert = TRUE)
+#   }
 # }
 GRP_which_duplicated <- function(GRP, all = FALSE){
-  sizes <- GRP_group_sizes(GRP)
-  group_id <- GRP_group_id(GRP)
-  if (all){
-    which((sizes > 1L)[group_id])
-  } else {
-    which_val(row_id(GRP), 1L, invert = TRUE)
-  }
+  which(GRP_duplicated(GRP, all))
 }
 sorted_group_starts <- function(group_sizes, init_loc = 1L){
   cpp_sorted_group_starts(as.integer(group_sizes), init_loc)
