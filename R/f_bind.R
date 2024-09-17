@@ -60,18 +60,25 @@ f_bind_rows <- function(...){
 #' @rdname f_bind_rows
 #' @export
 f_bind_cols <- function(..., .repair_names = TRUE, .sep = "..."){
-  dots <- list3(...)
-  nrows <- cpp_nrows(dots, TRUE)
+  dots <- cheapr::recycle(...)
+  for (i in seq_along(dots)){
+    if (!inherits(dots[[i]], "data.frame")){
+      dots[[i]] <- list_as_df(dots[i])
+      class(dots[[i]]) <- c("tbl_df", "tbl", "data.frame")
+    }
+  }
+  nrows <- cpp_nrows(dots, check_rows_equal = FALSE)
   out <- unlist(unname(dots), recursive = FALSE)
   if (.repair_names){
-    names(out) <- unique_name_repair(names(out), .sep = .sep)
+    if (is.null(names(out))){
+      names(out) <- paste0(.sep, seq_along(out))
+    } else {
+      names(out) <- unique_name_repair(names(out), .sep = .sep)
+    }
   }
   out <- list_as_df(out)
   if (length(dots) == 1){
-    out <- dots[[1L]]
-    if (!is_df(out)){
-      stop("All inputs must be data frames")
-    }
+    out <- reconstruct(dots[[1L]], out)
   } else if (length(dots) > 1){
     N <- nrows[1L]
     # Adjustment for 0-column only data frames
