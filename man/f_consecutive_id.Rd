@@ -2,7 +2,7 @@
 % Please edit documentation in R/f_consecutive_id.R
 \name{f_consecutive_id}
 \alias{f_consecutive_id}
-\title{Run-length IDs}
+\title{Consecutive IDs}
 \usage{
 f_consecutive_id(x)
 }
@@ -24,4 +24,7 @@ when there is a change in value.
 
 To mimic \code{dplyr::consecutive_id()} where multiple variables are selected,
 just use \code{dplyr::pick()}.
+
+\code{f_consecutive_id} has a smaller overhead and thus should be faster when
+called many times, e.g. when using a \code{grouped_df} with many groups.
 }

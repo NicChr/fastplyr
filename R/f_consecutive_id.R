@@ -1,4 +1,4 @@
-#' Run-length IDs
+#' Consecutive IDs
 #'
 #' @description
 #' `f_consecutive_id()`, an alternative to `dplyr::consecutive_id()`
@@ -14,6 +14,9 @@
 #'
 #' To mimic `dplyr::consecutive_id()` where multiple variables are selected,
 #' just use `dplyr::pick()`.
+#'
+#' `f_consecutive_id` has a smaller overhead and thus should be faster when
+#' called many times, e.g. when using a `grouped_df` with many groups.
 #'
 #' @returns
 #' An integer vector of consecutive run IDs in the range `[1, n + 1)`.

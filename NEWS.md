@@ -1,5 +1,8 @@
 # fastplyr (Development version)
 
+* `f_bind_cols` now recycles its arguments and converts non-data frames
+to data frames to allow for joining variables as if they were columns.
+
 * Fixed a bug in the `f_join` functions where incorrect matches were 
 occurring when the columns being joined on are 'exotic' variables, e.g. 
 lists, lubridate 'Intervals', etc. Currently fastplyr uses a proxy method to 
