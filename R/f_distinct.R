@@ -64,7 +64,7 @@ f_distinct <- function(data, ..., .keep_all = FALSE,
     # Using sort algorithm but returning order-of-first appearance groups
 
     if (order && !sort){
-      unique_locs <- cheapr::val_find(row_id(out_to_dedup), 1L)
+      unique_locs <- cheapr::which_val(row_id(out_to_dedup), 1L)
       slice <- !(length(unique_locs) == df_nrow(out) && is_sorted(unique_locs))
     } else {
       if (order && sort){

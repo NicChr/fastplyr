@@ -221,13 +221,13 @@ GRP_starts <- function(GRP, use.g.names = FALSE){
         out <- sorted_group_starts(GRP_sizes)
       }
       # For factors with 0 size, replace calculated group starts with 0
-      out[cheapr::val_find(GRP_sizes, 0L)] <- 0L
+      out[cheapr::which_val(GRP_sizes, 0L)] <- 0L
     } else {
       o <- GRP_order(GRP)
       starts <- attr(o, "starts")
       if (collapse::anyv(GRP_sizes, 0L)){
         out <- integer(GRP_n_groups(GRP))
-        out[cheapr::val_find(GRP_sizes, 0L, invert = TRUE)] <- o[starts]
+        out[cheapr::which_val(GRP_sizes, 0L, invert = TRUE)] <- o[starts]
       } else {
         out <- o[starts]
       }
@@ -248,7 +248,7 @@ GRP_ends <- function(GRP, use.g.names = FALSE,
   if (GRP_is_sorted(GRP)){
     out <- sorted_group_ends(GRP_sizes)
     # For factors with 0 size, replace 0 with NA
-    out[cheapr::val_find(GRP_sizes, 0L)] <- 0L
+    out[cheapr::which_val(GRP_sizes, 0L)] <- 0L
   } else {
     if (is.null(loc)){
       loc <- GRP_loc(GRP, use.g.names = FALSE)
