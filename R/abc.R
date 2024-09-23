@@ -18,7 +18,9 @@ which <- cheapr::which_
 which_not_in <- get_from_package("which_not_in", "cheapr")
 which_in <- get_from_package("which_in", "cheapr")
 
-cpp_int64_to_numeric <- get_from_package("cpp_int64_to_numeric", "cheapr")
+## TO-DO: remove below line and uncomment line below it
+cpp_int64_to_numeric <- as.double
+# cpp_int64_to_numeric <- get_from_package("cpp_int64_to_numeric", "cheapr")
 
 check_length <- function(x, size){
   if (length(x) != size){
