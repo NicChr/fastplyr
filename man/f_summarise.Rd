@@ -46,6 +46,7 @@ List of currently optimised functions and their equivalent
 \code{base::min} -> \code{collapse::fmin} \cr
 \code{base::max} -> \code{collapse::fmax} \cr
 \code{stats::mean} -> \code{collapse::fmean} \cr
+\code{stats::median} -> \code{collapse::fmedian} \cr
 \code{stats::sd} -> \code{collapse::fsd} \cr
 \code{stats::var} -> \code{collapse::fvar} \cr
 \code{dplyr::first} -> \code{collapse::ffirst} \cr

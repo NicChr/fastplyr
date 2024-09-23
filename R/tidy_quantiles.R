@@ -107,9 +107,22 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   if (length(dot_vars) > 0) {
     q_df <- dplyr::mutate(q_df, across(all_of(dot_vars), as.double))
   }
-  # quantile_starts <- (length(probs) * (0:(max(n_groups - 1L, 0L)))) + 1L
+
   quantile_starts <- ( length(probs) * (seq_len(n_groups) - 1L) ) + 1L
+
+  ### Do this because if groups is a GRP then collapse::fnth allocates
+  ### more memory than needed in the special case of <= 1 groups
+
+  if (n_groups <= 1){
+    collapse_groups <- NULL
+  } else {
+    collapse_groups <- groups
+  }
+
   for (.col in dot_vars) {
+    if (!is.integer(data2[[.col]])){
+      data2[[.col]] <- as.numeric(data2[[.col]])
+    }
     k <- 0L
     for (p in probs) {
       p_seq <- quantile_starts + k
@@ -118,7 +131,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
         q_df[[.col]][p_seq] <-
           as.double(
             collapse::fmin(
-              data2[[.col]], g = groups, na.rm = na.rm, use.g.names = FALSE
+              data2[[.col]], g = collapse_groups, na.rm = na.rm, use.g.names = FALSE
             )
           )
       }
@@ -126,7 +139,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
         q_df[[.col]][p_seq] <-
           as.double(
             collapse::fmax(
-              data2[[.col]], g = groups, na.rm = na.rm, use.g.names = FALSE
+              data2[[.col]], g = collapse_groups, na.rm = na.rm, use.g.names = FALSE
             )
           )
       }
@@ -134,7 +147,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
         q_df[[.col]][p_seq] <-
           as.double(
             collapse::fnth(
-              data2[[.col]], n = p, g = groups, na.rm = na.rm,
+              data2[[.col]], n = p, g = collapse_groups, na.rm = na.rm,
               use.g.names = FALSE, ties = quantile_ties
             )
           )

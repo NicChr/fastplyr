@@ -51,8 +51,8 @@ SEXP cpp_nrows(SEXP x, bool check_rows_equal) {
       Rf_unprotect(2);
       Rf_error("All inputs must be data frames");
     }
-    int nrows = Rf_length(Rf_getAttrib(p_x[0], R_RowNamesSymbol));
-    p_out[0] = nrows;
+    int n_rows = Rf_length(Rf_getAttrib(p_x[0], R_RowNamesSymbol));
+    p_out[0] = n_rows;
     // All others
     for (int i = 1; i < n; ++i) {
       if (!Rf_isFrame(p_x[i])){
@@ -60,7 +60,7 @@ SEXP cpp_nrows(SEXP x, bool check_rows_equal) {
         Rf_error("All inputs must be data frames");
       }
       p_out[i] = Rf_length(Rf_getAttrib(p_x[i], R_RowNamesSymbol));
-      if (check_rows_equal && p_out[i] != nrows){
+      if (check_rows_equal && p_out[i] != n_rows){
         Rf_unprotect(2);
         Rf_error("All input data frames must have the same number of rows");
       }
@@ -91,8 +91,8 @@ SEXP cpp_ncols(SEXP x, bool check_cols_equal) {
       Rf_unprotect(2);
       Rf_error("All inputs must be data frames");
     }
-    int ncols = Rf_length(p_x[0]);
-    p_out[0] = ncols;
+    int n_cols = Rf_length(p_x[0]);
+    p_out[0] = n_cols;
     // All others
     for (int i = 1; i < n; ++i) {
       if (!Rf_isFrame(p_x[i])){
@@ -100,7 +100,7 @@ SEXP cpp_ncols(SEXP x, bool check_cols_equal) {
         Rf_error("All inputs must be data frames");
       }
       p_out[i] = Rf_length(p_x[i]);
-      if (check_cols_equal && p_out[i] != ncols){
+      if (check_cols_equal && p_out[i] != n_cols){
         Rf_unprotect(2);
         Rf_error("All input data frames must have the same number of cols");
       }
@@ -112,7 +112,7 @@ SEXP cpp_ncols(SEXP x, bool check_cols_equal) {
 
 [[cpp11::register]]
 bool cpp_is_exotic(SEXP x){
-  return Rf_isVectorList(x) || Rf_isS4(x) || !Rf_isVector(x);
+  return Rf_isVectorList(x) || Rf_isS4(x) || !Rf_isVector(x) || Rf_inherits(x, "integer64");
 }
 
 // Specifically applied to a list of data frames, used in `f_bind_rows()`
@@ -311,46 +311,55 @@ SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
 // To find which rows are TRUE
 
 // Alternative that goes col-wise
-// SEXP cpp_which_all(SEXP x){
+
+// SEXP cpp_which_all_alt(SEXP x){
 //   if (!Rf_inherits(x, "data.frame")){
 //     Rf_error("x must be a data frame");
 //   }
 //   const SEXP *p_x = VECTOR_PTR_RO(x);
-//   int NP = 0;
-//   int n_true = 0;
+//   int NP = 0, n_true = 0;
 //
-//   unsigned int ncols = Rf_length(x); // ncols
-//   unsigned int nrows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
+//   int n_cols = Rf_length(x);
+//   int n_rows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
 //
-//   SEXP out;
-//   if (ncols == 0){
+//   SEXP out; // Initialise result (must be assigned a valid SEXP or R crashes)
+//
+//   if (n_cols == 0){
 //     out = Rf_protect(Rf_allocVector(INTSXP, 0)); ++NP;
-//   } else if (ncols == 1){
+//   } else if (n_cols == 1){
 //     cpp11::function cheapr_which = cpp11::package("cheapr")["which_"];
 //     out = Rf_protect(cheapr_which(p_x[0])); ++NP;
 //   } else {
-//     SEXP lgl = Rf_protect(Rf_allocVector(LGLSXP, nrows)); ++NP;
+//     SEXP lgl = Rf_protect(Rf_allocVector(LGLSXP, n_rows)); ++NP;
 //     int *p_lgl = LOGICAL(lgl);
+//
+//     // Copy values of x[[1]] into our vector
 //
 //     SEXP first_lgl = Rf_protect(p_x[0]); ++NP;
 //     int *p_first = LOGICAL(first_lgl);
-//     memmove(p_lgl, &p_first[0], sizeof(int) * nrows);
+//     memmove(p_lgl, &p_first[0], sizeof(int) * n_rows);
 //
 //     // Starting from 2nd col to 2nd last col
-//     for (unsigned int i = 1; i < (ncols - 1); ++i) {
+//
+//     for (int i = 1; i < (n_cols - 1); ++i) {
 //       int *p_temp = LOGICAL(p_x[i]);
-//       for (unsigned int j = 0; j < nrows; ++j){
+//       for (int j = 0; j < n_rows; ++j){
 //         p_lgl[j] = p_lgl[j] == TRUE && p_temp[j] == TRUE;
 //       }
 //     }
+//
 //     // Last col
-//     // This is where we count how many true vals are returned in the final vector
-//     int *p_temp = LOGICAL(p_x[ncols - 1]);
-//     for (unsigned int j = 0; j < nrows; ++j){
+//     // This is where we count how many true values
+//     // are returned in the final vector
+//
+//     int *p_temp = LOGICAL(p_x[n_cols - 1]);
+//     for (int j = 0; j < n_rows; ++j){
 //       p_lgl[j] = (p_lgl[j] == TRUE) && (p_temp[j] == TRUE);
 //       n_true += p_lgl[j];
 //     }
+//
 //     // WHICH algo
+//
 //     out = Rf_protect(Rf_allocVector(INTSXP, n_true)); ++NP;
 //     int *p_out = INTEGER(out);
 //     int whichi = 0;
@@ -365,6 +374,7 @@ SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
 // }
 
 // Alternative that goes row-wise through x
+// When data is mixed it tends to be a bit faster
 
 [[cpp11::register]]
 SEXP cpp_which_all(SEXP x){
@@ -392,9 +402,9 @@ SEXP cpp_which_all(SEXP x){
     bool is_true = false;
     for (int i = 0; i < n_rows; ++i){
       is_true = true;
-      int j = n_cols - 1;
-      while (j >= 0 && is_true){
-        is_true = LOGICAL(p_x[j--])[i] == TRUE;
+      int j = 0;
+      while (j < n_cols && is_true){
+        is_true = LOGICAL(p_x[j++])[i] == TRUE;
       }
       n_true += is_true;
       p_lgl[i] = is_true;
@@ -546,7 +556,7 @@ SEXP cpp_run_id(SEXP x){
     break;
   }
   case REALSXP: {
-    long long *p_x = (long long*) REAL(x);
+    long long *p_x = INTEGER64_PTR(x);
     FP_RUN_ID;
     break;
   }
@@ -640,7 +650,7 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
           break;
         }
       case REALSXP: {
-        long long *p_xj = (long long*) REAL(p_x[j]);
+        long long *p_xj = INTEGER64_PTR(p_x[j]);
         diff = (p_xj[i] != p_xj[i - 1]);
         p_out[i] = (k += diff);
         break;

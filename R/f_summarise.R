@@ -36,6 +36,7 @@
 #' `base::min` -> `collapse::fmin` \cr
 #' `base::max` -> `collapse::fmax` \cr
 #' `stats::mean` -> `collapse::fmean` \cr
+#' `stats::median` -> `collapse::fmedian` \cr
 #' `stats::sd` -> `collapse::fsd` \cr
 #' `stats::var` -> `collapse::fvar` \cr
 #' `dplyr::first` -> `collapse::ffirst` \cr
@@ -72,7 +73,7 @@
 #' @rdname f_summarise
 #' @export
 f_summarise <- function(data, ..., .by = NULL, .optimise = TRUE){
-  base_fns <- c("sum", "prod", "mean", "min", "max", "first", "last",
+  base_fns <- c("sum", "prod", "mean", "median", "min", "max", "first", "last",
                 "sd", "var", "n_distinct", "ndistinct")
   collapse_fns <- paste0("f", base_fns)
   collapse_fns[base_fns == "n_distinct"] <- "fndistinct"

@@ -167,6 +167,16 @@ group_id.vctrs_rcrd <- function(data, order = TRUE, ascending = TRUE, as_qg = FA
 group_id.NULL <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
   NULL
 }
+#' @export
+group_id.integer64 <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
+  group_id(
+    cpp_int64_to_numeric(data),
+    order = order,
+    ascending = ascending,
+    as_qg = as_qg
+  )
+
+}
 #' @rdname group_id
 #' @export
 add_group_id <- function(data, ...,

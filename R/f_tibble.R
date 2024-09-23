@@ -68,7 +68,7 @@ f_deframe <- function(x){
 as_tbl <- function(x){
   if (is_df(x)){
     out <- df_as_tbl(x)
-  } else if (is.atomic(x) && length(dim(x)) < 2){
+  } else if (is.null(x) || (is.atomic(x) && length(dim(x)) < 2)){
     out <- list3(name = names(x), value = x)
     attr(out, "row.names") <- .set_row_names(NROW(x))
     class(out) <- c("tbl_df", "tbl", "data.frame")

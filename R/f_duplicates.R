@@ -93,7 +93,7 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
 
   if (.add_count && !.both_ways && df_nrow(out) > 0){
     cheapr::set_subtract(out[[n_var_nm]], 1L)
-    which_zero <- which_val(out[[n_var_nm]], 0L)
+    which_zero <- cheapr::val_find(out[[n_var_nm]], 0L)
     collapse::setv(
       out[[n_var_nm]],
       which_zero,

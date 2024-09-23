@@ -221,13 +221,13 @@ GRP_starts <- function(GRP, use.g.names = FALSE){
         out <- sorted_group_starts(GRP_sizes)
       }
       # For factors with 0 size, replace calculated group starts with 0
-      out[which_val(GRP_sizes, 0L)] <- 0L
+      out[cheapr::val_find(GRP_sizes, 0L)] <- 0L
     } else {
       o <- GRP_order(GRP)
       starts <- attr(o, "starts")
       if (collapse::anyv(GRP_sizes, 0L)){
         out <- integer(GRP_n_groups(GRP))
-        out[which_val(GRP_sizes, 0L, invert = TRUE)] <- o[starts]
+        out[cheapr::val_find(GRP_sizes, 0L, invert = TRUE)] <- o[starts]
       } else {
         out <- o[starts]
       }
@@ -248,7 +248,7 @@ GRP_ends <- function(GRP, use.g.names = FALSE,
   if (GRP_is_sorted(GRP)){
     out <- sorted_group_ends(GRP_sizes)
     # For factors with 0 size, replace 0 with NA
-    out[which_val(GRP_sizes, 0L)] <- 0L
+    out[cheapr::val_find(GRP_sizes, 0L)] <- 0L
   } else {
     if (is.null(loc)){
       loc <- GRP_loc(GRP, use.g.names = FALSE)
@@ -511,6 +511,10 @@ GRP.vctrs_rcrd <- function(X, ...){
 #' @exportS3Method collapse::GRP
 GRP.NULL <- function(X, ...){
   NULL
+}
+#' @exportS3Method collapse::GRP
+GRP.integer64 <- function(X, ...){
+  GRP2(cpp_int64_to_numeric(X), ...)
 }
 gsplit2 <- function(x = NULL, g = NULL, use.g.names = FALSE, ...){
   if (is.null(g)){
