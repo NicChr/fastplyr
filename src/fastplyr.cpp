@@ -228,12 +228,14 @@ SEXP cpp_sorted_group_starts(SEXP group_sizes, int init_loc = 1){
   int n = Rf_length(group_sizes);
   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
   int *p_out = INTEGER(out);
-  int init = init_loc;
-  p_out[0] = init;
-  // cumsum over group_sizes[-length(group_sizes)]
-  for (int i = 0; i < (n - 1); ++i){
-    init += p_gsizes[i];
-    p_out[i + 1] = init;
+  if (n > 0){
+    int init = init_loc;
+    p_out[0] = init;
+    // cumsum over group_sizes[-length(group_sizes)]
+    for (int i = 0; i < (n - 1); ++i){
+      init += p_gsizes[i];
+      p_out[i + 1] = init;
+    }
   }
   Rf_unprotect(1);
   return out;
