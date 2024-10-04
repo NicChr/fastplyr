@@ -1,4 +1,11 @@
-# fastplyr (Development version)
+# fastplyr 0.2.0
+
+* A few bug fixes including: 
+  * `f_bind_rows` was not working when supplied with more than 2 data frames in
+some cases.
+  * `f_summarise` was not working when supplied with non-function expressions.
+  * A rare bug that caused R to crash has now been likely fixed.
+
 
 * `f_bind_cols` now recycles its arguments and converts non-data frames
 to data frames to allow for joining variables as if they were columns.

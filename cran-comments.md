@@ -1,9 +1,4 @@
-* First release!
-
-* This is a resubmission and I have added return values to the documentation for
-'join' and 'f_bind_rows'.
-
-* I have also added some bug fixes and changes since first submission.
+* Upgraded to version 0.2.0
 
 * Checked and passed using rhub v2.0.0 in the following environments:
 
