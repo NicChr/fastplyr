@@ -326,7 +326,7 @@ flights |>
   f_duplicates(time_hour)
 ```
 
-Benchmark against a common dplyr strategy for finding duplicates
+Benchmark against a common dplyr strategy for finding duplicates 
 
 ```{r}
 mark(
