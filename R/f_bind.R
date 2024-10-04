@@ -7,67 +7,119 @@
 #' @param .repair_names Should duplicate column names be made unique?
 #' Default is `TRUE`.
 #' @param .sep Separator to use for creating unique column names.
+#' @param .fill Should missing columns be filled with `NA`?
+#' Default is `TRUE`.
+#' @param .recycle Should inputs be recycled to a common row size?
+#' Default is `TRUE`.
 #'
 #' @returns
 #' `f_bind_rows()` performs a union of the data frames specified via `...` and
 #' joins the rows of all the data frames, without removing duplicates.
 #'
-#' `f_bind_cols` joins the columns, creating unique column names if there are
+#' `f_bind_cols()` joins the columns, creating unique column names if there are
 #' any duplicates by default.
 #'
 #' @rdname f_bind_rows
 #' @export
-f_bind_rows <- function(...){
+f_bind_rows <- function(..., .fill = TRUE){
   dots <- list3(...)
   n_dots <- length(dots)
-  ncols <- cpp_ncols(dots, TRUE)
+  ncols <- cpp_ncols(dots, check_cols_equal = !.fill)
+  nrows <- cpp_nrows(dots, FALSE)
   if (n_dots == 0){
     new_df()
   } else if (n_dots == 1){
     dots[[1L]]
   } else {
     template <- dots[[1L]]
-    template_names <- names(template)
-    dots <- lapply(
-      dots, function(x) f_select(df_ungroup(x), .cols = template_names)
-    )
+    prototype_names <- names(template)
+
+    if (.fill){
+      dots <- lapply(dots, df_ungroup)
+    } else {
+      dots <- lapply(
+        dots, function(x) f_select(df_ungroup(x), .cols = prototype_names)
+      )
+    }
+
     if (!cpp_any_frames_exotic(dots)){
 
       # We can use collapse::rowbind if data frames
       # contain simple atomic vectors
 
       rowbind <- function(...){
-        collapse::rowbind(..., return = "data.frame")
+        collapse::rowbind(..., return = "data.frame", fill = .fill)
       }
       reconstruct(template, do.call(rowbind, dots))
     } else {
+      col_prototypes <- as.list(cheapr::sset(template, 0))
 
-      # Combine each variable separately
-
-      out <- new_df(.nrows = sum(cpp_nrows(dots, FALSE)))
-      for (j in seq_len(ncols[1])){
-        temp <- vector("list", length(dots))
-        for (i in seq_along(dots)){
-          temp[[i]] <- dots[[i]][[j]]
+      if (.fill){
+        get_prototype <- function(x) cheapr::sset(x, 0L)
+        for (df in dots){
+          new_prototype_names <- fast_setdiff(names(df), prototype_names)
+          if (length(new_prototype_names)){
+            prototype_names <- c(prototype_names, new_prototype_names)
+            temp_df <- as.list(df)[new_prototype_names]
+            col_prototypes <- c(
+              col_prototypes, lapply(
+                temp_df,
+                get_prototype
+              )
+            )
+          }
         }
-        out[[j]] <- do.call(f_union_all, temp)
-        names(out)[j] <- template_names[[j]]
+        # Second pass to fill in missing cols
+
+        for (i in seq_along(dots)){
+          df <- dots[[i]]
+          cols_to_add <- fast_setdiff(prototype_names, names(df))
+          if (length(cols_to_add)){
+            df_to_bind <- list_as_df(lapply(col_prototypes[cols_to_add], na_init, nrows[[i]]))
+            df <- f_bind_cols(df, df_to_bind, .recycle = FALSE)
+          }
+          dots[[i]] <- df_select(df, prototype_names)
+        }
       }
+
+      out_ncols <- length(col_prototypes)
+      out_nrows <- sum(nrows)
+      out <- cheapr::new_list(out_ncols)
+      names(out) <- names(col_prototypes)
+
+      # Join rows
+
+      for (j in seq_len(out_ncols)){
+        temp <- cheapr::new_list(length(dots))
+        for (i in seq_along(dots)){
+          cpp_set_list_element(temp, i, dots[[i]][[j]])
+        }
+        out[[j]] <- Reduce(f_union_all, temp)
+      }
+
+      # Not using list_as_df just in case it gets the
+      # nrows wrong
+
+      attr(out, "row.names") <- .set_row_names(out_nrows)
+      class(out) <- "data.frame"
       reconstruct(template, out)
     }
   }
 }
 #' @rdname f_bind_rows
 #' @export
-f_bind_cols <- function(..., .repair_names = TRUE, .sep = "..."){
-  dots <- cheapr::recycle(...)
+f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE, .sep = "..."){
+  if (.recycle){
+    dots <- cheapr::recycle(...)
+  } else {
+    dots <- list_rm_null(list(...))
+  }
   for (i in seq_along(dots)){
     if (!inherits(dots[[i]], "data.frame")){
-      dots[[i]] <- list_as_df(dots[i])
-      class(dots[[i]]) <- c("tbl_df", "tbl", "data.frame")
+      dots[[i]] <- `class<-`(list_as_df(dots[i]), c("tbl_df", "tbl", "data.frame"))
     }
   }
-  nrows <- cpp_nrows(dots, check_rows_equal = FALSE)
+  nrows <- cpp_nrows(dots, check_rows_equal = !.recycle)
   out <- unlist(unname(dots), recursive = FALSE)
   if (.repair_names){
     if (is.null(names(out))){

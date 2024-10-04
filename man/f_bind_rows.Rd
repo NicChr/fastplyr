@@ -5,14 +5,20 @@
 \alias{f_bind_cols}
 \title{Bind data frame rows and columns}
 \usage{
-f_bind_rows(...)
+f_bind_rows(..., .fill = TRUE)
 
-f_bind_cols(..., .repair_names = TRUE, .sep = "...")
+f_bind_cols(..., .repair_names = TRUE, .recycle = TRUE, .sep = "...")
 }
 \arguments{
 \item{...}{Data frames to bind.}
 
+\item{.fill}{Should missing columns be filled with \code{NA}?
+Default is \code{TRUE}.}
+
 \item{.repair_names}{Should duplicate column names be made unique?
+Default is \code{TRUE}.}
+
+\item{.recycle}{Should inputs be recycled to a common row size?
 Default is \code{TRUE}.}
 
 \item{.sep}{Separator to use for creating unique column names.}
@@ -21,7 +27,7 @@ Default is \code{TRUE}.}
 \code{f_bind_rows()} performs a union of the data frames specified via \code{...} and
 joins the rows of all the data frames, without removing duplicates.
 
-\code{f_bind_cols} joins the columns, creating unique column names if there are
+\code{f_bind_cols()} joins the columns, creating unique column names if there are
 any duplicates by default.
 }
 \description{

@@ -1,6 +1,5 @@
 #include "fastplyr.h"
 
-
 SEXP cpp_r_obj_address(SEXP x) {
   static char buf[1000];
   snprintf(buf, 1000, "%p", (void*) x);
@@ -233,8 +232,7 @@ SEXP cpp_sorted_group_starts(SEXP group_sizes, int init_loc = 1){
     p_out[0] = init;
     // cumsum over group_sizes[-length(group_sizes)]
     for (int i = 0; i < (n - 1); ++i){
-      init += p_gsizes[i];
-      p_out[i + 1] = init;
+      p_out[i + 1] = (init += p_gsizes[i]);
     }
   }
   Rf_unprotect(1);
@@ -535,7 +533,6 @@ bool is_compact_seq(SEXP x){
   return out;
 }
 
-[[cpp11::register]]
 SEXP cpp_run_id(SEXP x){
   R_xlen_t n = Rf_xlength(x);
   if (is_compact_seq(x)){
@@ -592,7 +589,6 @@ SEXP cpp_run_id(SEXP x){
   return out;
 }
 
-[[cpp11::register]]
 SEXP cpp_df_run_id(cpp11::writable::list x){
   int NP = 0;
   int n_cols = Rf_length(x);
@@ -700,4 +696,9 @@ SEXP cpp_consecutive_id(SEXP x){
   } else {
     return cpp_run_id(x);
   }
+}
+
+[[cpp11::register]]
+SEXP cpp_set_list_element(SEXP x, R_xlen_t i, SEXP value){
+  return SET_VECTOR_ELT(x, i - 1, value);
 }

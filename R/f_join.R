@@ -337,11 +337,7 @@ f_cross_join <- function(x, y, suffix = c(".x", ".y"), ...){
 #' @rdname join
 #' @export
 f_union_all <- function(x, y, ...){
-  if (is_df(x)){
-    f_bind_rows(x, y)
-  } else {
-    c(x, y)
-  }
+  if (inherits(x, "data.frame")) f_bind_rows(x, y) else c(x, y)
 }
 #' @rdname join
 #' @export
