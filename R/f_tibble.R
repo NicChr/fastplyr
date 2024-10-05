@@ -86,7 +86,7 @@ as_tbl <- function(x){
     }
     non_empty <- nzchar(names(out))
     if (!all(non_empty)){
-      empty <- which(non_empty, invert = TRUE)
+      empty <- cheapr::which_(non_empty, invert = TRUE)
       names(out)[empty] <- paste0("col_", empty)
     }
   }

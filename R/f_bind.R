@@ -26,8 +26,12 @@ f_bind_rows <- function(..., .fill = TRUE){
   n_dots <- length(dots)
   ncols <- cpp_ncols(dots, check_cols_equal = !.fill)
   nrows <- cpp_nrows(dots, FALSE)
+
+  if (sum(ncols) == 0){
+    return(new_tbl(.nrows = sum(nrows)))
+  }
   if (n_dots == 0){
-    new_df()
+    new_tbl()
   } else if (n_dots == 1){
     dots[[1L]]
   } else {
@@ -120,12 +124,15 @@ f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE, .sep = "..."
     }
   }
   nrows <- cpp_nrows(dots, check_rows_equal = !.recycle)
-  out <- unlist(unname(dots), recursive = FALSE)
+  out <- as.list(unlist(unname(dots), recursive = FALSE))
   if (.repair_names){
+    names(out) <- unique_name_repair(names(out), .sep = .sep)
     if (is.null(names(out))){
-      names(out) <- paste0(.sep, seq_along(out))
-    } else {
-      names(out) <- unique_name_repair(names(out), .sep = .sep)
+      if (length(out) == 0){
+        names(out) <- character()
+      } else {
+        names(out) <- paste0(.sep, seq_along(out))
+      }
     }
   }
   out <- list_as_df(out)
