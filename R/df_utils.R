@@ -48,25 +48,6 @@ group_data <- function(x){
     dplyr::group_data(x)
   }
 }
-# This function returns the groups of a data frame
-get_groups <- function(data, .by = NULL){
-  dplyr_groups <- group_vars(data)
-  if (rlang::quo_is_null(rlang::enquo(.by))){
-    by_groups <- NULL
-  } else {
-    by_groups <- tidy_select_names(data, {{ .by }})
-  }
-  if (length(by_groups) > 0L){
-    if (length(dplyr_groups) > 0L){
-      stop(".by cannot be used on a grouped_df")
-    }
-    by_groups
-  } else {
-    dplyr_groups
-  }
-}
-
-
 
 # df/list constructors ----------------------------------------------------
 
@@ -230,7 +211,7 @@ df_group_id <- function(x){
 # Fast/efficient drop empty rows
 df_drop_empty <- function(data, .cols = names(data)){
   is_empty_row <- cheapr::row_all_na(cheapr::sset(data, j = .cols))
-  which_not_empty <- which(is_empty_row, invert = TRUE)
+  which_not_empty <- cheapr::which_(is_empty_row, invert = TRUE)
   if (length(which_not_empty) == df_nrow(data)){
     data
   } else {

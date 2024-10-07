@@ -71,7 +71,7 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
                                 c(".group", ".loc", ".start", ".end", ".size")]
     group_out <- f_select(out, .cols = group_names)
     is_factor <- vapply(group_out, is.factor, FALSE, USE.NAMES = FALSE)
-    non_factors <- f_select(group_out, .cols = which(is_factor, invert = TRUE))
+    non_factors <- f_select(group_out, .cols = cheapr::which_(is_factor, invert = TRUE))
     if (any(is_factor)){
       factors <- f_select(group_out, .cols = which(is_factor))
       group_data_size <- prod(
@@ -86,7 +86,7 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
           )
         )
         missed <- f_anti_join(full, group_out)
-        for (non_factor in names(group_out)[which(is_factor, invert = TRUE)]){
+        for (non_factor in names(group_out)[cheapr::which_(is_factor, invert = TRUE)]){
           missed[[non_factor]] <- group_out[[non_factor]][NA_integer_]
         }
         if (id){

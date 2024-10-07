@@ -18,6 +18,25 @@ check_cols <- function(n_dots, .cols = NULL){
   }
 }
 
+# This function returns the groups of a data frame
+get_groups <- function(data, .by = NULL){
+  check_rowwise(data)
+  dplyr_groups <- group_vars(data)
+  if (rlang::quo_is_null(rlang::enquo(.by))){
+    by_groups <- NULL
+  } else {
+    by_groups <- tidy_select_names(data, {{ .by }})
+  }
+  if (length(by_groups) > 0L){
+    if (length(dplyr_groups) > 0L){
+      stop(".by cannot be used on a grouped_df")
+    }
+    by_groups
+  } else {
+    dplyr_groups
+  }
+}
+
 # Quosure text/var check for select()
 # NULL is removed.
 quo_select_info <- function(quos, data){
@@ -127,7 +146,7 @@ mutate_summary_ungrouped <- function(.data, ...,
                       all = names(used),
                       none = final_cols,
                       used = names(used)[which(used)],
-                      unused = names(used)[which(used, invert = TRUE)])
+                      unused = names(used)[cheapr::which_(used, invert = TRUE)])
   out_data <- f_select(out_data, .cols = keep_cols)
   out <- list(data = out_data, cols = final_cols)
   out
@@ -153,7 +172,7 @@ mutate_summary_grouped <- function(.data, ...,
                       all = names(used),
                       none = final_cols,
                       used = names(used)[which(used)],
-                      unused = names(used)[which(used, invert = TRUE)])
+                      unused = names(used)[cheapr::which_(used, invert = TRUE)])
   # Add missed group vars
   keep_cols <- c(group_vars, keep_cols[match(keep_cols, group_vars, 0L) == 0L])
   # Match the original ordering of columns
@@ -288,4 +307,10 @@ vctrs_new_list_of <- function(x = list(), ptype){
             class = c("vctrs_list_of",
                       "vctrs_vctr",
                       "list"))
+}
+
+check_rowwise <- function(data){
+  if (inherits(data, "rowwise_df")){
+    stop("fastplyr cannot handle `rowwise_df`, please use `f_rowwise()`")
+  }
 }

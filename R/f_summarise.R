@@ -237,7 +237,7 @@ f_summarise <- function(data, ..., .by = NULL, .optimise = TRUE){
           )
         }
         dplyr_res <- as.list(dplyr_res)[setdiff(names(dplyr_res), group_vars)]
-        full_res[which(col_matrix, invert = TRUE)] <- dplyr_res
+        full_res[cheapr::which_(col_matrix, invert = TRUE)] <- dplyr_res
       }
 
 
