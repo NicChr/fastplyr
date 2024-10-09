@@ -1,5 +1,12 @@
 # fastplyr (Development version)
 
+* New argument `.order` added to `f_summarise` to allow for controlling
+the sort-order of groups.
+
+* `rowwise_df` is now explicitly unsupported. To group by row, use `f_rowwise`.
+
+* New functions `f_nest_by` and `f_rowwise`.
+
 # fastplyr 0.2.0
 
 * A few bug fixes including: 
