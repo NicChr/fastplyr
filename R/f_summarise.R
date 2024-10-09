@@ -8,6 +8,9 @@
 #' `across()` are also accepted.
 #' @param .by (Optional). A selection of columns to group by for this operation.
 #' Columns are specified using tidy-select.
+#' @param .order Should the groups be returned in sorted order?
+#' If `FALSE`, this will return the groups in order of first appearance,
+#' and in many cases is faster.
 #' @param .optimise (Optionally) turn off optimisations for common statistical
 #' functions by setting to `FALSE`. Default is `TRUE` which uses optimisations.
 #'
@@ -72,7 +75,9 @@
 #' collapse::set_collapse(na.rm = TRUE)
 #' @rdname f_summarise
 #' @export
-f_summarise <- function(data, ..., .by = NULL, .optimise = TRUE){
+f_summarise <- function(data, ..., .by = NULL,
+                        .order = df_group_by_order_default(data),
+                        .optimise = TRUE){
   base_fns <- c("sum", "prod", "mean", "median", "min", "max", "first", "last",
                 "sd", "var", "n_distinct", "ndistinct")
   collapse_fns <- paste0("f", base_fns)
@@ -81,6 +86,7 @@ f_summarise <- function(data, ..., .by = NULL, .optimise = TRUE){
   group_vars <- get_groups(data, {{ .by }})
 
   groups <- df_to_GRP(data, .cols = group_vars,
+                      order = .order,
                       return.groups = TRUE, return.order = FALSE)
 
   ## Flags so that we only construct grouped_df if we need to and do it once
