@@ -145,20 +145,7 @@ f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE, .sep = "..."
       attr(out, "row.names") <- .set_row_names(N)
     }
     template <- dots[[1L]]
-
-    # Special method for grouped_df because
-    # we don't need to recalculate groups
-    # Since we're not rearranging or renaming variables
-    # except in the case of duplicates.
-
-    if (inherits(template, "grouped_df") &&
-        all(group_vars(template) %in% names(out))){
-      out <- reconstruct(df_ungroup(template), out)
-      class(out) <- class(template)
-      attr(out, "groups") <- attr(template, "groups")
-    } else {
-      out <- reconstruct(template, out)
-    }
+    out <- reconstruct(template, out)
   }
   out
 }
