@@ -5,7 +5,7 @@ the sort-order of groups.
 
 * `rowwise_df` is now explicitly unsupported. To group by row, use `f_rowwise`.
 
-* New functions `f_nest_by` and `f_rowwise`.
+* New functions `f_nest_by`, `f_rowwise` and `add_consecutive_id`.
 
 # fastplyr 0.2.0
 
