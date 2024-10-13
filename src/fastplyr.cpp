@@ -555,8 +555,22 @@ SEXP cpp_run_id(SEXP x){
     break;
   }
   case REALSXP: {
+    if (Rf_inherits(x, "integer64")){
     long long *p_x = INTEGER64_PTR(x);
     FP_RUN_ID;
+  } else {
+    // The above statement works almost always for
+    // doubles, except for +0.0 == -0.0
+    bool diff;
+    double *p_x = REAL(x);
+    for (R_xlen_t i = 1; i < n; ++i){
+      diff = !(
+        ((p_x[i] != p_x[i]) && (p_x[i - 1] != p_x[i - 1])) ||
+          (p_x[i] == p_x[i - 1])
+      );
+      p_out[i] = p_out[i - 1] + diff;
+    }
+  }
     break;
   }
   case STRSXP: {
@@ -648,9 +662,19 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
           break;
         }
       case REALSXP: {
+        if (Rf_inherits(x, "integer64")){
         long long *p_xj = INTEGER64_PTR(p_x[j]);
         diff = (p_xj[i] != p_xj[i - 1]);
         p_out[i] = (k += diff);
+      } else {
+        double *p_xj = REAL(p_x[j]);
+        diff = !(
+          ((p_xj[i] != p_xj[i]) && (p_xj[i - 1] != p_xj[i - 1])) ||
+            (p_xj[i] == p_xj[i - 1])
+        );
+        p_out[i] = (k += diff);
+      }
+
         break;
       }
       case STRSXP: {

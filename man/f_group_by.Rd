@@ -3,6 +3,7 @@
 \name{f_group_by}
 \alias{f_group_by}
 \alias{group_ordered}
+\alias{f_ungroup}
 \title{'collapse' version of \code{dplyr::group_by()}}
 \usage{
 f_group_by(
@@ -16,6 +17,8 @@ f_group_by(
 )
 
 group_ordered(data)
+
+f_ungroup(data)
 }
 \arguments{
 \item{data}{data frame.}

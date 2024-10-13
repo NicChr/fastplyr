@@ -169,7 +169,7 @@ df_rep_each <- function(data, each){
 df_ungroup <- function(data){
   if (inherits(data, "grouped_df")){
     attr(data, "groups") <- NULL
-    class(data) <- c("tbl_df", "tbl", "data.frame")
+    class(data) <- fast_setdiff(class(data), "grouped_df")
   }
   data
 }
@@ -227,11 +227,11 @@ df_count <- function(.data, name = "n", weights = NULL){
     if (length(weights) != df_nrow(.data)){
       stop("Weights must satisfy `length(weights) == nrow(.data)`")
     }
-    counts <- collapse::fsum(weights, g = df_group_id(.data), use.g.names = FALSE)
+    counts <- collapse::fsum(as.double(weights), g = df_group_id(.data), use.g.names = FALSE)
   } else {
     counts <- cheapr::lengths_(groups[[".rows"]])
   }
-  out <- f_select(groups, .cols = setdiff(names(groups), ".rows"))
+  out <- f_select(groups, .cols = fast_setdiff(names(groups), ".rows"))
   out[[name]] <- counts
   out
 }
@@ -242,7 +242,7 @@ df_add_count <- function(.data, name = "n", weights = NULL){
     if (length(weights) != df_nrow(.data)){
       stop("Weights must satisfy `length(weights) == nrow(.data)`")
     }
-    counts <- collapse::fsum(weights, g = group_ids, TRA = "replace_fill")
+    counts <- collapse::fsum(as.double(weights), g = group_ids, TRA = "replace_fill")
   } else {
     counts <- cheapr::lengths_(groups[[".rows"]])[group_ids]
   }

@@ -159,16 +159,6 @@ list_subset <- function(x, i, default = NA){
   cpp_list_subset(x, ptype, as.integer(i), default)
 }
 
-# is_integerable <- function(x){
-#   abs(x) <= .Machine$integer.max
-# }
-all_integerable <- function(x, shift = 0){
-  all(
-    (abs(collapse::frange(x, na.rm = TRUE)) + shift ) <= .Machine$integer.max,
-    na.rm = TRUE
-  )
-}
-
 # setdiff and intersect but no deduplicating
 fast_setdiff <- function(x, y){
   x[match(x, y, nomatch = 0L) == 0L]

@@ -132,3 +132,6 @@ f_group_by <- function(data, ..., .add = FALSE,
 group_ordered <- function(data){
   attr(group_data(data), "ordered") %||% TRUE
 }
+#' @rdname f_group_by
+#' @export
+f_ungroup <- df_ungroup

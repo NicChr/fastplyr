@@ -104,9 +104,6 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
                            na.rm = TRUE,
                            use.g.names = FALSE,
                            fill = FALSE)
-    if (isTRUE(all_integerable(nobs))){
-      nobs <- as.integer(nobs)
-    }
     # Replace NA with 0
     nobs[cheapr::which_na(nobs)] <- 0L
   }
@@ -224,9 +221,6 @@ f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
                            TRA = "replace_fill")
     # Replace NA with 0
     nobs[cheapr::which_na(nobs)] <- 0
-    if (isTRUE(all_integerable(nobs))){
-      nobs <- as.integer(nobs)
-    }
   } else {
     nobs <- GRP_expanded_group_sizes(g)
   }
