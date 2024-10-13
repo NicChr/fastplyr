@@ -227,7 +227,8 @@ df_count <- function(.data, name = "n", weights = NULL){
     if (length(weights) != df_nrow(.data)){
       stop("Weights must satisfy `length(weights) == nrow(.data)`")
     }
-    counts <- collapse::fsum(as.double(weights), g = df_group_id(.data), use.g.names = FALSE)
+    counts <- collapse::fsum(as.double(weights), g = df_group_id(.data),
+                             use.g.names = FALSE, na.rm = TRUE)
   } else {
     counts <- cheapr::lengths_(groups[[".rows"]])
   }
@@ -242,7 +243,8 @@ df_add_count <- function(.data, name = "n", weights = NULL){
     if (length(weights) != df_nrow(.data)){
       stop("Weights must satisfy `length(weights) == nrow(.data)`")
     }
-    counts <- collapse::fsum(as.double(weights), g = group_ids, TRA = "replace_fill")
+    counts <- collapse::fsum(as.double(weights), g = group_ids,
+                             TRA = "replace_fill", na.rm = TRUE)
   } else {
     counts <- cheapr::lengths_(groups[[".rows"]])[group_ids]
   }
