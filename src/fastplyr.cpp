@@ -698,6 +698,48 @@ SEXP cpp_consecutive_id(SEXP x){
   }
 }
 
+// x assumed to be an integer vector of unique group IDs
+
+[[cpp11::register]]
+SEXP cpp_grouped_run_id(SEXP x, SEXP order, SEXP group_sizes){
+  int n = Rf_length(x);
+  int *p_x = INTEGER(x);
+  int *p_o = INTEGER(order);
+  int *p_group_sizes = INTEGER(group_sizes);
+  if (n != Rf_length(order)){
+    Rf_error("length(order) must match length(x)");
+  }
+  SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
+  int *p_out = INTEGER(out);
+  int n_groups = Rf_length(group_sizes);
+  int k = 0;
+  int oi, oi2, group_size;
+  int total_group_size = 0;
+  for (int i = 0; i < n_groups; ++i){
+    group_size = p_group_sizes[i];
+    total_group_size += group_size;
+    if (total_group_size > n){
+      Rf_unprotect(1);
+      Rf_error("sum(group_sizes) must equal length(x)");
+    }
+    if (group_size >= 1){
+      p_out[p_o[k] - 1] = 1;
+      ++k;
+    }
+    for (int j = 1; j < group_size; ++k, ++j){
+      oi = p_o[k] - 1;
+      oi2 = p_o[k - 1] - 1;
+      p_out[oi] = p_out[oi2] + (p_x[oi] != p_x[oi2]);
+    }
+  }
+  if (total_group_size != n){
+    Rf_unprotect(1);
+    Rf_error("sum(group_sizes) must equal length(x)");
+  }
+  Rf_unprotect(1);
+  return out;
+}
+
 [[cpp11::register]]
 SEXP cpp_set_list_element(SEXP x, R_xlen_t i, SEXP value){
   return SET_VECTOR_ELT(x, i - 1, value);

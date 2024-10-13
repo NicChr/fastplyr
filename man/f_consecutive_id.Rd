@@ -2,19 +2,55 @@
 % Please edit documentation in R/f_consecutive_id.R
 \name{f_consecutive_id}
 \alias{f_consecutive_id}
+\alias{add_consecutive_id}
+\alias{add_consecutive_id.data.frame}
 \title{Consecutive IDs}
 \usage{
 f_consecutive_id(x)
+
+add_consecutive_id(data, ...)
+
+\method{add_consecutive_id}{data.frame}(
+  data,
+  ...,
+  .by = NULL,
+  .cols = NULL,
+  .name = NULL,
+  .order = df_group_by_order_default(data)
+)
 }
 \arguments{
 \item{x}{A vector or data frame.}
+
+\item{data}{A data frame.}
+
+\item{...}{Variables used to calculate consecutive IDs across.
+They are specified using tidy \code{data-masking}. \cr}
+
+\item{.by}{A tidy selection of groups used for a grouped calculation.}
+
+\item{.cols}{(Optional) alternative to \code{...} that accepts
+a named character vector or numeric vector.
+If speed is an expensive resource or you are programming with
+pre-defined character and numeric vectors it is recommended to use this.}
+
+\item{.name}{Name of the added ID column which should be a
+character vector of length 1.
+If \code{NULL} (the default), \code{add_consecutive_id()}
+will add a column named "consecutive_id".}
+
+\item{.order}{Should the groups be calculated using an ordered algorithm?
+In this case the output remains the same but setting this to \code{FALSE} can
+many times offer a speed boost.}
 }
 \value{
-An integer vector of consecutive run IDs in the range \verb{[1, n + 1)}.
+\code{f_consecutive_id} returns an
+integer vector of consecutive run IDs in the range \verb{[1, n]}.
+\code{add_consecutive_id} adds a consecutive ID column.
 }
 \description{
 \code{f_consecutive_id()}, an alternative to \code{dplyr::consecutive_id()}
-creates an integer vector with values in the range \verb{[1, n + 1)} where
+creates an integer vector with values in the range \verb{[1, n]} where
 \code{n} is the length of the vector or number of rows of the data frame.
 The ID increments every time \code{x[i] != x[i - 1]} thus giving information on
 when there is a change in value.
@@ -23,8 +59,30 @@ when there is a change in value.
 'ALTREP' compact sequences are supported as well.
 
 To mimic \code{dplyr::consecutive_id()} where multiple variables are selected,
-just use \code{dplyr::pick()}.
+we can use \code{dplyr::pick()} within \code{mutate()} or simply use
+\code{add_consecutive_id()}.
 
 \code{f_consecutive_id} has a smaller overhead and thus should be faster when
 called many times, e.g. when using a \code{grouped_df} with many groups.
+
+\code{add_consecutive_id} is somewhat faster when there are many groups,
+e.g. >= 100,000.
+}
+\examples{
+library(fastplyr)
+
+x <- rep(letters[1:3], each = 3)
+run_id <- f_consecutive_id(x)
+run_id
+
+# To get something similar to `rle()`
+# We can just use `f_count()`
+
+new_tbl(id = run_id) \%>\%
+  f_count(id, order = FALSE)
+
+# Using `add_consecutive_id()`
+new_tbl(x) \%>\%
+  add_consecutive_id(x) \%>\%
+  f_count(consecutive_id, order = FALSE)
 }

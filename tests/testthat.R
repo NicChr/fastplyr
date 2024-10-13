@@ -9,4 +9,4 @@
 library(testthat)
 library(fastplyr)
 
-test_check("fastplyr")
+test_check("fastplyr", reporter = c("check", "location"))

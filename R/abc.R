@@ -147,28 +147,6 @@ is_sorted <- function(x){
   isTRUE(!is.unsorted(x))
 }
 
-# first_obs <- function(x, n = 1L){
-#   check_length(n, 1)
-#   N <- NROW(x)
-#   if (n >= 0) {
-#     size <- min(n, N)
-#   }
-#   else {
-#     size <- max(0L, N + n)
-#   }
-#   cheapr::sset(x, seq_len(size))
-# }
-# last_obs <- function (x, n = 1L){
-#   check_length(n, 1)
-#   N <- NROW(x)
-#   if (n >= 0) {
-#     size <- min(n, N)
-#   }
-#   else {
-#     size <- max(0L, N + n)
-#   }
-#   cheapr::sset(x, seq.int(from = N - size + 1L, by = 1L, length.out = size))
-# }
 list_subset <- function(x, i, default = NA){
   check_length(default, 1)
   if (length(x) == 0){
