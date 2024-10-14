@@ -23,7 +23,7 @@
 #' will add a column named "consecutive_id".
 #' @param .order Should the groups be calculated using an ordered algorithm?
 #' In this case the output remains the same but setting this to `FALSE` can
-#' many times offer a speed boost.
+#' in many cases offer a speed boost.
 #'
 #' @details
 #' 'ALTREP' compact sequences are supported as well.
@@ -48,7 +48,7 @@
 #'
 #' x <- rep(letters[1:3], each = 3)
 #' run_id <- f_consecutive_id(x)
-#' run_id
+#' x;run_id
 #'
 #' # To get something similar to `rle()`
 #' # We can just use `f_count()`

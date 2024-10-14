@@ -41,7 +41,7 @@ will add a column named "consecutive_id".}
 
 \item{.order}{Should the groups be calculated using an ordered algorithm?
 In this case the output remains the same but setting this to \code{FALSE} can
-many times offer a speed boost.}
+in many cases offer a speed boost.}
 }
 \value{
 \code{f_consecutive_id} returns an
@@ -73,7 +73,7 @@ library(fastplyr)
 
 x <- rep(letters[1:3], each = 3)
 run_id <- f_consecutive_id(x)
-run_id
+x;run_id
 
 # To get something similar to `rle()`
 # We can just use `f_count()`
