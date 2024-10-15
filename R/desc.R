@@ -15,8 +15,8 @@ desc <- function(x){
   -asc(x)
 }
 asc <- function(x){
-  if (is.numeric(x) && !isS4(x)){
-    xtfrm(x)
+  if (is.numeric(x) && !is.object(x)){
+    x
   } else {
     strip_attrs(quick_group(x, order = TRUE, na_exclude = TRUE))
   }

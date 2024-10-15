@@ -8,7 +8,7 @@ f_nest_by(
   data,
   ...,
   .add = FALSE,
-  order = df_group_by_order_default(data),
+  .order = df_group_by_order_default(data),
   .by = NULL,
   .cols = NULL,
   .drop = df_group_by_drop_default(data)
@@ -22,7 +22,7 @@ f_nest_by(
 \item{.add}{Should groups be added to existing groups?
 Default is \code{FALSE}.}
 
-\item{order}{Should groups be ordered? If \code{FALSE}
+\item{.order}{Should groups be ordered? If \code{FALSE}
 groups will be ordered based on first-appearance. \cr
 Typically, setting order to \code{FALSE} is faster.}
 
@@ -47,8 +47,8 @@ library(fastplyr)
 
 # Stratified linear-model example
 
-models <- iris |>
-  f_nest_by(Species) |>
+models <- iris \%>\%
+  f_nest_by(Species) \%>\%
   mutate(model = list(lm(Sepal.Length ~ Petal.Width + Petal.Length, data = first(data))),
          summary = list(summary(first(model))),
          r_sq = first(summary)$r.squared)

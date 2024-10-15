@@ -7,13 +7,13 @@ test_that("f_distinct", {
               row.names = c(NA, -1L))
   )
   expect_equal(
-    f_distinct(f_select(iris, .cols = 0), sort = TRUE),
+    f_distinct(f_select(iris, .cols = 0), .sort = TRUE),
     structure(list(), names = character(0),
               class = "data.frame",
               row.names = c(NA, -1L))
   )
   expect_equal(
-    f_distinct(f_select(iris, .cols = 0), sort = FALSE, order = TRUE),
+    f_distinct(f_select(iris, .cols = 0), .sort = FALSE, .order = TRUE),
     structure(list(), names = character(0),
               class = "data.frame",
               row.names = c(NA, -1L))

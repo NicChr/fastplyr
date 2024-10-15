@@ -8,9 +8,10 @@
 #' @param ... Variables to group by.
 #' @param .add Should groups be added to existing groups?
 #' Default is `FALSE`.
-#' @param order Should groups be ordered? If `FALSE`
+#' @param .order Should groups be ordered? If `FALSE`
 #' groups will be ordered based on first-appearance. \cr
 #' Typically, setting order to `FALSE` is faster.
+#' @param order `r lifecycle::badge("superseded")` Use `.order`.
 #' @param .by (Optional). A selection of columns to group by for this operation.
 #' Columns are specified using `tidyselect`.
 #' @param .cols (Optional) alternative to `...` that accepts
@@ -42,10 +43,10 @@
 #' the group columns like in `f_expand()` or `f_distinct()`, or
 #' some other columns, like the count column in `f_count()`.
 #'
-#' The `order` argument, when set to `TRUE` (the default),
+#' The `.order` argument, when set to `TRUE` (the default),
 #' is used to mean that the group data will be calculated
 #' using a sort-based algorithm, leading to sorted group data.
-#' When `order` is `FALSE`, the group data will be returned based on
+#' When `.order` is `FALSE`, the group data will be returned based on
 #' the order-of-first appearance of the groups in the data.
 #' This order-of-first appearance may still naturally be sorted
 #' depending on the data.
@@ -59,7 +60,7 @@
 #' can in theory calculate group data
 #' using the sort-based algorithm and still return unsorted groups,
 #' though this combination is only available to the user in limited places like
-#' `f_distinct(order = TRUE, sort = FALSE)`.
+#' `f_distinct(.order = TRUE, .sort = FALSE)`.
 #'
 #' The other reason is to prevent confusion in the meaning
 #' of `sort` and `order` so that `order` always refers to the
@@ -72,10 +73,10 @@
 #' ### Using the order-of-first appearance algorithm for speed
 #'
 #' In many situations (not all) it can be faster to use the
-#' order-of-first appearance algorithm, specified via `order = FALSE`.
+#' order-of-first appearance algorithm, specified via `.order = FALSE`.
 #'
 #' This can generally be accessed by first calling
-#' `f_group_by(data, ..., order = FALSE)` and then
+#' `f_group_by(data, ..., .order = FALSE)` and then
 #' performing your calculations.
 #'
 #' To utilise this algorithm more globally and package-wide,
@@ -87,9 +88,17 @@
 #' @rdname f_group_by
 #' @export
 f_group_by <- function(data, ..., .add = FALSE,
-                       order = df_group_by_order_default(data),
+                       .order = df_group_by_order_default(data),
+                       order = .order,
                        .by = NULL, .cols = NULL,
                        .drop = df_group_by_drop_default(data)){
+  if (!identical(r_address(.order), r_address(order))){
+    lifecycle::deprecate_warn(
+      "0.3.0", what = "f_group_by(order)",
+      with = "f_add_count(.order)"
+    )
+    .order <- order
+  }
   init_group_vars <- group_vars(data)
   group_info <- tidy_group_info(
     df_ungroup(data), ...,
@@ -101,7 +110,7 @@ f_group_by <- function(data, ..., .add = FALSE,
   out <- group_info[["data"]]
   groups <- group_info[["all_groups"]]
   if (.add){
-    order_unchanged <- order == df_group_by_order_default(data)
+    order_unchanged <- .order == df_group_by_order_default(data)
     drop_unchanged <- .drop == df_group_by_drop_default(data)
     no_extra_groups <- length(groups) == 0 || (length(setdiff(groups, init_group_vars)) == 0)
     groups_unchanged <- all(group_info$address_equal[init_group_vars])
@@ -112,7 +121,7 @@ f_group_by <- function(data, ..., .add = FALSE,
   }
   if (length(groups) > 0L){
     groups <- group_collapse(out, .cols = groups,
-                             order = order,
+                             order = .order,
                              id = FALSE,
                              loc = TRUE, sort = TRUE,
                              size = FALSE,
@@ -121,7 +130,7 @@ f_group_by <- function(data, ..., .add = FALSE,
     groups <- f_rename(groups, .cols = c(".rows" = ".loc"))
     groups[[".rows"]] <- vctrs_new_list_of(groups[[".rows"]], integer())
     attr(groups, ".drop") <- .drop
-    attr(groups, "ordered") <- order
+    attr(groups, "ordered") <- .order
     attr(out, "groups") <- groups
     class(out) <- c("grouped_df", "tbl_df", "tbl", "data.frame")
   }

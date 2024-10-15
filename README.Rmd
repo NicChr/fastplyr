@@ -20,13 +20,13 @@ set.seed(949958487)
 
 <!-- badges: start -->
 
-[![R-CMD-check](https://github.com/NicChr/fastplyr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/fastplyr/actions/workflows/R-CMD-check.yaml)
-[![CRAN status](https://www.r-pkg.org/badges/version/fastplyr)](https://CRAN.R-project.org/package=fastplyr)
+[![R-CMD-check](https://github.com/NicChr/fastplyr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/fastplyr/actions/workflows/R-CMD-check.yaml) [![CRAN status](https://www.r-pkg.org/badges/version/fastplyr)](https://CRAN.R-project.org/package=fastplyr)
+
 <!-- badges: end -->
 
 fastplyr aims to provide a [tidyverse](https://www.tidyverse.org/learn) frontend using a [collapse](https://sebkrantz.github.io/collapse/articles/collapse_intro.html) backend. This means from a user's point of view the functions behave like the tidyverse equivalents and thus require little to no changes to existing code to convert.
 
-fastplyr is designed to handle operations that involve larger numbers of groups and generally larger data. 
+fastplyr is designed to handle operations that involve larger numbers of groups and generally larger data.
 
 ## Installation
 
@@ -50,25 +50,27 @@ While the syntax and user-interface of fastplyr aligns very closely with dplyr m
 
 ## Differences between fastplyr and dplyr
 
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
-|                          | ### dplyr                                                                                                        | ### fastplyr                                                                                                              |
-+==========================+==================================================================================================================+===========================================================================================================================+
-| `.by`                    | Groups are sorted by order of first appearance always when using `.by`                                           | Groups are always sorted by default, even when using `.by`. One can use the other sorting through `f_group_by(order = F)` |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
-| Many groups              | Generally slow for data with many groups.                                                                        | Designed to be fast for data with many groups.                                                                            |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
-| Handling of dots (`...`) | dplyr almost always executes `...` expressions in a way that latter expressions depend on previous ones          | Some functions like `f_summarise` and `f_expand` execute the expressions in `...` independently.                          |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
-| Duplicate rows           | No dedicated function for this, solution using `group_by |> filter(n() > 1)` are generally slow for larger data. | Dedicated function `f_duplicates` can do this very fast and with fine control.                                            |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
-| Unique group IDs         | Achieved through `mutate(cur_group_id())`                                                                        | Dedicated fast function `add_group_id()`                                                                                  |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
-| Row slicing              | `slice()` supports data-masked expressions supplied to `...`                                                     | Data-masked expressions not supported in `f_slice_` functions. Use `f_filter()` for this behaviour.                       |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
-| Memory usage             | High memory usage                                                                                                | Lower usage compared to dplyr                                                                                             |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
-| joins                    | Accepts different types of joins, e.g. rolling and equality joins.                                               | Accepts only equality joins of the form `x == y`                                                                          |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
++--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+|                          | ### dplyr                                                                                                        | ### fastplyr                                                                                                                                |
++==========================+==================================================================================================================+=============================================================================================================================================+
+| `.by`                    | Groups are sorted by order of first appearance always when using `.by`                                           | Groups are always sorted by default, even when using `.by`. One can use the other sorting through `f_group_by(.order = F)`                  |
++--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| Many groups              | Generally slow for data with many groups.                                                                        | Designed to be fast for data with many groups.                                                                                              |
++--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| Handling of dots (`...`) | dplyr almost always executes `...` expressions in a way that latter expressions depend on previous ones          | Some functions like `f_summarise` and `f_expand` execute the expressions in `...` independently.                                            |
++--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| Duplicate rows           | No dedicated function for this, solution using `group_by |> filter(n() > 1)` are generally slow for larger data. | Dedicated function `f_duplicates` can do this very fast and with fine control.                                                              |
++--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| Unique group IDs         | Achieved through `mutate(cur_group_id())`                                                                        | Dedicated fast function `add_group_id()`                                                                                                    |
++--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| Row slicing              | `slice()` supports data-masked expressions supplied to `...`                                                     | Data-masked expressions not supported in `f_slice_` functions. Use `f_filter()` for this behaviour.                                         |
++--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| Memory usage             | High memory usage                                                                                                | Lower usage compared to dplyr                                                                                                               |
++--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| joins                    | Accepts different types of joins, e.g. rolling and equality joins.                                               | Accepts only equality joins of the form `x == y`                                                                                            |
++--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| rowwise                  | `rowwise_df` accepted and everything sub-setted implictly using `[[`                                             | `rowwise_df` not accepted, must use `f_rowwise_df` which creates a `grouped_df` with a row ID col. Implicit `[[` subsetting does not occur. |
++--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
 
 ## dplyr alternatives
 
@@ -86,7 +88,7 @@ flights |>
 ```{r}
 mark(
   fastplyr_distinct_sort = flights |> 
-  f_distinct(origin, dest, tailnum, sort = TRUE),
+  f_distinct(origin, dest, tailnum, .sort = TRUE),
   dplyr_distinct_sort = flights |> 
     distinct(origin, dest, tailnum) |> 
     arrange_all()
@@ -105,7 +107,7 @@ flights |>
 
 # Group data is sorted by order-of-first appearance
 flights |> 
-  f_group_by(month, order = FALSE) |> 
+  f_group_by(month, .order = FALSE) |> 
   f_count()
 ```
 
@@ -236,7 +238,6 @@ mark(
 )
 ```
 
-
 ### slice
 
 `f_slice` and other `f_slice_` functions are very fast for many groups.
@@ -326,7 +327,7 @@ flights |>
   f_duplicates(time_hour)
 ```
 
-Benchmark against a common dplyr strategy for finding duplicates 
+Benchmark against a common dplyr strategy for finding duplicates
 
 ```{r}
 mark(
@@ -382,11 +383,9 @@ mark(
 )
 ```
 
-
 ### Quantiles
 
-A typical tidy approach might use a mixture of `reframe()` and `enframe()`
-which is a perfectly tidy and neat solution
+A typical tidy approach might use a mixture of `reframe()` and `enframe()` which is a perfectly tidy and neat solution
 
 ```{r}
 probs <- seq(0, 1, 0.25)
@@ -398,8 +397,7 @@ mtcars |>
  reframe(enframe(quantile(mpg, probs), "quantile", "mpg"))
 ```
 
-fastplyr though has a dedicated function for quantile calculation, 
-`tidy_quantiles()` which requires less code to type 
+fastplyr though has a dedicated function for quantile calculation, `tidy_quantiles()` which requires less code to type
 
 ```{r}
 
@@ -412,8 +410,7 @@ mtcars |>
   tidy_quantiles(mpg, .by = cyl, pivot = "long")
 ```
 
-Not only can you choose how to pivot as shown above, you can also calculate
-quantiles for multiple variables.
+Not only can you choose how to pivot as shown above, you can also calculate quantiles for multiple variables.
 
 ```{r}
 multiple_quantiles <- mtcars |> 
@@ -439,8 +436,6 @@ mark(
   check = FALSE
 )
 ```
-
-
 
 ## tidytable vs fastplyr
 

@@ -13,6 +13,9 @@
 #' If speed is an expensive resource, it is recommended to use this.
 #' @param .drop_groups `logical(1)` Should groups be dropped after calculation?
 #' Default is `TRUE`.
+#' @param .order Should the groups be returned in sorted order?
+#' If `FALSE`, this will return the groups in order of first appearance,
+#' and in many cases is faster.
 #'
 #' @returns
 #' A data frame of sample quantiles.
@@ -44,6 +47,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
                           type = 7, pivot = c("wide", "long"),
                           na.rm = TRUE,
                           .by = NULL, .cols = NULL,
+                          .order = df_group_by_order_default(data),
                           .drop_groups = TRUE){
   pivot <- rlang::arg_match(pivot)
   wide <- pivot == "wide"
@@ -64,7 +68,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
                                 levels = collapse::funique(quantile_nms), class = "factor")
 
   data2 <- group_info[["data"]]
-  groups <- df_to_GRP(data2, .cols = group_vars, order = df_group_by_order_default(data))
+  groups <- df_to_GRP(data2, .cols = group_vars, order = .order)
   n_groups <- GRP_n_groups(groups)
   group_starts <- GRP_starts(groups)
   data2 <- f_select(data2, .cols = c(group_vars, dot_vars))
@@ -158,11 +162,11 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   if (wide){
       q_df <- collapse::pivot(q_df, how = "wider", values = dot_vars,
                               names = ".quantile", sort = FALSE)
-      out_nms <- c(group_vars, setdiff(names(q_df), c(group_vars, group_id_nm)))
+      out_nms <- c(group_vars, fast_setdiff(names(q_df), c(group_vars, group_id_nm)))
   } else {
     out_nms <- c(
       group_vars,
-      setdiff(names(q_df),
+      fast_setdiff(names(q_df),
               c(group_vars, dot_vars, group_id_nm)),
       dot_vars
     )

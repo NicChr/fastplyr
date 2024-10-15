@@ -6,6 +6,13 @@
 #include <R_ext/Visibility.h>
 
 // fastplyr.cpp
+SEXP r_address(SEXP x);
+extern "C" SEXP _fastplyr_r_address(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(r_address(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// fastplyr.cpp
 SEXP cpp_address_equal(SEXP x, SEXP y);
 extern "C" SEXP _fastplyr_cpp_address_equal(SEXP x, SEXP y) {
   BEGIN_CPP11
@@ -128,6 +135,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_slice_locs",          (DL_FUNC) &_fastplyr_cpp_slice_locs,          2},
     {"_fastplyr_cpp_sorted_group_starts", (DL_FUNC) &_fastplyr_cpp_sorted_group_starts, 2},
     {"_fastplyr_cpp_which_all",           (DL_FUNC) &_fastplyr_cpp_which_all,           1},
+    {"_fastplyr_r_address",               (DL_FUNC) &_fastplyr_r_address,               1},
     {NULL, NULL, 0}
 };
 }

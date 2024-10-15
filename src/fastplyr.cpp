@@ -1,9 +1,14 @@
 #include "fastplyr.h"
 
-SEXP cpp_r_obj_address(SEXP x) {
+SEXP r_obj_address(SEXP x) {
   static char buf[1000];
   snprintf(buf, 1000, "%p", (void*) x);
   return Rf_mkChar(buf);
+}
+
+[[cpp11::register]]
+SEXP r_address(SEXP x){
+  return Rf_ScalarString(r_obj_address(x));
 }
 
 // Compare the addresses between 2 similar lists
@@ -20,7 +25,7 @@ SEXP cpp_address_equal(SEXP x, SEXP y) {
   SEXP out = Rf_protect(Rf_allocVector(LGLSXP, n1));
   int *p_out = LOGICAL(out);
   for (int i = 0; i < n1; ++i) {
-    p_out[i] = (cpp_r_obj_address(p_x[i]) == cpp_r_obj_address(p_y[i]));
+    p_out[i] = (r_obj_address(p_x[i]) == r_obj_address(p_y[i]));
   }
   Rf_unprotect(1);
   return out;

@@ -13,6 +13,7 @@ tidy_quantiles(
   na.rm = TRUE,
   .by = NULL,
   .cols = NULL,
+  .order = df_group_by_order_default(data),
   .drop_groups = TRUE
 )
 }
@@ -35,6 +36,10 @@ Columns are specified using tidy-select.}
 \item{.cols}{(Optional) alternative to \code{...} that accepts
 a named character vector or numeric vector.
 If speed is an expensive resource, it is recommended to use this.}
+
+\item{.order}{Should the groups be returned in sorted order?
+If \code{FALSE}, this will return the groups in order of first appearance,
+and in many cases is faster.}
 
 \item{.drop_groups}{\code{logical(1)} Should groups be dropped after calculation?
 Default is \code{TRUE}.}

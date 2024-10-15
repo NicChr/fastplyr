@@ -2,80 +2,35 @@
 % Please edit documentation in R/group_id.R
 \name{group_id}
 \alias{group_id}
-\alias{add_group_id}
-\alias{add_group_id.data.frame}
 \alias{row_id}
 \alias{row_id.GRP}
-\alias{add_row_id}
-\alias{add_row_id.data.frame}
+\alias{f_consecutive_id}
 \title{Fast group and row IDs}
 \usage{
-group_id(data, order = TRUE, ascending = TRUE, as_qg = FALSE)
+group_id(x, order = TRUE, ascending = TRUE, as_qg = FALSE)
 
-add_group_id(
-  data,
-  ...,
-  order = TRUE,
-  ascending = TRUE,
-  .by = NULL,
-  .cols = NULL,
-  .name = NULL,
-  as_qg = FALSE
-)
+row_id(x, ascending = TRUE)
 
-\method{add_group_id}{data.frame}(
-  data,
-  ...,
-  order = df_group_by_order_default(data),
-  ascending = TRUE,
-  .by = NULL,
-  .cols = NULL,
-  .name = NULL,
-  as_qg = FALSE
-)
+\method{row_id}{GRP}(x, ascending = TRUE)
 
-row_id(data, ascending = TRUE)
-
-\method{row_id}{GRP}(data, ascending = TRUE)
-
-add_row_id(data, ..., ascending = TRUE, .by = NULL, .cols = NULL, .name = NULL)
-
-\method{add_row_id}{data.frame}(data, ..., ascending = TRUE, .by = NULL, .cols = NULL, .name = NULL)
+f_consecutive_id(x)
 }
 \arguments{
-\item{data}{A data frame or vector.}
+\item{x}{A vector or data frame.}
 
 \item{order}{Should the groups be ordered?
-\bold{THE PHYSICAL ORDER OF THE DATA IS NOT CHANGED.} \cr
 When order is \code{TRUE} (the default) the group IDs will be
-ordered but not sorted.\cr
-
+ordered but not sorted. \cr
 If \code{FALSE} the order of the group IDs will be based on first appearance.}
 
-\item{ascending}{Should the group order be ascending or descending?
+\item{ascending}{Should the order be ascending or descending?
 The default is \code{TRUE}. \cr
-For \code{row_id()} this determines if the row IDs are increasing or decreasing. \cr
-\bold{NOTE} - When \code{order = FALSE}, the \code{ascending} argument is
-ignored. This is something that will be fixed in a later version.}
+For \code{row_id()} this determines if the row IDs are in
+increasing or decreasing order. \cr}
 
 \item{as_qg}{Should the group IDs be returned as a
 collapse "qG" class? The default (\code{FALSE}) always returns
 an integer vector.}
-
-\item{...}{Additional groups using tidy \code{data-masking} rules. \cr
-To specify groups using \code{tidyselect}, simply use the \code{.by} argument.}
-
-\item{.by}{Alternative way of supplying groups using \code{tidyselect} notation.}
-
-\item{.cols}{(Optional) alternative to \code{...} that accepts
-a named character vector or numeric vector.
-If speed is an expensive resource, it is recommended to use this.}
-
-\item{.name}{Name of the added ID column which should be a
-character vector of length 1.
-If \code{.name = NULL} (the default),
-\code{add_group_id()} will add a column named "group_id",
-and if one already exists, a unique name will be used.}
 }
 \value{
 An integer vector.
@@ -84,9 +39,44 @@ An integer vector.
 These are tidy-based functions for calculating group IDs and row IDs. \cr
 \itemize{
 \item \code{group_id()} returns an integer vector of group IDs
-the same size as the data.
+the same size as the \code{x}.
 \item \code{row_id()} returns an integer vector of row IDs.
+\item \code{f_consecutive_id()} returns an integer vector of consecutive run IDs.
 }
 
 The \code{add_} variants add a column of group IDs/row IDs.
+}
+\details{
+\bold{Note} - When working with data frames it is highly recommended
+to use the \code{add_} variants of these functions. Not only are they more
+intuitive to use, they also have optimisations for large numbers of groups.
+\subsection{\code{group_id}}{
+
+This assigns an integer value to unique elements of a vector or unique
+rows of a data frame. It is an extremely useful function for analysis
+as you can compress a lot of information into a single column, using that
+for further operations.
+}
+
+\subsection{\code{row_id}}{
+
+This assigns a row number to each group. To assign plain row numbers
+to a data frame one can use \code{add_row_id()}.
+This function can be used in rolling calculations, finding duplicates and
+more.
+}
+
+\subsection{\code{consecutive_id}}{
+
+An alternative to \code{dplyr::consecutive_id()}, \code{f_consecutive_id()} also
+creates an integer vector with values in the range \verb{[1, n]} where
+\code{n} is the length of the vector or number of rows of the data frame.
+The ID increments every time \code{x[i] != x[i - 1]} thus giving information on
+when there is a change in value.
+\code{f_consecutive_id} has a very small overhead in terms
+of calling the function, making it suitable for repeated calls.
+}
+}
+\seealso{
+\link{add_group_id} \link{add_row_id} \link{add_consecutive_id}
 }

@@ -4,8 +4,9 @@
 #' @param ... Variables to expand
 #' @param fill A named list containing value-name pairs
 #' to fill the named implicit missing values.
-#' @param sort Logical. If `TRUE` expanded/completed variables are sorted.
+#' @param .sort Logical. If `TRUE` expanded/completed variables are sorted.
 #' The default is `FALSE`.
+#' @param sort `r lifecycle::badge("superseded")` Use `.sort`.
 #' @param .by (Optional). A selection of columns to group by for this operation.
 #' Columns are specified using tidy-select.
 #' @param .cols (Optional) alternative to `...` that accepts
@@ -21,7 +22,15 @@
 #'
 #' @rdname f_expand
 #' @export
-f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
+f_expand <- function(data, ..., .sort = FALSE, sort = .sort,
+                     .by = NULL, .cols = NULL){
+  if (!identical(r_address(.sort), r_address(sort))){
+    lifecycle::deprecate_warn(
+      "0.3.0", what = "f_expand(sort)",
+      with = "f_expand(.sort)"
+    )
+    .sort <- sort
+  }
   check_cols(dots_length(...), .cols = .cols)
   group_vars <- get_groups(data, {{ .by }})
   if (!is.null(.cols)){
@@ -29,7 +38,8 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
     dot_vars <- col_select_names(data2, .cols = .cols)
     frames <- vector("list", length(dot_vars))
     for (i in seq_along(dot_vars)){
-      frames[[i]] <- f_distinct(data2, .cols = c(group_vars, dot_vars[i]), sort = sort)
+      frames[[i]] <- f_distinct(data2, .cols = c(group_vars, dot_vars[i]),
+                                .sort = .sort)
     }
   } else {
     data2 <- f_group_by(data, .by = {{ .by }}, .add = TRUE)
@@ -38,7 +48,7 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
     for (i in seq_along(dots)){
       frames[[i]] <- f_distinct(
         df_ungroup(dplyr::reframe(data2, !!!dots[i])),
-        sort = sort
+        .sort = .sort
       )
     }
   }
@@ -71,17 +81,25 @@ f_expand <- function(data, ..., sort = FALSE, .by = NULL, .cols = NULL){
   names(out) <- unique_name_repair(names(out))
   # If just empty list
   if (length(out) == 0){
-    out <- f_distinct(data2, .cols = group_vars, sort = sort)
+    out <- f_distinct(data2, .cols = group_vars, .sort = .sort)
   }
   reconstruct(data, out)
 }
 #' @rdname f_expand
 #' @export
-f_complete <- function(data, ...,  sort = FALSE,
+f_complete <- function(data, ...,
+                       .sort = FALSE, sort = .sort,
                        .by = NULL, .cols = NULL,
                        fill = NA){
+  if (!identical(r_address(.sort), r_address(sort))){
+    lifecycle::deprecate_warn(
+      "0.3.0", what = "f_complete(sort)",
+      with = "f_complete(.sort)"
+    )
+    .sort <- sort
+  }
   group_vars <- get_groups(data, {{ .by }})
-  expanded_df <- f_expand(data, ..., sort = FALSE,
+  expanded_df <- f_expand(data, ..., .sort = FALSE,
                           .by = {{ .by }}, .cols = .cols)
   fill_na <- any(!is.na(fill))
   out <- data
@@ -112,29 +130,30 @@ f_complete <- function(data, ...,  sort = FALSE,
         fill[[i]]
     }
   }
-  out_order <- c(names(data), setdiff(names(out), names(data)))
+  out_order <- c(names(data), fast_setdiff(names(out), names(data)))
   out <- f_select(out, .cols = out_order)
   reconstruct(data, out)
 }
 #' @rdname f_expand
 #' @export
-crossing <- function(..., sort = FALSE){
+crossing <- function(..., sort = FALSE, .sort = sort){
   dots <- list_named(...)
   for (i in seq_along(dots)){
     if (!is_df(dots[[i]])){
-      dots[[i]] <- sort_unique(`names<-`(new_df(dots[[i]]), names(dots)[i]), sort = sort)
+      dots[[i]] <- sort_unique(`names<-`(new_df(dots[[i]]), names(dots)[i]),
+                               sort = .sort)
     }
   }
   df_as_tbl(do.call(cross_join, dots))
 }
 #' @rdname f_expand
 #' @export
-nesting <- function(..., sort = FALSE){
+nesting <- function(..., sort = FALSE, .sort = sort){
   dots <- list_named(...)
   for (i in seq_along(dots)){
     if (!is_df(dots[[i]])){
       dots[[i]] <- `names<-`(new_df(dots[[i]]), names(dots)[i])
     }
   }
-  df_as_tbl(sort_unique(do.call(f_bind_cols, dots), sort = sort))
+  df_as_tbl(sort_unique(do.call(f_bind_cols, dots), sort = .sort))
 }

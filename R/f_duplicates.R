@@ -13,10 +13,11 @@
 #' The naming convention of this column follows `dplyr::add_count()`.
 #' @param .drop_empty If `TRUE` then empty rows with all `NA` values are removed.
 #' The default is `FALSE`.
-#' @param sort Should result be sorted?
+#' @param .sort Should result be sorted?
 #' If `FALSE` (the default), then rows are returned in the exact same order as
 #' they appear in the data.
 #' If `TRUE` then the duplicate rows are sorted.
+#' @param sort `r lifecycle::badge("superseded")` Use `.sort`.
 #' @param .by (Optional). A selection of columns to group by for this operation.
 #' Columns are specified using tidy-select.
 #' @param .cols (Optional) alternative to `...` that accepts
@@ -38,8 +39,16 @@
 #' @export
 f_duplicates <- function(data, ..., .keep_all = FALSE,
                          .both_ways = FALSE, .add_count = FALSE,
-                         .drop_empty = FALSE, sort = FALSE,
+                         .drop_empty = FALSE,
+                         .sort = FALSE, sort = .sort,
                          .by = NULL, .cols = NULL){
+  if (!identical(r_address(.sort), r_address(sort))){
+    lifecycle::deprecate_warn(
+      "0.3.0", what = "f_duplicates(sort)",
+      with = "f_duplicates(.sort)"
+    )
+    .sort <- sort
+  }
   n_dots <- dots_length(...)
   group_info <- tidy_group_info(data, ..., .by = {{ .by }},
                                 .cols = .cols,
@@ -67,9 +76,9 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
 
   # Groups
   groups <- df_to_GRP(out, .cols = dup_vars,
-                      return.order = sort,
+                      return.order = .sort,
                       return.groups = FALSE,
-                      order = sort)
+                      order = .sort)
   if (.add_count){
     group_sizes <- GRP_expanded_group_sizes(groups)
     n_var_nm <- unique_count_col(out)
@@ -77,11 +86,10 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
   }
   which_dup <- GRP_which_duplicated(groups, all = .both_ways)
 
-  if (sort){
-    out <- cheapr::sset(out, which_dup[order(GRP_group_id(groups)[which_dup])])
-  } else {
-    out <- cheapr::sset(out, which_dup)
+  if (.sort){
+    which_dup <- which_dup[order(GRP_group_id(groups)[which_dup])]
   }
+  out <- cheapr::sset(out, which_dup)
 
   # Remove empty rows (rows with all NA values)
 
@@ -101,6 +109,5 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
       vind1 = TRUE
     )
   }
-
   reconstruct(data, out)
 }

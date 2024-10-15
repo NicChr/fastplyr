@@ -10,7 +10,8 @@ f_group_by(
   data,
   ...,
   .add = FALSE,
-  order = df_group_by_order_default(data),
+  .order = df_group_by_order_default(data),
+  order = .order,
   .by = NULL,
   .cols = NULL,
   .drop = df_group_by_drop_default(data)
@@ -28,9 +29,11 @@ f_ungroup(data)
 \item{.add}{Should groups be added to existing groups?
 Default is \code{FALSE}.}
 
-\item{order}{Should groups be ordered? If \code{FALSE}
+\item{.order}{Should groups be ordered? If \code{FALSE}
 groups will be ordered based on first-appearance. \cr
 Typically, setting order to \code{FALSE} is faster.}
+
+\item{order}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Use \code{.order}.}
 
 \item{.by}{(Optional). A selection of columns to group by for this operation.
 Columns are specified using \code{tidyselect}.}
@@ -67,10 +70,10 @@ to the top-level dataset being sorted in some way, either by sorting
 the group columns like in \code{f_expand()} or \code{f_distinct()}, or
 some other columns, like the count column in \code{f_count()}.
 
-The \code{order} argument, when set to \code{TRUE} (the default),
+The \code{.order} argument, when set to \code{TRUE} (the default),
 is used to mean that the group data will be calculated
 using a sort-based algorithm, leading to sorted group data.
-When \code{order} is \code{FALSE}, the group data will be returned based on
+When \code{.order} is \code{FALSE}, the group data will be returned based on
 the order-of-first appearance of the groups in the data.
 This order-of-first appearance may still naturally be sorted
 depending on the data.
@@ -83,7 +86,7 @@ Part of the reason for the distinction is that internally fastplyr
 can in theory calculate group data
 using the sort-based algorithm and still return unsorted groups,
 though this combination is only available to the user in limited places like
-\code{f_distinct(order = TRUE, sort = FALSE)}.
+\code{f_distinct(.order = TRUE, .sort = FALSE)}.
 
 The other reason is to prevent confusion in the meaning
 of \code{sort} and \code{order} so that \code{order} always refers to the
@@ -96,10 +99,10 @@ specified via \code{order = TRUE}.
 \subsection{Using the order-of-first appearance algorithm for speed}{
 
 In many situations (not all) it can be faster to use the
-order-of-first appearance algorithm, specified via \code{order = FALSE}.
+order-of-first appearance algorithm, specified via \code{.order = FALSE}.
 
 This can generally be accessed by first calling
-\code{f_group_by(data, ..., order = FALSE)} and then
+\code{f_group_by(data, ..., .order = FALSE)} and then
 performing your calculations.
 
 To utilise this algorithm more globally and package-wide,

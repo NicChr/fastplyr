@@ -10,6 +10,9 @@ reconstruct.data.frame <- function(template, data, copy_extra_attributes = TRUE)
   at <- attributes(template)
   at[["names"]] <- names(data)
   at[["row.names"]] <- .row_names_info(data, type = 0L)
+
+  # If we're not copying all attributes
+  # then remove them
   if (!copy_extra_attributes){
     at[fast_setdiff(names(at), c("names", "row.names", "class"))] <- NULL
   }
@@ -40,14 +43,14 @@ reconstruct.grouped_df <- function(template, data, copy_extra_attributes = TRUE)
     )
 
   if (!groups_are_identical){
-    out_groups <- intersect(template_groups, names(data))
+    out_groups <- fast_intersect(template_groups, names(data))
     if (length(out_groups) == 0L){
       at[["class"]] <- fast_setdiff(at[["class"]], "grouped_df")
       at[["groups"]] <- NULL
     } else {
       drop_by_default <- df_group_by_drop_default(template)
       order <- df_group_by_order_default(template)
-      sorted <- attr(at[["groups"]], "sorted")
+      ordered <- attr(at[["groups"]], "ordered")
       groups <- group_collapse(df_ungroup(data),
                                .cols = out_groups,
                                sort = TRUE,
@@ -62,7 +65,7 @@ reconstruct.grouped_df <- function(template, data, copy_extra_attributes = TRUE)
                          c("row.names", "class", "names"))){
         attr(groups, a) <- NULL
       }
-      attr(groups, "sorted") <- sorted
+      attr(groups, "ordered") <- ordered
       class(groups) <- c("tbl_df", "tbl", "data.frame")
       attr(groups, ".drop") <- drop_by_default
       at[["groups"]] <- groups

@@ -8,13 +8,13 @@ test_that("Compared to tidyr", {
   )
   expect_equal(
     testdf %>%
-      f_expand(origin, dest, time_hour, sort = TRUE),
+      f_expand(origin, dest, time_hour, .sort = TRUE),
     testdf %>%
       tidyr::expand(origin, dest, time_hour)
   )
   expect_equal(
     testdf %>%
-      f_expand(tidyr::nesting(origin, dest, time_hour), sort = TRUE),
+      f_expand(tidyr::nesting(origin, dest, time_hour), .sort = TRUE),
     testdf %>%
       dplyr::distinct(origin, dest, time_hour) %>%
       dplyr::select(origin, dest, time_hour) %>%
@@ -22,19 +22,19 @@ test_that("Compared to tidyr", {
   )
   expect_equal(
     testdf %>%
-      f_complete(tidyr::nesting(origin, dest, time_hour), sort = FALSE),
+      f_complete(tidyr::nesting(origin, dest, time_hour), .sort = FALSE),
     testdf
   )
   expect_equal(
     testdf %>%
-      f_complete(sort = TRUE),
+      f_complete(.sort = TRUE),
     testdf
   )
   # Grouped calculations
   expect_equal(
     testdf %>%
       dplyr::group_by(origin, dest) %>%
-      f_expand(sort = TRUE),
+      f_expand(.sort = TRUE),
     testdf %>%
       dplyr::group_by(origin, dest) %>%
       tidyr::expand()
@@ -42,7 +42,7 @@ test_that("Compared to tidyr", {
   expect_equal(
     testdf %>%
       dplyr::group_by(origin, dest) %>%
-      f_expand(carrier, sort = TRUE),
+      f_expand(carrier, .sort = TRUE),
     testdf %>%
       dplyr::group_by(origin, dest) %>%
       tidyr::expand(carrier)
@@ -50,7 +50,7 @@ test_that("Compared to tidyr", {
   expect_equal(
     testdf %>%
       dplyr::group_by(origin) %>%
-      f_expand(carrier, tailnum, sort = TRUE),
+      f_expand(carrier, tailnum, .sort = TRUE),
     testdf %>%
       dplyr::group_by(origin) %>%
       tidyr::expand(carrier, tailnum)
@@ -58,7 +58,7 @@ test_that("Compared to tidyr", {
   expect_equal(
     testdf %>%
       dplyr::group_by(origin) %>%
-      f_expand(carrier, -5:5, sort = TRUE),
+      f_expand(carrier, -5:5, .sort = TRUE),
     testdf %>%
       dplyr::group_by(origin) %>%
       tidyr::expand(carrier, -5:5)
@@ -66,7 +66,7 @@ test_that("Compared to tidyr", {
   expect_equal(
     testdf %>%
       f_expand(carrier, -5:5, .by = origin,
-               sort = TRUE),
+               .sort = TRUE),
     testdf %>%
       dplyr::group_by(origin) %>%
       tidyr::expand(carrier, -5:5) %>%
@@ -81,22 +81,22 @@ test_that("Compared to tidyr", {
   )
 expect_equal(
   testdf %>%
-    f_expand(1:10, yes = 1:10, sort = TRUE),
+    f_expand(1:10, yes = 1:10, .sort = TRUE),
   tidyr::expand_grid(1:10, 1:10) %>%
     add_names(c("1:10", "yes"))
 )
 res1 <- flights %>%
-  f_complete(origin, dest, carrier, sort = FALSE)
+  f_complete(origin, dest, carrier, .sort = FALSE)
 res2 <- flights %>%
   tidyr::complete(origin, dest, carrier)
 expect_equal(nrow(dplyr::anti_join(res1, res2, by = names(res1))), 0L)
 expect_equal(nrow(dplyr::anti_join(res2, res1, by = names(res1))), 0L)
 
 res3 <- flights %>%
-  f_complete(origin, dest, carrier, sort = TRUE)
+  f_complete(origin, dest, carrier, .sort = TRUE)
 expect_equal(res3, res3 %>% dplyr::arrange(origin, dest, carrier))
 res4 <- flights %>%
-  f_complete(origin, dest, carrier, sort = FALSE, fill = list(arr_time = 0,
+  f_complete(origin, dest, carrier, .sort = FALSE, fill = list(arr_time = 0,
                                                               dep_time = 9999))
 res5 <- flights %>%
   dplyr::mutate(dplyr::across(c(arr_time, dep_time), as.double)) %>%

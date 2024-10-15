@@ -9,11 +9,32 @@
 \alias{f_slice_sample}
 \title{Faster \code{dplyr::slice()}}
 \usage{
-f_slice(data, i = 0L, ..., .by = NULL, keep_order = FALSE)
+f_slice(
+  data,
+  i = 0L,
+  ...,
+  .by = NULL,
+  .order = df_group_by_order_default(data),
+  keep_order = FALSE
+)
 
-f_slice_head(data, n, prop, .by = NULL, keep_order = FALSE)
+f_slice_head(
+  data,
+  n,
+  prop,
+  .by = NULL,
+  .order = df_group_by_order_default(data),
+  keep_order = FALSE
+)
 
-f_slice_tail(data, n, prop, .by = NULL, keep_order = FALSE)
+f_slice_tail(
+  data,
+  n,
+  prop,
+  .by = NULL,
+  .order = df_group_by_order_default(data),
+  keep_order = FALSE
+)
 
 f_slice_min(
   data,
@@ -23,6 +44,7 @@ f_slice_min(
   .by = NULL,
   with_ties = TRUE,
   na_rm = FALSE,
+  .order = df_group_by_order_default(data),
   keep_order = FALSE
 )
 
@@ -34,6 +56,7 @@ f_slice_max(
   .by = NULL,
   with_ties = TRUE,
   na_rm = FALSE,
+  .order = df_group_by_order_default(data),
   keep_order = FALSE
 )
 
@@ -43,6 +66,7 @@ f_slice_sample(
   replace = FALSE,
   prop,
   .by = NULL,
+  .order = df_group_by_order_default(data),
   keep_order = FALSE,
   weights = NULL,
   seed = NULL
@@ -59,6 +83,10 @@ only accepts simple integer vectors.}
 
 \item{.by}{(Optional). A selection of columns to group by for this operation.
 Columns are specified using tidy-select.}
+
+\item{.order}{Should the groups be returned in sorted order?
+If \code{FALSE}, this will return the groups in order of first appearance,
+and in many cases is faster.}
 
 \item{keep_order}{Should the sliced data frame be returned in its original order?
 The default is \code{FALSE}.}

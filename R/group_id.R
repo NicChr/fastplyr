@@ -4,60 +4,77 @@
 #' These are tidy-based functions for calculating group IDs and row IDs. \cr
 #'
 #' *  `group_id()` returns an integer vector of group IDs
-#' the same size as the data.
+#' the same size as the `x`.
 #' *  `row_id()` returns an integer vector of row IDs.
+#' * `f_consecutive_id()` returns an integer vector of consecutive run IDs.
 #'
 #' The `add_` variants add a column of group IDs/row IDs.
 #'
-#' @param data A data frame or vector.
-#' @param ... Additional groups using tidy `data-masking` rules. \cr
-#' To specify groups using `tidyselect`, simply use the `.by` argument.
+#' @param x A vector or data frame.
 #' @param order Should the groups be ordered?
-#' \bold{THE PHYSICAL ORDER OF THE DATA IS NOT CHANGED.} \cr
 #' When order is `TRUE` (the default) the group IDs will be
-#' ordered but not sorted.\cr
-#'
+#' ordered but not sorted. \cr
 #' If `FALSE` the order of the group IDs will be based on first appearance.
-#' @param ascending Should the group order be ascending or descending?
+#' @param ascending Should the order be ascending or descending?
 #' The default is `TRUE`. \cr
-#' For `row_id()` this determines if the row IDs are increasing or decreasing. \cr
-#' \bold{NOTE} - When `order = FALSE`, the `ascending` argument is
-#' ignored. This is something that will be fixed in a later version.
-#' @param .by Alternative way of supplying groups using `tidyselect` notation.
-#' @param .cols (Optional) alternative to `...` that accepts
-#' a named character vector or numeric vector.
-#' If speed is an expensive resource, it is recommended to use this.
-#' @param .name Name of the added ID column which should be a
-#' character vector of length 1.
-#' If `.name = NULL` (the default),
-#' `add_group_id()` will add a column named "group_id",
-#' and if one already exists, a unique name will be used.
+#' For `row_id()` this determines if the row IDs are in
+#' increasing or decreasing order. \cr
 #' @param as_qg Should the group IDs be returned as a
 #' collapse "qG" class? The default (`FALSE`) always returns
 #' an integer vector.
 #'
+#' @details
+#'
+#' \bold{Note} - When working with data frames it is highly recommended
+#' to use the `add_` variants of these functions. Not only are they more
+#' intuitive to use, they also have optimisations for large numbers of groups.
+#'
+#' ### `group_id`
+#' This assigns an integer value to unique elements of a vector or unique
+#' rows of a data frame. It is an extremely useful function for analysis
+#' as you can compress a lot of information into a single column, using that
+#' for further operations.
+#'
+#' ### `row_id`
+#' This assigns a row number to each group. To assign plain row numbers
+#' to a data frame one can use `add_row_id()`.
+#' This function can be used in rolling calculations, finding duplicates and
+#' more.
+#'
+#' ### `consecutive_id`
+#'
+#' An alternative to `dplyr::consecutive_id()`, `f_consecutive_id()` also
+#' creates an integer vector with values in the range `[1, n]` where
+#' `n` is the length of the vector or number of rows of the data frame.
+#' The ID increments every time `x[i] != x[i - 1]` thus giving information on
+#' when there is a change in value.
+#' `f_consecutive_id` has a very small overhead in terms
+#' of calling the function, making it suitable for repeated calls.
+#'
 #' @returns
 #' An integer vector.
 #'
+#' @seealso [add_group_id] [add_row_id] [add_consecutive_id]
+#'
 #' @rdname group_id
 #' @export
-group_id <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
+group_id <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
   UseMethod("group_id")
 }
 #' @export
-group_id.default <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
+group_id.default <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
 
   # Use hashing for S4 objects and non-data frame lists
 
-  if (!is_df(data) && cpp_is_exotic(data)){
+  if (!is_df(x) && cpp_is_exotic(x)){
     return(
       group_id_hash(
-        data, order = order, ascending = ascending, as_qg = as_qg
+        x, order = order, ascending = ascending, as_qg = as_qg
       )
     )
   }
 
-  g <- GRP2(df_ungroup(data),
+  g <- GRP2(df_ungroup(x),
             sort = order,
             decreasing = !ascending,
             na.last = TRUE,
@@ -75,11 +92,11 @@ group_id.default <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE
   out
 }
 #' @export
-group_id.factor <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
-  out <- unclass(data)
+group_id.factor <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
+  out <- unclass(x)
   if (order && ascending && !as_qg){
     out <- strip_attrs(out)
-    out[cheapr::which_na(out)] <- length(levels(data)) + 1L
+    out[cheapr::which_na(out)] <- length(levels(x)) + 1L
   } else {
     out <- group_id(out, order = order,
                     ascending = ascending, as_qg = as_qg)
@@ -87,14 +104,14 @@ group_id.factor <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE)
   out
 }
 #' @export
-group_id.list <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
-  group_id_hash(as.list(data), order = FALSE, as_qg = as_qg)
+group_id.list <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
+  group_id_hash(as.list(x), order = FALSE, as_qg = as_qg)
 }
-group_id_hash <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
+group_id_hash <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
 
   # vctrs internal hashing on lists is very good
 
-  out <- as.integer(vctrs::vec_group_id(data))
+  out <- as.integer(vctrs::vec_group_id(x))
   if (as_qg){
     out <- group_id(out, order = FALSE, ascending = ascending, as_qg = as_qg)
   }
@@ -119,8 +136,8 @@ group_id_hash <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
 }
 # No need to have this anymore as there is a collapse::GRP.interval method..
 #' @export
-group_id.Interval <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
-  X <- interval_separate(data)
+group_id.Interval <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
+  X <- interval_separate(x)
   groups <- collapse::GRP(X, sort = order,
                           decreasing = !ascending,
                           call = FALSE,
@@ -137,26 +154,26 @@ group_id.Interval <- function(data, order = TRUE, ascending = TRUE, as_qg = FALS
   out
 }
 #' @export
-group_id.GRP <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
-  group_ids <- GRP_group_id(data)
-  if (!order && GRP_is_ordered(data)){
+group_id.GRP <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
+  group_ids <- GRP_group_id(x)
+  if (!order && GRP_is_ordered(x)){
     out <- group_id(group_ids, order = order, as_qg = as_qg)
   } else {
     out <- group_ids
     if (as_qg){
       out <- group_id_to_qg(out,
-                            n_groups = GRP_n_groups(data),
-                            group_sizes = GRP_group_sizes(data),
-                            group_starts = GRP_starts(data),
+                            n_groups = GRP_n_groups(x),
+                            group_sizes = GRP_group_sizes(x),
+                            group_starts = GRP_starts(x),
                             ordered = order)
     }
   }
   out
 }
 #' @export
-group_id.vctrs_rcrd <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
+group_id.vctrs_rcrd <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
   group_id(
-    list_as_df(data),
+    list_as_df(x),
     order = order,
     ascending = ascending,
     as_qg = as_qg
@@ -164,13 +181,13 @@ group_id.vctrs_rcrd <- function(data, order = TRUE, ascending = TRUE, as_qg = FA
 
 }
 #' @export
-group_id.NULL <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
+group_id.NULL <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
   NULL
 }
 #' @export
-group_id.integer64 <- function(data, order = TRUE, ascending = TRUE, as_qg = FALSE){
+group_id.integer64 <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
   group_id(
-    cpp_int64_to_numeric(data),
+    cpp_int64_to_numeric(x),
     order = order,
     ascending = ascending,
     as_qg = as_qg
@@ -179,80 +196,14 @@ group_id.integer64 <- function(data, order = TRUE, ascending = TRUE, as_qg = FAL
 }
 #' @rdname group_id
 #' @export
-add_group_id <- function(data, ...,
-                         order = TRUE,
-                         ascending = TRUE,
-                         .by = NULL, .cols = NULL,
-                         .name = NULL,
-                         as_qg = FALSE){
-  UseMethod("add_group_id")
-}
-#' @rdname group_id
-#' @export
-add_group_id.data.frame <- function(data, ...,
-                                    order = df_group_by_order_default(data),
-                                    ascending = TRUE,
-                                    .by = NULL, .cols = NULL,
-                                    .name = NULL,
-                                    as_qg = FALSE){
-  if (is.null(.name)){
-    .name <- unique_col_name(names(data), "group_id")
-  }
-  N <- df_nrow(data)
-  check_by(data, .by = {{ .by }})
-  group_info <- tidy_group_info(data, ..., .by = {{ .by }},
-                                .cols = .cols,
-                                ungroup = TRUE,
-                                rename = FALSE)
-  all_groups <- group_info[["all_groups"]]
-  extra_groups <- group_info[["extra_groups"]]
-  group_vars <- group_info[["dplyr_groups"]]
-  groups_changed <- group_info[["groups_changed"]]
-
-  # Usual Method for when data does not contain interval
-  if (length(all_groups) == 0L){
-    ids <- rep_len(1L, N)
-    n_groups <- min(N, 1L)
-    group_sizes <- N
-    group_starts <- n_groups
-    if (as_qg){
-      ids <- group_id_to_qg(ids,
-                            n_groups = n_groups,
-                            group_sizes = group_sizes,
-                            group_starts = group_starts,
-                            ordered = order)
-    }
-  } else {
-    if (length(extra_groups) == 0 &&
-        length(group_vars) == length(group_vars(data)) &&
-        !groups_changed &&
-        order == df_group_by_order_default(data) &&
-        ascending &&
-        !as_qg){
-      ids <- df_group_id(data)
-    } else {
-      ids <- group_id(
-        f_select(group_info[["data"]], .cols = all_groups),
-        order = order,
-        ascending = ascending,
-        as_qg = as_qg
-      )
-    }
-  }
-  col_to_add <- add_names(list(ids), .name)
-  out <- dplyr::dplyr_col_modify(df_ungroup(data), col_to_add)
-  reconstruct(data, out)
-}
-#' @rdname group_id
-#' @export
-row_id <- function(data, ascending = TRUE){
+row_id <- function(x, ascending = TRUE){
   UseMethod("row_id")
 }
 #' @export
-row_id.default <- function(data, ascending = TRUE){
-  o <- radixorderv2(data, starts = FALSE, sort = FALSE, group.sizes = TRUE)
+row_id.default <- function(x, ascending = TRUE){
+  o <- radixorderv2(x, starts = FALSE, sort = FALSE, group.sizes = TRUE)
   if (is.null(o)){
-    return(seq_len(NROW(data)))
+    return(seq_len(NROW(x)))
   }
   # Basically the order item of a GRP object
   # Doesn't naturally come with group sizes
@@ -275,11 +226,11 @@ row_id.default <- function(data, ascending = TRUE){
 }
 #' @rdname group_id
 #' @export
-row_id.GRP <- function(data, ascending = TRUE){
-  size <- GRP_data_size(data)
-  group_sizes <- GRP_group_sizes(data)
+row_id.GRP <- function(x, ascending = TRUE){
+  size <- GRP_data_size(x)
+  group_sizes <- GRP_group_sizes(x)
   # If groups are sorted we can use sequence()
-  if (GRP_is_sorted(data)){
+  if (GRP_is_sorted(x)){
     if (ascending){
       start <- 1L
       every <- 1L
@@ -289,7 +240,7 @@ row_id.GRP <- function(data, ascending = TRUE){
     }
     out <- sequence(group_sizes, from = start, by = every)
   } else {
-    group_order <- GRP_order(data)
+    group_order <- GRP_order(x)
     out <- cpp_row_id(order = group_order,
                       group_sizes = group_sizes,
                       ascending = ascending)
@@ -298,52 +249,7 @@ row_id.GRP <- function(data, ascending = TRUE){
 }
 #' @rdname group_id
 #' @export
-add_row_id <- function(data, ..., ascending = TRUE,
-                       .by = NULL, .cols = NULL,
-                       .name = NULL){
-  UseMethod("add_row_id")
-}
-#' @rdname group_id
-#' @export
-add_row_id.data.frame <- function(data, ..., ascending = TRUE,
-                                  .by = NULL, .cols = NULL,
-                                  .name = NULL){
-  if (is.null(.name)){
-    .name <- unique_col_name(names(data), "row_id")
-  }
-  N <- df_nrow(data)
-  group_info <- tidy_group_info(data, ..., .by = {{ .by }},
-                                .cols = .cols,
-                                ungroup = TRUE,
-                                rename = FALSE)
-  # data <- group_info[["data"]]
-  extra_groups <- group_info[["extra_groups"]]
-  group_vars <- group_info[["dplyr_groups"]]
-  groups_changed <- group_info[["groups_changed"]]
-  all_groups <- group_info[["all_groups"]]
-  if (length(all_groups) == 0L){
-    if (ascending){
-      row_ids <- seq_len(N)
-    } else {
-      row_ids <- seq.int(length.out = N, from = N, by = -1L)
-    }
-  } else {
-    if (length(extra_groups) == 0 &&
-        length(group_vars) == length(group_vars(data)) &&
-        !groups_changed){
-      groups <- group_data(data)
-      o <- unlist(groups[[".rows"]])
-      sizes <- cheapr::lengths_(groups[[".rows"]])
-      row_ids <- cpp_row_id(o, sizes, ascending)
-    } else {
-      row_ids <- row_id(f_select(group_info[["data"]], .cols = all_groups),
-                        ascending = ascending)
-    }
-  }
-  col_to_add <- add_names(list(row_ids), .name)
-  out <- dplyr::dplyr_col_modify(df_ungroup(data), col_to_add)
-  reconstruct(data, out)
-}
+f_consecutive_id <- cpp_consecutive_id
 
 group_id_to_qg <- function(x,
                            n_groups = NULL,

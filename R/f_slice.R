@@ -53,13 +53,18 @@
 #' To clarify, whatever seed state was in place before the function call,
 #' is restored to ensure seed continuity.
 #' If left `NULL` (the default), then the seed is never modified.
+#' @param .order Should the groups be returned in sorted order?
+#' If `FALSE`, this will return the groups in order of first appearance,
+#' and in many cases is faster.
 #'
 #' @returns
 #' A `data.frame` filtered on the specified row indices.
 #'
 #' @rdname f_slice
 #' @export
-f_slice <- function(data, i = 0L, ..., .by = NULL, keep_order = FALSE){
+f_slice <- function(data, i = 0L, ..., .by = NULL,
+                    .order = df_group_by_order_default(data),
+                    keep_order = FALSE){
   rlang::check_dots_empty0(...)
   if (is.logical(i)){
     stop("i must be an integer vector, not a logical vector, use `f_filter()` instead")
@@ -92,7 +97,7 @@ f_slice <- function(data, i = 0L, ..., .by = NULL, keep_order = FALSE){
   } else {
     groups <- data %>%
       group_collapse(.cols = group_vars, .add = TRUE,
-                     order = df_group_by_order_default(data))
+                     order = .order)
     group_locs <- groups[[".loc"]]
     group_sizes <- groups[[".size"]]
     GN <- max(group_sizes)
@@ -114,10 +119,12 @@ f_slice <- function(data, i = 0L, ..., .by = NULL, keep_order = FALSE){
 }
 #' @rdname f_slice
 #' @export
-f_slice_head <- function(data, n, prop, .by = NULL, keep_order = FALSE){
+f_slice_head <- function(data, n, prop, .by = NULL,
+                         .order = df_group_by_order_default(data),
+                         keep_order = FALSE){
   slice_info <- df_slice_prepare(data, n, prop,
                                  .by = {{ .by }},
-                                 sort_groups = df_group_by_order_default(data),
+                                 sort_groups = .order,
                                  default_n = 1L)
   group_sizes <- slice_info[["group_sizes"]]
   slice_sizes <- slice_info[["slice_sizes"]]
@@ -153,10 +160,12 @@ f_slice_head <- function(data, n, prop, .by = NULL, keep_order = FALSE){
 }
 #' @rdname f_slice
 #' @export
-f_slice_tail <- function(data, n, prop, .by = NULL, keep_order = FALSE){
+f_slice_tail <- function(data, n, prop, .by = NULL,
+                         .order = df_group_by_order_default(data),
+                         keep_order = FALSE){
   slice_info <- df_slice_prepare(data, n, prop,
                                  .by = {{ .by }},
-                                 sort_groups = df_group_by_order_default(data),
+                                 sort_groups = .order,
                                  default_n = 1L)
   group_sizes <- slice_info[["group_sizes"]]
   slice_sizes <- slice_info[["slice_sizes"]]
@@ -179,11 +188,13 @@ f_slice_tail <- function(data, n, prop, .by = NULL, keep_order = FALSE){
 #' @rdname f_slice
 #' @export
 f_slice_min <- function(data, order_by, n, prop, .by = NULL,
-                       with_ties = TRUE, na_rm = FALSE, keep_order = FALSE){
+                       with_ties = TRUE, na_rm = FALSE,
+                       .order = df_group_by_order_default(data),
+                       keep_order = FALSE){
   group_vars <- get_groups(data, .by = {{ .by }})
   grp_nm1 <- unique_col_name(names(data), "g")
   out <- data %>%
-    add_group_id(.name = grp_nm1, .cols = group_vars) %>%
+    add_group_id(.name = grp_nm1, .cols = group_vars, order = .order) %>%
     df_ungroup()
 
   g1 <- out[[grp_nm1]]
@@ -195,16 +206,17 @@ f_slice_min <- function(data, order_by, n, prop, .by = NULL,
   order_by_nm <- out_info[["cols"]]
   row_nm <- unique_col_name(names(out), "row_id")
   out[[row_nm]] <- df_seq_along(out)
-  g2 <- group_id(out[[order_by_nm]])
+  g2 <- group_id(out[[order_by_nm]], order = TRUE)
   # Order by Groups + desc order by var
   grp_nm <- unique_col_name(names(out), "g")
   if (length(group_vars) == 0){
     out[[grp_nm]] <- g2
   } else {
-    out[[grp_nm]] <- group_id(new_df(g1 = g1, g2 = g2))
+    out[[grp_nm]] <- group_id(new_df(g1 = g1, g2 = g2), order = TRUE)
   }
   out <- f_arrange(out, .cols = grp_nm)
-  out1 <- f_slice_head(out, n = n, prop = prop, .by = all_of(grp_nm1))
+  out1 <- f_slice_head(out, n = n, prop = prop, .by = all_of(grp_nm1),
+                       .order = .order)
   if (with_ties){
     i <- out[[row_nm]][cheapr::which_not_na(
       collapse::fmatch(out[[grp_nm]], out1[[grp_nm]], overid = 2L)
@@ -227,12 +239,14 @@ f_slice_min <- function(data, order_by, n, prop, .by = NULL,
 #' @rdname f_slice
 #' @export
 f_slice_max <- function(data, order_by, n, prop, .by = NULL,
-                       with_ties = TRUE, na_rm = FALSE, keep_order = FALSE){
+                       with_ties = TRUE, na_rm = FALSE,
+                       .order = df_group_by_order_default(data),
+                       keep_order = FALSE){
   group_vars <- get_groups(data, .by = {{ .by }})
   grp_nm1 <- unique_col_name(names(data), "g")
 
   out <- data %>%
-    add_group_id(.name = grp_nm1, .cols = group_vars) %>%
+    add_group_id(.name = grp_nm1, .cols = group_vars, order = .order) %>%
     df_ungroup()
 
   g1 <- out[[grp_nm1]]
@@ -244,16 +258,17 @@ f_slice_max <- function(data, order_by, n, prop, .by = NULL,
   order_by_nm <- out_info[["cols"]]
   row_nm <- unique_col_name(names(out), "row_id")
   out[[row_nm]] <- df_seq_along(out)
-  g2 <- group_id(out[[order_by_nm]], ascending = FALSE)
+  g2 <- group_id(out[[order_by_nm]], ascending = FALSE, order = TRUE)
   # Order by Groups + desc order by var
   grp_nm <- unique_col_name(names(out), "g")
   if (length(group_vars) == 0){
     out[[grp_nm]] <- g2
   } else {
-    out[[grp_nm]] <- group_id(new_df(g1 = g1, g2 = g2))
+    out[[grp_nm]] <- group_id(cheapr::new_df(g1 = g1, g2 = g2), order = TRUE)
   }
   out <- f_arrange(out, .cols = grp_nm)
-  out1 <- f_slice_head(out, n = n, prop = prop, .by = all_of(grp_nm1))
+  out1 <- f_slice_head(out, n = n, prop = prop,
+                       .by = all_of(grp_nm1), .order = .order)
   if (with_ties){
     i <- out[[row_nm]][cheapr::which_not_na(
       collapse::fmatch(out[[grp_nm]], out1[[grp_nm]], overid = 2L)
@@ -276,7 +291,7 @@ f_slice_max <- function(data, order_by, n, prop, .by = NULL,
 #' @rdname f_slice
 #' @export
 f_slice_sample <- function(data, n, replace = FALSE, prop,
-                          .by = NULL,
+                          .by = NULL, .order = df_group_by_order_default(data),
                           keep_order = FALSE,
                           weights = NULL, seed = NULL){
   # Check if a seed already exists in global environment
@@ -296,14 +311,15 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
   }
   slice_info <- df_slice_prepare(data, n, prop,
                                  .by = {{ .by }},
-                                 sort_groups = df_group_by_order_default(data),
+                                 sort_groups = .order,
                                  bound_n = (missing(n) && missing(prop)) || !replace,
                                  default_n = df_nrow(data))
   group_sizes <- slice_info[["group_sizes"]]
   slice_sizes <- slice_info[["slice_sizes"]]
-  rows <- vector("list", length(slice_info[["rows"]]))
+  n_groups <- length(group_sizes)
+  rows <- cheapr::new_list(n_groups)
   if (has_weights){
-    g <- group_id(f_select(data, .cols = groups), order = df_group_by_order_default(data))
+    g <- cpp_df_group_indices(slice_info[["rows"]], df_nrow(data))
     weights <- gsplit2(data[[weights_var]], g = g)
   } else {
     weights <- NULL
@@ -323,7 +339,7 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
                             prob = .subset2(weights, i))
   }
   if (seed_exists && !seed_is_null){
-    on.exit({ assign(".Random.seed", old, envir = globalenv())})
+    on.exit({assign(".Random.seed", old, envir = globalenv())})
   } else if (!seed_is_null){
     on.exit({remove(".Random.seed", envir = globalenv())})
   }

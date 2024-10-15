@@ -11,11 +11,12 @@
 #'   * If `NULL` (the default), counts the number of rows in each group.
 #'   * If a variable, computes `sum(wt)` for each group.
 #' @param sort If `TRUE`, will show the largest groups at the top.
-#' @param order Should the groups be calculated as ordered groups?
+#' @param .order Should the groups be calculated as ordered groups?
 #' If `FALSE`, this will return the groups in order of first appearance,
 #' and in many cases is faster.
 #' If `TRUE` (the default), the groups are returned in sorted order,
 #' exactly the same way as `dplyr::count`.
+#' @param order `r lifecycle::badge("superseded")` Use `.order`.
 #' @param name The name of the new column in the output.
 #'  If there's already a column called `n`,
 #'  it will use `nn`.
@@ -41,11 +42,19 @@
 #'
 #' @export
 f_count <- function(data, ..., wt = NULL, sort = FALSE,
-                    order = df_group_by_order_default(data),
+                    .order = df_group_by_order_default(data),
+                    order = .order,
                     name = NULL, .by = NULL, .cols = NULL){
+  if (!identical(r_address(order), r_address(.order))){
+    lifecycle::deprecate_warn(
+      "0.3.0", what = "f_count(order)",
+      with = "f_count(.order)"
+    )
+    .order <- order
+  }
   if (dots_length(...) == 0 && rlang::quo_is_null(rlang::enquo(.by)) && is.null(.cols)){
     return(
-      count_simple(data, ..., wt = !!rlang::enquo(wt), sort = sort, order = order,
+      count_simple(data, ..., wt = !!rlang::enquo(wt), sort = sort, .order = .order,
                    name = name, .by = {{ .by }}, .cols = .cols)
     )
   }
@@ -70,13 +79,13 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
   }
   use_only_grouped_df_groups <- !group_info[["groups_changed"]] && (
     length(all_vars) == 0L ||
-      (order && length(group_vars) > 0L && length(group_vars) == length(all_vars))
+      (.order && length(group_vars) > 0L && length(group_vars) == length(all_vars))
   )
   if (use_only_grouped_df_groups){
-    g <- df_to_GRP(data, return.order = FALSE, order = order, return.groups = TRUE)
+    g <- df_to_GRP(data, return.order = FALSE, order = .order, return.groups = TRUE)
   } else {
     g <- df_to_GRP(data_transformed, .cols = all_vars, return.order = FALSE,
-                   order = order, return.groups = TRUE)
+                   order = .order, return.groups = TRUE)
   }
   out <- GRP_groups(g)
   if (is.null(out)){
@@ -121,10 +130,10 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
 # If the data is already grouped and no variables are supplied
 # through ..., then this is very fast
 count_simple <- function(data, ..., wt = NULL, sort = FALSE,
-                         order = df_group_by_order_default(data),
+                         .order = df_group_by_order_default(data),
                          name = NULL, .by = NULL, .cols = NULL){
   out <- f_group_by(data, ..., .add = TRUE,
-                    order = order, .cols = .cols,
+                    .order = .order, .cols = .cols,
                     .by = {{ .by }})
   if (!rlang::quo_is_null(rlang::enquo(wt))){
     out_info <- mutate_summary_ungrouped(out, !!rlang::enquo(wt))
@@ -143,10 +152,10 @@ count_simple <- function(data, ..., wt = NULL, sort = FALSE,
   reconstruct(data, out)
 }
 add_count_simple <- function(data, ..., wt = NULL, sort = FALSE,
-                             order = df_group_by_order_default(data),
+                             .order = df_group_by_order_default(data),
                              name = NULL, .by = NULL, .cols = NULL){
   out <- f_group_by(data, ..., .add = TRUE,
-                    order = order, .cols = .cols,
+                    .order = .order, .cols = .cols,
                     .by = {{ .by }})
   if (!rlang::quo_is_null(rlang::enquo(wt))){
     out_info <- mutate_summary_ungrouped(out, !!rlang::enquo(wt))
@@ -168,11 +177,20 @@ add_count_simple <- function(data, ..., wt = NULL, sort = FALSE,
 #' @rdname f_count
 #' @export
 f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
-                        order = df_group_by_order_default(data),
+                        .order = df_group_by_order_default(data),
+                        order = .order,
                         name = NULL, .by = NULL, .cols = NULL){
+  if (!identical(r_address(order), r_address(.order))){
+    lifecycle::deprecate_warn(
+      "0.3.0", what = "f_add_count(order)",
+      with = "f_add_count(.order)"
+    )
+    .order <- order
+  }
   if (dots_length(...) == 0 && rlang::quo_is_null(rlang::enquo(.by)) && is.null(.cols)){
     return(
-      add_count_simple(data, ..., wt = !!rlang::enquo(wt), sort = sort, order = order,
+      add_count_simple(data, ..., wt = !!rlang::enquo(wt),
+                       sort = sort, .order = .order,
                        name = name, .by = {{ .by }}, .cols = .cols)
     )
   }

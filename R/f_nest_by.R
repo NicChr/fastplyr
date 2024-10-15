@@ -14,8 +14,8 @@
 #'
 #' # Stratified linear-model example
 #'
-#' models <- iris |>
-#'   f_nest_by(Species) |>
+#' models <- iris %>%
+#'   f_nest_by(Species) %>%
 #'   mutate(model = list(lm(Sepal.Length ~ Petal.Width + Petal.Length, data = first(data))),
 #'          summary = list(summary(first(model))),
 #'          r_sq = first(summary)$r.squared)
@@ -38,11 +38,11 @@
 #' models$summary[[1]]
 #' @export
 f_nest_by <- function(data, ..., .add = FALSE,
-                      order = df_group_by_order_default(data),
+                      .order = df_group_by_order_default(data),
                       .by = NULL, .cols = NULL,
                       .drop = df_group_by_drop_default(data)){
   out <- data %>%
-    f_group_by(..., .cols = .cols, order = order,
+    f_group_by(..., .cols = .cols, .order = .order,
                .by = {{ .by }},
                .drop = .drop) %>%
     group_data()
@@ -58,7 +58,7 @@ f_nest_by <- function(data, ..., .add = FALSE,
   out[["data"]] <- vctrs_new_list_of(out[["data"]], cheapr::sset(as_tbl(temp), 0))
   groups <- f_select(out, .cols = group_vars)
   attr(groups, ".drop") <- .drop
-  attr(groups, "ordered") <- order
+  attr(groups, "ordered") <- .order
   groups[[".rows"]] <- vctrs_new_list_of(as.list(seq_len(df_nrow(groups))), integer())
   attr(out, "groups") <- groups
   class(out) <- c("grouped_df", "tbl_df", "tbl", "data.frame")

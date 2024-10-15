@@ -7,21 +7,31 @@
 \alias{nesting}
 \title{Fast versions of \code{tidyr::expand()} and \code{tidyr::complete()}.}
 \usage{
-f_expand(data, ..., sort = FALSE, .by = NULL, .cols = NULL)
+f_expand(data, ..., .sort = FALSE, sort = .sort, .by = NULL, .cols = NULL)
 
-f_complete(data, ..., sort = FALSE, .by = NULL, .cols = NULL, fill = NA)
+f_complete(
+  data,
+  ...,
+  .sort = FALSE,
+  sort = .sort,
+  .by = NULL,
+  .cols = NULL,
+  fill = NA
+)
 
-crossing(..., sort = FALSE)
+crossing(..., sort = FALSE, .sort = sort)
 
-nesting(..., sort = FALSE)
+nesting(..., sort = FALSE, .sort = sort)
 }
 \arguments{
 \item{data}{A data frame}
 
 \item{...}{Variables to expand}
 
-\item{sort}{Logical. If \code{TRUE} expanded/completed variables are sorted.
+\item{.sort}{Logical. If \code{TRUE} expanded/completed variables are sorted.
 The default is \code{FALSE}.}
+
+\item{sort}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Use \code{.sort}.}
 
 \item{.by}{(Optional). A selection of columns to group by for this operation.
 Columns are specified using tidy-select.}
