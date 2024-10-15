@@ -1,5 +1,10 @@
 # fastplyr (Development version)
 
+* The `order` and `sort` argument for data frame functions has been superseded in 
+favour of `.order` and `.sort`.
+
+* `.order` arg has been added to `tidy_quantiles` to control the order of groups.
+
 * New argument `.order` added to `f_summarise` to allow for controlling
 the sort-order of groups.
 
