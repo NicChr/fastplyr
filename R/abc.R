@@ -223,3 +223,8 @@ sort_unique <- function(x, sort = FALSE){
 
 # rlang infix default NULL value function
 `%||%` <- function(x, y) if (is.null(x)) y else x
+
+# Is x a simple lgl, int, dbl, char, cplx or raw?
+is_atomic_vec <- function(x){
+  !is.object(x) && is.atomic(x) && is.vector(x)
+}
