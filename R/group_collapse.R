@@ -17,7 +17,7 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
                                    .drop = df_group_by_drop_default(data)){
   if (is.factor(data)){
     return(
-      raw_group_collapse(new_df(data = data),
+      raw_group_collapse(cheapr::new_df(data = data),
                          order = order,
                          sort = sort,
                          id = id,

@@ -55,10 +55,6 @@ group_data <- function(x){
 list3 <- function(...){
   list_rm_null(list(...))
 }
-# list3() but always a named list
-list_named <- function(...){
-  list_rm_null(named_dots(...))
-}
 
 # Turns df into plain df
 df_as_df <- function(x){
@@ -79,45 +75,6 @@ df_as_tbl <- function(x){
 list_as_tbl <- function(x){
   df_as_tbl(list_as_df(x))
 }
-
-# Light df constructor
-# .nrows is there purely to create an (n > 0) x 0 data frame
-new_df <- function(
-    ..., .nrows = NULL,
-    .recycle = FALSE,
-    .name_repair = FALSE
-){
-
-  out <- list_named(...)
-
-  # Recycle
-  if (.recycle){
-    out <- do.call(function(...) cheapr::recycle(..., length = .nrows), out)
-  }
-
-  if (is.null(.nrows)){
-    if (length(out) == 0L){
-      row_names <- integer()
-    } else {
-      N <- NROW(.subset2(out, 1L))
-      row_names <- c(NA_integer_, -N)
-    }
-  } else {
-    row_names <- .set_row_names(.nrows)
-  }
-
-  out_names <- as.character(attr(out, "names", TRUE))
-
-  if (.name_repair){
-    out_names <- unique_name_repair(out_names)
-  }
-
-  attr(out, "names") <- out_names
-  attr(out, "row.names") <- row_names
-  class(out) <- "data.frame"
-  out
-}
-
 
 # df manipulation helpers -------------------------------------------------
 
@@ -188,7 +145,7 @@ df_paste_names <- function(data,  sep = "_", .cols = names(data)){
 df_init <- function(x, size = 1L){
   ncols <- df_ncol(x)
   if (ncols == 0){
-    init_df <- new_df(.nrows = size)
+    init_df <- cheapr::new_df(.nrows = size)
   } else {
     init_df <- list_as_df(lapply(x, na_init, size))
   }

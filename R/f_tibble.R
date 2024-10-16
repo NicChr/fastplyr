@@ -27,7 +27,11 @@
 #' @rdname new_tbl
 #' @export
 new_tbl <- function(..., .nrows = NULL, .recycle = TRUE, .name_repair = FALSE){
-  df_as_tbl(new_df(..., .nrows = .nrows, .recycle = .recycle, .name_repair = .name_repair))
+  df_as_tbl(
+    cheapr::new_df(..., .nrows = .nrows,
+                   .recycle = .recycle,
+                   .name_repair = .name_repair)
+  )
 }
 #' @rdname new_tbl
 #' @export

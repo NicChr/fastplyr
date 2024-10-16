@@ -212,7 +212,7 @@ f_slice_min <- function(data, order_by, n, prop, .by = NULL,
   if (length(group_vars) == 0){
     out[[grp_nm]] <- g2
   } else {
-    out[[grp_nm]] <- group_id(new_df(g1 = g1, g2 = g2), order = TRUE)
+    out[[grp_nm]] <- group_id(cheapr::new_df(g1 = g1, g2 = g2), order = TRUE)
   }
   out <- f_arrange(out, .cols = grp_nm)
   out1 <- f_slice_head(out, n = n, prop = prop, .by = all_of(grp_nm1),

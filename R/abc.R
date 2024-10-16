@@ -141,7 +141,7 @@ add_names <- function(x, value){
 interval_separate <- function(x){
   start <- attr(x, "start")
   end <- start + strip_attrs(x)
-  new_df(start = start, end = end)
+  cheapr::new_df(start = start, end = end)
 }
 is_sorted <- function(x){
   isTRUE(!is.unsorted(x))

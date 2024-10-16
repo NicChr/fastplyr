@@ -9,14 +9,14 @@ test_that("Compare to dplyr", {
     iris %>%
       collapse::qDT() %>%
       f_count(),
-    collapse::qDT(new_df(n = 150L))
+    collapse::qDT(cheapr::new_df(n = 150L))
   )
   expect_identical(
     iris %>%
       collapse::qDT() %>%
       dplyr::slice(0L) %>%
       f_count(),
-    collapse::qDT(new_df(n = 0L))
+    collapse::qDT(cheapr::new_df(n = 0L))
   )
   # Unused factor levels
 
