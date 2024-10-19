@@ -9,7 +9,7 @@ tidy_quantiles(
   ...,
   probs = seq(0, 1, 0.25),
   type = 7,
-  pivot = c("wide", "long"),
+  pivot = c("long", "wide"),
   na.rm = TRUE,
   .by = NULL,
   .cols = NULL,

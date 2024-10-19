@@ -63,3 +63,7 @@ cpp_grouped_run_id <- function(x, order, group_sizes) {
 cpp_set_list_element <- function(x, i, value) {
   .Call(`_fastplyr_cpp_set_list_element`, x, i, value)
 }
+
+cpp_set_replace <- function(x, where, what) {
+  .Call(`_fastplyr_cpp_set_replace`, x, where, what)
+}
