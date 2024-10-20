@@ -403,7 +403,7 @@ fastplyr though has a dedicated function for quantile calculation, `tidy_quantil
 
 # Wide
 mtcars |> 
-  tidy_quantiles(mpg, .by = cyl)
+  tidy_quantiles(mpg, .by = cyl, pivot = "wide")
 
 # Long
 mtcars |> 
@@ -428,8 +428,8 @@ multiple_quantiles$.quantile
 ```{r}
 mark(
   fastplyr_quantiles = flights |> 
-    f_group_by(year, month, day, origin) |> 
-  tidy_quantiles(dep_delay, pivot = "long"),
+  tidy_quantiles(dep_delay, pivot = "long",
+                 .by = c(year, month, day, origin)),
   dplyr_quantiles = flights |> 
      group_by(year, month, day, origin) |> 
     reframe(enframe(quantile(dep_delay, seq(0, 1, 0.25), na.rm = TRUE))),

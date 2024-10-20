@@ -179,8 +179,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression                  min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>             <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_distinct_sort   10.4ms     11ms      90.1    2.96MB     4.29
-#> 2 dplyr_distinct_sort      21.9ms   23.2ms      42.7   11.38MB     7.11
+#> 1 fastplyr_distinct_sort   10.6ms   14.2ms      70.6    2.96MB     2.08
+#> 2 dplyr_distinct_sort      23.9ms   25.6ms      39.1   11.38MB     7.33
 ```
 
 ### group_by
@@ -310,8 +310,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_summarise   4.21ms   5.34ms    179.      2.09MB     3.97
-#> 2 dplyr_summarise    685.58ms 685.58ms      1.46    9.57MB    10.2
+#> 1 fastplyr_summarise   4.21ms   4.82ms    195.      2.09MB     3.98
+#> 2 dplyr_summarise    654.37ms 654.37ms      1.53    9.57MB    10.7
 ```
 
 ### Joins
@@ -409,8 +409,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_left_join   9.35ms   12.5ms      70.5    19.3MB     64.7
-#> 2 dplyr_left_join      32.7ms   33.5ms      29.8      45MB    149.
+#> 1 fastplyr_left_join     11ms   12.5ms      77.5    19.3MB     72.0
+#> 2 dplyr_left_join      34.8ms   35.2ms      28.4      45MB    156.
 ```
 
 ``` r
@@ -421,8 +421,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_inner_join   6.77ms   12.2ms      84.9    22.2MB     55.4
-#> 2 dplyr_inner_join     24.17ms   25.7ms      38.8    37.9MB     58.2
+#> 1 fastplyr_inner_join   5.42ms   10.1ms     104.     22.2MB     60.4
+#> 2 dplyr_inner_join     26.77ms   28.7ms      35.2    37.9MB     50.3
 ```
 
 ``` r
@@ -433,8 +433,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_anti_join   2.34ms   3.36ms     306.     3.76MB     13.7
-#> 2 dplyr_anti_join     14.35ms  18.34ms      54.7    21.8MB     25.7
+#> 1 fastplyr_anti_join   2.29ms   3.31ms     312.     3.76MB     13.9
+#> 2 dplyr_anti_join     14.13ms  18.21ms      56.4    21.8MB     25.1
 ```
 
 ``` r
@@ -445,8 +445,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_semi_join   3.79ms   5.73ms     179.      7.8MB     19.6
-#> 2 dplyr_semi_join      14.9ms  20.42ms      45.4    21.9MB     25.9
+#> 1 fastplyr_semi_join   3.56ms   5.58ms     185.      7.8MB     25.0
+#> 2 dplyr_semi_join     14.59ms  18.43ms      56.0    21.9MB     31.5
 ```
 
 ``` r
@@ -457,8 +457,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_full_join     11ms     13ms      78.2    20.6MB     28.4
-#> 2 dplyr_full_join      34.2ms   44.2ms      23.5    44.6MB     78.3
+#> 1 fastplyr_full_join    9.5ms   13.2ms      77.6    20.6MB     26.9
+#> 2 dplyr_full_join      32.3ms   34.9ms      28.1    44.6MB     56.1
 ```
 
 ### slice
@@ -513,8 +513,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression          min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>     <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_slice  26.73ms  30.08ms    30.2      21.4MB     13.2
-#> 2 dplyr_slice       3.49s    3.49s     0.286    26.6MB     10.0
+#> 1 fastplyr_slice  23.77ms  27.42ms    33.2      21.4MB     11.1
+#> 2 dplyr_slice       3.27s    3.27s     0.305    26.6MB     11.0
 ```
 
 ### Group IDs
@@ -560,8 +560,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression             min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>        <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_group_id   3.16ms   4.08ms    230.      1.46MB     3.99
-#> 2 dplyr_group_id    317.42ms 328.65ms      3.04    3.24MB    10.6
+#> 1 fastplyr_group_id   3.08ms   3.64ms    261.      1.46MB     1.99
+#> 2 dplyr_group_id    280.47ms 282.71ms      3.54    3.24MB    10.6
 ```
 
 ### expand
@@ -584,8 +584,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression           min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_expand  21.84ms  23.67ms    39.9      8.87MB     7.59
-#> 2 tidyr_expand       4.14s    4.14s     0.242   81.02MB     3.38
+#> 1 fastplyr_expand  19.68ms  21.48ms    40.6      8.87MB     9.66
+#> 2 tidyr_expand       3.81s    3.81s     0.263   81.02MB     3.94
 
 
 # Using `.cols` in `f_expand()` is very fast!
@@ -603,8 +603,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression           min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_expand   15.4ms   18.9ms     49.5     15.6MB     9.52
-#> 2 tidyr_expand     223.9ms  236.5ms      3.41    66.7MB     4.54
+#> 1 fastplyr_expand   14.7ms   18.8ms     52.0     15.6MB     9.63
+#> 2 tidyr_expand     203.3ms  237.3ms      4.37    66.7MB     5.83
 ```
 
 ### duplicate rows
@@ -639,8 +639,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_duplicates   19.3ms   25.2ms      41.2    45.1MB     32.9
-#> 2 dplyr_duplicates      73.9ms   75.2ms      13.3    59.5MB     33.2
+#> 1 fastplyr_duplicates   21.4ms   26.2ms      39.0    45.1MB     31.2
+#> 2 dplyr_duplicates        69ms   69.4ms      14.4    59.5MB     28.8
 ```
 
 ### filter
@@ -666,8 +666,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression           min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_filter    973ms    973ms     1.03     1.12GB     1.03
-#> 2 dplyr_filter          1s       1s     0.997    1.68GB     1.99
+#> 1 fastplyr_filter    1.52s    1.52s     0.659    1.12GB    0.659
+#> 2 dplyr_filter       1.91s    1.91s     0.523    1.68GB    1.05
 
 # Best case scenario - filter results in small subset
 
@@ -682,8 +682,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression           min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_filter    190ms    192ms      5.23     191MB     0   
-#> 2 dplyr_filter       531ms    531ms      1.88     763MB     1.88
+#> 1 fastplyr_filter    376ms    378ms      2.65     191MB     0   
+#> 2 dplyr_filter       941ms    941ms      1.06     763MB     1.06
 ```
 
 ### bind rows and cols
@@ -698,11 +698,13 @@ mark(
     bind_cols(grouped_flights, grouped_flights)
     )
 )
+#> Warning: Some expressions had a GC in every iteration; so filtering is
+#> disabled.
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_bind_cols   55.6µs     64µs  14381.     42.28KB     4.34
-#> 2 dplyr_bind_cols     270.7ms    271ms      3.69    1.31MB     3.69
+#> 1 fastplyr_bind_cols   55.8µs   65.7µs  12526.     41.42KB     2.00
+#> 2 dplyr_bind_cols     227.1ms  228.3ms      4.31    1.31MB     4.31
 
 mark(
   fastplyr_bind_rows = f_bind_rows(grouped_flights, grouped_flights),
@@ -711,8 +713,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_bind_rows   60.2ms     61ms     16.3     86.6MB     0   
-#> 2 dplyr_bind_rows     233.1ms    233ms      4.29   157.6MB     4.29
+#> 1 fastplyr_bind_rows    135ms    143ms      6.87    86.6MB     0   
+#> 2 dplyr_bind_rows       374ms    374ms      2.68   157.6MB     2.68
 ```
 
 ### Quantiles
@@ -746,7 +748,7 @@ fastplyr though has a dedicated function for quantile calculation,
 
 # Wide
 mtcars |> 
-  tidy_quantiles(mpg, .by = cyl)
+  tidy_quantiles(mpg, .by = cyl, pivot = "wide")
 #> # A tibble: 3 × 6
 #>     cyl    p0   p25   p50   p75  p100
 #>   <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
@@ -797,8 +799,8 @@ multiple_quantiles$.quantile
 ``` r
 mark(
   fastplyr_quantiles = flights |> 
-    f_group_by(year, month, day, origin) |> 
-  tidy_quantiles(dep_delay, pivot = "long"),
+  tidy_quantiles(dep_delay, pivot = "long",
+                 .by = c(year, month, day, origin)),
   dplyr_quantiles = flights |> 
      group_by(year, month, day, origin) |> 
     reframe(enframe(quantile(dep_delay, seq(0, 1, 0.25), na.rm = TRUE))),
@@ -807,8 +809,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_quantiles     26ms   27.1ms     36.8     7.19MB     2.04
-#> 2 dplyr_quantiles       259ms  258.9ms      3.86   24.98MB     7.72
+#> 1 fastplyr_quantiles     22ms   23.4ms     43.1     4.22MB     2.05
+#> 2 dplyr_quantiles       206ms    206ms      4.85   24.98MB     9.71
 ```
 
 ## tidytable vs fastplyr
@@ -914,8 +916,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression           min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_slice  775.94ms 829.48ms     1.19      133MB    0.397
-#> 2 tidytable_slice    5.76s    6.09s     0.166     176MB    1.32
+#> 1 fastplyr_slice  902.89ms 973.06ms     0.979     133MB    0.326
+#> 2 tidytable_slice    5.82s    6.21s     0.164     176MB    1.48
 ```
 
 ### slice_head & slice_tail
@@ -938,10 +940,10 @@ mark(
 #> # A tibble: 4 × 6
 #>   expression                min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>           <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_slice_head  729.03ms 764.22ms     1.22      191MB    0.407
-#> 2 tidytable_slice_head    1.43s    1.49s     0.603     175MB    0.805
-#> 3 fastplyr_slice_tail  712.27ms 761.87ms     1.34      194MB    0    
-#> 4 tidytable_slice_tail    2.99s    3.09s     0.316     175MB    1.16
+#> 1 fastplyr_slice_head  982.12ms     1.1s     0.914     191MB    0.305
+#> 2 tidytable_slice_head    1.45s    1.45s     0.668     175MB    0.891
+#> 3 fastplyr_slice_tail  752.99ms 925.76ms     1.13      194MB    0.378
+#> 4 tidytable_slice_tail    3.16s    3.21s     0.312     175MB    1.46
 ```
 
 ### summarise benchmark
@@ -965,8 +967,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression              min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_sumarise     255ms    295ms      3.54    57.2MB     0   
-#> 2 tidytable_sumarise    246ms    251ms      3.98   305.4MB     1.99
+#> 1 fastplyr_sumarise     394ms    428ms      2.34    57.2MB     1.17
+#> 2 tidytable_sumarise    254ms    265ms      3.77   305.4MB     1.88
 ```
 
 Benchmarking more statistical functions
@@ -984,8 +986,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression               min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>          <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_sumarise2     389ms    400ms      2.51    72.5MB     0   
-#> 2 tidytable_sumarise2    415ms    426ms      2.35   320.7MB     1.17
+#> 1 fastplyr_sumarise2     513ms    563ms      1.78    72.5MB     0   
+#> 2 tidytable_sumarise2    376ms    438ms      2.28   320.7MB     1.14
 ```
 
 ### count benchmark
@@ -1002,8 +1004,8 @@ mark(
 #> # A tibble: 2 × 6
 #>   expression           min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>      <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 fastplyr_count   350.6ms 356.51ms     2.80      229MB    1.40 
-#> 2 tidytable_count    3.43s    3.43s     0.291     496MB    0.583
+#> 1 fastplyr_count  336.01ms 341.23ms     2.93      229MB    1.47 
+#> 2 tidytable_count    3.41s    3.41s     0.294     496MB    0.587
 ```
 
 It’s clear both fastplyr and tidytable are fast and each have their
