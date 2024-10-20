@@ -65,7 +65,7 @@ samples <- tibble(groups) \%>\%
 # Fast means and quantiles by group
 
 quantiles <- samples \%>\%
-  tidy_quantiles(x)
+  tidy_quantiles(x, pivot = "wide")
 
 means <- samples \%>\%
   f_summarise(mean = mean(x))
