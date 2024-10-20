@@ -821,3 +821,40 @@ SEXP cpp_set_replace(SEXP x, SEXP where, SEXP what){
   }
   return x;
 }
+
+// Low-level add cols to data frame
+// SEXP cpp_df_add_cols(SEXP x, SEXP cols) {
+//   if (TYPEOF(cols) != VECSXP){
+//     Rf_error("cols must be a list");
+//   }
+//   R_xlen_t ncol = Rf_xlength(x);
+//   R_xlen_t out_size = ncol + Rf_xlength(cols);
+//   if (Rf_length(cols) == 0){
+//     SEXP out = Rf_protect(Rf_allocVector(VECSXP, Rf_xlength(x)));
+//     for (R_xlen_t i = 0; i < ncol; ++i){
+//       SET_VECTOR_ELT(out, i, VECTOR_ELT(x, i));
+//     }
+//     Rf_unprotect(1);
+//     return out;
+//   }
+//   SEXP col_names = Rf_protect(Rf_getAttrib(cols, R_NamesSymbol));
+//   if (Rf_isNull(col_names)){
+//     Rf_unprotect(2);
+//     Rf_error("cols must be a named list");
+//   }
+//   SEXP names = Rf_protect(Rf_getAttrib(x, R_NamesSymbol));
+//   SEXP out = Rf_protect(Rf_allocVector(VECSXP, out_size));
+//   SEXP out_names = Rf_protect(Rf_allocVector(STRSXP, out_size));
+//   for (R_xlen_t i = 0; i < ncol; ++i){
+//     SET_VECTOR_ELT(out, i, VECTOR_ELT(x, i));
+//     SET_STRING_ELT(out_names, i, STRING_ELT(names, i));
+//   }
+//   for (R_xlen_t i = ncol, j = 0; i < out_size; ++i, ++j){
+//     SET_VECTOR_ELT(out, i, VECTOR_ELT(cols, j));
+//     SET_STRING_ELT(out_names, i, STRING_ELT(col_names, j));
+//   }
+//   SHALLOW_DUPLICATE_ATTRIB(out, x);
+//   Rf_setAttrib(out, R_NamesSymbol, out_names);
+//   Rf_unprotect(4);
+//   return out;
+// }

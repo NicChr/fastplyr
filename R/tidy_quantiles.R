@@ -74,7 +74,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   group_starts <- GRP_starts(groups)
   data2 <- f_select(data2, .cols = c(group_vars, dot_vars))
 
-  # Some special cases
+  ## Handle edge-cases
 
   if (wide && length(dot_vars) == 0){
     empty_quant_df <-
@@ -98,7 +98,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
         colnames(prob_df) <- quant_nms
       } else {
         colnames(prob_df) <- paste(rep(dot_vars, each = n_probs),
-                               quant_nms, sep = "_")
+                                   quant_nms, sep = "_")
       }
       prob_df <- as.data.frame(prob_df)
       out <- f_bind_cols(f_select(data2, .cols = group_vars), prob_df)
@@ -123,143 +123,163 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     collapse_groups <- groups
   }
 
+  ## Make sure double vectors are atomic doubles
+
   for (.col in dot_vars) {
     if (!is.integer(data2[[.col]])){
       data2[[.col]] <- as.numeric(data2[[.col]])
     }
   }
 
-  if (wide){
-    if (length(group_vars) == 0){
-      out <- list(.quantile = quant_categories)
-      for (.col in dot_vars){
-        out[[.col]] <-
-          as.double(
-            collapse::fquantile(
-              data2[[.col]], probs = probs, na.rm = na.rm,
-              names = FALSE, type = type,
-            )
+  if (length(group_vars) == 0){
+
+    ## Ungrouped method (use `fquantile()` here)
+
+    out <- list(.quantile = quant_categories)
+    for (.col in dot_vars){
+      out[[.col]] <-
+        as.double(
+          collapse::fquantile(
+            data2[[.col]], probs = probs, na.rm = na.rm,
+            names = FALSE, type = type,
           )
-      }
-      out <- list_as_df(out)
+        )
+    }
+    out <- list_as_df(out)
+    if (wide){
       out[[".temp.fastplyr.group.id"]] <- 0L
       out <- collapse::pivot(
         out, how = "wider", values = dot_vars,
         names = ".quantile", sort = FALSE
       )
       out[[".temp.fastplyr.group.id"]] <- NULL
-    } else {
-      out <- df_row_slice(f_select(data2, .cols = group_vars), group_starts)
-      # Allocate enough space
-      out <- c(as.list(out), vector("list", length(dot_vars) * n_probs))
-      if (length(dot_vars) == 1){
-        names(out) <- c(group_vars, quant_nms)
-      } else {
-        names(out) <- c(group_vars, paste(rep(dot_vars, each = n_probs),
-                                          quant_nms, sep = "_"))
-      }
-      k <- 1L + length(group_vars)
-      for (.col in dot_vars) {
-        for (p in probs) {
-          if (p == 0) {
-            sample_quantiles <-
-              as.double(
-                collapse::fmin(
-                  data2[[.col]], g = collapse_groups, na.rm = na.rm, use.g.names = FALSE
-                )
-              )
-          } else if (p == 1) {
-            sample_quantiles <-
-              as.double(
-                collapse::fmax(
-                  data2[[.col]], g = collapse_groups, na.rm = na.rm, use.g.names = FALSE
-                )
-              )
-          } else if (p > 0 && p < 1) {
-            sample_quantiles <-
-              as.double(
-                collapse::fnth(
-                  data2[[.col]], n = p, g = collapse_groups, na.rm = na.rm,
-                  use.g.names = FALSE, ties = quant_ties
-                )
-              )
-          }
-          out[[k]] <- sample_quantiles
-          k <- k + 1L
-        }
-      }
-      out <- list_as_df(out)
-
     }
+  } else if (wide){
 
+    # Grouped method for pivot == "wide"
+
+    out <- df_row_slice(f_select(data2, .cols = group_vars), group_starts)
+    # Allocate enough space
+    out <- c(as.list(out), vector("list", length(dot_vars) * n_probs))
+    if (length(dot_vars) == 1){
+      names(out) <- c(group_vars, quant_nms)
+    } else {
+      names(out) <- c(group_vars, paste(rep(dot_vars, each = n_probs),
+                                        quant_nms, sep = "_"))
+    }
+    k <- 1L + length(group_vars)
+    for (.col in dot_vars) {
+
+      # Pre-calculate the quantile order
+      # This makes repetitive calls much faster
+      o <- radixorderv2(
+        cheapr::new_df(
+          g1 = GRP_group_id(groups),
+          g2 = data2[[.col]]
+        )
+      )
+      for (p in probs) {
+        if (p == 0) {
+          sample_quantiles <-
+            as.double(
+              collapse::fmin(
+                data2[[.col]], g = collapse_groups, na.rm = na.rm, use.g.names = FALSE
+              )
+            )
+        } else if (p == 1) {
+          sample_quantiles <-
+            as.double(
+              collapse::fmax(
+                data2[[.col]], g = collapse_groups, na.rm = na.rm, use.g.names = FALSE
+              )
+            )
+        } else if (p > 0 && p < 1) {
+          sample_quantiles <-
+            as.double(
+              collapse::fnth(
+                data2[[.col]], n = p, g = collapse_groups, na.rm = na.rm,
+                use.g.names = FALSE, ties = quant_ties,
+                o = o, check.o = FALSE
+              )
+            )
+        }
+        out[[k]] <- sample_quantiles
+        k <- k + 1L
+      }
+    }
+    out <- list_as_df(out)
   } else {
-    if (length(group_vars) == 0){
 
-      out <- list(.quantile = quant_categories)
-      for (.col in dot_vars){
-        out[[.col]] <-
-          as.double(
-            collapse::fquantile(
-              data2[[.col]], probs = probs, na.rm = na.rm,
-              names = FALSE, type = type,
+    # Grouped method for pivot == "long"
+
+
+    ## Shaping the data
+    ## We want it sorted by group + quantile
+
+    out <- df_row_slice(data2, group_starts)
+    out <- df_rep_each(out, n_probs)
+    out[[".quantile"]] <- rep(quant_categories, df_nrow(out) / n_probs)
+    out <- f_select(out, .cols = c(group_vars, ".quantile", dot_vars))
+
+    ## We make sure all output quantile cols are double vectors
+    ## Because later we use a low-level function for replacing
+    ## values by reference
+
+    if (length(dot_vars) > 0) {
+      out <- dplyr::mutate(
+        out, dplyr::across(dplyr::all_of(dot_vars), as.double)
+      )
+    }
+    quant_starts <- ( length(probs) * (seq_len(n_groups) - 1L) ) + 1L
+
+    for (.col in dot_vars) {
+      k <- 0L
+
+      # Pre-calculate the quantile order
+      # This makes repetitive calls much faster
+      o <- radixorderv2(
+        cheapr::new_df(
+          g1 = GRP_group_id(groups),
+          g2 = data2[[.col]]
+        )
+      )
+
+      for (p in probs) {
+        p_seq <- quant_starts + k
+        k <- k + 1L
+        if (p == 0) {
+          cpp_set_replace(
+            out[[.col]], p_seq,
+            as.double(
+              collapse::fmin(
+                data2[[.col]], g = collapse_groups, na.rm = na.rm,
+                use.g.names = FALSE
+              )
             )
           )
-      }
-      out <- list_as_df(out)
-    } else {
-
-      # Start of grouped method
-
-      out <- df_row_slice(data2, group_starts)
-      out <- df_rep_each(out, n_probs)
-      out[[".quantile"]] <- rep(quant_categories, df_nrow(out) / n_probs)
-      out <- f_select(out, .cols = c(group_vars, ".quantile", dot_vars))
-      if (length(dot_vars) > 0) {
-        out <- dplyr::mutate(
-          out, dplyr::across(dplyr::all_of(dot_vars), as.double)
-        )
-      }
-      quant_starts <- ( length(probs) * (seq_len(n_groups) - 1L) ) + 1L
-
-      for (.col in dot_vars) {
-        k <- 0L
-        for (p in probs) {
-          p_seq <- quant_starts + k
-          k <- k + 1L
-          if (p == 0) {
-            cpp_set_replace(
-              out[[.col]], p_seq,
-              as.double(
-                collapse::fmin(
-                  data2[[.col]], g = collapse_groups, na.rm = na.rm, use.g.names = FALSE
-                )
+        } else if (p == 1) {
+          cpp_set_replace(
+            out[[.col]], p_seq,
+            as.double(
+              collapse::fmax(
+                data2[[.col]], g = collapse_groups, na.rm = na.rm,
+                use.g.names = FALSE
               )
             )
-          } else if (p == 1) {
-            cpp_set_replace(
-              out[[.col]], p_seq,
-              as.double(
-                collapse::fmax(
-                  data2[[.col]], g = collapse_groups, na.rm = na.rm, use.g.names = FALSE
-                )
+          )
+        } else if (p > 0 && p < 1) {
+          cpp_set_replace(
+            out[[.col]], p_seq,
+            as.double(
+              collapse::fnth(
+                data2[[.col]], n = p, g = collapse_groups, na.rm = na.rm,
+                use.g.names = FALSE, ties = quant_ties,
+                o = o, check.o = FALSE
               )
             )
-          } else if (p > 0 && p < 1) {
-            cpp_set_replace(
-              out[[.col]], p_seq,
-              as.double(
-                collapse::fnth(
-                  data2[[.col]], n = p, g = collapse_groups, na.rm = na.rm,
-                  use.g.names = FALSE, ties = quant_ties
-                )
-              )
-            )
-          }
+          )
         }
       }
-
-      # End of grouped method
-
     }
   }
 

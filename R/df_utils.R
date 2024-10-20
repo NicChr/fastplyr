@@ -87,6 +87,17 @@ df_row_slice <- function(data, i, reconstruct = TRUE){
 df_add_cols <- function(data, cols){
   dplyr::dplyr_col_modify(data, cols)
 }
+
+# df_add_cols2 <- function(data, cols, check = TRUE){
+#   if (check){
+#     if ( (!(is.list(cols) && !is.object(cols))) || is.null(names(cols))){
+#       stop("cols must be a named list")
+#     }
+#     cols <- do.call(function(...) cheapr::recycle(..., length = df_nrow(data)), cols)
+#   }
+#   cpp_df_add_cols(data, cols)
+# }
+
 df_rm_cols <- function(data, .cols){
   cols_to_remove <- col_select_names(data, .cols = .cols)
   dplyr::dplyr_col_modify(data, add_names(vector("list", length(cols_to_remove)),
