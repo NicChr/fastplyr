@@ -1,7 +1,6 @@
 # fastplyr (Development version)
 
-* `tidy_quantiles` has been significantly sped-up and now defaults to 
-`pivot = "long"`.
+* `tidy_quantiles` gains dramatic speed and efficiency improvements.
 
 * The `order` and `sort` argument for data frame functions has been superseded in 
 favour of `.order` and `.sort`.
