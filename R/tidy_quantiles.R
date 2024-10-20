@@ -84,24 +84,34 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
       )
     names(empty_quant_df) <- quant_nms
     empty_quant_df <- as.data.frame(empty_quant_df)
-    if (length(group_vars) > 0){
-      out <- df_row_slice(data2, group_starts)
-      out <- f_bind_cols(out, df_init(empty_quant_df, length(group_starts)))
-    } else {
-      out <- empty_quant_df
-    }
+    out <- f_bind_cols(f_select(data2, .cols = group_vars), empty_quant_df)
     return(reconstruct(data, out))
   }
-  if (wide && (df_nrow(data) == 0L || length(probs) == 0L)) {
-    if (length(group_vars) == 0){
-      out <- matrix(integer(), ncol = length(quant_categories),
-                    nrow = 0)
-      colnames(out) <- quant_nms
-      out <- reconstruct(data, as.data.frame(out))
+  if (df_nrow(data) == 0L || length(probs) == 0L){
+    if (wide){
+      prob_df <- matrix(
+        numeric(),
+        ncol = (n_probs * length(dot_vars)),
+        nrow = 0
+      )
+      if (length(dot_vars) == 1){
+        colnames(prob_df) <- quant_nms
+      } else {
+        colnames(prob_df) <- paste(rep(dot_vars, each = n_probs),
+                               quant_nms, sep = "_")
+      }
+      prob_df <- as.data.frame(prob_df)
+      out <- f_bind_cols(f_select(data2, .cols = group_vars), prob_df)
     } else {
-      out <- reconstruct(data, df_row_slice(f_select(data2, .cols = group_vars), group_starts))
+      out <- f_bind_cols(
+        f_select(data2, .cols = group_vars),
+        cheapr::new_df(
+          .quantile = quant_categories[0]
+        ),
+        f_select(data2, .cols = dot_vars)
+      )
     }
-    return(out)
+    return(reconstruct(data, out))
   }
 
   ### Do this because if groups is a GRP then collapse::fnth allocates
@@ -120,7 +130,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   }
 
   if (wide){
-    if (n_groups <= 1){
+    if (length(group_vars) == 0){
       out <- list(.quantile = quant_categories)
       for (.col in dot_vars){
         out[[.col]] <-
@@ -183,7 +193,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     }
 
   } else {
-    if (n_groups <= 1){
+    if (length(group_vars) == 0){
 
       out <- list(.quantile = quant_categories)
       for (.col in dot_vars){

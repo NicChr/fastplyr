@@ -120,7 +120,7 @@ f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE, .sep = "..."
   }
   for (i in seq_along(dots)){
     if (!inherits(dots[[i]], "data.frame")){
-      dots[[i]] <- `class<-`(list_as_df(dots[i]), c("tbl_df", "tbl", "data.frame"))
+      dots[[i]] <- list_as_tbl(dots[i])
     }
   }
   nrows <- cpp_nrows(dots, check_rows_equal = !.recycle)

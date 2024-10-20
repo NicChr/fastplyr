@@ -63,9 +63,7 @@ df_as_df <- function(x){
 
 # Converts df into plain tbl
 df_as_tbl <- function(x){
-  out <- list_as_df(x)
-  class(out) <- c("tbl_df", "tbl", "data.frame")
-  out
+  `class<-`(x, c("tbl_df", "tbl", "data.frame"))
 }
 
 # list to tbl
