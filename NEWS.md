@@ -1,14 +1,12 @@
-# fastplyr (Development version)
+# fastplyr 0.3.0
 
 * `tidy_quantiles` gains dramatic speed and efficiency improvements.
 
-* The `order` and `sort` argument for data frame functions has been superseded in 
-favour of `.order` and `.sort`.
+* The `order` and `sort` arguments for data frame functions have been 
+superseded in favour of `.order` and `.sort`.
 
-* `.order` arg has been added to `tidy_quantiles` to control the order of groups.
-
-* New argument `.order` added to `f_summarise` to allow for controlling
-the sort-order of groups.
+* New argument `.order` added to both `f_summarise` and `tidy_quantiles` 
+to allow for controlling the order of groups.
 
 * `rowwise_df` is now explicitly unsupported. To group by row, use `f_rowwise`.
 
