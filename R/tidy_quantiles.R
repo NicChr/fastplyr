@@ -58,11 +58,14 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   dot_vars <- group_info[["extra_groups"]]
 
   # Constructing quantile info
-  n_probs <- length(probs)
-  quant_probs <- probs
+  quant_probs <- as.double(probs)
+  n_probs <- length(quant_probs)
+
+  sorted_probs <- isTRUE(!is.unsorted(quant_probs))
+
   quant_ties <- paste0("q", type)
   q_prcnts <- quant_probs * 100
-  quant_nms <- paste0(rep_len("p", length(quant_probs)), q_prcnts)
+  quant_nms <- paste0(rep_len("p", length(quant_probs)), round(q_prcnts, 10))
   quant_categories <- structure(
     strip_attrs(collapse::group(q_prcnts)),
     levels = collapse::funique(quant_nms), class = "factor"
@@ -87,7 +90,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     out <- f_bind_cols(f_select(data2, .cols = group_vars), empty_quant_df)
     return(reconstruct(data, out))
   }
-  if (df_nrow(data) == 0L || length(probs) == 0L){
+  if (df_nrow(data) == 0L || n_probs == 0L){
     if (wide){
       prob_df <- matrix(
         numeric(),
@@ -131,7 +134,8 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     }
   }
 
-  if (length(group_vars) == 0){
+  ## If probs are unsorted then we cant use fquantile() directly
+  if (length(group_vars) == 0 && sorted_probs){
 
     ## Ungrouped method (use `fquantile()` here)
 
@@ -140,7 +144,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
       out[[.col]] <-
         as.double(
           collapse::fquantile(
-            data2[[.col]], probs = probs, na.rm = na.rm,
+            data2[[.col]], probs = quant_probs, na.rm = na.rm,
             names = FALSE, type = type,
           )
         )
@@ -178,7 +182,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
           g2 = data2[[.col]]
         )
       )
-      for (p in probs) {
+      for (p in quant_probs) {
         if (p == 0) {
           sample_quantiles <-
             as.double(
@@ -230,7 +234,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
         out, dplyr::across(dplyr::all_of(dot_vars), as.double)
       )
     }
-    quant_starts <- ( length(probs) * (seq_len(n_groups) - 1L) ) + 1L
+    quant_starts <- ( n_probs * (seq_len(n_groups) - 1L) ) + 1L
 
     for (.col in dot_vars) {
       k <- 0L
@@ -244,7 +248,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
         )
       )
 
-      for (p in probs) {
+      for (p in quant_probs) {
         p_seq <- quant_starts + k
         k <- k + 1L
         if (p == 0) {

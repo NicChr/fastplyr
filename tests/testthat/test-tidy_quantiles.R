@@ -1,12 +1,13 @@
-test_that("quantiles", {
 
-  dplyr_quantiles <- function(data, vars, probs = seq(0, 1, 0.25)){
-    dplyr::reframe(
-      data,
-      .quantile = cheapr::factor_(paste0("p", probs * 100), order = FALSE),
-      across(all_of(vars), function(x) unname(quantile(x, na.rm = TRUE, probs = probs)))
-    )
-  }
+dplyr_quantiles <- function(data, vars, probs = seq(0, 1, 0.25), .by = NULL){
+  dplyr::reframe(
+    data,
+    .quantile = cheapr::factor_(paste0("p", round(probs * 100, 10)), order = FALSE),
+    across(all_of(vars), function(x) unname(quantile(x, na.rm = TRUE, probs = probs)))
+  , .by = {{ .by }})
+}
+
+test_that("Edge cases", {
 
   quantile_factor <- cheapr::factor_(c("p0", "p25", "p50", "p75", "p100"), order = FALSE)
 
@@ -125,6 +126,50 @@ test_that("quantiles", {
     )
   )
 
+  # Unsorted, duplicate and integer probs
+
+  expect_identical(
+    tidy_quantiles(iris, Sepal.Length, probs = c(0L, 1L, 0L)),
+    cheapr::new_df(
+      .quantile = factor(c("p0", "p100", "p0")),
+      Sepal.Length = c(
+        min(iris$Sepal.Length), max(iris$Sepal.Length), min(iris$Sepal.Length)
+      )
+    )
+  )
+
+  expect_equal(
+    tidy_quantiles(iris, Sepal.Length, probs = c(0, 0.5, 0, 0.25, 0.5)),
+    dplyr_quantiles(iris, "Sepal.Length", probs = c(0, 0.5, 0, 0.25, 0.5))
+  )
+
+  expect_equal(
+    tidy_quantiles(iris, Sepal.Length, probs = c(0, 0.5, 0, 0.25, 0.5),
+                   .by = Species, .order = FALSE),
+    dplyr_quantiles(iris, "Sepal.Length", probs = c(0, 0.5, 0, 0.25, 0.5),
+                    .by = Species)
+  )
+
+})
+
+test_that("unsorted probs", {
+  expect_equal(
+    iris %>%
+      tidy_quantiles(Sepal.Length, probs = seq(1, 0, -0.01)),
+    iris %>%
+      dplyr_quantiles("Sepal.Length", probs = seq(1, 0, -0.01))
+  )
+  expect_equal(
+    iris %>%
+      tidy_quantiles(Sepal.Length, probs = seq(1, 0, -0.01),
+                     .by = Species, .order = FALSE),
+    iris %>%
+      dplyr_quantiles("Sepal.Length", probs = seq(1, 0, -0.01),
+                     .by = Species)
+  )
+})
+
+test_that("Standard tests", {
   numeric_vars <- airquality %>%
     f_select(-Month) %>%
     names()
@@ -207,3 +252,4 @@ test_that("quantiles", {
   )
 
 })
+
