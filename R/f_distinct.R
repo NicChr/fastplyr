@@ -28,14 +28,14 @@ f_distinct <- function(data, ..., .keep_all = FALSE,
                        .sort = FALSE, .order = sort,
                        sort = .sort, order = .order,
                        .by = NULL, .cols = NULL){
-  if (!identical(r_address(order), r_address(.order))){
+  if (!identical(cpp_r_address(order), cpp_r_address(.order))){
     lifecycle::deprecate_warn(
       "0.3.0", what = "f_distinct(order)",
       with = "f_distinct(.order)"
     )
     .order <- order
   }
-  if (!identical(r_address(sort), r_address(.sort))){
+  if (!identical(cpp_r_address(sort), cpp_r_address(.sort))){
     lifecycle::deprecate_warn(
       "0.3.0", what = "f_distinct(sort)",
       with = "f_distinct(.sort)"

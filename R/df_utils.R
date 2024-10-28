@@ -175,13 +175,22 @@ df_group_id <- function(x){
   out
 }
 # Fast/efficient drop empty rows
-df_drop_empty <- function(data, .cols = names(data)){
-  is_empty_row <- cheapr::row_all_na(cheapr::sset(data, j = .cols))
-  which_not_empty <- cheapr::which_(is_empty_row, invert = TRUE)
-  if (length(which_not_empty) == df_nrow(data)){
+df_drop_if_all_empty <- function(data){
+  drop <- cheapr::row_all_na(data)
+  if (length(drop) == 0){
     data
   } else {
-    df_row_slice(data, which_not_empty)
+    keep <- cheapr::which_(drop, invert = TRUE)
+    df_row_slice(data, keep)
+  }
+}
+df_drop_if_any_empty <- function(data){
+  drop <- cheapr::row_any_na(data)
+  if (length(drop) == 0){
+    data
+  } else {
+    keep <- cheapr::which_(drop, invert = TRUE)
+    df_row_slice(data, keep)
   }
 }
 

@@ -92,7 +92,7 @@ f_group_by <- function(data, ..., .add = FALSE,
                        order = .order,
                        .by = NULL, .cols = NULL,
                        .drop = df_group_by_drop_default(data)){
-  if (!identical(r_address(.order), r_address(order))){
+  if (!identical(cpp_r_address(.order), cpp_r_address(order))){
     lifecycle::deprecate_warn(
       "0.3.0", what = "f_group_by(order)",
       with = "f_add_count(.order)"

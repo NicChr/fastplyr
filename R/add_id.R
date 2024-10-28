@@ -48,14 +48,14 @@ add_group_id.data.frame <- function(data, ...,
                                     .by = NULL, .cols = NULL,
                                     .name = NULL,
                                     as_qg = FALSE){
-  if (!identical(r_address(.order), r_address(order))){
+  if (!identical(cpp_r_address(.order), cpp_r_address(order))){
     lifecycle::deprecate_warn(
       "0.3.0", what = "add_group_id(order)",
       with = "add_group_id(.order)"
     )
     .order <- order
   }
-  if (!identical(r_address(.ascending), r_address(ascending))){
+  if (!identical(cpp_r_address(.ascending), cpp_r_address(ascending))){
     lifecycle::deprecate_warn(
       "0.3.0", what = "add_group_id(ascending)",
       with = "add_group_id(.ascending)"
@@ -122,7 +122,7 @@ add_row_id.data.frame <- function(data, ...,
                                   ascending = .ascending,
                                   .by = NULL, .cols = NULL,
                                   .name = NULL){
-  if (!identical(r_address(.ascending), r_address(ascending))){
+  if (!identical(cpp_r_address(.ascending), cpp_r_address(ascending))){
     lifecycle::deprecate_warn(
       "0.3.0", what = "add_row_id(ascending)",
       with = "add_row_id(.ascending)"

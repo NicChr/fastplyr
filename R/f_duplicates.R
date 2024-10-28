@@ -42,7 +42,7 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
                          .drop_empty = FALSE,
                          .sort = FALSE, sort = .sort,
                          .by = NULL, .cols = NULL){
-  if (!identical(r_address(.sort), r_address(sort))){
+  if (!identical(cpp_r_address(.sort), cpp_r_address(sort))){
     lifecycle::deprecate_warn(
       "0.3.0", what = "f_duplicates(sort)",
       with = "f_duplicates(.sort)"
@@ -94,7 +94,7 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
   # Remove empty rows (rows with all NA values)
 
   if (.drop_empty){
-    out <- df_drop_empty(out, .cols = dup_vars)
+    out <- df_drop_if_all_empty(f_select(out, .cols = dup_vars))
   }
 
   # Adjust group sizes as they reflect the dup count + 1

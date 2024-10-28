@@ -147,8 +147,8 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
   # in left or right that collapse can't handle
   # We turn these into group IDs and then match them back at the end
 
-  # exotic_cols_left <- names(x)[!cpp_address_equal(x, left)]
-  # exotic_cols_right <- names(y)[!cpp_address_equal(y, right)]
+  # exotic_cols_left <- names(x)[!cpp_frame_addresses_equal(x, left)]
+  # exotic_cols_right <- names(y)[!cpp_frame_addresses_equal(y, right)]
 
   exotic_cols_right <- fast_setdiff(exotic_cols_right, exotic_cols_left)
 

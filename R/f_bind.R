@@ -22,10 +22,14 @@
 #' @rdname f_bind_rows
 #' @export
 f_bind_rows <- function(..., .fill = TRUE){
-  dots <- list3(...)
+  dots <- list_rm_null(list(...))
+  if (length(dots) == 1 && rlang::is_bare_list(dots[[1L]])){
+    dots <- dots[[1L]]
+  }
   n_dots <- length(dots)
-  ncols <- cpp_ncols(dots, check_cols_equal = !.fill)
-  nrows <- cpp_nrows(dots, FALSE)
+  dims <- cpp_frame_dims(dots, check_rows_equal = FALSE, check_cols_equal = !.fill)
+  nrows <- dims[[1L]]
+  ncols <- dims[[2L]]
 
   if (sum(ncols) == 0){
     return(new_tbl(.nrows = sum(nrows)))
@@ -38,25 +42,21 @@ f_bind_rows <- function(..., .fill = TRUE){
     template <- dots[[1L]]
     prototype_names <- names(template)
 
-    if (.fill){
-      dots <- lapply(dots, df_ungroup)
-    } else {
-      dots <- lapply(
-        dots, function(x) f_select(df_ungroup(x), .cols = prototype_names)
-      )
+    fast_rowbind <- function(...){
+      collapse::rowbind(..., return = "data.frame", fill = .fill)
     }
+
+    dots <- lapply(dots, df_ungroup)
 
     if (!cpp_any_frames_exotic(dots)){
 
       # We can use collapse::rowbind if data frames
       # contain simple atomic vectors
-
-      rowbind <- function(...){
-        collapse::rowbind(..., return = "data.frame", fill = .fill)
-      }
-      reconstruct(template, do.call(rowbind, dots))
+      reconstruct(template, do.call(fast_rowbind, dots))
     } else {
       col_prototypes <- as.list(cheapr::sset(template, 0))
+
+      # Standardise all frames to have the same cols in the same order
 
       if (.fill){
         get_prototype <- function(x) cheapr::sset(x, 0L)
@@ -73,6 +73,7 @@ f_bind_rows <- function(..., .fill = TRUE){
             )
           }
         }
+
         # Second pass to fill in missing cols
 
         for (i in seq_along(dots)){
@@ -86,26 +87,63 @@ f_bind_rows <- function(..., .fill = TRUE){
         }
       }
 
+      # Now that frames are standardised
+      # we perform the join
+      # by using fast_rowbind on the simple atomic cols
+      # and `c()` on everything else
+
       out_ncols <- length(col_prototypes)
       out_nrows <- sum(nrows)
       out <- cheapr::new_list(out_ncols)
       names(out) <- names(col_prototypes)
 
-      # Join rows
+      # Exotic variables
 
-      for (j in seq_len(out_ncols)){
-        temp <- cheapr::new_list(length(dots))
-        for (i in seq_along(dots)){
-          cpp_set_list_element(temp, i, dots[[i]][[j]])
-        }
-        out[[j]] <- Reduce(f_union_all, temp)
+      is_exotic <- vapply(col_prototypes, cpp_is_exotic, FALSE, USE.NAMES = FALSE)
+      exotic_vars <- names(col_prototypes)[cheapr::which_(is_exotic)]
+
+      # All other variables
+
+      other_vars <- names(col_prototypes)[cheapr::which_(is_exotic, invert = TRUE)]
+
+      out_nms <- names(col_prototypes)
+      out_nrows <- sum(nrows)
+
+      exotic_ncols <- sum(is_exotic)
+      exotic_out <- cheapr::new_list(exotic_ncols)
+      names(exotic_out) <- exotic_vars
+
+      # Use fast_rowbind on non-exotic variables
+
+      if (length(other_vars) == 0){
+        other_out <- new_tbl(.nrows = out_nrows)
+      } else {
+        other_out <- do.call(
+          fast_rowbind,
+          c(lapply(dots, df_select, other_vars),
+            list(use.names = FALSE))
+        )
       }
 
-      # Not using list_as_df just in case it gets the
-      # nrows wrong
 
-      attr(out, "row.names") <- .set_row_names(out_nrows)
-      class(out) <- "data.frame"
+      # For exotic variables, we use `c()` and rely on S3 methods
+      # Except for data frames, in which case `f_bind_rows()` is called
+      # recursively
+
+      for (j in seq_len(exotic_ncols)){
+        temp <- cheapr::new_list(length(dots))
+        for (i in seq_along(dots)){
+          cpp_set_list_element(temp, i, dots[[i]][[exotic_vars[[j]]]])
+        }
+        exotic_out[[j]] <- Reduce(f_union_all, temp)
+      }
+
+      attr(exotic_out, "row.names") <- .set_row_names(out_nrows)
+      class(exotic_out) <- "data.frame"
+
+      # Bind both data frames together and select them in the right order
+
+      out <- f_select(f_bind_cols(other_out, exotic_out, .recycle = FALSE), .cols = out_nms)
       reconstruct(template, out)
     }
   }
@@ -113,17 +151,19 @@ f_bind_rows <- function(..., .fill = TRUE){
 #' @rdname f_bind_rows
 #' @export
 f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE, .sep = "..."){
+  dots <- list_rm_null(list(...))
+  if (length(dots) == 1 && rlang::is_bare_list(dots[[1L]])){
+    dots <- dots[[1L]]
+  }
   if (.recycle){
-    dots <- cheapr::recycle(...)
-  } else {
-    dots <- list_rm_null(list(...))
+    dots <- do.call(cheapr::recycle, dots)
   }
   for (i in seq_along(dots)){
     if (!inherits(dots[[i]], "data.frame")){
       dots[[i]] <- list_as_tbl(dots[i])
     }
   }
-  nrows <- cpp_nrows(dots, check_rows_equal = !.recycle)
+  nrows <- cpp_frame_dims(dots, check_rows_equal = !.recycle, check_cols_equal = FALSE)[[1L]]
   out <- as.list(unlist(unname(dots), recursive = FALSE))
   if (.repair_names){
     names(out) <- unique_name_repair(names(out), .sep = .sep)

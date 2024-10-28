@@ -24,7 +24,7 @@
 #' @export
 f_expand <- function(data, ..., .sort = FALSE, sort = .sort,
                      .by = NULL, .cols = NULL){
-  if (!identical(r_address(.sort), r_address(sort))){
+  if (!identical(cpp_r_address(.sort), cpp_r_address(sort))){
     lifecycle::deprecate_warn(
       "0.3.0", what = "f_expand(sort)",
       with = "f_expand(.sort)"
@@ -67,7 +67,7 @@ f_expand <- function(data, ..., .sort = FALSE, sort = .sort,
       gsub(".fastplyr.suffix", "", names(out)[which_suffix_names],
            fixed = TRUE)
   } else {
-    if (prod(cpp_nrows(frames, FALSE)) > .Machine$integer.max){
+    if (prod(cpp_frame_dims(frames, FALSE, FALSE)[[1L]]) > .Machine$integer.max){
       stop("expansion results in >= 2^31 rows, please supply less data")
     }
     df_cj <- function(x, y){
@@ -91,7 +91,7 @@ f_complete <- function(data, ...,
                        .sort = FALSE, sort = .sort,
                        .by = NULL, .cols = NULL,
                        fill = NA){
-  if (!identical(r_address(.sort), r_address(sort))){
+  if (!identical(cpp_r_address(.sort), cpp_r_address(sort))){
     lifecycle::deprecate_warn(
       "0.3.0", what = "f_complete(sort)",
       with = "f_complete(.sort)"

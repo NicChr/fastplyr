@@ -249,7 +249,7 @@ tidy_group_info_datamask <- function(data, ..., .by = NULL,
   } else {
     all_groups <- c(group_vars, setdiff(extra_groups, group_vars))
   }
-  address_equal <- add_names(cpp_address_equal(
+  address_equal <- add_names(cpp_frame_addresses_equal(
     data, cheapr::sset(df_ungroup(out), j = names(data))
   ), names(data))
   any_groups_changed <- !all(address_equal[group_vars])

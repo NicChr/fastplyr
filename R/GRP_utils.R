@@ -481,7 +481,7 @@ df_to_GRP <- function(data, .cols = character(0),
 
     out[["group.starts"]] <- GRP_starts(out)
 
-    if (return.groups && !all(cpp_address_equal(data, data2))){
+    if (return.groups && !all(cpp_frame_addresses_equal(data, data2))){
       if (return.groups){
         out[["groups"]] <- cheapr::sset(data, GRP_starts(out))
       }

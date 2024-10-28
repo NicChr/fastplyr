@@ -77,14 +77,69 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
       group_data_size <- prod(
         vapply(factors, collapse::fnlevels, 0L)
       )
-      num_missing_categories <- group_data_size - collapse::fnunique(factors)
+      num_missing_categories <- group_data_size -
+        collapse::fnunique(
+          df_drop_if_any_empty(factors)
+        )
       if (num_missing_categories > 0){
+
+        # Keeping this here in case the functionality changes in the future
+        # factor_unique <- function(x){
+        #   out <- seq_along(levels(x))
+        #   if (cheapr::any_na(x)){
+        #     out <- c(out, NA)
+        #   }
+        #   attributes(out) <- attributes(x)
+        #   out
+        # }
+
         full <- list_as_df(
           add_names(
             do.call(cross_join, lapply(factors, cheapr::levels_factor)),
             names(factors)
           )
         )
+        # If full included combinations of NA factor values
+        # via `factor_unique()` as shown above in comments
+        # We could do a left join
+
+        # out <- f_left_join(full, out, sort = (order && sort))
+        # anti_matches <- which_not_in(full, factors)
+        # if (id){
+        #  cpp_set_replace(out[[".group"]], anti_matches, NA_integer_)
+        # }
+        # if (loc){
+        #   out[[".loc"]][anti_matches] <- list(integer())
+        # }
+        # if (start){
+        #   cpp_set_replace(out[[".start"]], anti_matches, 0L)
+        # }
+        # if (end){
+        #   cpp_set_replace(out[[".end"]], anti_matches, 0L)
+        # }
+        # if (size){
+        #   cpp_set_replace(out[[".size"]], anti_matches, 0L)
+        # }
+
+        # out <- f_full_join(full, out, sort = (order && sort))
+        # if (id){
+        #  cpp_set_replace(out[[".group"]], cheapr::which_na(out[[".group"]]), NA_integer_)
+        # }
+        # if (loc){
+        #   out[[".loc"]][cheapr::val_find(
+        #     cheapr::lengths_(out[[".loc"]]),
+        #     0)] <- list(integer())
+        # }
+        # if (start){
+        #   cpp_set_replace(out[[".start"]], cheapr::which_na(out[[".start"]]), 0L)
+        # }
+        # if (end){
+        #   cpp_set_replace(out[[".end"]], cheapr::which_na(out[[".end"]]), 0L)
+        # }
+        # if (size){
+        #   cpp_set_replace(out[[".size"]], cheapr::which_na(out[[".size"]]), 0L)
+        # }
+        #
         missed <- f_anti_join(full, group_out)
         for (non_factor in names(group_out)[cheapr::which_(is_factor, invert = TRUE)]){
           missed[[non_factor]] <- group_out[[non_factor]][NA_integer_]

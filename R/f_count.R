@@ -45,7 +45,7 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
                     .order = df_group_by_order_default(data),
                     order = .order,
                     name = NULL, .by = NULL, .cols = NULL){
-  if (!identical(r_address(order), r_address(.order))){
+  if (!identical(cpp_r_address(order), cpp_r_address(.order))){
     lifecycle::deprecate_warn(
       "0.3.0", what = "f_count(order)",
       with = "f_count(.order)"
@@ -180,7 +180,7 @@ f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
                         .order = df_group_by_order_default(data),
                         order = .order,
                         name = NULL, .by = NULL, .cols = NULL){
-  if (!identical(r_address(order), r_address(.order))){
+  if (!identical(cpp_r_address(order), cpp_r_address(.order))){
     lifecycle::deprecate_warn(
       "0.3.0", what = "f_add_count(order)",
       with = "f_add_count(.order)"
