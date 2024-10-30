@@ -230,7 +230,6 @@ row_id.default <- function(x, ascending = TRUE){
   }
   out
 }
-#' @rdname group_id
 #' @export
 row_id.GRP <- function(x, ascending = TRUE){
   size <- GRP_data_size(x)

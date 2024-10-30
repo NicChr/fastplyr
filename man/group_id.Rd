@@ -3,15 +3,12 @@
 \name{group_id}
 \alias{group_id}
 \alias{row_id}
-\alias{row_id.GRP}
 \alias{f_consecutive_id}
 \title{Fast group and row IDs}
 \usage{
 group_id(x, order = TRUE, ascending = TRUE, as_qg = FALSE)
 
 row_id(x, ascending = TRUE)
-
-\method{row_id}{GRP}(x, ascending = TRUE)
 
 f_consecutive_id(x)
 }
