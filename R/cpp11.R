@@ -63,3 +63,11 @@ cpp_set_list_element <- function(x, i, value) {
 cpp_set_replace <- function(x, where, what) {
   .Call(`_fastplyr_cpp_set_replace`, x, where, what)
 }
+
+cpp_fill_grouped <- function(x, order, group_sizes, fill_limit) {
+  .Call(`_fastplyr_cpp_fill_grouped`, x, order, group_sizes, fill_limit)
+}
+
+cpp_unlist_group_locs <- function(x) {
+  .Call(`_fastplyr_cpp_unlist_group_locs`, x)
+}

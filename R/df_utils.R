@@ -88,6 +88,19 @@ df_add_cols <- function(data, cols){
   dplyr::dplyr_col_modify(data, cols)
 }
 
+df_modify_cols <- function(data, cols){
+  out <- unclass(data)
+  if (!(is.list(cols) && !is.null(names(cols)))){
+    stop("cols must be a named list")
+  }
+  temp <- unclass(cols)
+  for (col in names(temp)){
+    out[[col]] <- temp[[col]]
+  }
+  class(out) <- class(data)
+  reconstruct(data, out)
+}
+
 # df_add_cols2 <- function(data, cols, check = TRUE){
 #   if (check){
 #     if ( (!(is.list(cols) && !is.object(cols))) || is.null(names(cols))){

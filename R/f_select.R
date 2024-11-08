@@ -114,3 +114,6 @@ f_rename.data.table <- function(data, ..., .cols = NULL){
   out <- col_rename(data, .cols = pos)
   collapse::qDT(out)
 }
+#' @rdname f_select
+#' @export
+nothing <- function() character()

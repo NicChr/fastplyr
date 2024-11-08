@@ -382,7 +382,7 @@ df_as_GRP <- function(data, return.groups = TRUE, return.order = TRUE){
   group_id <- df_group_id(data)
   gsizes <- cheapr::lengths_(gdata[[".rows"]])
   if (return.order){
-    gorder <- unlist(gdata[[".rows"]])
+    gorder <- cpp_unlist_group_locs(gdata[[".rows"]])
     sorted <- attr(gorder, "sorted")
   } else {
     gorder <- NULL

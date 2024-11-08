@@ -106,7 +106,7 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
     if (length(i) == 1 && slice_sign >= 1){
       data_locs <- cheapr::na_rm(list_subset(group_locs, i))
     } else {
-      data_locs <- unlist(cpp_slice_locs(group_locs, i))
+      data_locs <- cpp_unlist_group_locs(cpp_slice_locs(group_locs, i))
     }
     if (is.null(data_locs)){
       data_locs <- integer(0)
@@ -144,7 +144,7 @@ f_slice_head <- function(data, n, prop, .by = NULL,
   } else {
     sequences <- sequence(slice_sizes, from = start, by = 1L)
     if (length(slice_sizes) > 1L){
-      i <- unlist(slice_info[["rows"]], recursive = FALSE, use.names = FALSE)[sequences]
+      i <- cpp_unlist_group_locs(slice_info[["rows"]])[sequences]
     } else {
       i <- sequences
     }
@@ -175,7 +175,7 @@ f_slice_tail <- function(data, n, prop, .by = NULL,
   } else {
     sequences <- sequence(slice_sizes, from = start - slice_sizes + 1L, by = 1L)
     if (length(slice_sizes) > 1L){
-      i <- unlist(slice_info[["rows"]], recursive = FALSE, use.names = FALSE)[sequences]
+      i <- cpp_unlist_group_locs(slice_info[["rows"]])[sequences]
     } else {
       i <- sequences
     }
@@ -343,12 +343,12 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
   } else if (!seed_is_null){
     on.exit({remove(".Random.seed", envir = globalenv())})
   }
-  rows <- unlist(rows, use.names = FALSE, recursive = FALSE)
+  rows <- cpp_unlist_group_locs(rows)
   if (length(rows) > 0L){
     rows <- rows + rep.int(sorted_group_starts(group_sizes, 0L),
                            times = slice_sizes)
   }
-  i <- unlist(slice_info[["rows"]], use.names = FALSE, recursive = FALSE)[rows]
+  i <- cpp_unlist_group_locs(slice_info[["rows"]])[rows]
   if (is.null(i)){
     i <- integer()
   }

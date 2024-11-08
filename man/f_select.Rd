@@ -3,11 +3,14 @@
 \name{f_select}
 \alias{f_select}
 \alias{f_rename}
+\alias{nothing}
 \title{Fast \code{dplyr::select()}/\code{dplyr::rename()}}
 \usage{
 f_select(data, ..., .cols = NULL)
 
 f_rename(data, ..., .cols = NULL)
+
+nothing()
 }
 \arguments{
 \item{data}{A data frame.}

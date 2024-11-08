@@ -24,7 +24,7 @@ f_rowwise <- function(data, ..., .ascending = TRUE,
                       .name = ".row_id"){
   rowwise_locs <- tidy_select_pos(data, ..., .cols = .cols)
   rowwise_cols <- names(data)[rowwise_locs]
-  out <- add_row_id(data, .cols = rowwise_cols, .name = .name, ascending = .ascending)
+  out <- add_row_id(data, .cols = rowwise_cols, .name = .name, .ascending = .ascending)
 
   row_id_nm <- names(out)[length(names(out))]
   groups <- as_tbl(

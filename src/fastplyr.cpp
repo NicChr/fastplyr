@@ -705,6 +705,15 @@ SEXP cpp_consecutive_id(SEXP x){
   }
 }
 
+#define FASTPLYR_GROUP_RESET                                   \
+                                                               \
+group_size = p_group_sizes[i];                                 \
+total_group_size += group_size;                                \
+if (total_group_size > n){                                     \
+  Rf_unprotect(NP);                                            \
+  Rf_error("`sum(group_sizes)` must equal `length(x)`");       \
+}
+
 // x assumed to be an integer vector of unique group IDs
 
 [[cpp11::register]]
@@ -815,6 +824,209 @@ SEXP cpp_set_replace(SEXP x, SEXP where, SEXP what){
   }
   }
   return x;
+}
+
+
+// LOCF - Last-Observation-Carried-Forward
+// With a user-specified ordering and run lengths (or group sizes)
+// Given groups `g`, this will fill `NA` values using LOCF by-group
+
+[[cpp11::register]]
+SEXP cpp_fill_grouped(SEXP x, SEXP order, SEXP group_sizes, double fill_limit) {
+  int n = Rf_length(x);
+  int o_size = Rf_length(order);
+  fill_limit = std::fmax(fill_limit, 0);
+  int *p_o = INTEGER(order);
+  int *p_group_sizes = INTEGER(group_sizes);
+  int n_groups = Rf_length(group_sizes);
+  int NP = 0;
+  int oi;
+  int group_size, nfill;
+  int total_group_size = 0;
+  int k = 0;
+
+  SEXP out;
+
+  switch(TYPEOF(x)){
+  case NILSXP: {
+    out = Rf_protect(R_NilValue); ++NP;
+    break;
+  }
+  case LGLSXP:
+  case INTSXP: {
+    if (o_size != n){
+    Rf_unprotect(NP);
+    Rf_error("x and order must both be the same length");
+  }
+    int last_obs;
+    out = Rf_protect(Rf_duplicate(x)); ++NP;
+    int *p_x = INTEGER(x);
+    int *p_out = INTEGER(out);
+    for (int i = 0; i < n_groups; ++i){
+      nfill = 0; // Reset fill limit
+      FASTPLYR_GROUP_RESET
+      last_obs = p_x[p_o[k] - 1];
+      for (int j = 0; j < group_size; ++k, ++j){
+        oi = p_o[k] - 1;
+        if (p_x[oi] == NA_INTEGER && nfill < fill_limit){
+          p_out[oi] = last_obs;
+          ++nfill;
+        } else {
+          last_obs = p_out[oi];
+          nfill = 0;
+        }
+      }
+    }
+    if (total_group_size != n){
+      Rf_unprotect(NP);
+      Rf_error("`sum(group_sizes)` must equal `length(x)`");
+    }
+    break;
+  }
+  case REALSXP: {
+    if (Rf_inherits(x, "integer64")){
+    if (o_size != n){
+      Rf_unprotect(NP);
+      Rf_error("x and order must both be the same length");
+    }
+    long long int last_obs;
+    out = Rf_protect(Rf_duplicate(x)); ++NP;
+    long long int *p_x = INTEGER64_PTR(x);
+    long long int *p_out = INTEGER64_PTR(out);
+    for (int i = 0; i < n_groups; ++i){
+      nfill = 0; // Reset fill limit
+      FASTPLYR_GROUP_RESET
+      last_obs = p_x[p_o[k] - 1];
+      for (int j = 0; j < group_size; ++k, ++j){
+        oi = p_o[k] - 1;
+        if (p_x[oi] == LLONG_MIN && nfill < fill_limit){
+          p_out[oi] = last_obs;
+          ++nfill;
+        } else {
+          last_obs = p_out[oi];
+          nfill = 0;
+        }
+      }
+    }
+  } else {
+    if (o_size != n){
+      Rf_unprotect(NP);
+      Rf_error("x and order must both be the same length");
+    }
+    double last_obs;
+    out = Rf_protect(Rf_duplicate(x)); ++NP;
+    double *p_x = REAL(x);
+    double *p_out = REAL(out);
+    for (int i = 0; i < n_groups; ++i){
+      nfill = 0; // Reset fill limit
+      FASTPLYR_GROUP_RESET
+      last_obs = p_x[p_o[k] - 1];
+      for (int j = 0; j < group_size; ++k, ++j){
+        oi = p_o[k] - 1;
+        if (p_x[oi] != p_x[oi] && nfill < fill_limit){
+          p_out[oi] = last_obs;
+          ++nfill;
+        } else {
+          last_obs = p_out[oi];
+          nfill = 0;
+        }
+      }
+    }
+  }
+  if (total_group_size != n){
+    Rf_unprotect(NP);
+    Rf_error("`sum(group_sizes)` must equal `length(x)`");
+  }
+    break;
+  }
+  case STRSXP: {
+    if (o_size != n){
+    Rf_unprotect(NP);
+    Rf_error("x and order must both be the same length");
+  }
+    SEXP last_obs;
+    out = Rf_protect(Rf_duplicate(x)); ++NP;
+    const SEXP *p_x = STRING_PTR_RO(x);
+    const SEXP *p_out = STRING_PTR_RO(out);
+    for (int i = 0; i < n_groups; ++i){
+      nfill = 0; // Reset fill limit
+      FASTPLYR_GROUP_RESET
+      last_obs = p_x[p_o[k] - 1];
+      for (int j = 0; j < group_size; ++k, ++j){
+        oi = p_o[k] - 1;
+        if (p_x[oi] == NA_STRING && nfill < fill_limit){
+          SET_STRING_ELT(out, oi, last_obs);
+          ++nfill;
+        } else {
+          last_obs = p_out[oi];
+          nfill = 0;
+        }
+      }
+    }
+    if (total_group_size != n){
+      Rf_unprotect(NP);
+      Rf_error("`sum(group_sizes)` must equal `length(x)`");
+    }
+    break;
+  }
+  // No NA to fill here
+  case RAWSXP: {
+    out = Rf_protect(Rf_duplicate(x)); ++NP;
+    break;
+
+  }
+  case VECSXP: {
+    const SEXP *p_x = VECTOR_PTR_RO(x);
+    out = Rf_protect(Rf_allocVector(VECSXP, n)); ++NP;
+    SHALLOW_DUPLICATE_ATTRIB(out, x);
+    for (int i = 0; i < n; ++i){
+      SET_VECTOR_ELT(out, i, cpp_fill_grouped(p_x[i], order, group_sizes, fill_limit));
+    }
+    break;
+  }
+  default: {
+    Rf_unprotect(NP);
+    Rf_error("%s cannot handle an object of type %s", __func__, Rf_type2char(TYPEOF(x)));
+  }
+  }
+  Rf_unprotect(NP);
+  return out;
+}
+
+// unlist `group_data(data)$.rows` quickly
+
+[[cpp11::register]]
+SEXP cpp_unlist_group_locs(SEXP x){
+  if (!Rf_isVectorList(x)){
+   return x;
+  }
+  int n = Rf_length(x);
+  int m, k = 0;
+  const SEXP *p_x = VECTOR_PTR_RO(x);
+
+  int out_size = 0;
+
+  // Figure out unlisted length
+  for (int i = 0; i < n; ++i) out_size += Rf_length(p_x[i]);
+
+  SEXP out = Rf_protect(Rf_allocVector(INTSXP, out_size));
+  int *p_out = INTEGER(out);
+
+  for (int i = 0; i < n; k += m, ++i){
+    int *p_int = INTEGER(p_x[i]);
+    m = Rf_length(p_x[i]);
+    memcpy(&p_out[k], &p_int[0], m * sizeof(int));
+  }
+
+  // for (int i = 0; i < n; ++i){
+  //   int *p_int = INTEGER(p_x[i]);
+  //   int m = Rf_length(p_x[i]);
+  //   for (int j = 0; j < m; ++k, ++j){
+  //     p_out[k] = p_int[j];
+  //   }
+  // }
+  Rf_unprotect(1);
+  return out;
 }
 
 // Low-level add cols to data frame
