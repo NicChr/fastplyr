@@ -60,5 +60,5 @@ f_fill <- function(data, ..., .by = NULL, .cols = NULL,
   }
 
   data_to_fill <- cpp_fill_grouped(data_to_fill, o, sizes, .fill_limit)
-  df_modify_cols(data, data_to_fill)
+  df_add_cols(data, data_to_fill)
 }

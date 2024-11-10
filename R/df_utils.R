@@ -85,21 +85,32 @@ df_row_slice <- function(data, i, reconstruct = TRUE){
   out
 }
 df_add_cols <- function(data, cols){
-  dplyr::dplyr_col_modify(data, cols)
+  reconstruct(data, dplyr::dplyr_col_modify(f_ungroup(data), cols))
 }
 
-df_modify_cols <- function(data, cols){
-  out <- unclass(data)
-  if (!(is.list(cols) && !is.null(names(cols)))){
-    stop("cols must be a named list")
-  }
-  temp <- unclass(cols)
-  for (col in names(temp)){
-    out[[col]] <- temp[[col]]
-  }
-  class(out) <- class(data)
-  reconstruct(data, out)
-}
+# df_modify_cols <- function(data, cols){
+#   if (!(is.list(cols) && !is.null(names(cols)))){
+#     stop("cols must be a named list")
+#   }
+#   N <- df_nrow(data)
+#   out <- unclass(data)
+#   temp <- unclass(cols)
+#   # temp <- do.call(function(...) cheapr::recycle(..., length = N), cols)
+#   for (col in names(temp)){
+#     # out[[col]] <- temp[[col]]
+#     vec <- temp[[col]]
+#     if (NROW(vec) != N){
+#       if (is_df(vec)){
+#         vec <- cheapr::sset(vec, rep_len(attr(x, "row.names"), N))
+#       } else {
+#         vec <- rep_len(vec, N)
+#       }
+#     }
+#     out[[col]] <- vec
+#   }
+#   class(out) <- class(data)
+#   reconstruct(data, out)
+# }
 
 # df_add_cols2 <- function(data, cols, check = TRUE){
 #   if (check){

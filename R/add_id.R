@@ -107,7 +107,7 @@ add_group_id.data.frame <- function(data, ...,
     }
   }
   col_to_add <- add_names(list(ids), .name)
-  df_modify_cols(data, col_to_add)
+  df_add_cols(data, col_to_add)
 }
 #' @rdname add_id
 #' @export
@@ -163,7 +163,7 @@ add_row_id.data.frame <- function(data, ...,
     }
   }
   col_to_add <- add_names(list(row_ids), .name)
-  df_modify_cols(data, col_to_add)
+  df_add_cols(data, col_to_add)
 }
 #' @rdname add_id
 #' @export
@@ -203,5 +203,5 @@ add_consecutive_id.data.frame <- function(data, ...,
     .name <- unique_col_name(names(data), "consecutive_id")
   }
   col_to_add <- add_names(list(ids), .name)
-  df_modify_cols(data, col_to_add)
+  df_add_cols(data, col_to_add)
 }
