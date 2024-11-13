@@ -135,7 +135,7 @@ f_bind_rows <- function(..., .fill = TRUE){
         for (i in seq_along(dots)){
           cpp_set_list_element(temp, i, dots[[i]][[exotic_vars[[j]]]])
         }
-        exotic_out[[j]] <- Reduce(f_union_all, temp)
+        exotic_out[[j]] <- do.call(combine, temp)
       }
 
       attr(exotic_out, "row.names") <- .set_row_names(out_nrows)

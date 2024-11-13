@@ -97,6 +97,23 @@ bool cpp_is_exotic(SEXP x){
   return !Rf_isNull(x) && (!Rf_isVectorAtomic(x) || Rf_isS4(x) || Rf_inherits(x, "integer64"));
 }
 
+
+// Are any list elements data frames?
+
+[[cpp11::register]]
+bool cpp_any_frames(SEXP x){
+  bool out = false;
+  int n_dots = Rf_length(x);
+  const SEXP *p_x = VECTOR_PTR_RO(x);
+  for (int i = 0; i < n_dots; ++i){
+    if (Rf_isFrame(p_x[i])){
+      out = true;
+      break;
+    }
+  }
+  return out;
+}
+
 // Specifically applied to a list of data frames, used in `f_bind_rows()`
 
 [[cpp11::register]]

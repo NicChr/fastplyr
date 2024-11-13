@@ -16,6 +16,10 @@ cpp_is_exotic <- function(x) {
   .Call(`_fastplyr_cpp_is_exotic`, x)
 }
 
+cpp_any_frames <- function(x) {
+  .Call(`_fastplyr_cpp_any_frames`, x)
+}
+
 cpp_any_frames_exotic <- function(x) {
   .Call(`_fastplyr_cpp_any_frames_exotic`, x)
 }

@@ -83,6 +83,28 @@ df_add_cols <- function(data, cols){
   reconstruct(data, dplyr::dplyr_col_modify(f_ungroup(data), cols))
 }
 
+combine <- function(...){
+  if (nargs() == 0) {
+    return(NULL)
+  }
+  dots <- list(...)
+  if (length(dots) == 1) {
+    dot <- dots[[1L]]
+    if (rlang::is_bare_list(dot)){
+      return(do.call(combine, dot))
+    }
+    else {
+      return(dot)
+    }
+  }
+
+  if (cpp_any_frames(dots)){
+    do.call(f_bind_rows, dots)
+  } else {
+    do.call(c, dots)
+  }
+}
+
 # The below is fine but doesn't work with matrix cols
 
 # df_modify_cols <- function(data, cols){
