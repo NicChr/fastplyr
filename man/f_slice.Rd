@@ -107,12 +107,8 @@ Default is \code{FALSE}, without replacement.}
 
 \item{weights}{Probability weights used in \code{f_slice_sample()}.}
 
-\item{seed}{Seed number defining RNG state.
-If supplied, this is only applied \bold{locally} within the function
-and the seed state isn't retained after sampling.
-To clarify, whatever seed state was in place before the function call,
-is restored to ensure seed continuity.
-If left \code{NULL} (the default), then the seed is never modified.}
+\item{seed}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+Use \code{cheapr::with_local_seed()} instead.}
 }
 \value{
 A \code{data.frame} filtered on the specified row indices.

@@ -4,12 +4,25 @@
 
 - New function `f_fill` to fill `NA` values forwards and backwards by group.
 
+### Improvements
+
+- `f_bind_rows` sees a noticeable speed improvement.
+
 ### Bug fixes
 
 - Joins were returning an error when `x` and `y` are `grouped_df` objects.
 
+- The join by argument now accepts a partial named 
+character vector without throwing an error.
+
 - `tidy_quantiles` would return an error when probabilities were not sorted and
 has now been fixed.
+
+### Breaking changes
+
+- The `seed` argument of `f_slice_sample` is soft-deprecated. To achieve 
+sampling, or really any RNG functions with a local seed, 
+use `cheapr::with_local_seed()`.
 
 # fastplyr 0.3.0
 

@@ -47,12 +47,8 @@
 #' @param replace Should `f_slice_sample()` sample with or without replacement?
 #' Default is `FALSE`, without replacement.
 #' @param weights Probability weights used in `f_slice_sample()`.
-#' @param seed Seed number defining RNG state.
-#' If supplied, this is only applied \bold{locally} within the function
-#' and the seed state isn't retained after sampling.
-#' To clarify, whatever seed state was in place before the function call,
-#' is restored to ensure seed continuity.
-#' If left `NULL` (the default), then the seed is never modified.
+#' @param seed `r lifecycle::badge("deprecated")`
+#' Use `cheapr::with_local_seed()` instead.
 #' @param .order Should the groups be returned in sorted order?
 #' If `FALSE`, this will return the groups in order of first appearance,
 #' and in many cases is faster.
@@ -291,9 +287,15 @@ f_slice_max <- function(data, order_by, n, prop, .by = NULL,
 #' @rdname f_slice
 #' @export
 f_slice_sample <- function(data, n, replace = FALSE, prop,
-                          .by = NULL, .order = df_group_by_order_default(data),
-                          keep_order = FALSE,
-                          weights = NULL, seed = NULL){
+                           .by = NULL, .order = df_group_by_order_default(data),
+                           keep_order = FALSE,
+                           weights = NULL, seed = NULL){
+  if (!is.null(seed)){
+    lifecycle::deprecate_soft(
+      "0.4.0", what = "f_slice_sample(seed)",
+      details = "It is recommended to use `cheapr::with_local_seed(f_slice_sample())` instead."
+    )
+  }
   # Check if a seed already exists in global environment
   seed_exists <- exists(".Random.seed")
   # Save it in the first instance
