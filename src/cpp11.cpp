@@ -111,13 +111,6 @@ extern "C" SEXP _fastplyr_cpp_set_list_element(SEXP x, SEXP i, SEXP value) {
   END_CPP11
 }
 // fastplyr.cpp
-SEXP cpp_set_replace(SEXP x, SEXP where, SEXP what);
-extern "C" SEXP _fastplyr_cpp_set_replace(SEXP x, SEXP where, SEXP what) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_set_replace(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(where), cpp11::as_cpp<cpp11::decay_t<SEXP>>(what)));
-  END_CPP11
-}
-// fastplyr.cpp
 SEXP cpp_fill_grouped(SEXP x, SEXP order, SEXP group_sizes, double fill_limit);
 extern "C" SEXP _fastplyr_cpp_fill_grouped(SEXP x, SEXP order, SEXP group_sizes, SEXP fill_limit) {
   BEGIN_CPP11
@@ -147,7 +140,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_r_address",             (DL_FUNC) &_fastplyr_cpp_r_address,             1},
     {"_fastplyr_cpp_row_id",                (DL_FUNC) &_fastplyr_cpp_row_id,                3},
     {"_fastplyr_cpp_set_list_element",      (DL_FUNC) &_fastplyr_cpp_set_list_element,      3},
-    {"_fastplyr_cpp_set_replace",           (DL_FUNC) &_fastplyr_cpp_set_replace,           3},
     {"_fastplyr_cpp_slice_locs",            (DL_FUNC) &_fastplyr_cpp_slice_locs,            2},
     {"_fastplyr_cpp_sorted_group_starts",   (DL_FUNC) &_fastplyr_cpp_sorted_group_starts,   2},
     {"_fastplyr_cpp_unlist_group_locs",     (DL_FUNC) &_fastplyr_cpp_unlist_group_locs,     1},

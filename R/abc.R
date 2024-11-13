@@ -18,6 +18,7 @@ which <- cheapr::which_
 which_not_in <- get_from_package("which_not_in", "cheapr")
 which_in <- get_from_package("which_in", "cheapr")
 cpp_int64_to_numeric <- get_from_package("cpp_int64_to_numeric", "cheapr")
+cpp_loc_set_replace <- get_from_package("cpp_loc_set_replace", "cheapr")
 
 check_length <- function(x, size){
   if (length(x) != size){

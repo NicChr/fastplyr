@@ -1,5 +1,16 @@
 # fastplyr (development version)
 
+### New features
+
+- New function `f_fill` to fill `NA` values forwards and backwards by group.
+
+### Bug fixes
+
+- Joins were returning an error when `x` and `y` are `grouped_df` objects.
+
+- `tidy_quantiles` would return an error when probabilities were not sorted and
+has now been fixed.
+
 # fastplyr 0.3.0
 
 * `tidy_quantiles` gains dramatic speed and efficiency improvements.
