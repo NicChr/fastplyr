@@ -51,11 +51,6 @@ group_data <- function(x){
 
 # df/list constructors ----------------------------------------------------
 
-# list() that removes NULL elements
-list3 <- function(...){
-  list_rm_null(list(...))
-}
-
 # Turns df into plain df
 df_as_df <- function(x){
   list_as_df(x)
@@ -87,6 +82,8 @@ df_row_slice <- function(data, i, reconstruct = TRUE){
 df_add_cols <- function(data, cols){
   reconstruct(data, dplyr::dplyr_col_modify(f_ungroup(data), cols))
 }
+
+# The below is fine but doesn't work with matrix cols
 
 # df_modify_cols <- function(data, cols){
 #   if (!(is.list(cols) && !is.null(names(cols)))){
@@ -122,11 +119,29 @@ df_add_cols <- function(data, cols){
 #   cpp_df_add_cols(data, cols)
 # }
 
-df_rm_cols <- function(data, .cols){
-  cols_to_remove <- col_select_names(data, .cols = .cols)
-  dplyr::dplyr_col_modify(data, add_names(vector("list", length(cols_to_remove)),
-                                          cols_to_remove))
+# df_rm_cols <- function(data, .cols){
+#   cols_to_remove <- col_select_names(data, .cols = .cols)
+#   dplyr::dplyr_col_modify(data, add_names(vector("list", length(cols_to_remove)),
+#                                           cols_to_remove))
+# }
+
+# This is not only faster than dplyr col modify for large data frames
+# but also works with data.tables because of reconstruct.data.table
+df_rm_cols <- function(data, cols){
+
+  # un-class to ensure no s3 methods are used below
+  out <- unclass(data)
+  rm_cols <- unname(col_select_pos(data, .cols = cols))
+
+  # Cols to remove
+  col_locs <- match(rm_cols, seq_along(out))
+  # Set them to NULL to remove
+  out[col_locs] <- NULL
+
+  class(out) <- class(data)
+  reconstruct(data, out)
 }
+
 # Seq along df rows/cols
 df_seq_along <- function(data, along = "rows"){
   switch(along,
