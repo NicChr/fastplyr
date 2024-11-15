@@ -106,24 +106,24 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
         # out <- f_left_join(full, out, sort = (order && sort))
         # anti_matches <- which_not_in(full, factors)
         # if (id){
-        #  set_replace(out[[".group"]], anti_matches, NA_integer_)
+        #  cpp_set_replace(out[[".group"]], anti_matches, NA_integer_)
         # }
         # if (loc){
         #   out[[".loc"]][anti_matches] <- list(integer())
         # }
         # if (start){
-        #   set_replace(out[[".start"]], anti_matches, 0L)
+        #   cpp_set_replace(out[[".start"]], anti_matches, 0L)
         # }
         # if (end){
-        #   set_replace(out[[".end"]], anti_matches, 0L)
+        #   cpp_set_replace(out[[".end"]], anti_matches, 0L)
         # }
         # if (size){
-        #   set_replace(out[[".size"]], anti_matches, 0L)
+        #   cpp_set_replace(out[[".size"]], anti_matches, 0L)
         # }
 
         # out <- f_full_join(full, out, sort = (order && sort))
         # if (id){
-        #  set_replace(out[[".group"]], cheapr::which_na(out[[".group"]]), NA_integer_)
+        #  cpp_set_replace(out[[".group"]], cheapr::which_na(out[[".group"]]), NA_integer_)
         # }
         # if (loc){
         #   out[[".loc"]][cheapr::val_find(
@@ -131,13 +131,13 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
         #     0)] <- list(integer())
         # }
         # if (start){
-        #   set_replace(out[[".start"]], cheapr::which_na(out[[".start"]]), 0L)
+        #   cpp_set_replace(out[[".start"]], cheapr::which_na(out[[".start"]]), 0L)
         # }
         # if (end){
-        #   set_replace(out[[".end"]], cheapr::which_na(out[[".end"]]), 0L)
+        #   cpp_set_replace(out[[".end"]], cheapr::which_na(out[[".end"]]), 0L)
         # }
         # if (size){
-        #   set_replace(out[[".size"]], cheapr::which_na(out[[".size"]]), 0L)
+        #   cpp_set_replace(out[[".size"]], cheapr::which_na(out[[".size"]]), 0L)
         # }
         #
         missed <- f_anti_join(full, group_out)

@@ -11,7 +11,7 @@ BugReports: https://github.com/NicChr/fastplyr/issues
 Depends: 
     R (>= 3.6.1)
 Imports: 
-    cheapr (>= 0.9.91),
+    cheapr (>= 0.9.9),
     collapse (>= 2.0.0),
     dplyr (>= 1.1.0),
     lifecycle,

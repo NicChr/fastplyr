@@ -252,7 +252,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
         p_seq <- quant_starts + k
         k <- k + 1L
         if (p == 0) {
-          set_replace(
+          cpp_set_replace(
             out[[.col]], p_seq,
             as.double(
               collapse::fmin(
@@ -262,7 +262,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
             )
           )
         } else if (p == 1) {
-          set_replace(
+          cpp_set_replace(
             out[[.col]], p_seq,
             as.double(
               collapse::fmax(
@@ -272,7 +272,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
             )
           )
         } else if (p > 0 && p < 1) {
-          set_replace(
+          cpp_set_replace(
             out[[.col]], p_seq,
             as.double(
               collapse::fnth(
