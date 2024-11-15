@@ -290,12 +290,12 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
                            .by = NULL, .order = df_group_by_order_default(data),
                            keep_order = FALSE,
                            weights = NULL, seed = NULL){
-  if (!is.null(seed)){
-    lifecycle::deprecate_soft(
-      "0.4.0", what = "f_slice_sample(seed)",
-      details = "It is recommended to use `cheapr::with_local_seed(f_slice_sample())` instead."
-    )
-  }
+  # if (!is.null(seed)){
+  #   lifecycle::deprecate_soft(
+  #     "0.4.0", what = "f_slice_sample(seed)",
+  #     details = "It is recommended to use `cheapr::with_local_seed(f_slice_sample())` instead."
+  #   )
+  # }
   # Check if a seed already exists in global environment
   seed_exists <- exists(".Random.seed")
   # Save it in the first instance

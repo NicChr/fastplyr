@@ -175,17 +175,14 @@ f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE, .sep = "..."
       }
     }
   }
-  out <- list_as_df(out)
-  if (length(dots) == 1){
-    out <- reconstruct(dots[[1L]], out)
-  } else if (length(dots) > 1){
+  out <- list_as_tbl(out)
+  if (length(dots) >= 1){
     N <- nrows[1L]
     # Adjustment for 0-column only data frames
     if (df_nrow(out) != N){
       attr(out, "row.names") <- .set_row_names(N)
     }
-    template <- dots[[1L]]
-    out <- reconstruct(template, out)
+    out <- reconstruct(dots[[1L]], out)
   }
   out
 }

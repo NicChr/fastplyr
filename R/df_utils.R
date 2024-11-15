@@ -316,7 +316,7 @@ unique_name_repair <- function(x, .sep = "..."){
   }
   x <- as.character(x)
   col_seq <- seq_along(x)
-  which_dup <- which(collapse::fduplicated(x, all = TRUE))
+  which_dup <- cheapr::which_(collapse::fduplicated(x, all = TRUE))
   x[which_dup] <- paste0(x[which_dup], .sep, col_seq[which_dup])
   which_empty <- cheapr::which_(nzchar(x), invert = TRUE)
   x[which_empty] <- paste0(x[which_empty], .sep, col_seq[which_empty])

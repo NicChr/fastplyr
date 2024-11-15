@@ -10,6 +10,9 @@
 
 ### Bug fixes
 
+- `f_summarise` now returns results in the correct order when both 
+multiple cols and multiple optimised functions were specified.
+
 - Joins were returning an error when `x` and `y` are `grouped_df` objects.
 
 - The join by argument now accepts a partial named 

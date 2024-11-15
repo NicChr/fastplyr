@@ -599,6 +599,11 @@ new_GRP <- function(N.groups = NULL,
 ## Construct a grouped data frame from a GRP object
 
 construct_grouped_df <- function(data, g, group_vars){
+
+  if (is.null(g) || length(group_vars) == 0){
+    return(f_ungroup(data))
+  }
+
   groups <- GRP_groups(g)
 
   if (is.null(groups)){

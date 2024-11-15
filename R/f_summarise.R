@@ -83,11 +83,22 @@ f_summarise <- function(data, ..., .by = NULL,
   collapse_fns <- paste0("f", base_fns)
   collapse_fns[base_fns == "n_distinct"] <- "fndistinct"
   optimised_fns <- c(base_fns, collapse_fns)
-  group_vars <- get_groups(data, {{ .by }})
 
-  groups <- df_to_GRP(data, .cols = group_vars,
-                      order = .order,
-                      return.groups = TRUE, return.order = FALSE)
+  temp_data <- data
+
+  group_vars <- get_groups(temp_data, {{ .by }})
+
+  no_groups <- length(group_vars) == 0
+  if (no_groups){
+    groups <- NULL
+  } else {
+    groups <- df_to_GRP(
+      temp_data, .cols = group_vars,
+      order = .order,
+      return.groups = TRUE, return.order = FALSE
+    )
+  }
+
 
   ## Flags so that we only construct grouped_df if we need to and do it once
   # construct_grouped_df <- FALSE
@@ -106,7 +117,7 @@ f_summarise <- function(data, ..., .by = NULL,
     rlang::quo_is_call(x, "across", ns = c("", "dplyr"))
   }
   if (is.null(groups[["groups"]])){
-    out <- cheapr::sset(df_ungroup(data), min(1L, df_nrow(data)), j = group_vars)
+    out <- cheapr::sset(df_ungroup(temp_data), min(1L, df_nrow(temp_data)), j = group_vars)
   } else {
     out <- groups[["groups"]]
   }
@@ -131,7 +142,7 @@ f_summarise <- function(data, ..., .by = NULL,
     }
     var_not_nested <- length(var) <= 1
     if (.optimise && is_n_call(dot) && var_not_nested){
-      out[[dot_nm]] <- GRP_group_sizes(groups)
+      out[[dot_nm]] <- if (no_groups) df_nrow(temp_data) else GRP_group_sizes(groups)
     } else if (.optimise && is_optimised_call(dot) && var_not_nested){
       fun_name <- unlist(
         stringr::str_match_all(
@@ -143,9 +154,9 @@ f_summarise <- function(data, ..., .by = NULL,
       fun_name <- collapse_fns[match(fun_name, base_fns)]
       fun <- get_from_package(fun_name, "collapse")
       fun_args <- dot_args[-1]
-      if (length(fun) == 1 && var %in% names(data)){
+      if (length(fun) == 1 && var %in% names(temp_data)){
         res <- do.call(
-          fun, c(list(data[[var]],
+          fun, c(list(temp_data[[var]],
                       g = groups,
                       use.g.names = FALSE),
                  fun_args)
@@ -154,10 +165,10 @@ f_summarise <- function(data, ..., .by = NULL,
 
       } else {
         if (!grouped_df_has_been_constructed){
-          data <- construct_grouped_df(data, groups, group_vars)
+          temp_data <- construct_grouped_df(temp_data, groups, group_vars)
         }
         grouped_df_has_been_constructed <- TRUE
-        temp <- dplyr::summarise(data, !!!dots[i])
+        temp <- dplyr::summarise(temp_data, !!!dots[i])
         out[[dot_nm]] <- f_select(temp, .cols = df_ncol(temp))
       }
     } else if (.optimise && is_across_call(dot)){
@@ -194,7 +205,7 @@ f_summarise <- function(data, ..., .by = NULL,
       ## And work from there..
 
       across_fns_as_list <- rlang::is_call(across_fns, "list")
-      vars <- names(tidyselect::eval_select(across_vars, data, env = dot_env))
+      vars <- names(tidyselect::eval_select(across_vars, temp_data, env = dot_env))
 
       vars <- setdiff(vars, group_vars)
 
@@ -220,23 +231,23 @@ f_summarise <- function(data, ..., .by = NULL,
                            nrow = length(vars),
                            ncol = length(fns))
       col_matrix[, which_fns] <- TRUE
-      across_res <- fast_eval_across(data, groups, vars, fast_fn_names, dot_env)
+      across_res <- fast_eval_across(temp_data, groups, vars, fast_fn_names, dot_env)
 
       if (length(which_other_fns) > 0){
         if (across_fns_as_list){
           dplyr_res <- dplyr::summarise(
-            data, dplyr::across(
+            temp_data, dplyr::across(
               dplyr::all_of(vars),
               rlang::eval_tidy(across_fns, env = dot_env)[which_other_fns]
             ), .groups = "drop"
           )
         } else {
           if (!grouped_df_has_been_constructed){
-            data <- construct_grouped_df(data, groups, group_vars)
+            temp_data <- construct_grouped_df(temp_data, groups, group_vars)
           }
           grouped_df_has_been_constructed <- TRUE
           dplyr_res <- dplyr::summarise(
-            data, dplyr::across(
+            temp_data, dplyr::across(
               dplyr::all_of(vars),
               rlang::eval_tidy(across_fns, env = dot_env)
             ), .groups = "drop"
@@ -260,10 +271,10 @@ f_summarise <- function(data, ..., .by = NULL,
       }
     } else {
       if (!grouped_df_has_been_constructed){
-        data <- construct_grouped_df(data, groups, group_vars)
+        temp_data <- construct_grouped_df(temp_data, groups, group_vars)
       }
       grouped_df_has_been_constructed <- TRUE
-      temp <- dplyr::summarise(data, !!!dots[i], .groups = "drop")
+      temp <- dplyr::summarise(temp_data, !!!dots[i], .groups = "drop")
       if (df_nrow(out) != df_nrow(temp)){
         stop("Expressions must return exactly 1 row per `f_summarise()` group")
       }
@@ -281,18 +292,11 @@ fast_eval_across <- function(data, g, .cols, .fns, env, .names = NULL){
   nfns <- length(.fns)
   out <- vector("list", ncols * nfns)
   i <- 1L
-  # na.rm <- collapse::get_collapse("na.rm")
-  for (f in .fns){
-    fun <- get_from_package(f, "collapse")
-   for (col in .cols){
+  for (col in .cols){
+    for (f in .fns){
+     fun <- get_from_package(f, "collapse")
      var <- .subset2(data, col)
      out[[i]] <- do.call(fun, list(var, g = g, use.g.names = FALSE), envir = env)
-     # Temporary adjustment
-     # if (!na.rm && is.integer(var) && identical(fun, collapse::fmean)){
-     #   n_missing <- GRP_group_sizes(g) -
-     #     collapse::fnobs(var, g = g, use.g.names = FALSE)
-     #   out[[i]][which(n_missing > 0L)] <- NA
-     # }
      i <- i + 1L
    }
   }

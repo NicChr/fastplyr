@@ -889,7 +889,7 @@ SEXP cpp_fill_grouped(SEXP x, SEXP order, SEXP group_sizes, double fill_limit) {
     Rf_unprotect(NP);
     Rf_error("`sum(group_sizes)` must equal `length(x)`");
   }
-    break;
+  break;
   }
   case STRSXP: {
     if (o_size != n){
@@ -921,7 +921,7 @@ SEXP cpp_fill_grouped(SEXP x, SEXP order, SEXP group_sizes, double fill_limit) {
     }
     break;
   }
-  // No NA to fill here
+    // No NA to fill here
   case RAWSXP: {
     out = Rf_protect(Rf_duplicate(x)); ++NP;
     break;
