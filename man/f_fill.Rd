@@ -10,7 +10,8 @@ f_fill(
   .by = NULL,
   .cols = NULL,
   .direction = c("forwards", "backwards"),
-  .fill_limit = Inf
+  .fill_limit = Inf,
+  .new_names = "{.col}"
 )
 }
 \arguments{
@@ -32,6 +33,14 @@ By default, "forwards" (Last-Observation-Carried-Forward) is used.
 
 \item{.fill_limit}{The maximum number of consecutive \code{NA} values to fill.
 Default is \code{Inf}.}
+
+\item{.new_names}{A name specification for the names of filled variables.
+The default \code{"{.col}"} replaces the given variables with the imputed ones.
+New variables can be created alongside the originals if we give a different
+specification, e.g.
+\code{.new_names = "{.col}_imputed"}.
+This follows the specification of \code{dplyr::across} if \code{.fns} were an empty
+string \code{""}.}
 }
 \value{
 A data frame with \code{NA} values filled forward or backward.
