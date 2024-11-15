@@ -46,13 +46,11 @@ f_bind_rows <- function(..., .fill = TRUE){
       collapse::rowbind(..., return = "data.frame", fill = .fill)
     }
 
-    dots <- lapply(dots, df_ungroup)
-
     if (!cpp_any_frames_exotic(dots)){
 
       # We can use collapse::rowbind if data frames
       # contain simple atomic vectors
-      reconstruct(template, do.call(fast_rowbind, dots))
+      reconstruct(template, fast_rowbind(dots))
     } else {
       col_prototypes <- as.list(cheapr::sset(template, 0))
 
