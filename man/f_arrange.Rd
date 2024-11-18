@@ -4,7 +4,14 @@
 \alias{f_arrange}
 \title{A \code{collapse} version of \code{dplyr::arrange()}}
 \usage{
-f_arrange(data, ..., .by = NULL, .by_group = FALSE, .cols = NULL)
+f_arrange(
+  data,
+  ...,
+  .by = NULL,
+  .by_group = FALSE,
+  .cols = NULL,
+  .descending = FALSE
+)
 }
 \arguments{
 \item{data}{A data frame.}
@@ -20,6 +27,11 @@ variables.}
 \item{.cols}{(Optional) alternative to \code{...} that accepts
 a named character vector or numeric vector.
 If speed is an expensive resource, it is recommended to use this.}
+
+\item{.descending}{\verb{[logical(1)]} data frame be arranged in descending order? Default is
+\code{FALSE}. In simple cases this can be easily achieved through \code{desc()} but
+for a mixture of ascending and descending variables, it's easier to use
+the \code{.descending} arg to reverse the order.}
 }
 \value{
 A sorted \code{data.frame}.

@@ -16,14 +16,17 @@
 #' @param .cols (Optional) alternative to `...` that accepts
 #' a named character vector or numeric vector.
 #' If speed is an expensive resource, it is recommended to use this.
-#'
+#' @param .descending `[logical(1)]` data frame be arranged in descending order? Default is
+#' `FALSE`. In simple cases this can be easily achieved through `desc()` but
+#' for a mixture of ascending and descending variables, it's easier to use
+#' the `.descending` arg to reverse the order.
 #'
 #' @returns
 #' A sorted `data.frame`.
 #'
 #' @export
 f_arrange <- function(data, ..., .by = NULL, .by_group = FALSE,
-                     .cols = NULL){
+                     .cols = NULL, .descending = FALSE){
   group_info <- tidy_group_info(
     if (.by_group){
       data
@@ -48,7 +51,7 @@ f_arrange <- function(data, ..., .by = NULL, .by_group = FALSE,
     f_select(
       group_info[["data"]], .cols = order_vars
     ),
-    decreasing = FALSE, na.last = TRUE, starts = FALSE,
+    decreasing = .descending, na.last = TRUE, starts = FALSE,
     group.sizes = FALSE, sort = TRUE
   )
   sorted <- attr(out_order, "sorted")
