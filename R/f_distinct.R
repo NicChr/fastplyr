@@ -12,8 +12,6 @@
 #' @param .order Should the groups be calculated as ordered groups?
 #' Setting to `TRUE` may sometimes offer a speed benefit, but usually this
 #' is not the case. The default is `FALSE`.
-#' @param order `r lifecycle::badge("superseded")` Use `.order`.
-#' @param sort `r lifecycle::badge("superseded")` Use `.sort`.
 #' @param .by (Optional). A selection of columns to group by for this operation.
 #' Columns are specified using tidy-select.
 #' @param .cols (Optional) alternative to `...` that accepts
@@ -25,23 +23,8 @@
 #'
 #' @export
 f_distinct <- function(data, ..., .keep_all = FALSE,
-                       .sort = FALSE, .order = sort,
-                       sort = .sort, order = .order,
+                       .sort = FALSE, .order = .sort,
                        .by = NULL, .cols = NULL){
-  if (!identical(cpp_r_address(order), cpp_r_address(.order))){
-    lifecycle::deprecate_warn(
-      "0.3.0", what = "f_distinct(order)",
-      with = "f_distinct(.order)"
-    )
-    .order <- order
-  }
-  if (!identical(cpp_r_address(sort), cpp_r_address(.sort))){
-    lifecycle::deprecate_warn(
-      "0.3.0", what = "f_distinct(sort)",
-      with = "f_distinct(.sort)"
-    )
-    .sort <- sort
-  }
   n_dots <- dots_length(...)
   group_info <- tidy_group_info(data, ..., .by = {{ .by }},
                                 .cols = .cols,
@@ -66,7 +49,7 @@ f_distinct <- function(data, ..., .keep_all = FALSE,
 
   # If distinct variables are the same as group variables..
 
-  if (no_new_groups &&  .sort == .order && .order == df_group_by_order_default(data)){
+  if (no_new_groups && .sort == .order && .order == df_group_by_order_default(data)){
     group_data <- group_data(data)
     if (.keep_all){
       unique_locs <- GRP_loc_starts(group_data(data)[[".rows"]])

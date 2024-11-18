@@ -11,7 +11,6 @@ f_count(
   wt = NULL,
   sort = FALSE,
   .order = df_group_by_order_default(data),
-  order = .order,
   name = NULL,
   .by = NULL,
   .cols = NULL
@@ -23,7 +22,6 @@ f_add_count(
   wt = NULL,
   sort = FALSE,
   .order = df_group_by_order_default(data),
-  order = .order,
   name = NULL,
   .by = NULL,
   .cols = NULL
@@ -48,8 +46,6 @@ If \code{FALSE}, this will return the groups in order of first appearance,
 and in many cases is faster.
 If \code{TRUE} (the default), the groups are returned in sorted order,
 exactly the same way as \code{dplyr::count}.}
-
-\item{order}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Use \code{.order}.}
 
 \item{name}{The name of the new column in the output.
 If there's already a column called \code{n},

@@ -12,7 +12,6 @@ f_duplicates(
   .add_count = FALSE,
   .drop_empty = FALSE,
   .sort = FALSE,
-  sort = .sort,
   .by = NULL,
   .cols = NULL
 )
@@ -41,8 +40,6 @@ The default is \code{FALSE}.}
 If \code{FALSE} (the default), then rows are returned in the exact same order as
 they appear in the data.
 If \code{TRUE} then the duplicate rows are sorted.}
-
-\item{sort}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Use \code{.sort}.}
 
 \item{.by}{(Optional). A selection of columns to group by for this operation.
 Columns are specified using tidy-select.}

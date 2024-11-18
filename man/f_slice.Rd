@@ -68,8 +68,7 @@ f_slice_sample(
   .by = NULL,
   .order = df_group_by_order_default(data),
   keep_order = FALSE,
-  weights = NULL,
-  seed = NULL
+  weights = NULL
 )
 }
 \arguments{
@@ -106,9 +105,6 @@ The default is \code{FALSE}.}
 Default is \code{FALSE}, without replacement.}
 
 \item{weights}{Probability weights used in \code{f_slice_sample()}.}
-
-\item{seed}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
-Use \code{cheapr::with_local_seed()} instead.}
 }
 \value{
 A \code{data.frame} filtered on the specified row indices.

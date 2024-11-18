@@ -7,8 +7,6 @@
 #' When `.order` is `TRUE` (the default) the group IDs will be
 #' ordered but not sorted. \cr
 #' If `FALSE` the order of the group IDs will be based on first appearance.
-#' @param order `r lifecycle::badge("superseded")` Use `.order`.
-#' @param ascending `r lifecycle::badge("superseded")` Use `.ascending`.
 #' @param .ascending Should the order be ascending or descending?
 #' The default is `TRUE`. \cr
 #' For `add_row_id()` this determines if the
@@ -43,25 +41,9 @@ add_group_id <- function(data, ...){
 add_group_id.data.frame <- function(data, ...,
                                     .order = df_group_by_order_default(data),
                                     .ascending = TRUE,
-                                    order = .order,
-                                    ascending = .ascending,
                                     .by = NULL, .cols = NULL,
                                     .name = NULL,
                                     as_qg = FALSE){
-  if (!identical(cpp_r_address(.order), cpp_r_address(order))){
-    lifecycle::deprecate_warn(
-      "0.3.0", what = "add_group_id(order)",
-      with = "add_group_id(.order)"
-    )
-    .order <- order
-  }
-  if (!identical(cpp_r_address(.ascending), cpp_r_address(ascending))){
-    lifecycle::deprecate_warn(
-      "0.3.0", what = "add_group_id(ascending)",
-      with = "add_group_id(.ascending)"
-    )
-    .ascending <- ascending
-  }
   if (is.null(.name)){
     .name <- unique_col_name(names(data), "group_id")
   }
@@ -87,7 +69,7 @@ add_group_id.data.frame <- function(data, ...,
                             n_groups = n_groups,
                             group_sizes = group_sizes,
                             group_starts = group_starts,
-                            ordered = order)
+                            ordered = .order)
     }
   } else {
     if (length(extra_groups) == 0 &&
@@ -118,16 +100,8 @@ add_row_id <- function(data, ...){
 #' @export
 add_row_id.data.frame <- function(data, ...,
                                   .ascending = TRUE,
-                                  ascending = .ascending,
                                   .by = NULL, .cols = NULL,
                                   .name = NULL){
-  if (!identical(cpp_r_address(.ascending), cpp_r_address(ascending))){
-    lifecycle::deprecate_warn(
-      "0.3.0", what = "add_row_id(ascending)",
-      with = "add_row_id(.ascending)"
-    )
-    .ascending <- ascending
-  }
   if (is.null(.name)){
     .name <- unique_col_name(names(data), "row_id")
   }
@@ -176,7 +150,6 @@ add_consecutive_id.data.frame <- function(data, ...,
                                           .order = df_group_by_order_default(data),
                                           .by = NULL, .cols = NULL,
                                           .name = NULL){
-
   group_info <- tidy_group_info(data, ..., .by = {{ .by }},
                                 .cols = .cols,
                                 ungroup = TRUE,

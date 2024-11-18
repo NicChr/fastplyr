@@ -11,7 +11,6 @@
 #' @param .order Should groups be ordered? If `FALSE`
 #' groups will be ordered based on first-appearance. \cr
 #' Typically, setting order to `FALSE` is faster.
-#' @param order `r lifecycle::badge("superseded")` Use `.order`.
 #' @param .by (Optional). A selection of columns to group by for this operation.
 #' Columns are specified using `tidyselect`.
 #' @param .cols (Optional) alternative to `...` that accepts
@@ -87,18 +86,11 @@
 #'
 #' @rdname f_group_by
 #' @export
+#'
 f_group_by <- function(data, ..., .add = FALSE,
                        .order = df_group_by_order_default(data),
-                       order = .order,
                        .by = NULL, .cols = NULL,
                        .drop = df_group_by_drop_default(data)){
-  if (!identical(cpp_r_address(.order), cpp_r_address(order))){
-    lifecycle::deprecate_warn(
-      "0.3.0", what = "f_group_by(order)",
-      with = "f_add_count(.order)"
-    )
-    .order <- order
-  }
   init_group_vars <- group_vars(data)
   group_info <- tidy_group_info(
     df_ungroup(data), ...,

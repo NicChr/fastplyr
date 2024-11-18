@@ -11,7 +11,6 @@ f_group_by(
   ...,
   .add = FALSE,
   .order = df_group_by_order_default(data),
-  order = .order,
   .by = NULL,
   .cols = NULL,
   .drop = df_group_by_drop_default(data)
@@ -32,8 +31,6 @@ Default is \code{FALSE}.}
 \item{.order}{Should groups be ordered? If \code{FALSE}
 groups will be ordered based on first-appearance. \cr
 Typically, setting order to \code{FALSE} is faster.}
-
-\item{order}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Use \code{.order}.}
 
 \item{.by}{(Optional). A selection of columns to group by for this operation.
 Columns are specified using \code{tidyselect}.}

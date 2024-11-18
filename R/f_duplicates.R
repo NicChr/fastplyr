@@ -17,7 +17,6 @@
 #' If `FALSE` (the default), then rows are returned in the exact same order as
 #' they appear in the data.
 #' If `TRUE` then the duplicate rows are sorted.
-#' @param sort `r lifecycle::badge("superseded")` Use `.sort`.
 #' @param .by (Optional). A selection of columns to group by for this operation.
 #' Columns are specified using tidy-select.
 #' @param .cols (Optional) alternative to `...` that accepts
@@ -40,15 +39,8 @@
 f_duplicates <- function(data, ..., .keep_all = FALSE,
                          .both_ways = FALSE, .add_count = FALSE,
                          .drop_empty = FALSE,
-                         .sort = FALSE, sort = .sort,
+                         .sort = FALSE,
                          .by = NULL, .cols = NULL){
-  if (!identical(cpp_r_address(.sort), cpp_r_address(sort))){
-    lifecycle::deprecate_warn(
-      "0.3.0", what = "f_duplicates(sort)",
-      with = "f_duplicates(.sort)"
-    )
-    .sort <- sort
-  }
   n_dots <- dots_length(...)
   group_info <- tidy_group_info(data, ..., .by = {{ .by }},
                                 .cols = .cols,

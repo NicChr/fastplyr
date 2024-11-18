@@ -47,8 +47,6 @@
 #' @param replace Should `f_slice_sample()` sample with or without replacement?
 #' Default is `FALSE`, without replacement.
 #' @param weights Probability weights used in `f_slice_sample()`.
-#' @param seed `r lifecycle::badge("deprecated")`
-#' Use `cheapr::with_local_seed()` instead.
 #' @param .order Should the groups be returned in sorted order?
 #' If `FALSE`, this will return the groups in order of first appearance,
 #' and in many cases is faster.
@@ -190,7 +188,7 @@ f_slice_min <- function(data, order_by, n, prop, .by = NULL,
   group_vars <- get_groups(data, .by = {{ .by }})
   grp_nm1 <- unique_col_name(names(data), "g")
   out <- data %>%
-    add_group_id(.name = grp_nm1, .cols = group_vars, order = .order) %>%
+    add_group_id(.name = grp_nm1, .cols = group_vars, .order = .order) %>%
     df_ungroup()
 
   g1 <- out[[grp_nm1]]
@@ -242,7 +240,7 @@ f_slice_max <- function(data, order_by, n, prop, .by = NULL,
   grp_nm1 <- unique_col_name(names(data), "g")
 
   out <- data %>%
-    add_group_id(.name = grp_nm1, .cols = group_vars, order = .order) %>%
+    add_group_id(.name = grp_nm1, .cols = group_vars, .order = .order) %>%
     df_ungroup()
 
   g1 <- out[[grp_nm1]]
@@ -289,22 +287,8 @@ f_slice_max <- function(data, order_by, n, prop, .by = NULL,
 f_slice_sample <- function(data, n, replace = FALSE, prop,
                            .by = NULL, .order = df_group_by_order_default(data),
                            keep_order = FALSE,
-                           weights = NULL, seed = NULL){
-  # if (!is.null(seed)){
-  #   lifecycle::deprecate_soft(
-  #     "0.4.0", what = "f_slice_sample(seed)",
-  #     details = "It is recommended to use `cheapr::with_local_seed(f_slice_sample())` instead."
-  #   )
-  # }
-  # Check if a seed already exists in global environment
-  seed_exists <- exists(".Random.seed")
-  # Save it in the first instance
-  if (seed_exists){
-    old <- .Random.seed
-  }
+                           weights = NULL){
   groups <- get_groups(data, .by = {{ .by }})
-  # Does user want to use local seed?
-  seed_is_null <- is.null(seed)
   has_weights <- !rlang::quo_is_null(rlang::enquo(weights))
   if (has_weights){
     data_info  <- mutate_summary_grouped(data, !!rlang::enquo(weights))
@@ -326,24 +310,11 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
   } else {
     weights <- NULL
   }
-  # If user wants to use local seed
-  # We must first save the current seed
-  # Set the new seed
-  # Discard the newly created seed after sampling
-  # Restore the old seed (if there existed an old seed)
-  if (!seed_is_null){
-    set.seed(seed)
-  }
   for (i in seq_along(rows)){
     rows[[i]] <- sample.int(.subset2(group_sizes, i),
                             size = .subset2(slice_sizes, i),
                             replace = replace,
                             prob = .subset2(weights, i))
-  }
-  if (seed_exists && !seed_is_null){
-    on.exit({assign(".Random.seed", old, envir = globalenv())})
-  } else if (!seed_is_null){
-    on.exit({remove(".Random.seed", envir = globalenv())})
   }
   rows <- cpp_unlist_group_locs(rows)
   if (length(rows) > 0L){
@@ -417,7 +388,7 @@ df_slice_prepare <- function(data, n, prop, .by = NULL,
     }
     slice_sizes <- as.integer(slice_sizes)
   }
-  keep <- which(slice_sizes > 0)
+  keep <- cheapr::val_find(slice_sizes, 0, invert = TRUE)
   if (length(rows) - length(keep) > 0L){
     rows <- rows[keep]
     group_sizes <- group_sizes[keep]

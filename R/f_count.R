@@ -16,7 +16,6 @@
 #' and in many cases is faster.
 #' If `TRUE` (the default), the groups are returned in sorted order,
 #' exactly the same way as `dplyr::count`.
-#' @param order `r lifecycle::badge("superseded")` Use `.order`.
 #' @param name The name of the new column in the output.
 #'  If there's already a column called `n`,
 #'  it will use `nn`.
@@ -43,15 +42,7 @@
 #' @export
 f_count <- function(data, ..., wt = NULL, sort = FALSE,
                     .order = df_group_by_order_default(data),
-                    order = .order,
                     name = NULL, .by = NULL, .cols = NULL){
-  if (!identical(cpp_r_address(order), cpp_r_address(.order))){
-    lifecycle::deprecate_warn(
-      "0.3.0", what = "f_count(order)",
-      with = "f_count(.order)"
-    )
-    .order <- order
-  }
   if (dots_length(...) == 0 && rlang::quo_is_null(rlang::enquo(.by)) && is.null(.cols)){
     return(
       count_simple(data, ..., wt = !!rlang::enquo(wt), sort = sort, .order = .order,
@@ -114,12 +105,11 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
                            use.g.names = FALSE,
                            fill = FALSE)
     # Replace NA with 0
-    nobs[cheapr::which_na(nobs)] <- 0L
+    nobs[cheapr::na_find(nobs)] <- 0L
   }
   out[[name]] <- nobs
   if (sort){
-    row_order <- order(-nobs)
-    out <- df_row_slice(out, row_order)
+    out <- f_arrange(out, .cols = name, .descending = TRUE)
   }
   reconstruct(data, out)
 }
@@ -147,7 +137,7 @@ count_simple <- function(data, ..., wt = NULL, sort = FALSE,
   }
   out <- df_count(out, weights = weights, name = name)
   if (sort){
-    out <- f_arrange(out, desc(.data[[name]]))
+    out <- f_arrange(out, .cols = name, .descending = TRUE)
   }
   reconstruct(data, out)
 }
@@ -169,7 +159,7 @@ add_count_simple <- function(data, ..., wt = NULL, sort = FALSE,
   }
   out <- df_add_count(out, weights = weights, name = name)
   if (sort){
-    out <- f_arrange(out, desc(.data[[name]]))
+    out <- f_arrange(out, .cols = name, .descending = TRUE)
   }
   reconstruct(data, out)
 }
@@ -178,15 +168,7 @@ add_count_simple <- function(data, ..., wt = NULL, sort = FALSE,
 #' @export
 f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
                         .order = df_group_by_order_default(data),
-                        order = .order,
                         name = NULL, .by = NULL, .cols = NULL){
-  if (!identical(cpp_r_address(order), cpp_r_address(.order))){
-    lifecycle::deprecate_warn(
-      "0.3.0", what = "f_add_count(order)",
-      with = "f_add_count(.order)"
-    )
-    .order <- order
-  }
   if (dots_length(...) == 0 && rlang::quo_is_null(rlang::enquo(.by)) && is.null(.cols)){
     return(
       add_count_simple(data, ..., wt = !!rlang::enquo(wt),
@@ -219,12 +201,12 @@ f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
   }
   use_only_grouped_df_groups <- !group_info[["groups_changed"]] && (
     length(all_vars) == 0L ||
-      (order && length(group_vars) > 0L && length(group_vars) == length(all_vars))
+      (.order && length(group_vars) > 0L && length(group_vars) == length(all_vars))
   )
   if (use_only_grouped_df_groups){
-    g <- df_to_GRP(data, return.order = FALSE, order = order)
+    g <- df_to_GRP(data, return.order = FALSE, order = .order)
   } else {
-    g <- df_to_GRP(out, .cols = all_vars, return.order = FALSE, order = order)
+    g <- df_to_GRP(out, .cols = all_vars, return.order = FALSE, order = .order)
   }
   if (is.null(name)){
     name <- unique_count_col(out)
@@ -238,15 +220,13 @@ f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
                            na.rm = TRUE,
                            TRA = "replace_fill")
     # Replace NA with 0
-    nobs[cheapr::which_na(nobs)] <- 0
+    nobs[cheapr::na_find(nobs)] <- 0L
   } else {
     nobs <- GRP_expanded_group_sizes(g)
   }
-  out <- dplyr::dplyr_col_modify(out, cols = add_names(list(nobs),
-                                                       name))
+  out <- df_add_cols(out, cols = add_names(list(nobs), name))
   if (sort){
-    row_order <- order(-out[[name]])
-    out <- df_row_slice(out, row_order)
+    out <- f_arrange(out, .cols = name, .descending = TRUE)
   }
   reconstruct(data, out)
 }

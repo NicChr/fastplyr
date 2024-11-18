@@ -9,9 +9,7 @@ f_distinct(
   ...,
   .keep_all = FALSE,
   .sort = FALSE,
-  .order = sort,
-  sort = .sort,
-  order = .order,
+  .order = .sort,
   .by = NULL,
   .cols = NULL
 )
@@ -30,10 +28,6 @@ When \code{order = FALSE} this option has no effect on the result.}
 \item{.order}{Should the groups be calculated as ordered groups?
 Setting to \code{TRUE} may sometimes offer a speed benefit, but usually this
 is not the case. The default is \code{FALSE}.}
-
-\item{sort}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Use \code{.sort}.}
-
-\item{order}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Use \code{.order}.}
 
 \item{.by}{(Optional). A selection of columns to group by for this operation.
 Columns are specified using tidy-select.}

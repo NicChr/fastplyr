@@ -1,7 +1,7 @@
 test_that("f_arrange", {
   expect_equal(iris, f_arrange(iris))
-  flights2 <- add_row_id(f_slice_sample(nycflights13::flights, seed = 9192919))
-  iris2 <- add_row_id(f_slice_sample(iris, seed = 098124))
+  flights2 <- add_row_id(cheapr::with_local_seed(f_slice_sample(nycflights13::flights), .seed = 9192919))
+  iris2 <- add_row_id(cheapr::with_local_seed(f_slice_sample(iris), .seed = 098124))
   base1 <- iris2 %>%
     dplyr::arrange(dplyr::desc(Species), Sepal.Length)
   base2 <- flights2 %>%

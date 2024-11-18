@@ -6,7 +6,6 @@
 #' to fill the named implicit missing values.
 #' @param .sort Logical. If `TRUE` expanded/completed variables are sorted.
 #' The default is `FALSE`.
-#' @param sort `r lifecycle::badge("superseded")` Use `.sort`.
 #' @param .by (Optional). A selection of columns to group by for this operation.
 #' Columns are specified using tidy-select.
 #' @param .cols (Optional) alternative to `...` that accepts
@@ -22,15 +21,8 @@
 #'
 #' @rdname f_expand
 #' @export
-f_expand <- function(data, ..., .sort = FALSE, sort = .sort,
+f_expand <- function(data, ..., .sort = FALSE,
                      .by = NULL, .cols = NULL){
-  if (!identical(cpp_r_address(.sort), cpp_r_address(sort))){
-    lifecycle::deprecate_warn(
-      "0.3.0", what = "f_expand(sort)",
-      with = "f_expand(.sort)"
-    )
-    .sort <- sort
-  }
   check_cols(dots_length(...), .cols = .cols)
   group_vars <- get_groups(data, {{ .by }})
   if (!is.null(.cols)){
@@ -88,16 +80,9 @@ f_expand <- function(data, ..., .sort = FALSE, sort = .sort,
 #' @rdname f_expand
 #' @export
 f_complete <- function(data, ...,
-                       .sort = FALSE, sort = .sort,
+                       .sort = FALSE,
                        .by = NULL, .cols = NULL,
                        fill = NA){
-  if (!identical(cpp_r_address(.sort), cpp_r_address(sort))){
-    lifecycle::deprecate_warn(
-      "0.3.0", what = "f_complete(sort)",
-      with = "f_complete(.sort)"
-    )
-    .sort <- sort
-  }
   group_vars <- get_groups(data, {{ .by }})
   expanded_df <- f_expand(data, ..., .sort = FALSE,
                           .by = {{ .by }}, .cols = .cols)
@@ -105,7 +90,7 @@ f_complete <- function(data, ...,
   out <- data
   # Full-join
   if (df_nrow(expanded_df) > 0 && df_ncol(expanded_df) > 0){
-    out <- f_full_join(out, expanded_df, by = names(expanded_df), sort = sort)
+    out <- f_full_join(out, expanded_df, by = names(expanded_df), sort = .sort)
 
     # Alternative method using essentially setdiff() + rbind()
     # extra <- f_anti_join(expanded_df, f_select(out, .cols = names(expanded_df)))
@@ -136,7 +121,7 @@ f_complete <- function(data, ...,
 }
 #' @rdname f_expand
 #' @export
-crossing <- function(..., sort = FALSE, .sort = sort){
+crossing <- function(..., .sort = FALSE){
   dots <- cheapr::named_list(..., .keep_null = FALSE)
   for (i in seq_along(dots)){
     if (!is_df(dots[[i]])){
@@ -148,7 +133,7 @@ crossing <- function(..., sort = FALSE, .sort = sort){
 }
 #' @rdname f_expand
 #' @export
-nesting <- function(..., sort = FALSE, .sort = sort){
+nesting <- function(..., .sort = FALSE){
   dots <- cheapr::named_list(..., .keep_null = FALSE)
   for (i in seq_along(dots)){
     if (!is_df(dots[[i]])){

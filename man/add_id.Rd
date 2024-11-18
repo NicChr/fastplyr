@@ -16,8 +16,6 @@ add_group_id(data, ...)
   ...,
   .order = df_group_by_order_default(data),
   .ascending = TRUE,
-  order = .order,
-  ascending = .ascending,
   .by = NULL,
   .cols = NULL,
   .name = NULL,
@@ -30,7 +28,6 @@ add_row_id(data, ...)
   data,
   ...,
   .ascending = TRUE,
-  ascending = .ascending,
   .by = NULL,
   .cols = NULL,
   .name = NULL
@@ -64,10 +61,6 @@ For \code{add_row_id()} this determines if the
 row IDs are in increasing or decreasing order. \cr
 \bold{NOTE} - When \code{order = FALSE}, the \code{ascending} argument is
 ignored. This is something that will be fixed in a later version.}
-
-\item{order}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Use \code{.order}.}
-
-\item{ascending}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}} Use \code{.ascending}.}
 
 \item{.by}{Alternative way of supplying groups using \code{tidyselect} notation.}
 

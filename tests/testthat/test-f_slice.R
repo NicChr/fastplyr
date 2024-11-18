@@ -219,14 +219,16 @@ test_that("f_slice_sample", {
   expect_equal(flights2 %>%
                  dplyr::slice_sample(n = 1),
                flights2 %>%
-                 f_slice_sample(n = 1, seed = 42))
+                 f_slice_sample(n = 1) %>%
+                 cheapr::with_local_seed(.seed = 42))
   set.seed(42)
   expect_equal(flights2 %>%
                  dplyr::group_by(origin, dest) %>%
                  dplyr::slice_sample(n = Inf),
                flights2 %>%
                  dplyr::group_by(origin, dest) %>%
-                 f_slice_sample(seed = 42))
+                 f_slice_sample() %>%
+                 cheapr::with_local_seed(.seed = 42))
   # set.seed(42)
   # expect_equal(flights2 %>%
   #                dplyr::slice_sample(n = Inf,
@@ -239,14 +241,16 @@ test_that("f_slice_sample", {
   expect_equal(flights2 %>%
                  dplyr::slice_sample(n = 150),
                flights2 %>%
-                 f_slice_sample(n = 150, seed = 42))
+                 f_slice_sample(n = 150) %>%
+                 cheapr::with_local_seed(.seed = 42))
   set.seed(42)
   expect_equal(flights2 %>%
                  dplyr::group_by(origin, dest) %>%
                  dplyr::slice_sample(n = 4),
                flights2 %>%
                  dplyr::group_by(origin, dest) %>%
-                 f_slice_sample(n = 4, keep_order = FALSE, seed = 42))
+                 f_slice_sample(n = 4, keep_order = FALSE) %>%
+                 cheapr::with_local_seed(.seed = 42))
   set.seed(42)
   expect_equal(flights2 %>%
                  dplyr::group_by(origin, dest) %>%
@@ -254,25 +258,29 @@ test_that("f_slice_sample", {
                  dplyr::arrange(id),
                flights2 %>%
                  dplyr::group_by(origin, dest) %>%
-                 f_slice_sample(n = 4, keep_order = TRUE, seed = 42))
+                 f_slice_sample(n = 4, keep_order = TRUE) %>%
+                 cheapr::with_local_seed(.seed = 42))
   set.seed(42)
   expect_equal(flights2 %>%
                  dplyr::slice_sample(n = -4) %>%
                  dplyr::arrange(id),
                flights2 %>%
-                 f_slice_sample(n = -4, keep_order = TRUE, seed = 42))
+                 f_slice_sample(n = -4, keep_order = TRUE) %>%
+                 cheapr::with_local_seed(.seed = 42))
   set.seed(42)
   expect_equal(flights2 %>%
                  dplyr::slice_sample(n = -4),
                flights2 %>%
-                 f_slice_sample(n = -4, keep_order = FALSE, seed = 42))
+                 f_slice_sample(n = -4, keep_order = FALSE) %>%
+                 cheapr::with_local_seed(.seed = 42))
   set.seed(42)
   expect_equal(flights2 %>%
                  dplyr::group_by(origin, dest) %>%
                  dplyr::slice_sample(n = -10),
                flights2 %>%
                  dplyr::group_by(origin, dest) %>%
-                 f_slice_sample(n = -10, keep_order = FALSE, seed = 42))
+                 f_slice_sample(n = -10, keep_order = FALSE) %>%
+                 cheapr::with_local_seed(.seed = 42))
   set.seed(42)
   expect_equal(flights2 %>%
                  dplyr::group_by(origin, dest) %>%
@@ -280,7 +288,8 @@ test_that("f_slice_sample", {
                  dplyr::arrange(id),
                flights2 %>%
                  dplyr::group_by(origin, dest) %>%
-                 f_slice_sample(n = -10, keep_order = TRUE, seed = 42))
+                 f_slice_sample(n = -10, keep_order = TRUE) %>%
+                 cheapr::with_local_seed(.seed = 42))
 })
 test_that("f_slice_min", {
   flights2 <- nycflights13::flights
@@ -512,42 +521,6 @@ test_that("f_slice_max", {
                  dplyr::group_by(origin, dest) %>%
                  dplyr::slice_max(arr_time, n = -10) %>%
                  dplyr::arrange(id))
-})
-
-test_that("Additional seed tests", {
-  # The seed = 42 part should be set locally and original
-  # global seed should be restored
-  set.seed(42)
-  ok <- f_slice_sample(iris, seed = 42)
-  ok2 <- dplyr::slice_sample(iris, n = nrow(iris))
-  expect_identical(ok, ok2)
-
-
-  # Let's ensure seed continuity..
-
-  set.seed(600)
-  x <- rnorm(100)
-
-  set.seed(600)
-  y <- rnorm(50)
-  f_slice_sample(iris, seed = 11230)
-  expect_equal(x, c(y, rnorm(50)))
-
-  set.seed(600)
-  y <- rnorm(50)
-  f_slice_sample(iris, seed = 600)
-  expect_equal(x, c(y, rnorm(50)))
-
-  # If we DONT set a local seed, seed continuity SHOULDNT be kept.
-  # As one would expect
-  set.seed(600)
-  y <- rnorm(50)
-  f_slice_sample(iris)
-  expect_true(!isTRUE(all.equal(x, c(y, rnorm(50)))))
-
-  current_seed <- .Random.seed
-  f_slice_sample(iris, seed = 99)
-  expect_identical(current_seed, .Random.seed)
 })
 
 test_that("test asan issues", {
