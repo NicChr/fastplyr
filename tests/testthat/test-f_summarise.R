@@ -143,4 +143,55 @@ test_that("summarise", {
       ),
     target
   )
+
+  # 2 variables and a mix of optimised/non-optimised calls
+
+  target <- airquality %>%
+    dplyr::summarise(
+      dplyr::across(
+        dplyr::all_of(c("Wind", "Temp")),
+        list(mean = function(x) mean(x, na.rm = TRUE),
+             first = function(x) x[1],
+             min = function(x) min(x, na.rm = TRUE),
+             last_obs = function(x) x[length(x)],
+             max = function(x) max(x, na.rm = TRUE))
+      ), N = dplyr::n()
+    )
+
+  expect_equal(
+    airquality %>%
+      f_summarise(
+        dplyr::across(dplyr::all_of(c("Wind", "Temp")),
+                      list(mean, first = function(x) x[1], min, last_obs = function(x) x[length(x)], max)),
+        N = dplyr::n()
+      ),
+    target
+  )
+
+  # 2 variables and a mix of optimised/non-optimised calls, and groups
+
+  target <- airquality %>%
+    dplyr::summarise(
+      dplyr::across(
+        dplyr::all_of(c("Wind", "Temp")),
+        list(mean = function(x) mean(x, na.rm = TRUE),
+             first = function(x) x[1],
+             min = function(x) min(x, na.rm = TRUE),
+             last_obs = function(x) x[length(x)],
+             max = function(x) max(x, na.rm = TRUE))
+      ), N = dplyr::n(),
+      .by = Month
+    )
+
+  expect_equal(
+    airquality %>%
+      f_summarise(
+        dplyr::across(dplyr::all_of(c("Wind", "Temp")),
+                      list(mean, first = function(x) x[1], min, last_obs = function(x) x[length(x)], max)),
+        N = dplyr::n(),
+        .by = Month,
+        .order = FALSE
+      ),
+    target
+  )
 })
