@@ -307,6 +307,9 @@ fast_eval_across <- function(data, g, .cols, .fns, env, .names = NULL){
      fun <- get_from_package(f, "collapse")
      var <- .subset2(data, col)
      out[[i]] <- do.call(fun, list(var, g = g, use.g.names = FALSE), envir = env)
+     if (length(var) == 0 && (identical(fun, collapse::fsd) || identical(fun, collapse::fvar))){
+       out[[i]] <- numeric()
+     }
      i <- i + 1L
    }
   }
