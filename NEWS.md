@@ -1,10 +1,17 @@
-# fastplyr (development version)
+# fastplyr 0.5.0
 
 ### Bug fixes
 
 - Fix for `f_summarise` returning results in the incorrect order.
 
+### Breaking changes
+
 - Previously soft-deprecated arguments have now been removed.
+
+### New features
+
+- `f_arrange` gains the `.descending` argument to efficiently 
+return data frames in descending order.
 
 # fastplyr 0.4.0
 
