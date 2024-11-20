@@ -1,5 +1,11 @@
 # fastplyr (development version)
 
+### Bug fixes
+
+- Fix for `f_summarise` returning results in the incorrect order.
+
+- Previously soft-deprecated arguments have now been removed.
+
 # fastplyr 0.4.0
 
 ### New features
