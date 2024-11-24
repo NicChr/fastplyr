@@ -218,8 +218,14 @@ fun_ns <- function(x, env = rlang::caller_env()){
     x <- tryCatch(get(as.character(x), envir = env),
                   error = function(e) ".error")
     if (identical(x, ".error")){
-      return("NULL")
+      return("")
     }
   }
-  unname(getNamespaceName(environment(x) %||% .BaseNamespaceEnv))
+  env <- environment(x)
+  if (is.null(env)){
+    ""
+  } else {
+    unname(getNamespaceName(env))
+  }
+
 }

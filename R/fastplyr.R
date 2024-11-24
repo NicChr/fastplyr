@@ -25,3 +25,4 @@
 "_PACKAGE"
 
 .datatable.aware <- TRUE
+utils::globalVariables(":=")
