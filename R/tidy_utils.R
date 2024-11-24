@@ -463,18 +463,9 @@ eval_all_tidy_ungrouped <- function(data, ...){
   out
 }
 
-as_list_of_frames <- function(x){
-  for (i in seq_along(x)){
-    if (!inherits(x[[i]], "data.frame")){
-      x[[i]] <- list_as_tbl(x[i])
-    }
-  }
-  x
-}
-
 dynamic_list <- function(..., .keep_null = TRUE, .named = FALSE){
-  quos <- rlang::enquos(..., .ignore_empty = "all")
-  # quos <- rlang::quos(..., .ignore_empty = "all")
+  # quos <- rlang::enquos(..., .ignore_empty = "all")
+  quos <- rlang::quos(..., .ignore_empty = "all")
   quo_nms <- names(quos)
   out <- cheapr::new_list(length(quos))
 

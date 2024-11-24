@@ -10,6 +10,8 @@
 
 ### New features
 
+- `new_tbl` now evaluates its arguments dynamically. 
+
 - `f_arrange` gains the `.descending` argument to efficiently 
 return data frames in descending order.
 

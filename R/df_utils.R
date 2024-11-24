@@ -361,3 +361,13 @@ df_mutate_exotic_to_ids <- function(x, order = TRUE, ascending = TRUE, as_qg = F
   }
   x
 }
+
+# Turn all list elements into data frames
+as_list_of_frames <- function(x){
+  for (i in seq_along(x)){
+    if (!inherits(x[[i]], "data.frame")){
+      x[[i]] <- list_as_tbl(x[i])
+    }
+  }
+  x
+}
