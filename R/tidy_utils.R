@@ -104,8 +104,7 @@ call_contains_ns <- function(expr, ns, env = rlang::caller_env()){
   if (rlang::is_quosure(expr)){
     expr <- rlang::quo_get_expr(expr)
   }
-  is_call  <- rlang::is_call(expr)
-  if (!is_call){
+  if (!is.call(expr)){
     return(FALSE)
   }
   if (rlang::is_call(expr, ns = ns)){
@@ -114,7 +113,7 @@ call_contains_ns <- function(expr, ns, env = rlang::caller_env()){
   out <- FALSE
   tree <- as.list(expr)
   for (branch in tree){
-    if (rlang::is_call(branch)){
+    if (is.call(branch)){
       return(call_contains_ns(branch, ns, env = env))
     }
     if (is.symbol(branch) && fun_ns(rlang::as_string(branch), env = env) == ns){
