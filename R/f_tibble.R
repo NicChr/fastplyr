@@ -3,7 +3,7 @@
 #' @param x A data frame or vector.
 #' @param name `character(1)` Name to use for column of names.
 #' @param value `character(1)` Name to use for column of values.
-#' @param ... Key-value pairs.
+#' @param ... Dynamic name-value pairs.
 #' @param .nrows `integer(1)` (Optional) number of rows. \cr
 #' Commonly used to initialise a 0-column data frame with rows.
 #' @param .recycle `logical(1)` Should arguments be recycled?
@@ -17,21 +17,38 @@
 #' @details
 #' `new_tbl` and `as_tbl` are alternatives to
 #' `tibble` and `as_tibble` respectively.
-#' One of the main reasons that these do not share the same name prefixed with
-#' `f_` is because they don't always return the same result. For example
-#' `new_tbl()` does not support 'quosures' and tidy injection.
 #'
 #' `f_enframe(x)` where `x` is a `data.frame` converts `x` into a tibble
 #' of column names and list-values.
 #'
 #' @rdname new_tbl
 #' @export
-new_tbl <- function(..., .nrows = NULL, .recycle = TRUE, .name_repair = FALSE){
-  df_as_tbl(
-    cheapr::new_df(..., .nrows = .nrows,
-                   .recycle = .recycle,
-                   .name_repair = .name_repair)
-  )
+new_tbl <- function (..., .nrows = NULL, .recycle = TRUE, .name_repair = TRUE){
+  out <- dynamic_list(..., .keep_null = FALSE, .named = TRUE)
+
+  if (.recycle) {
+    out <- do.call(function(...) cheapr::recycle(..., length = .nrows), out)
+  }
+  if (is.null(.nrows)) {
+    if (length(out) == 0L) {
+      row_names <- integer()
+    }
+    else {
+      N <- NROW(.subset2(out, 1L))
+      row_names <- c(NA_integer_, -N)
+    }
+  }
+  else {
+    row_names <- .set_row_names(.nrows)
+  }
+  out_names <- as.character(attr(out, "names", TRUE))
+  if (.name_repair) {
+    out_names <- unique_name_repair(out_names)
+  }
+  attr(out, "names") <- out_names
+  attr(out, "row.names") <- row_names
+  class(out) <- c("tbl_df", "tbl", "data.frame")
+  out
 }
 #' @rdname new_tbl
 #' @export

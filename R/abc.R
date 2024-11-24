@@ -18,7 +18,8 @@ which <- cheapr::which_
 which_not_in <- get_from_package("which_not_in", "cheapr")
 which_in <- get_from_package("which_in", "cheapr")
 cpp_int64_to_numeric <- get_from_package("cpp_int64_to_numeric", "cheapr")
-# set_replace <- get_from_package("cpp_loc_set_replace", "cheapr")
+cpp_loc_set_replace <- get_from_package("cpp_loc_set_replace", "cheapr")
+named_list <- get_from_package("named_list", "cheapr")
 
 check_length <- function(x, size){
   if (length(x) != size){
@@ -65,9 +66,10 @@ col_select_pos <- function(data, .cols = character()){
   }
   out
 }
-# Tidyselect col names
 col_select_names <- function(data, .cols = NULL){
-  names(col_select_pos(data, .cols = .cols))
+  pos <- col_select_pos(data, .cols = .cols)
+  add_names(names(data)[match(unname(pos), seq_along(data))], names(pos))
+
 }
 # (Internal) Fast col rename
 col_rename <- function(data, .cols = integer()){
@@ -110,7 +112,7 @@ slice_sign <- function(x){
 }
 
 # Like deparse1 but has a cutoff in case of massive strings
-deparse2 <- function(expr, collapse = " ", width.cutoff = 500L, nlines = 5L, ...){
+deparse2 <- function(expr, collapse = " ", width.cutoff = 500L, nlines = 10L, ...){
   paste(deparse(expr, width.cutoff, nlines = nlines, ...), collapse = collapse)
 }
 
@@ -168,30 +170,6 @@ fast_intersect <- function(x, y){
   x[match(x, y, nomatch = 0L) != 0L]
 }
 
-## Turn dot expressions into names
-## Used in the below named_dots()
-
-dot_expr_names <- function(...){
-  # The below is fast but can sometimes stall with long strings?
-  # as.character(substitute(c(...))[-1L])
-  vapply(substitute(alist(...))[-1L], deparse2, "", USE.NAMES = FALSE)
-}
-
-named_dots <- function(...){
-  dots <- list(...)
-
-  dot_nms <- names(dots)
-
-  if (is.null(dot_nms)){
-    names(dots) <- dot_expr_names(...)
-  } else if (!all(nzchar(dot_nms))){
-    empty <- which(!nzchar(dot_nms))
-    expr_names <- dot_expr_names(...)
-    dot_nms[empty] <- expr_names[empty]
-    names(dots) <- dot_nms
-  }
-  dots
-}
 na_init <- function(x, size = 1L){
   if (is_df(x)){
     df_init(x, size)
@@ -228,4 +206,20 @@ sort_unique <- function(x, sort = FALSE){
 # Is x a simple lgl, int, dbl, char, cplx or raw?
 is_atomic_vec <- function(x){
   !is.object(x) && is.atomic(x) && is.vector(x)
+}
+
+# Common function used to find locations of empty strings ''
+empty_str_locs <- function(x){
+  cheapr::val_find(nzchar(x), TRUE, invert = TRUE)
+}
+# Get namespace of function
+fun_ns <- function(x, env = rlang::caller_env()){
+  if (!is.function(x)){
+    x <- tryCatch(get(as.character(x), envir = env),
+                  error = function(e) ".error")
+    if (identical(x, ".error")){
+      return("NULL")
+    }
+  }
+  unname(getNamespaceName(environment(x) %||% .BaseNamespaceEnv))
 }

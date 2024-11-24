@@ -155,10 +155,8 @@ df_rm_cols <- function(data, cols){
   out <- unclass(data)
   rm_cols <- unname(col_select_pos(data, .cols = cols))
 
-  # Cols to remove
-  col_locs <- match(rm_cols, seq_along(out))
   # Set them to NULL to remove
-  out[col_locs] <- NULL
+  out[rm_cols] <- NULL
 
   class(out) <- class(data)
   reconstruct(data, out)
@@ -318,13 +316,16 @@ unique_name_repair <- function(x, .sep = "..."){
   col_seq <- seq_along(x)
   which_dup <- cheapr::which_(collapse::fduplicated(x, all = TRUE))
   x[which_dup] <- paste0(x[which_dup], .sep, col_seq[which_dup])
-  which_empty <- cheapr::which_(nzchar(x), invert = TRUE)
+  which_empty <- empty_str_locs(x)
   x[which_empty] <- paste0(x[which_empty], .sep, col_seq[which_empty])
   x
 }
 
 df_cross_join <- function(x, y, .repair_names = TRUE){
-  f_bind_cols(df_rep_each(x, df_nrow(y)), df_rep(y, df_nrow(x)), .repair_names = .repair_names)
+  f_bind_cols(
+    df_rep_each(x, df_nrow(y)), df_rep(y, df_nrow(x)),
+    .repair_names = .repair_names, .recycle = FALSE
+  )
 }
 
 cross_join2 <- function(x, y){
@@ -334,7 +335,7 @@ cross_join2 <- function(x, y){
 }
 
 cross_join <- function(...){
-  dots <- named_dots(...)
+  dots <- named_list(..., .keep_null = FALSE)
   out <- Reduce(cross_join2, unname(dots))
   if (!is_df(out)){
     out <- new_tbl(x = out)

@@ -452,7 +452,7 @@ df_to_GRP <- function(data, .cols = character(0),
                       return.order = order,
                       return.groups = FALSE){
   dplyr_groups <- group_vars(data)
-  cols <- col_select_names(data, .cols = .cols)
+  cols <- unname(col_select_names(data, .cols = .cols))
   extra_groups <- fast_setdiff(cols, dplyr_groups)
   group_vars <- c(dplyr_groups, extra_groups)
   data <- f_select(data, .cols = group_vars)

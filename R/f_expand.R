@@ -1,7 +1,7 @@
 #' Fast versions of `tidyr::expand()` and `tidyr::complete()`.
 #'
 #' @param data A data frame
-#' @param ... Variables to expand
+#' @param ... Variables to expand.
 #' @param fill A named list containing value-name pairs
 #' to fill the named implicit missing values.
 #' @param .sort Logical. If `TRUE` expanded/completed variables are sorted.
@@ -25,24 +25,48 @@ f_expand <- function(data, ..., .sort = FALSE,
                      .by = NULL, .cols = NULL){
   check_cols(dots_length(...), .cols = .cols)
   group_vars <- get_groups(data, {{ .by }})
+
+  # If the user is simply selecting cols then we can use an optimised method
+  if (is.null(.cols)){
+    dots <- rlang::enquos(...)
+    dot_labels <- quo_labels(dots)
+    if (all(dot_labels %in% names(data)) && !any(names(dots) %in% names(data))){
+      .cols <- dot_labels
+    }
+  }
+  # Optimised method when just selecting cols
   if (!is.null(.cols)){
     data2 <- df_ungroup(data)
     dot_vars <- col_select_names(data2, .cols = .cols)
-    frames <- vector("list", length(dot_vars))
+    frames <- cheapr::new_list(length(dot_vars))
     for (i in seq_along(dot_vars)){
-      frames[[i]] <- f_distinct(data2, .cols = c(group_vars, dot_vars[i]),
-                                .sort = .sort)
-    }
-  } else {
-    data2 <- f_group_by(data, .by = {{ .by }}, .add = TRUE)
-    dots <- rlang::enquos(...)
-    frames <- vector("list", length(dots))
-    for (i in seq_along(dots)){
-      frames[[i]] <- f_distinct(
-        df_ungroup(dplyr::reframe(data2, !!!dots[i])),
-        .sort = .sort
+      frames[[i]] <- sort_unique(
+        df_select(data2, c(group_vars, dot_vars[i])),
+        sort = .sort
       )
     }
+  } else {
+    # Alternative that evaluates grouped df expressions sequentially
+    # This is more correct but much slower
+    # if (length(group_vars) > 0){
+    #   return(
+    #     reconstruct(
+    #       data,
+    #       dplyr::reframe(f_group_by(data, .cols = group_vars, .add = TRUE),
+    #                      f_expand(data = pick(everything()), ..., .sort = .sort)
+    #       )
+    #     )
+    #   )
+    # }
+    # frames <- list_rm_null(eval_all_tidy_ungrouped(data, !!!dots))
+    # frames <- lapply(frames, sort_unique, .sort)
+    # frames <- unname(as_list_of_frames(frames))
+
+    frames <- list_rm_null(
+      eval_all_tidy(f_group_by(data, .cols = group_vars, .add = TRUE), !!!dots)
+    )
+    frames <- lapply(frames, sort_unique, .sort)
+    frames <- unname(as_list_of_frames(frames))
   }
   if (length(group_vars) > 0){
     anon_join <- function(x, y){

@@ -5,7 +5,7 @@
 check_by <- function(data, .by){
   if (!rlang::quo_is_null(rlang::enquo(.by))){
     if (inherits(data, "grouped_df")){
-      by_nms <- tidy_select_names(data, {{ .by }})
+      by_nms <- tidy_select_pos(data, {{ .by }})
       if (length(by_nms) > 0L){
         stop(".by cannot be used on a grouped_df")
       }
@@ -25,7 +25,7 @@ get_groups <- function(data, .by = NULL){
   if (rlang::quo_is_null(rlang::enquo(.by))){
     by_groups <- NULL
   } else {
-    by_groups <- tidy_select_names(data, {{ .by }})
+    by_groups <- names(tidy_select_names(data, {{ .by }}))
   }
   if (length(by_groups) > 0L){
     if (length(dplyr_groups) > 0L){
@@ -37,26 +37,72 @@ get_groups <- function(data, .by = NULL){
   }
 }
 
-# Quosure text/var check for select()
-# NULL is removed.
-quo_select_info <- function(quos, data){
-  quo_nms <- names(quos)
-  quo_text <- add_names(character(length(quos)), quo_nms)
-  quo_is_null <- add_names(logical(length(quos)), quo_nms)
-  for (i in seq_along(quos)){
-    quo <- quos[[i]]
-    quo_text[[i]] <- deparse2(rlang::quo_get_expr(quo))
-    # quo_text[[i]] <- rlang::expr_name(rlang::quo_get_expr(quo))
-    quo_is_null[[i]] <- rlang::quo_is_null(quo)
+# Turn character vector into named character vector
+as_named <- function(x){
+  nms <- names(x)
+  if (is.null(nms)){
+    names(x) <- x
+  } else {
+    empty <- empty_str_locs(nms)
+    nms[empty] <- x[empty]
+    names(x) <- nms
   }
-  quo_text <- quo_text[!quo_is_null]
-  quo_nms <- quo_nms[!quo_is_null]
-  is_char_var <- quo_text %in% names(data)
-  is_num_var <- quo_text %in% as.character(df_seq_along(data, "cols"))
-  list(quo_nms = quo_nms,
-       quo_text = quo_text,
-       is_num_var = is_num_var,
-       is_char_var = is_char_var)
+  x
+}
+
+quo_labels <- function(quos, named = TRUE){
+  out <- vapply(quos, function(x) deparse2(rlang::quo_get_expr(x)), "", USE.NAMES = FALSE)
+  if (named){
+    names(out) <- names(quos)
+    out <- as_named(out)
+  }
+  out
+}
+
+# rlang::enquos() but quosures are always named
+named_enquos <- function(..., .dplyr = FALSE){
+  if (.dplyr){
+    exprs <- dplyr_quosures(...)
+  } else {
+    exprs <- rlang::enquos(...)
+  }
+  nms <- names(exprs)
+
+  # Fix empty names
+  if (is.null(nms)){
+    nms <- quo_labels(exprs, named = FALSE)
+  } else {
+    empty <- empty_str_locs(nms)
+    nms[empty] <- quo_labels(exprs[empty], named = FALSE)
+  }
+  names(exprs) <- nms
+  exprs
+}
+# Recursively checks call tree for a function call from a specified namespace
+# We use it to check for any dplyr functions in call tree in `eval_all_tidy`
+call_contains_ns <- function(expr, ns, env = rlang::caller_env()){
+  if (rlang::is_quosure(expr)){
+    expr <- rlang::quo_get_expr(expr)
+  }
+  is_call  <- rlang::is_call(expr)
+  if (!is_call){
+    return(FALSE)
+  }
+  if (rlang::is_call(expr, ns = ns)){
+    return(TRUE)
+  }
+  out <- FALSE
+  tree <- as.list(expr)
+  for (branch in tree){
+    if (rlang::is_call(branch)){
+      return(call_contains_ns(branch, ns, env = env))
+    }
+    if (is.symbol(branch) && fun_ns(rlang::as_string(branch), env = env) == ns){
+      out <- TRUE
+      break
+    }
+  }
+  out
 }
 
 # Tidyselect col positions with names
@@ -67,50 +113,29 @@ tidy_select_pos <- function(data, ..., .cols = NULL){
   if (!is.null(.cols)){
     out <- col_select_pos(data, .cols)
   } else {
-    # If exact cols are specified, faster to use
-    # col_select_pos()
-    quo_select_info <- quo_select_info(rlang::enquos(...), data)
-    quo_text <- quo_select_info[["quo_text"]]
-    all_char <- all(quo_select_info[["is_char_var"]])
-    all_num <- all(quo_select_info[["is_num_var"]])
-    if (all_char){
-      out <- col_select_pos(data, quo_text)
-    } else if (all_num){
-      pos <- as.double(quo_text)
-      names(pos) <- names(quo_text)
-      out <- col_select_pos(data, pos)
-      # Otherwise we use tidyselect
-    } else {
-      out <- tidyselect::eval_select(rlang::expr(c(...)), data = data)
-    }
-    if (all_char || all_num){
+    dots <- rlang::enquos(...)
+    labels <- quo_labels(dots)
+    if (all(labels %in% names(data))){
+      out <- add_names(match(labels, names(data)), names(labels))
+      # if (is.null(names(out))){
+      #   names(out) <- labels
+      # }
       is_dup <- collapse::fduplicated(list(names(out), unname(out)))
       out <- out[!is_dup]
       if (anyDuplicated(names(out))){
         # Use tidyselect for error
         tidyselect::eval_select(rlang::expr(c(...)), data = data)
       }
+    } else {
+      out <- tidyselect::eval_select(rlang::expr(c(...)), data = data)
     }
   }
   out
 }
 # Select variables utilising tidyselect notation
 tidy_select_names <- function(data, ..., .cols = NULL){
-  names(tidy_select_pos(data, ..., .cols = .cols))
-}
-# Basic tidyselect information for further manipulation
-# Includes output and input names which might be useful
-tidy_select_info <- function(data, ..., .cols = NULL){
-  data_nms <- names(data)
   pos <- tidy_select_pos(data, ..., .cols = .cols)
-  out_nms <- names(pos)
-  pos <- unname(pos)
-  in_nms <- data_nms[pos]
-  renamed <- is.na(match(out_nms, data_nms) != pos)
-  list("pos" = pos,
-       "out_nms" = out_nms,
-       "in_nms" = in_nms,
-       "renamed" = renamed)
+  add_names(names(data)[match(unname(pos), seq_along(data))], names(pos))
 }
 
 mutate_cols <- get_from_package("mutate_cols", "dplyr")
@@ -313,4 +338,423 @@ check_rowwise <- function(data){
   if (inherits(data, "rowwise_df")){
     stop("fastplyr cannot handle `rowwise_df`, please use `f_rowwise()`")
   }
+}
+
+# `eval_tidy()` that works in a dplyr context for data frames
+# which means that calls to dplyr functions like `across`, `pick`, `n()`
+# can be supplied directly here
+# `eval_all_tidy` is like `reframe` except the output is a list of
+# arbitrary size expressions which makes it very flexible
+
+# To do this properly a data mask is created with each expression result
+# being added to the data mask, while using that data mask to evaluate the
+# expressions, allowing for sequential dependent evaluation
+# so that e.g. `eval_all_tidy(iris, x = 1, y = x)` can work
+
+# To get this to work, eval_tidy must be supplied inside dplyr::reframe
+# But we can use eval_tidy directly, so long as data is not grouped and
+# None of the expressions are dplyr calls
+# We use `call_contains_ns()` to check if any of the calls are to dplyr
+# functions
+
+eval_all_tidy <- function(data, ...){
+  quos <- named_enquos(..., .dplyr = TRUE)
+  expr_names <- names(quos)
+  group_vars <- group_vars(data)
+  n_groups <- length(group_vars)
+
+  data_env <- rlang::as_environment(data)
+  data_mask <- rlang::new_data_mask(data_env)
+  data_mask$.data <- rlang::as_data_pronoun(data_env)
+  out <- cheapr::new_list(length(quos))
+
+  # Loop over the expressions
+  for (i in seq_along(quos)){
+    quo <- quos[[i]]
+    expr <- rlang::quo_get_expr(quo)
+    expr_name <- expr_names[i]
+    env <- rlang::quo_get_env(quo)
+    if (n_groups == 0 && !call_contains_ns(expr, "dplyr", env = env)){
+      result <- rlang::eval_tidy(expr, data_mask, env)
+      data_env[[expr_name]] <- result
+    } else {
+      if (n_groups == 0){
+        result <- dplyr::reframe(
+          data,
+          !!expr_name := rlang::eval_tidy(expr, data_mask, env)
+        )
+        result <- .subset2(result, df_ncol(result))
+        data_env[[expr_name]] <- result
+      } else {
+        #  Fix this later as new objects don't take precedence over data variables here
+        # e.g. eval_all_tidy(group_by(data, x), v1 = 1, v2 = v1)
+        result <- dplyr::reframe(
+          data, !!expr_name := !!quo
+        )
+      }
+    }
+    if (!is.null(result)){
+      out[[i]] <- result
+    }
+    names(out)[i] <- expr_name
+  }
+  out
+}
+
+# eval_all_tidy <- function(data, ...){
+#   quos <- named_enquos(..., .dplyr = TRUE)
+#   expr_names <- names(quos)
+#   group_vars <- group_vars(data)
+#   n_groups <- length(group_vars)
+#
+#   data_mask <- rlang::as_data_mask(data)
+#   out <- cheapr::new_list(length(quos))
+#
+#   # Loop over the expressions
+#   for (i in seq_along(quos)){
+#     quo <- quos[[i]]
+#     expr <- rlang::quo_get_expr(quo)
+#     expr_name <- expr_names[i]
+#     env <- rlang::quo_get_env(quo)
+#     if (n_groups == 0 && !call_contains_ns(expr, "dplyr", env = env)){
+#       result <- rlang::eval_tidy(expr, data = data_mask, env = env)
+#     } else {
+#       if (n_groups == 0){
+#         result <- dplyr::reframe(
+#           data,
+#           !!expr_name := rlang::eval_tidy(expr, data = data_mask, env = env)
+#         )
+#         result <- result[[length(unclass(result))]]
+#         assign(expr_name, result, envir = data_mask)
+#       } else {
+#         #  Fix this later as new objects don't take precedence over data variables here
+#         # e.g. eval_all_tidy(group_by(data, x), v1 = 1, v2 = v1)
+#         result <- dplyr::reframe(
+#           data, !!expr_name := !!quo
+#         )
+#         # assign(expr_name, result[[length(unclass(result))]], envir = data_mask)
+#       }
+#     }
+#
+#     if (!is.null(result)){
+#       out[[i]] <- result
+#     }
+#     names(out)[i] <- expr_name
+#   }
+#   out
+# }
+
+# We can get functions like `f_expand` to work  using this recursively
+# e.g. `reframe(data, f_expand(data = pick(everything()), ...))`
+# That is unfortunately very slow so basically unuseable
+eval_all_tidy_ungrouped <- function(data, ...){
+  quos <- named_enquos(..., .dplyr = TRUE)
+  expr_names <- names(quos)
+
+  data_env <- rlang::as_environment(data)
+  data_mask <- rlang::new_data_mask(data_env)
+  data_mask$.data <- rlang::as_data_pronoun(data_env)
+  out <- cheapr::new_list(length(quos))
+
+  # Loop over the expressions
+  for (i in seq_along(quos)){
+    quo <- quos[[i]]
+    expr <- rlang::quo_get_expr(quo)
+    expr_name <- expr_names[i]
+    env <- rlang::quo_get_env(quo)
+    if (!call_contains_ns(expr, "dplyr", env = env)){
+      result <- rlang::eval_tidy(expr, data_mask, env)
+    } else {
+      result <- dplyr::reframe(
+        data,
+        !!expr_name := rlang::eval_tidy(expr, data_mask, env)
+      )
+      result <- .subset2(result, df_ncol(result))
+    }
+    data_env[[expr_name]] <- result
+
+    if (!is.null(result)){
+      out[[i]] <- result
+    }
+    names(out)[i] <- expr_name
+  }
+  out
+}
+# eval_all_tidy_ungrouped <- function(data, ...){
+#   quos <- named_enquos(..., .dplyr = TRUE)
+#   expr_names <- names(quos)
+#   group_vars <- group_vars(data)
+#   n_groups <- length(group_vars)
+#
+#   data_mask <- rlang::as_data_mask(data)
+#   out <- cheapr::new_list(length(quos))
+#
+#   # Loop over the expressions
+#   for (i in seq_along(quos)){
+#     quo <- quos[[i]]
+#     expr <- rlang::quo_get_expr(quo)
+#     expr_name <- expr_names[i]
+#     env <- rlang::quo_get_env(quo)
+#     if (!call_contains_ns(expr, "dplyr", env = env)){
+#       result <- rlang::eval_tidy(expr, data = data_mask, env = env)
+#     } else {
+#       result <- dplyr::reframe(
+#         data,
+#         !!expr_name := rlang::eval_tidy(expr, data = data_mask, env = env)
+#       )
+#       result <- .subset2(result, df_ncol(result))
+#     }
+#     assign(expr_name, result, envir = data_mask)
+#
+#     if (!is.null(result)){
+#       out[[i]] <- result
+#     }
+#     names(out)[i] <- expr_name
+#   }
+#   out
+# }
+
+# eval_all_tidy <- function(data, ...){
+#   quos <- named_enquos(..., .dplyr = TRUE)
+#   expr_names <- names(quos)
+#   group_vars <- group_vars(data)
+#   n_groups <- length(group_vars)
+#
+#   data_mask <- rlang::as_data_mask(data)
+#   out <- cheapr::new_list(length(quos))
+#
+#   # Loop over the expressions
+#   for (i in seq_along(quos)){
+#     quo <- quos[[i]]
+#     expr <- rlang::quo_get_expr(quo)
+#     expr_name <- expr_names[i]
+#     env <- rlang::quo_get_env(quo)
+#     if (n_groups == 0 && !call_contains_ns(expr, "dplyr", env = env)){
+#       result <- rlang::eval_tidy(expr, data = data_mask, env = env)
+#     } else {
+#       if (n_groups == 0){
+#         result <- dplyr::reframe(
+#           data,
+#           !!expr_name := rlang::eval_tidy(expr, data = data_mask, env = env)
+#         )
+#         # result <- result[[length(unclass(result))]]
+#       } else {
+#         #  Fix this later as new objects don't take precedence over data variables here
+#         # e.g. eval_all_tidy(group_by(data, x), v1 = 1, v2 = v1)
+#         result <- dplyr::reframe(
+#           data, !!expr_name := !!quo
+#         )
+#         # result <- dplyr::reframe(
+#         #   data, !!expr_name := !!rlang::new_quosure(expr, env = data_mask)
+#         # )
+#       }
+#       result <- result[[length(unclass(result))]]
+#     }
+#
+#       # assign(expr_name, result, envir = data_mask$.top_env)
+#       assign(expr_name, result, envir = data_mask)
+#       # rlang::env_bind(data_mask$.top_env, !!expr_name := result)
+#       # rlang::env_bind(data_mask$.env, !!expr_name := result)
+#
+#     out[[i]] <- result
+#     names(out)[i] <- expr_name
+#   }
+#   out
+# }
+
+# eval_all_tidy <- function(data, ..., .mask = NULL){
+#   # if (length(group_vars(data))){
+#   #   return(dplyr::reframe(data, .results = eval_all_tidy(data = pick(everything()), ...)))
+#   # }
+#   quos <- named_enquos(..., .dplyr = TRUE)
+#   expr_names <- names(quos)
+#   group_vars <- group_vars(data)
+#   n_groups <- length(group_vars)
+#
+#   if (is.null(.mask)){
+#     data_mask <- rlang::as_data_mask(data)
+#   } else {
+#     data_mask <- .mask
+#   }
+#
+#   # env <- list2env(data)
+#   # data_mask <- new_data_mask(env)
+#   # data_mask$.data <- as_data_pronoun(env)
+#   out <- cheapr::new_list(length(quos))
+#
+#   # Loop over the expressions
+#   for (i in seq_along(quos)){
+#     quo <- quos[[i]]
+#     expr <- rlang::quo_get_expr(quo)
+#     expr_name <- expr_names[i]
+#     env <- rlang::quo_get_env(quo)
+#     if (n_groups > 0){
+#       browser()
+#       return(
+#         dplyr::reframe(
+#           data, eval_all_tidy(data = pick(everything()), !!quo, .mask = data_mask)
+#         )
+#       )
+#     } else if (!call_contains_ns(expr, "dplyr", env = env)){
+#     # if (n_groups == 0 && !call_contains_ns(expr, "dplyr", env = env)){
+#       result <- rlang::eval_tidy(expr, data = data_mask, env = env)
+#     } else {
+#       result <- dplyr::reframe(
+#         data,
+#         !!expr_name := rlang::eval_tidy(expr, data = data_mask, env = env)
+#       )
+#       # result <- dplyr::reframe(
+#       #   data, !!expr_name := !!quo
+#       # )
+#       if (n_groups == 0){
+#         result <- result[[length(unclass(result))]]
+#       }
+#     }
+#
+#     assign(expr_name, result, envir = data_mask)
+#
+#     out[[i]] <- result
+#     names(out)[i] <- expr_name
+#   }
+#   out
+# }
+
+# eval_all_tidy <- function(data, ...){
+#   quos <- named_enquos(..., .dplyr = TRUE)
+#   expr_names <- names(quos)
+#   group_vars <- group_vars(data)
+#   n_groups <- length(group_vars)
+#
+#   data_mask <- rlang::as_data_mask(data)
+#   out <- cheapr::new_list(length(quos))
+#   # data <- f_select(data, .cols = character())
+#
+#   # Loop over the expressions
+#   for (i in seq_along(quos)){
+#     quo <- quos[[i]]
+#     expr <- rlang::quo_get_expr(quo)
+#     expr_name <- expr_names[i]
+#     env <- rlang::quo_get_env(quo)
+#     if (n_groups == 0 && !call_contains_ns(expr, "dplyr", env = env)){
+#       result <- rlang::eval_tidy(expr, data = data_mask, env = env)
+#     } else {
+#       # result <- dplyr::reframe(
+#       #   data,
+#       #   !!expr_name := rlang::eval_tidy(expr, data = data_mask, env = env)
+#       # )
+#       # result <- dplyr::reframe(
+#       #   data, !!expr_name := !!quo
+#       # )
+#       result <- dplyr::reframe(
+#         data, !!expr_name := !!quo
+#       )
+#       if (n_groups == 0){
+#         result <- result[[length(unclass(result))]]
+#       }
+#     }
+#
+#       # assign(expr_name, result, envir = data_mask$.top_env)
+#       assign(expr_name, result, envir = data_mask)
+#       # rlang::env_bind(data_mask$.top_env, !!expr_name := result)
+#       # rlang::env_bind(data_mask$.env, !!expr_name := result)
+#
+#     out[[i]] <- result
+#     names(out)[i] <- expr_name
+#   }
+#   out
+# }
+
+# eval_all_tidy <- function(data, ...){
+#   quos <- named_enquos(..., .dplyr = TRUE)
+#   expr_names <- names(quos)
+#   group_vars <- group_vars(data)
+#   n_groups <- length(group_vars)
+#
+#   my_env <- list2env(as.list(data))
+#   out <- cheapr::new_list(length(quos))
+#   data <- f_select(data, .cols = group_vars(data))
+#
+#   # Loop over the expressions
+#   for (i in seq_along(quos)){
+#     quo <- quos[[i]]
+#     expr <- rlang::quo_get_expr(quo)
+#     expr_name <- expr_names[i]
+#     env <- rlang::quo_get_env(quo)
+#     parent.env(env) <- my_env
+#     if (n_groups == 0 && !call_contains_ns(expr, "dplyr", env = env)){
+#       result <- rlang::eval_tidy(expr, data = data_mask, env = env)
+#     } else {
+#       result <- dplyr::reframe(
+#         data,
+#         !!expr_name := rlang::eval_tidy(expr, env = my_env)
+#       )
+#       # result <- dplyr::reframe(
+#       #   data, !!expr_name := !!quo
+#       # )
+#       if (n_groups == 0){
+#         result <- result[[length(unclass(result))]]
+#       }
+#     }
+#
+#     # assign(expr_name, result, envir = data_mask$.top_env)
+#     assign(expr_name, result, envir = data_mask)
+#     # rlang::env_bind(data_mask$.top_env, !!expr_name := result)
+#     # rlang::env_bind(data_mask$.env, !!expr_name := result)
+#
+#     out[[i]] <- result
+#     names(out)[i] <- expr_name
+#   }
+#   out
+# }
+
+as_list_of_frames <- function(x){
+  for (i in seq_along(x)){
+    if (!inherits(x[[i]], "data.frame")){
+      x[[i]] <- list_as_tbl(x[i])
+    }
+  }
+  x
+}
+
+dynamic_list <- function(..., .keep_null = TRUE, .named = FALSE){
+  quos <- rlang::enquos(...)
+  quo_nms <- names(quos)
+  out <- cheapr::new_list(length(quos))
+
+  # quo_nms2 is for assigning objs to our new environment and so
+  # they can't be empty strings
+  quo_nms2 <- quo_nms
+
+  if (is.null(quo_nms2)){
+    quo_nms2 <- quo_labels(quos, named = FALSE)
+  } else {
+    empty <- empty_str_locs(quo_nms2)
+    if (length(empty) > 0){
+      quo_nms2[empty] <- quo_labels(quos[empty], named = FALSE)
+    }
+  }
+  if (.named){
+    names(out) <- quo_nms2
+  } else {
+    names(out) <- quo_nms
+  }
+  new_env <- list2env(list(), parent = emptyenv())
+  # new_env <- rlang::new_environment()
+  mask <- rlang::new_data_mask(new_env)
+  mask$.data <- rlang::as_data_pronoun(new_env)
+
+  for (i in seq_along(quos)){
+    quo <- quos[[i]]
+    expr <- rlang::quo_get_expr(quo)
+    env <- rlang::quo_get_env(quo)
+    result <- rlang::eval_tidy(expr, mask, env)
+    new_env[[quo_nms2[[i]]]] <- result
+    if (!is.null(result)){
+      out[[i]] <- result
+    }
+  }
+  if (!.keep_null){
+    out <- list_rm_null(out)
+  }
+  out
 }

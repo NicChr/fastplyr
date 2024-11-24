@@ -7,7 +7,7 @@
 \alias{as_tbl}
 \title{Fast 'tibble' alternatives}
 \usage{
-new_tbl(..., .nrows = NULL, .recycle = TRUE, .name_repair = FALSE)
+new_tbl(..., .nrows = NULL, .recycle = TRUE, .name_repair = TRUE)
 
 f_enframe(x, name = "name", value = "value")
 
@@ -16,7 +16,7 @@ f_deframe(x)
 as_tbl(x)
 }
 \arguments{
-\item{...}{Key-value pairs.}
+\item{...}{Dynamic name-value pairs.}
 
 \item{.nrows}{\code{integer(1)} (Optional) number of rows. \cr
 Commonly used to initialise a 0-column data frame with rows.}
@@ -42,9 +42,6 @@ Fast 'tibble' alternatives
 \details{
 \code{new_tbl} and \code{as_tbl} are alternatives to
 \code{tibble} and \code{as_tibble} respectively.
-One of the main reasons that these do not share the same name prefixed with
-\code{f_} is because they don't always return the same result. For example
-\code{new_tbl()} does not support 'quosures' and tidy injection.
 
 \code{f_enframe(x)} where \code{x} is a \code{data.frame} converts \code{x} into a tibble
 of column names and list-values.

@@ -137,7 +137,7 @@ f_summarise <- function(data, ..., .by = NULL,
       } else {
         var <- as.character(dot_args[[1]])
       }
-    }  else {
+    } else {
       var <- rlang::as_label(rlang::quo_get_expr(dot))
     }
     var_not_nested <- length(var) <= 1

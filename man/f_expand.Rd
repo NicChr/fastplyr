@@ -18,7 +18,7 @@ nesting(..., .sort = FALSE)
 \arguments{
 \item{data}{A data frame}
 
-\item{...}{Variables to expand}
+\item{...}{Variables to expand.}
 
 \item{.sort}{Logical. If \code{TRUE} expanded/completed variables are sorted.
 The default is \code{FALSE}.}

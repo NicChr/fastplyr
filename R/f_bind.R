@@ -156,11 +156,9 @@ f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE, .sep = "..."
   if (.recycle){
     dots <- do.call(cheapr::recycle, dots)
   }
-  for (i in seq_along(dots)){
-    if (!inherits(dots[[i]], "data.frame")){
-      dots[[i]] <- list_as_tbl(dots[i])
-    }
-  }
+
+  dots <- as_list_of_frames(dots)
+
   nrows <- cpp_frame_dims(dots, check_rows_equal = !.recycle, check_cols_equal = FALSE)[[1L]]
   out <- as.list(unlist(unname(dots), recursive = FALSE))
   if (.repair_names){

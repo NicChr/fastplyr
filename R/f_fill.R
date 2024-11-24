@@ -35,9 +35,7 @@ f_fill <- function(data, ..., .by = NULL, .cols = NULL,
   if (is.null(.cols) && rlang::dots_n(...) == 0){
     fill_cols <- names(data)
   } else {
-    fill_cols <- names(data)[
-      match(tidy_select_pos(data, ..., .cols = .cols), seq_along(data))
-    ]
+    fill_cols <- unname(tidy_select_names(data, ..., .cols = .cols))
   }
   group_vars <- get_groups(data, .by = {{ .by }})
   groups <- f_select(data, .cols = group_vars)
