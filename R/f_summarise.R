@@ -88,6 +88,7 @@ f_summarise <- function(data, ..., .by = NULL,
 
   group_vars <- get_groups(temp_data, {{ .by }})
 
+  # Groups for collapse functions
   no_groups <- length(group_vars) == 0
   if (no_groups){
     groups <- NULL
@@ -98,7 +99,6 @@ f_summarise <- function(data, ..., .by = NULL,
       return.groups = TRUE, return.order = FALSE
     )
   }
-
 
   ## Flags so that we only construct grouped_df if we need to and do it once
   # construct_grouped_df <- FALSE
@@ -301,15 +301,17 @@ fast_eval_across <- function(data, g, .cols, .fns, env, .names = NULL){
   ncols <- length(.cols)
   nfns <- length(.fns)
   out <- vector("list", ncols * nfns)
+  collapse_ns <- asNamespace("collapse")
   i <- 1L
   for (col in .cols){
     for (f in .fns){
-     fun <- get_from_package(f, "collapse")
+     fun <- get(f, collapse_ns, inherits = FALSE)
      var <- .subset2(data, col)
-     out[[i]] <- do.call(fun, list(var, g = g, use.g.names = FALSE), envir = env)
+     res <- do.call(fun, list(var, g = g, use.g.names = FALSE), envir = env)
      if (length(var) == 0 && (identical(fun, collapse::fsd) || identical(fun, collapse::fvar))){
-       out[[i]] <- numeric()
+       res <- numeric()
      }
+     out[[i]] <- res
      i <- i + 1L
    }
   }
