@@ -10,7 +10,13 @@
 
 ### New features
 
-- `new_tbl` now evaluates its arguments dynamically. 
+- New function `list_tidy` as an alternative to `list` that evaluates 
+arguments dynamically with a focus on setting precedence for objects created
+in the list over environment objects.
+
+- `new_tbl` now evaluates its arguments dynamically. `f_expand` also 
+evaluates its argument dynamically unless the data is grouped and the 
+expressions supplied aren't simply column selections.
 
 - `f_arrange` gains the `.descending` argument to efficiently 
 return data frames in descending order.

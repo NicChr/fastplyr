@@ -24,7 +24,7 @@
 #' @rdname new_tbl
 #' @export
 new_tbl <- function (..., .nrows = NULL, .recycle = TRUE, .name_repair = TRUE){
-  out <- dynamic_list(..., .keep_null = FALSE, .named = TRUE)
+  out <- list_tidy(..., .keep_null = FALSE, .named = TRUE)
 
   if (.recycle) {
     out <- do.call(function(...) cheapr::recycle(..., length = .nrows), out)
