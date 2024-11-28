@@ -3,12 +3,15 @@
 \name{f_select}
 \alias{f_select}
 \alias{f_rename}
+\alias{f_pull}
 \alias{nothing}
-\title{Fast \code{dplyr::select()}/\code{dplyr::rename()}}
+\title{Fast 'dplyr' \code{select()}/\code{rename()}/\code{pull()}}
 \usage{
 f_select(data, ..., .cols = NULL)
 
 f_rename(data, ..., .cols = NULL)
+
+f_pull(data, ..., .cols = NULL)
 
 nothing()
 }

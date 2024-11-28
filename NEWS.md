@@ -18,6 +18,9 @@ in the list over environment objects.
 evaluates its argument dynamically unless the data is grouped and the 
 expressions supplied aren't simply column selections.
 
+- New function `f_pull` as a fast convenience function for extracting 
+vectors from columns.
+
 - `f_arrange` gains the `.descending` argument to efficiently 
 return data frames in descending order.
 

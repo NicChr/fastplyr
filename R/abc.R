@@ -20,6 +20,7 @@ which_in <- get_from_package("which_in", "cheapr")
 cpp_int64_to_numeric <- get_from_package("cpp_int64_to_numeric", "cheapr")
 cpp_loc_set_replace <- get_from_package("cpp_loc_set_replace", "cheapr")
 named_list <- get_from_package("named_list", "cheapr")
+`%in_%` <- cheapr::`%in_%`
 
 check_length <- function(x, size){
   if (length(x) != size){
@@ -60,8 +61,10 @@ col_select_pos <- function(data, .cols = character()){
   if (is.null(out_nms)){
     names(out) <- .subset(data_nms, out)
   } else {
-    es <- !nzchar(out_nms)
-    out_nms[es] <- .subset(data_nms, .subset(out, es))
+    es <- empty_str_locs(out_nms)
+    if (length(es)){
+      out_nms[es] <- .subset(data_nms, .subset(out, es))
+    }
     names(out) <- out_nms
   }
   out

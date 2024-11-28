@@ -132,13 +132,10 @@ tidy_select_pos <- function(data, ..., .cols = NULL){
   if (!is.null(.cols)){
     out <- col_select_pos(data, .cols)
   } else {
-    dots <- rlang::enquos(...)
-    labels <- quo_labels(dots)
-    if (all(labels %in% names(data))){
-      out <- add_names(match(labels, names(data)), names(labels))
-      # if (is.null(names(out))){
-      #   names(out) <- labels
-      # }
+    dots <- rlang::quos(...)
+    labels <- quo_labels(dots, named = TRUE)
+    if (all(labels %in_% data_nms)){
+      out <- add_names(match(labels, data_nms), names(labels))
       is_dup <- collapse::fduplicated(list(names(out), unname(out)))
       out <- out[!is_dup]
       if (anyDuplicated(names(out))){
