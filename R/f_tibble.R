@@ -105,9 +105,8 @@ as_tbl <- function(x){
     if (is.null(names(out))){
       names(out) <- paste0("col_", seq_along(out))
     }
-    non_empty <- nzchar(names(out))
-    if (!all(non_empty)){
-      empty <- cheapr::which_(non_empty, invert = TRUE)
+    empty <- empty_str_locs(names(out))
+    if (length(empty) > 0){
       names(out)[empty] <- paste0("col_", empty)
     }
   }

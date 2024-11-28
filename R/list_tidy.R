@@ -12,7 +12,6 @@
 #'
 #' @export
 list_tidy <- function(..., .keep_null = TRUE, .named = FALSE){
-  # quos <- rlang::enquos(..., .ignore_empty = "all")
   quos <- rlang::quos(..., .ignore_empty = "all")
   quo_nms <- names(quos)
   out <- cheapr::new_list(length(quos))

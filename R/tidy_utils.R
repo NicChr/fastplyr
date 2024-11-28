@@ -252,10 +252,10 @@ tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
   names(address_equal) <- names(data)
   any_groups_changed <- !all(address_equal[group_vars])
   if (unique_groups){
-    extra_groups <- setdiff(extra_groups, group_vars)
+    extra_groups <- fast_setdiff(extra_groups, group_vars)
     all_groups <- c(group_vars, extra_groups)
   } else {
-    all_groups <- c(group_vars, setdiff(extra_groups, group_vars))
+    all_groups <- c(group_vars, fast_setdiff(extra_groups, group_vars))
   }
   list("data" = out,
        "dplyr_groups" = group_vars,
@@ -288,10 +288,10 @@ tidy_group_info_datamask <- function(data, ..., .by = NULL,
     extra_groups <- out_info[["cols"]]
   }
   if (unique_groups){
-    extra_groups <- setdiff(extra_groups, group_vars)
+    extra_groups <- fast_setdiff(extra_groups, group_vars)
     all_groups <- c(group_vars, extra_groups)
   } else {
-    all_groups <- c(group_vars, setdiff(extra_groups, group_vars))
+    all_groups <- c(group_vars, fast_setdiff(extra_groups, group_vars))
   }
   address_equal <- add_names(cpp_frame_addresses_equal(
     data, cheapr::sset(df_ungroup(out), j = names(data))
