@@ -79,7 +79,7 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
       )
       num_missing_categories <- group_data_size -
         collapse::fnunique(
-          df_drop_if_any_empty(factors)
+          remove_rows_if_any_na(factors)
         )
       if (num_missing_categories > 0){
 

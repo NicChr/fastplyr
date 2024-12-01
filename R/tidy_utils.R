@@ -151,7 +151,7 @@ tidy_select_pos <- function(data, ..., .cols = NULL){
 # Select variables utilising tidyselect notation
 tidy_select_names <- function(data, ..., .cols = NULL){
   pos <- tidy_select_pos(data, ..., .cols = .cols)
-  add_names(names(data)[match(unname(pos), seq_along(data))], names(pos))
+  add_names(names(data)[match(pos, seq_along(data))], names(pos))
 }
 
 mutate_cols <- get_from_package("mutate_cols", "dplyr")

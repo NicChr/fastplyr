@@ -21,6 +21,8 @@ expressions supplied aren't simply column selections.
 - New function `f_pull` as a fast convenience function for extracting 
 vectors from columns.
 
+- New functions `remove_rows_if_any_na` and `remove_rows_if_all_na`.
+
 - `f_arrange` gains the `.descending` argument to efficiently 
 return data frames in descending order.
 

@@ -23,8 +23,9 @@ list_tidy <- function(..., .keep_null = TRUE, .named = FALSE){
   if (is.null(quo_nms2)){
     quo_nms2 <- quo_labels(quos, named = FALSE)
   } else {
-    empty <- empty_str_locs(quo_nms2)
-    if (length(empty) > 0){
+    not_empty <- nzchar(quo_nms2)
+    if (!all(not_empty)){
+      empty <- cheapr::val_find(not_empty, FALSE)
       quo_nms2[empty] <- quo_labels(quos[empty], named = FALSE)
     }
   }
@@ -33,7 +34,7 @@ list_tidy <- function(..., .keep_null = TRUE, .named = FALSE){
   } else {
     names(out) <- quo_nms
   }
-  new_env <- list2env(list(), parent = emptyenv())
+  new_env <- new.env(hash = FALSE, parent = emptyenv())
   mask <- rlang::new_data_mask(new_env)
   mask$.data <- rlang::as_data_pronoun(new_env)
 

@@ -86,7 +86,7 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
   # Remove empty rows (rows with all NA values)
 
   if (.drop_empty){
-    out <- df_drop_if_all_empty(f_select(out, .cols = dup_vars))
+    out <- remove_rows_if_all_na(f_select(out, .cols = dup_vars))
   }
 
   # Adjust group sizes as they reflect the dup count + 1

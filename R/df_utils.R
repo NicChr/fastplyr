@@ -51,11 +51,6 @@ group_data <- function(x){
 
 # df/list constructors ----------------------------------------------------
 
-# Turns df into plain df
-df_as_df <- function(x){
-  list_as_df(x)
-}
-
 # Converts df into plain tbl
 df_as_tbl <- function(x){
   `class<-`(x, c("tbl_df", "tbl", "data.frame"))
@@ -139,12 +134,6 @@ combine <- function(...){
 #     cols <- do.call(function(...) cheapr::recycle(..., length = df_nrow(data)), cols)
 #   }
 #   cpp_df_add_cols(data, cols)
-# }
-
-# df_rm_cols <- function(data, .cols){
-#   cols_to_remove <- col_select_names(data, .cols = .cols)
-#   dplyr::dplyr_col_modify(data, add_names(vector("list", length(cols_to_remove)),
-#                                           cols_to_remove))
 # }
 
 # This is not only faster than dplyr col modify for large data frames
@@ -233,28 +222,8 @@ df_group_id <- function(x){
   }
   out
 }
-# Fast/efficient drop empty rows
-df_drop_if_all_empty <- function(data){
-  drop <- cheapr::row_all_na(data)
-  if (length(drop) == 0){
-    data
-  } else {
-    keep <- cheapr::which_(drop, invert = TRUE)
-    df_row_slice(data, keep)
-  }
-}
-df_drop_if_any_empty <- function(data){
-  drop <- cheapr::row_any_na(data)
-  if (length(drop) == 0){
-    data
-  } else {
-    keep <- cheapr::which_(drop, invert = TRUE)
-    df_row_slice(data, keep)
-  }
-}
 
 # Extremely simple count functions for grouped_df
-
 df_count <- function(.data, name = "n", weights = NULL){
   groups <- group_data(.data)
   if (!is.null(weights)){
@@ -313,11 +282,14 @@ unique_name_repair <- function(x, .sep = "..."){
     return(x)
   }
   x <- as.character(x)
-  col_seq <- seq_along(x)
-  which_dup <- cheapr::which_(collapse::fduplicated(x, all = TRUE))
-  x[which_dup] <- paste0(x[which_dup], .sep, col_seq[which_dup])
-  which_empty <- empty_str_locs(x)
-  x[which_empty] <- paste0(x[which_empty], .sep, col_seq[which_empty])
+  dup <- collapse::fduplicated(x, all = TRUE)
+
+  if (any(dup)){
+    which_dup <- cheapr::val_find(dup, TRUE)
+    x[which_dup] <- paste0(x[which_dup], .sep, which_dup)
+    which_empty <- empty_str_locs(x)
+    x[which_empty] <- paste0(x[which_empty], .sep, which_empty)
+  }
   x
 }
 
