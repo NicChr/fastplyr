@@ -1,7 +1,5 @@
 * Updated to version 0.5.0
 
-* Import bug fixes in this new release.
-
 * Checked and passed using rhub v2.0.0 in the following environments:
 
 ## Test environments
