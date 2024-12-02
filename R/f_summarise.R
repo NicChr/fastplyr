@@ -100,8 +100,7 @@ f_summarise <- function(data, ..., .by = NULL,
     )
   }
 
-  ## Flags so that we only construct grouped_df if we need to and do it once
-  # construct_grouped_df <- FALSE
+  ## Flag so that we only construct grouped_df if we need to and do it once
   grouped_df_has_been_constructed <- FALSE
 
   dots <- rlang::enquos(...)
@@ -125,11 +124,13 @@ f_summarise <- function(data, ..., .by = NULL,
   for (i in seq_along(dots)){
     dot <- dots[[i]]
     dot_label <- rlang::as_label(dot)
+    dot_env <- rlang::quo_get_env(dot)
+    dot_expr <- rlang::quo_get_expr(dot)
     dot_nm <- dot_nms[i]
+
     if (!nzchar(dot_nm)){
       dot_nm <- dot_label
     }
-    dot_env <- rlang::quo_get_env(dot)
     if (rlang::quo_is_call(dot)){
       dot_args <- rlang::call_args(dot)
       if (length(dot_args) == 0){
@@ -138,7 +139,7 @@ f_summarise <- function(data, ..., .by = NULL,
         var <- as.character(dot_args[[1]])
       }
     } else {
-      var <- rlang::as_label(rlang::quo_get_expr(dot))
+      var <- rlang::as_label(dot_expr)
     }
     var_not_nested <- length(var) <= 1
     if (.optimise && is_n_call(dot) && var_not_nested){
@@ -159,7 +160,8 @@ f_summarise <- function(data, ..., .by = NULL,
           fun, c(list(temp_data[[var]],
                       g = groups,
                       use.g.names = FALSE),
-                 fun_args)
+                 fun_args),
+          envir = dot_env
         )
         out[[dot_nm]] <- res
 
@@ -175,9 +177,9 @@ f_summarise <- function(data, ..., .by = NULL,
       dot_args <- rlang::call_args(dot)
       across_expr <- match.call(
         definition = dplyr::across,
-        call = rlang::quo_get_expr(dot),
+        call = dot_expr,
         expand.dots = FALSE,
-        envir = rlang::quo_get_env(dot)
+        envir = dot_env
       )
 
       if (!".cols" %in% names(across_expr)){
@@ -319,26 +321,30 @@ fast_eval_across <- function(data, g, .cols, .fns, env, .names = NULL){
 }
 
 across_col_names <- function (.cols = NULL, .fns = NULL, .names = NULL){
+  fns_null <- is.null(.fns)
   nms_null <- is.null(.names)
-  if (nms_null && length(.fns) == 1L) {
+  n_fns <- length(.fns)
+  n_cols <- length(.cols)
+
+  if (fns_null && nms_null){
+    out <- as.character(.cols)
+  } else if (nms_null && n_fns == 1L) {
     out <- .cols
-  } else if (nms_null && length(.cols) == 1L) {
+  } else if (nms_null && n_cols == 1L) {
     out <- .fns
   } else {
-    out <- character(length(.cols) * length(.fns))
+    out <- character(n_cols * n_fns)
     init <- 0L
-    .fn <- .fns
     if (nms_null) {
       for (.col in .cols) {
-        out[seq_along(.fns) + init] <- stringr::str_c(.col,
-                                                      "_", .fn)
-        init <- init + length(.fns)
+        out[seq_len(n_fns) + init] <- paste0(.col, "_", .fns)
+        init <- init + n_fns
       }
-    }
-    else {
+    } else {
+      .fn <- .fns
       for (.col in .cols) {
-        out[seq_along(.fns) + init] <- stringr::str_glue(.names)
-        init <- init + length(.fns)
+        out[seq_len(n_fns) + init] <- stringr::str_glue(.names)
+        init <- init + n_fns
       }
     }
   }
