@@ -74,6 +74,17 @@ df_row_slice <- function(data, i, reconstruct = TRUE){
   }
   out
 }
+
+# Bare-bones col select
+fast_col_select <- function(data, cols){
+  list_as_df(unclass(data)[cols])
+
+}
+# Bare-bones col bind
+fast_bind_cols <- function(...){
+  list_as_df(c(...))
+}
+
 df_add_cols <- function(data, cols){
   reconstruct(data, dplyr::dplyr_col_modify(f_ungroup(data), cols))
 }
@@ -283,11 +294,12 @@ unique_name_repair <- function(x, .sep = "..."){
   }
   x <- as.character(x)
   dup <- collapse::fduplicated(x, all = TRUE)
-
-  if (any(dup)){
-    which_dup <- cheapr::val_find(dup, TRUE)
+  which_dup <- cheapr::val_find(dup, TRUE)
+  if (length(which_dup)){
     x[which_dup] <- paste0(x[which_dup], .sep, which_dup)
-    which_empty <- empty_str_locs(x)
+  }
+  which_empty <- empty_str_locs(x)
+  if (length(which_empty)){
     x[which_empty] <- paste0(x[which_empty], .sep, which_empty)
   }
   x

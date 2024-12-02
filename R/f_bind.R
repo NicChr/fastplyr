@@ -31,13 +31,13 @@ f_bind_rows <- function(..., .fill = TRUE){
   nrows <- dims[[1L]]
   ncols <- dims[[2L]]
 
-  if (sum(ncols) == 0){
-    return(new_tbl(.nrows = sum(nrows)))
-  }
+
   if (n_dots == 0){
     new_tbl()
   } else if (n_dots == 1){
     dots[[1L]]
+  } else if (sum(ncols) == 0){
+    return(reconstruct(dots[[1L]], cheapr::new_df(.nrows = sum(nrows))))
   } else {
     template <- dots[[1L]]
     prototype_names <- names(template)
@@ -79,9 +79,9 @@ f_bind_rows <- function(..., .fill = TRUE){
           cols_to_add <- fast_setdiff(prototype_names, names(df))
           if (length(cols_to_add)){
             df_to_bind <- list_as_df(lapply(col_prototypes[cols_to_add], na_init, nrows[[i]]))
-            df <- f_bind_cols(df, df_to_bind, .recycle = FALSE)
+            df <- fast_bind_cols(df, df_to_bind)
           }
-          dots[[i]] <- df_select(df, prototype_names)
+          dots[[i]] <- fast_col_select(df, prototype_names)
         }
       }
 
@@ -118,7 +118,7 @@ f_bind_rows <- function(..., .fill = TRUE){
       } else {
         other_out <- do.call(
           fast_rowbind,
-          c(lapply(dots, df_select, other_vars),
+          c(lapply(dots, fast_col_select, other_vars),
             list(use.names = FALSE))
         )
       }

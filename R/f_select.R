@@ -73,7 +73,10 @@ f_select.data.table <- function(data, ..., .cols = NULL){
   keys <- attr(data, "sorted")
   out <- collapse::qDT(out)
   if (all(keys %in% names(out))){
-    if (all(cpp_frame_addresses_equal(df_select(out, keys), df_select(data, keys)))){
+    if (all(cpp_frame_addresses_equal(
+      fast_col_select(out, keys),
+      fast_col_select(data, keys)
+    ))){
       attr(out, "sorted") <- keys
     }
   }
