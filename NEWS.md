@@ -1,4 +1,4 @@
-# fastplyr (development version)
+# fastplyr 0.5.0
 
 ### Bug fixes
 
