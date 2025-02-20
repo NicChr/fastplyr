@@ -310,8 +310,8 @@ fast_eval_across <- function(data, g, .cols, .fns, env, .names = NULL){
      fun <- get(f, collapse_ns, inherits = FALSE)
      var <- .subset2(data, col)
      res <- do.call(fun, list(var, g = g, use.g.names = FALSE), envir = env)
-     if (length(var) == 0 && (identical(fun, collapse::fsd) || identical(fun, collapse::fvar))){
-       res <- numeric()
+     if (length(var) == 0){
+       res <- `storage.mode<-`(integer(), storage.mode(res))
      }
      out[[i]] <- res
      i <- i + 1L

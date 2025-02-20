@@ -1,5 +1,10 @@
 # fastplyr (development version)
 
+- Small bug fix when `f_summarise` calculates means and medians 
+for zero-row data frames with integer variables.
+
+- R 4.0.0 now required.
+
 # fastplyr 0.5.0
 
 ### Bug fixes
