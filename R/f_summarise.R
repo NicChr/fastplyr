@@ -311,7 +311,7 @@ fast_eval_across <- function(data, g, .cols, .fns, env, .names = NULL){
      var <- .subset2(data, col)
      res <- do.call(fun, list(var, g = g, use.g.names = FALSE), envir = env)
      if (length(var) == 0){
-       res <- `storage.mode<-`(integer(), storage.mode(res))
+       res <- cheapr::sset(res, 0)
      }
      out[[i]] <- res
      i <- i + 1L
