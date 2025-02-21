@@ -1,4 +1,4 @@
-# fastplyr (development version)
+# fastplyr 0.5.1
 
 - Small bug fix when `f_summarise` calculates means and medians 
 for zero-row data frames with integer variables.
