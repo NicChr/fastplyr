@@ -13,7 +13,6 @@ set_add_attr <- get_from_package("cpp_set_add_attr", "cheapr")
 set_add_attributes <- get_from_package("cpp_set_add_attributes", "cheapr")
 set_rm_attr <- get_from_package("cpp_set_rm_attr", "cheapr")
 set_rm_attributes <- get_from_package("cpp_set_rm_attributes", "cheapr")
-df_select <- get_from_package("df_select", "cheapr")
 which <- cheapr::which_
 which_not_in <- get_from_package("which_not_in", "cheapr")
 which_in <- get_from_package("which_in", "cheapr")
@@ -44,17 +43,15 @@ col_select_pos <- function(data, .cols = character()){
   } else if (is.character(.cols)){
     out <- match(.cols, data_nms)
   } else {
-    stop(".cols must be a numeric or character vector")
+    cli::cli_abort("{.arg .cols} must be a {.cls numeric} or {.cls character} vector")
   }
   # is_na <- is.na(out)
   if (cheapr::any_na(out)){
     first_na_col <- .subset(.cols, .subset(cheapr::which_na(out), 1L))
     if (is.numeric(first_na_col)){
-      stop(paste("Location", first_na_col, "doesn't exist",
-                 sep = " "))
+      cli::cli_abort("Location {first_na_col} doesn't exist")
     } else {
-      stop(paste("Column", first_na_col, "doesn't exist",
-                 sep = " "))
+      cli::cli_abort("Column {first_na_col} doesn't exist")
     }
   }
   out_nms <- names(.cols)
@@ -102,16 +99,18 @@ dots_length <- function(...){
 # Special function to handle -0 selection
 # Returns 1 or -1, with special handling of -0 to allow slicing of all rows
 slice_sign <- function(x){
-  if (length(x)){
-    rng <- collapse::frange(x, na.rm = FALSE)
+  if (length(x) == 0){
+    1L
+  } else if (length(x) == 1){
+    cheapr::int_sign(1/x)
   } else {
-    rng <- integer(2L)
+    rng <- collapse::frange(x, na.rm = FALSE)
+    rng_sum <- sum(cheapr::int_sign(1/rng))
+    if (abs(rng_sum) != 2){
+      cli::cli_abort("Can't mix negative and positive locations")
+    }
+    cheapr::int_sign(rng_sum)
   }
-  rng_sum <- sum(sign(1 / rng))
-  if (abs(rng_sum) != 2){
-    stop("Can't mix negative and positive locations")
-  }
-  as.integer(sign(rng_sum))
 }
 
 # Like deparse1 but has a cutoff in case of massive strings

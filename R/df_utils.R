@@ -74,12 +74,6 @@ df_row_slice <- function(data, i, reconstruct = TRUE){
   }
   out
 }
-
-# Bare-bones col select
-fast_col_select <- function(data, cols){
-  list_as_df(unclass(data)[cols])
-
-}
 # Bare-bones col bind
 fast_bind_cols <- function(...){
   list_as_df(c(...))

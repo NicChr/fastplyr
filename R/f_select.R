@@ -25,7 +25,7 @@ f_select <- function(data, ..., .cols = NULL){
 #' @export
 f_select.data.frame <- function(data, ..., .cols = NULL){
   pos <- tidy_select_pos(data, ..., .cols = .cols)
-  out <- df_select(data, pos)
+  out <- cheapr::sset_df(data, j = pos, keep_attrs = TRUE)
   names(out) <- names(pos)
   out
 }
@@ -68,18 +68,17 @@ f_select.grouped_df <- function(data, ..., .cols = NULL){
 #' @export
 f_select.data.table <- function(data, ..., .cols = NULL){
   pos <- tidy_select_pos(data, ..., .cols = .cols)
-  out <- df_select(data, pos)
-  names(out) <- names(pos)
+  out <- cheapr::sset(data, j = pos)
   keys <- attr(data, "sorted")
-  out <- collapse::qDT(out)
-  if (all(keys %in% names(out))){
+  if (length(keys) >= 1 && all(keys %in% names(out))){
     if (all(cpp_frame_addresses_equal(
-      fast_col_select(out, keys),
-      fast_col_select(data, keys)
+      cheapr::sset_col(out, keys),
+      cheapr::sset_col(data, keys)
     ))){
       attr(out, "sorted") <- keys
     }
   }
+  names(out) <- names(pos)
   out
 }
 #' @rdname f_select
@@ -122,7 +121,7 @@ f_rename.data.table <- function(data, ..., .cols = NULL){
 f_pull <- function(data, ..., .cols = NULL){
   col <- tidy_select_pos(data, ..., .cols = .cols)
   if (length(col) != 1){
-    stop("You must select exactly one column in `f_pull()`")
+    cli::cli_abort("You must select exactly one column")
   }
   .subset2(data, col)
 }

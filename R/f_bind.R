@@ -81,7 +81,7 @@ f_bind_rows <- function(..., .fill = TRUE){
             df_to_bind <- list_as_df(lapply(col_prototypes[cols_to_add], na_init, nrows[[i]]))
             df <- fast_bind_cols(df, df_to_bind)
           }
-          dots[[i]] <- fast_col_select(df, prototype_names)
+          dots[[i]] <- cheapr::sset_col(df, prototype_names)
         }
       }
 
@@ -118,7 +118,7 @@ f_bind_rows <- function(..., .fill = TRUE){
       } else {
         other_out <- do.call(
           fast_rowbind,
-          c(lapply(dots, fast_col_select, other_vars),
+          c(lapply(dots, cheapr::sset_col, other_vars),
             list(use.names = FALSE))
         )
       }

@@ -41,7 +41,7 @@ f_expand <- function(data, ..., .sort = FALSE,
     frames <- cheapr::new_list(length(dot_vars))
     for (i in seq_along(dot_vars)){
       frames[[i]] <- sort_unique(
-        df_select(data2, c(group_vars, dot_vars[i])),
+        cheapr::sset_col(data2, c(group_vars, dot_vars[i])),
         sort = .sort
       )
     }

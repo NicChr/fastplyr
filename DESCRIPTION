@@ -1,6 +1,6 @@
 Package: fastplyr
 Title: Fast Alternatives to 'tidyverse' Functions
-Version: 0.5.1
+Version: 0.5.1.9000
 Authors@R: 
     person("Nick", "Christofides", , "nick.christofides.r@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9743-7342"))
@@ -11,7 +11,8 @@ BugReports: https://github.com/NicChr/fastplyr/issues
 Depends: 
     R (>= 4.0.0)
 Imports: 
-    cheapr (>= 0.9.91),
+    cheapr (>= 1.0.1),
+    cli,
     collapse (>= 2.0.0),
     dplyr (>= 1.1.0),
     lifecycle,
