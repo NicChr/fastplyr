@@ -1,15 +1,5 @@
 #include "fastplyr.h"
-
-SEXP r_address(SEXP x) {
-  static char buf[1000];
-  snprintf(buf, 1000, "%p", (void*) x);
-  return Rf_mkChar(buf);
-}
-
-[[cpp11::register]]
-SEXP cpp_r_address(SEXP x){
-  return Rf_ScalarString(r_address(x));
-}
+#include "cheapr_api.h"
 
 // Compare the addresses between 2 similar lists
 
@@ -25,7 +15,7 @@ SEXP cpp_frame_addresses_equal(SEXP x, SEXP y) {
   SEXP out = Rf_protect(Rf_allocVector(LGLSXP, n1));
   int *p_out = LOGICAL(out);
   for (int i = 0; i < n1; ++i) {
-    p_out[i] = (r_address(p_x[i]) == r_address(p_y[i]));
+    p_out[i] = (cheapr::r_address(p_x[i]) == cheapr::r_address(p_y[i]));
   }
   Rf_unprotect(1);
   return out;
@@ -45,7 +35,7 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
   int *p_ncols = INTEGER(ncols);
   if (n < 2){
     for (int i = 0; i < n; ++i) {
-      if (!Rf_isFrame(p_x[i])){
+      if (!Rf_inherits(p_x[i], "data.frame")){
         Rf_unprotect(3);
         Rf_error("All inputs must be data frames");
       }
@@ -56,7 +46,7 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
 
     // First data frame
 
-    if (!Rf_isFrame(p_x[0])){
+    if (!Rf_inherits(p_x[0], "data.frame")){
       Rf_unprotect(3);
       Rf_error("All inputs must be data frames");
     }
@@ -68,7 +58,7 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
     // All others
 
     for (int i = 1; i < n; ++i) {
-      if (!Rf_isFrame(p_x[i])){
+      if (!Rf_inherits(p_x[i], "data.frame")){
         Rf_unprotect(3);
         Rf_error("All inputs must be data frames");
       }
@@ -106,7 +96,7 @@ bool cpp_any_frames(SEXP x){
   int n_dots = Rf_length(x);
   const SEXP *p_x = VECTOR_PTR_RO(x);
   for (int i = 0; i < n_dots; ++i){
-    if (Rf_isFrame(p_x[i])){
+    if (Rf_inherits(p_x[i], "data.frame")){
       out = true;
       break;
     }
@@ -479,7 +469,7 @@ SEXP cpp_int_slice(SEXP x, SEXP indices, bool check){
   out_size = n - oob_count - zero_count;
   bool no_check = !check || (zero_count == 0 && oob_count == 0 && pos_count == n ) || neg_count > 0;
 
-  SEXP temp = neg_count > 0 ? Rf_protect(cpp11::package("cheapr")["neg_indices_to_pos"](indices, xn)) : Rf_protect(indices); ++NP;
+  SEXP temp = Rf_protect(neg_count > 0 ? cheapr::exclude_locs(indices, xn) : indices); ++NP;
   int *pi2 = INTEGER(temp);
   if (neg_count > 0){
     n = Rf_length(temp);
@@ -495,7 +485,7 @@ SEXP cpp_int_slice(SEXP x, SEXP indices, bool check){
     int xi = 0;
     for (int i = 0; i < n; ++i){
       xi = pi2[i];
-      if ((unsigned)(xi - 1) <= rng) p_out[k++] = p_x[xi - 1];
+      if ( ( (unsigned)(xi - 1) ) <= rng) p_out[k++] = p_x[xi - 1];
       // if (xi > 0 && xi <= xn) p_out[k++] = p_x[xi - 1];
     }
   }
@@ -518,24 +508,9 @@ SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
   return out;
 }
 
-bool is_compact_seq(SEXP x){
-  if (!ALTREP(x)) return false;
-  SEXP alt_attribs = Rf_protect(Rf_coerceVector(ATTRIB(ALTREP_CLASS(x)), VECSXP));
-  SEXP alt_class_nm = Rf_protect(STRING_ELT(Rf_coerceVector(VECTOR_ELT(alt_attribs, 0), STRSXP), 0));
-  SEXP alt_pkg_nm = Rf_protect(STRING_ELT(Rf_coerceVector(VECTOR_ELT(alt_attribs, 1), STRSXP), 0));
-  SEXP intseq_char = Rf_protect(Rf_mkChar("compact_intseq"));
-  SEXP realseq_char = Rf_protect(Rf_mkChar("compact_realseq"));
-  SEXP base_char = Rf_protect(Rf_mkChar("base"));
-  bool out = (alt_class_nm == intseq_char ||
-              alt_class_nm == realseq_char) &&
-              alt_pkg_nm == base_char;
-  Rf_unprotect(6);
-  return out;
-}
-
 SEXP cpp_run_id(SEXP x){
   R_xlen_t n = Rf_xlength(x);
-  if (is_compact_seq(x)){
+  if (cheapr::is_compact_seq(x)){
     return cpp11::package("base")[":"](1, n);
   }
   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
@@ -613,7 +588,7 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
   const SEXP *p_x = VECTOR_PTR_RO(x);
 
   for (int l = n_cols - 1; l >= 0; --l){
-    if (is_compact_seq(p_x[l])){
+    if (cheapr::is_compact_seq(p_x[l])){
       SEXP compact_seq = Rf_protect(p_x[l]); ++NP;
       SEXP out = Rf_protect(cpp_run_id(compact_seq)); ++NP;
       Rf_unprotect(NP);
@@ -980,6 +955,41 @@ SEXP cpp_unlist_group_locs(SEXP x){
   Rf_unprotect(1);
   return out;
 }
+
+[[cpp11::register]]
+SEXP cpp_reconstruct(SEXP data, SEXP from, bool keep_attrs){
+  if (!Rf_inherits(data, "data.frame")){
+    Rf_error("`data` must be a `data.frame`");
+  }
+  if (!Rf_inherits(from, "data.frame")){
+    Rf_error("`from` must be a `data.frame`");
+  }
+
+  // Create shallow copies so that we can manipulate attributes freely
+
+  SEXP target = Rf_protect(cheapr::shallow_copy(data));
+  SEXP source = Rf_protect(cheapr::shallow_copy(from));
+
+  // The below strips any leftover attributes from `data`,
+  // I wonder if these should be kept
+
+  cheapr::set_rm_attrs(target);
+
+  if (keep_attrs){
+    Rf_setAttrib(source, R_NamesSymbol, R_NilValue);
+    Rf_setAttrib(source, R_ClassSymbol, R_NilValue);
+    Rf_setAttrib(source, R_RowNamesSymbol, R_NilValue);
+    SHALLOW_DUPLICATE_ATTRIB(target, source);
+  }
+
+  // Re-add original data attributes as these cannot be changed
+  Rf_setAttrib(target, R_NamesSymbol, Rf_getAttrib(data, R_NamesSymbol));
+  Rf_setAttrib(target, R_ClassSymbol, Rf_getAttrib(from, R_ClassSymbol));
+  Rf_setAttrib(target, R_RowNamesSymbol, cheapr::create_df_row_names(Rf_length(Rf_getAttrib(data, R_RowNamesSymbol))));
+  Rf_unprotect(2);
+  return target;
+}
+
 
 // Low-level add cols to data frame
 // SEXP cpp_df_add_cols(SEXP x, SEXP cols) {

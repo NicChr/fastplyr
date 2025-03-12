@@ -1,29 +1,14 @@
-reconstruct <- function(template, data, copy_extra_attributes = TRUE){
-  UseMethod("reconstruct")
-}
-#' @export
-reconstruct.data.frame <- function(template, data, copy_extra_attributes = TRUE){
-  if (!is_df(data)){
-    stop("data must be a data.frame")
-  }
-  ad <- attributes(data)
-  at <- attributes(template)
-  at[["names"]] <- names(data)
-  at[["row.names"]] <- .row_names_info(data, type = 0L)
 
-  # If we're not copying all attributes
-  # then remove them
-  if (!copy_extra_attributes){
-    at[fast_setdiff(names(at), c("names", "row.names", "class"))] <- NULL
+reconstruct <- function(template, data, copy_extra_attributes = TRUE){
+  if (inherits(template, "grouped_df")){
+    grp_df_reconstruct(data, template, copy_extra_attributes)
+  } else if (inherits(template, "data.table")){
+    dt_reconstruct(data, template, copy_extra_attributes)
+  } else {
+    .Call(`_fastplyr_cpp_reconstruct`, data, template, copy_extra_attributes)
   }
-  attributes(data) <- at
-  data
 }
-#' @export
-reconstruct.grouped_df <- function(template, data, copy_extra_attributes = TRUE){
-  if (!is_df(data)){
-    stop("data must be a data.frame")
-  }
+grp_df_reconstruct <- function(data, template, copy_extra_attributes = TRUE){
   ad <- attributes(data)
   at <- attributes(template)
   at[["names"]] <- names(data)
@@ -38,8 +23,8 @@ reconstruct.grouped_df <- function(template, data, copy_extra_attributes = TRUE)
   groups_are_identical <-
     all(template_groups %in% names(data)) &&
     identical(
-      strip_attrs(as.list(cheapr::sset(data, j = template_groups))),
-      strip_attrs(as.list(cheapr::sset(template, j = template_groups)))
+      strip_attrs(as.list(cheapr::sset_col(data, j = template_groups))),
+      strip_attrs(as.list(cheapr::sset_col(template, j = template_groups)))
     )
 
   if (!groups_are_identical){
@@ -77,11 +62,7 @@ reconstruct.grouped_df <- function(template, data, copy_extra_attributes = TRUE)
   attributes(data) <- at
   data
 }
-#' @export
-reconstruct.data.table <- function(template, data, copy_extra_attributes = TRUE){
-  if (!is_df(data)){
-    stop("data must be a data.frame")
-  }
+dt_reconstruct <- function(data, template, copy_extra_attributes = TRUE){
   ad <- attributes(data)
   at <- attributes(template)
   row_names <- .row_names_info(data, type = 0L)

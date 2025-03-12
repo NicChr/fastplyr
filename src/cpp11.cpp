@@ -6,13 +6,6 @@
 #include <R_ext/Visibility.h>
 
 // fastplyr.cpp
-SEXP cpp_r_address(SEXP x);
-extern "C" SEXP _fastplyr_cpp_r_address(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_r_address(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
-  END_CPP11
-}
-// fastplyr.cpp
 SEXP cpp_frame_addresses_equal(SEXP x, SEXP y);
 extern "C" SEXP _fastplyr_cpp_frame_addresses_equal(SEXP x, SEXP y) {
   BEGIN_CPP11
@@ -131,6 +124,13 @@ extern "C" SEXP _fastplyr_cpp_unlist_group_locs(SEXP x) {
     return cpp11::as_sexp(cpp_unlist_group_locs(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
+// fastplyr.cpp
+SEXP cpp_reconstruct(SEXP data, SEXP from, bool keep_attrs);
+extern "C" SEXP _fastplyr_cpp_reconstruct(SEXP data, SEXP from, SEXP keep_attrs) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_reconstruct(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(from), cpp11::as_cpp<cpp11::decay_t<bool>>(keep_attrs)));
+  END_CPP11
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
@@ -145,7 +145,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_grouped_run_id",        (DL_FUNC) &_fastplyr_cpp_grouped_run_id,        3},
     {"_fastplyr_cpp_is_exotic",             (DL_FUNC) &_fastplyr_cpp_is_exotic,             1},
     {"_fastplyr_cpp_list_subset",           (DL_FUNC) &_fastplyr_cpp_list_subset,           4},
-    {"_fastplyr_cpp_r_address",             (DL_FUNC) &_fastplyr_cpp_r_address,             1},
+    {"_fastplyr_cpp_reconstruct",           (DL_FUNC) &_fastplyr_cpp_reconstruct,           3},
     {"_fastplyr_cpp_row_id",                (DL_FUNC) &_fastplyr_cpp_row_id,                3},
     {"_fastplyr_cpp_set_list_element",      (DL_FUNC) &_fastplyr_cpp_set_list_element,      3},
     {"_fastplyr_cpp_slice_locs",            (DL_FUNC) &_fastplyr_cpp_slice_locs,            2},

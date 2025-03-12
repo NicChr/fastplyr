@@ -68,7 +68,7 @@ list_as_tbl <- function(x){
 
 # Row slice
 df_row_slice <- function(data, i, reconstruct = TRUE){
-  out <- cheapr::sset(data, i)
+  out <- cheapr::sset_row(data, i)
   if (reconstruct){
     out <- reconstruct(data, out)
   }
@@ -79,8 +79,10 @@ fast_bind_cols <- function(...){
   list_as_df(c(...))
 }
 
+cheapr_add_cols <- get_from_package("df_add_cols", "cheapr")
+
 df_add_cols <- function(data, cols){
-  reconstruct(data, dplyr::dplyr_col_modify(f_ungroup(data), cols))
+  reconstruct(data, cheapr_add_cols(data, cols))
 }
 
 combine <- function(...){

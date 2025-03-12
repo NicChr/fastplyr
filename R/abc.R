@@ -19,6 +19,7 @@ which_in <- get_from_package("which_in", "cheapr")
 cpp_int64_to_numeric <- get_from_package("cpp_int64_to_numeric", "cheapr")
 cpp_loc_set_replace <- get_from_package("cpp_loc_set_replace", "cheapr")
 named_list <- get_from_package("named_list", "cheapr")
+as_list_of <- get_from_package("as_list_of", "cheapr")
 `%in_%` <- cheapr::`%in_%`
 
 check_length <- function(x, size){

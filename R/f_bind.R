@@ -22,10 +22,7 @@
 #' @rdname f_bind_rows
 #' @export
 f_bind_rows <- function(..., .fill = TRUE){
-  dots <- list_rm_null(list(...))
-  if (length(dots) == 1 && rlang::is_bare_list(dots[[1L]])){
-    dots <- dots[[1L]]
-  }
+  dots <- list_rm_null(as_list_of(...))
   n_dots <- length(dots)
   dims <- cpp_frame_dims(dots, check_rows_equal = FALSE, check_cols_equal = !.fill)
   nrows <- dims[[1L]]
@@ -149,10 +146,7 @@ f_bind_rows <- function(..., .fill = TRUE){
 #' @rdname f_bind_rows
 #' @export
 f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE, .sep = "..."){
-  dots <- list_rm_null(list(...))
-  if (length(dots) == 1 && rlang::is_bare_list(dots[[1L]])){
-    dots <- dots[[1L]]
-  }
+  dots <- list_rm_null(as_list_of(...))
   if (.recycle){
     dots <- do.call(cheapr::recycle, dots)
   }

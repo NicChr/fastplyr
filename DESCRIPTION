@@ -26,6 +26,7 @@ Suggests:
     testthat (>= 3.0.0),
     tidyr
 LinkingTo: 
+    cheapr,
     cpp11
 Config/testthat/edition: 3
 Encoding: UTF-8

@@ -61,7 +61,7 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
                     keep_order = FALSE){
   rlang::check_dots_empty0(...)
   if (is.logical(i)){
-    stop("i must be an integer vector, not a logical vector, use `f_filter()` instead")
+    cli::cli_abort("{.arg i} must be an {.cls integer} vector, not a {.cls logical} vector, use {.fn f_filter} instead")
   }
   if (length(i) == 0L){
     i <- 0L
@@ -70,13 +70,13 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
   N <- df_nrow(data)
 
   rng <- collapse::frange(i, na.rm = TRUE)
-  rng_sum <- sum(sign(rng))
+  rng_sum <- sum(cheapr::int_sign(rng))
   if (abs(rng_sum) != 2){
     if (!any(rng == 0)){
-      stop("Can't mix negative and positive locations")
+      cli::cli_abort("Can't mix negative and positive locations")
     }
   }
-  slice_sign <- sign(rng_sum)
+  slice_sign <- cheapr::int_sign(rng_sum)
 
   # Groups
 

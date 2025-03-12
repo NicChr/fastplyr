@@ -78,6 +78,8 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
   }
   which_dup <- GRP_which_duplicated(groups, all = .both_ways)
 
+  # Neat way to return sorted duplicate rows
+
   if (.sort){
     which_dup <- which_dup[order(GRP_group_id(groups)[which_dup])]
   }
