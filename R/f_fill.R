@@ -54,8 +54,8 @@ f_fill <- function(data, ..., .by = NULL, .cols = NULL,
     # `cpp_unlist_group_locs()` is a dedicated function to do this
     if (identical(group_vars, group_vars(data))){
       group_data <- group_data(data)
-      o <- cpp_unlist_group_locs(group_data[[".rows"]])
       sizes <- cheapr::lengths_(group_data[[".rows"]])
+      o <- cpp_unlist_group_locs(group_data[[".rows"]], sizes)
     } else {
       o <- radixorderv2(groups, group.sizes = TRUE,
                         sort = FALSE, decreasing = FALSE)

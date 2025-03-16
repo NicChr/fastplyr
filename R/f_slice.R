@@ -87,7 +87,10 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
     if (length(i) == 1 && i >= 0){
       data_locs <- cheapr::na_rm(list_subset(group_locs, i))
     } else {
-      data_locs <- cpp_unlist_group_locs(cpp_slice_locs(group_locs, i))
+      data_locs <- cpp_unlist_group_locs(
+        cpp_slice_locs(group_locs, i),
+        NULL
+      )
     }
     if (is.null(data_locs)){
       data_locs <- integer(0)
@@ -125,7 +128,9 @@ f_slice_head <- function(data, n, prop, .by = NULL,
   } else {
     sequences <- sequence(slice_sizes, from = start, by = 1L)
     if (length(slice_sizes) > 1L){
-      i <- cpp_unlist_group_locs(slice_info[["rows"]])[sequences]
+      i <- cpp_unlist_group_locs(
+        slice_info[["rows"]], slice_info[["group_sizes"]]
+      )[sequences]
     } else {
       i <- sequences
     }
@@ -156,7 +161,9 @@ f_slice_tail <- function(data, n, prop, .by = NULL,
   } else {
     sequences <- sequence(slice_sizes, from = start - slice_sizes + 1L, by = 1L)
     if (length(slice_sizes) > 1L){
-      i <- cpp_unlist_group_locs(slice_info[["rows"]])[sequences]
+      i <- cpp_unlist_group_locs(
+        slice_info[["rows"]], slice_info[["group_sizes"]]
+      )[sequences]
     } else {
       i <- sequences
     }
@@ -303,12 +310,14 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
                             replace = replace,
                             prob = .subset2(weights, i))
   }
-  rows <- cpp_unlist_group_locs(rows)
+  rows <- cpp_unlist_group_locs(rows, slice_sizes)
   if (length(rows) > 0L){
     rows <- rows + rep.int(sorted_group_starts(group_sizes, 0L),
                            times = slice_sizes)
   }
-  i <- cpp_unlist_group_locs(slice_info[["rows"]])[rows]
+  i <- cpp_unlist_group_locs(
+    slice_info[["rows"]], group_sizes
+  )[rows]
   if (is.null(i)){
     i <- integer()
   }

@@ -921,37 +921,47 @@ SEXP cpp_fill_grouped(SEXP x, SEXP order, SEXP group_sizes, double fill_limit) {
 // unlist `group_data(data)$.rows` quickly
 
 [[cpp11::register]]
-SEXP cpp_unlist_group_locs(SEXP x){
+SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
   if (!Rf_isVectorList(x)){
    return x;
   }
   int n = Rf_length(x);
-  int m, k = 0;
+  int m, k = 0,  out_size = 0;
   const SEXP *p_x = VECTOR_PTR_RO(x);
 
-  int out_size = 0;
+  if (Rf_isNull(group_sizes)){
+    // Figure out unlisted length
+    for (int i = 0; i < n; ++i) out_size += Rf_length(p_x[i]);
 
-  // Figure out unlisted length
-  for (int i = 0; i < n; ++i) out_size += Rf_length(p_x[i]);
+    SEXP out = Rf_protect(Rf_allocVector(INTSXP, out_size));
+    int *p_out = INTEGER(out);
 
-  SEXP out = Rf_protect(Rf_allocVector(INTSXP, out_size));
-  int *p_out = INTEGER(out);
+    for (int i = 0; i < n; k += m, ++i){
+      int *p_int = INTEGER(p_x[i]);
+      m = Rf_length(p_x[i]);
+      memcpy(&p_out[k], &p_int[0], m * sizeof(int));
+    }
+    Rf_unprotect(1);
+    return out;
+  } else {
+    if (Rf_length(group_sizes) != n){
+     Rf_error("`length(x)` must match `length(group_sizes)`");
+    }
+    int *p_gs = INTEGER(group_sizes);
+    // Figure out unlisted length
+    for (int i = 0; i < n; ++i) out_size += p_gs[i];
 
-  for (int i = 0; i < n; k += m, ++i){
-    int *p_int = INTEGER(p_x[i]);
-    m = Rf_length(p_x[i]);
-    memcpy(&p_out[k], &p_int[0], m * sizeof(int));
+    SEXP out = Rf_protect(Rf_allocVector(INTSXP, out_size));
+    int *p_out = INTEGER(out);
+
+    for (int i = 0; i < n; k += m, ++i){
+      int *p_int = INTEGER(p_x[i]);
+      m = p_gs[i];
+      memcpy(&p_out[k], &p_int[0], m * sizeof(int));
+    }
+    Rf_unprotect(1);
+    return out;
   }
-
-  // for (int i = 0; i < n; ++i){
-  //   int *p_int = INTEGER(p_x[i]);
-  //   int m = Rf_length(p_x[i]);
-  //   for (int j = 0; j < m; ++k, ++j){
-  //     p_out[k] = p_int[j];
-  //   }
-  // }
-  Rf_unprotect(1);
-  return out;
 }
 
 [[cpp11::register]]

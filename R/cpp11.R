@@ -64,8 +64,8 @@ cpp_fill_grouped <- function(x, order, group_sizes, fill_limit) {
   .Call(`_fastplyr_cpp_fill_grouped`, x, order, group_sizes, fill_limit)
 }
 
-cpp_unlist_group_locs <- function(x) {
-  .Call(`_fastplyr_cpp_unlist_group_locs`, x)
+cpp_unlist_group_locs <- function(x, group_sizes) {
+  .Call(`_fastplyr_cpp_unlist_group_locs`, x, group_sizes)
 }
 
 cpp_reconstruct <- function(data, from, keep_attrs) {
