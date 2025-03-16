@@ -10,7 +10,7 @@ is_df <- function(x){
 
 check_is_df <- function(x){
   if (!is_df(x)){
-    stop(paste(deparse2(substitute(x)), "must be a data.frame"))
+    cli::cli_abort("{.arg x} must be a {.cls data.frame}")
   }
 }
 
@@ -89,15 +89,9 @@ combine <- function(...){
   if (nargs() == 0) {
     return(NULL)
   }
-  dots <- list(...)
+  dots <- as_list_of(...)
   if (length(dots) == 1) {
-    dot <- dots[[1L]]
-    if (rlang::is_bare_list(dot)){
-      return(do.call(combine, dot))
-    }
-    else {
-      return(dot)
-    }
+    return(dots[[1L]])
   }
 
   if (cpp_any_frames(dots)){
@@ -190,7 +184,7 @@ df_rep_each <- function(data, each){
 df_ungroup <- function(data){
   if (inherits(data, "grouped_df")){
     attr(data, "groups") <- NULL
-    class(data) <- fast_setdiff(class(data), "grouped_df")
+    class(data) <- cheapr::val_rm(class(data), "grouped_df")
   }
   data
 }
@@ -328,18 +322,8 @@ cross_join <- function(...){
 ## Mutate maybe some variables that aren't atomic or are exotic
 ## using group_id methods
 
-df_mutate_exotic_to_ids <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
-  check_is_df(x)
-  which_exotic <- which(vapply(x, cpp_is_exotic, FALSE, USE.NAMES = FALSE))
-  for (i in which_exotic){
-    x[[i]] <- group_id(
-      x[[i]],
-      order = order,
-      ascending = ascending,
-      as_qg = as_qg
-    )
-  }
-  x
+df_mutate_exotic_to_ids <- function(x, order = TRUE, as_qg = FALSE){
+  cpp_df_transform_exotic(x, order = order, as_qg = as_qg)
 }
 
 # Turn all list elements into data frames

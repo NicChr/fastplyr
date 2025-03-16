@@ -149,7 +149,7 @@ crossing <- function(..., .sort = FALSE){
   dots <- cheapr::named_list(..., .keep_null = FALSE)
   for (i in seq_along(dots)){
     if (!is_df(dots[[i]])){
-      dots[[i]] <- sort_unique(`names<-`(cheapr::new_df(x = dots[[i]]), names(dots)[i]),
+      dots[[i]] <- sort_unique(`names<-`(cheapr::fast_df(x = dots[[i]]), names(dots)[i]),
                                sort = .sort)
     }
   }
@@ -161,7 +161,7 @@ nesting <- function(..., .sort = FALSE){
   dots <- cheapr::named_list(..., .keep_null = FALSE)
   for (i in seq_along(dots)){
     if (!is_df(dots[[i]])){
-      dots[[i]] <- `names<-`(cheapr::new_df(x = dots[[i]]), names(dots)[i])
+      dots[[i]] <- `names<-`(cheapr::fast_df(x = dots[[i]]), names(dots)[i])
     }
   }
   df_as_tbl(sort_unique(do.call(f_bind_cols, dots), sort = .sort))

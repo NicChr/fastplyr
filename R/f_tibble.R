@@ -112,3 +112,7 @@ as_tbl <- function(x){
   }
   out
 }
+
+fast_tbl <- function(...){
+  df_as_tbl(cheapr::fast_df(...))
+}

@@ -16,4 +16,16 @@
 #define INTEGER64_PTR(x) ((long long*) REAL(x))
 #endif
 
+inline cpp11::function fp_group_id = cpp11::package("fastplyr")["group_id"];
+
+// namespace rlang {
+// SEXP eval_tidy(SEXP expr, SEXP data, SEXP env);
+// SEXP as_data_pronoun(SEXP x);
+// SEXP new_data_mask(SEXP bottom, SEXP top);
+// SEXP str_as_symbol(SEXP);
+// SEXP quo_get_expr(SEXP quo);
+// void env_unbind(SEXP, SEXP);
+// }
+
+
 #endif

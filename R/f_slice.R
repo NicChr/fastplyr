@@ -63,31 +63,18 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
   if (is.logical(i)){
     cli::cli_abort("{.arg i} must be an {.cls integer} vector, not a {.cls logical} vector, use {.fn f_filter} instead")
   }
+  i <- as.integer(i)
   if (length(i) == 0L){
     i <- 0L
   }
-  i <- as.integer(i)
   N <- df_nrow(data)
-
-  rng <- collapse::frange(i, na.rm = TRUE)
-  rng_sum <- sum(cheapr::int_sign(rng))
-  if (abs(rng_sum) != 2){
-    if (!any(rng == 0)){
-      cli::cli_abort("Can't mix negative and positive locations")
-    }
-  }
-  slice_sign <- cheapr::int_sign(rng_sum)
 
   # Groups
 
   group_vars <- get_groups(data, .by = {{ .by }})
 
   if (length(group_vars) == 0L){
-    if (any(abs(rng) > N)){
-      data_locs <- i[which(dplyr::between(i, -N, N))]
-    } else {
-      data_locs <- cheapr::na_rm(i)
-    }
+    data_locs <- i[cheapr::which_(i >= -N & i <= N)]
   } else {
     groups <- data %>%
       group_collapse(.cols = group_vars, .add = TRUE,
@@ -97,7 +84,7 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
     GN <- max(group_sizes)
     i <- i[which(dplyr::between(i, -GN, GN))]
 
-    if (length(i) == 1 && slice_sign >= 1){
+    if (length(i) == 1 && i >= 0){
       data_locs <- cheapr::na_rm(list_subset(group_locs, i))
     } else {
       data_locs <- cpp_unlist_group_locs(cpp_slice_locs(group_locs, i))
@@ -337,7 +324,9 @@ df_slice_prepare <- function(data, n, prop, .by = NULL,
   missing_n <- missing(n)
   missing_prop <- missing(prop)
   if (!missing_n && !missing_prop){
-    stop("Either n or prop must be supplied, not both.")
+    cli::cli_abort(
+      "Either {.arg n} or {.arg prop} must be supplied, not both"
+      )
   }
   if (missing_n && missing_prop){
     n <- default_n
@@ -352,11 +341,13 @@ df_slice_prepare <- function(data, n, prop, .by = NULL,
     type <- "prop"
   }
 
-  group_df <- group_collapse(data, .by = {{ .by }},
-                             order = sort_groups, sort = sort_groups,
-                             id = FALSE, loc = TRUE,
-                             # loc_order = FALSE,
-                             size = TRUE, start = FALSE, end = FALSE)
+  group_df <- group_collapse(
+    data, .by = {{ .by }},
+    order = sort_groups, sort = sort_groups,
+    id = FALSE, loc = TRUE,
+    # loc_order = FALSE,
+    size = TRUE, start = FALSE, end = FALSE
+  )
   rows <- group_df[[".loc"]]
   group_sizes <- group_df[[".size"]]
   if (type == "n"){
@@ -388,12 +379,12 @@ df_slice_prepare <- function(data, n, prop, .by = NULL,
     }
     slice_sizes <- as.integer(slice_sizes)
   }
-  keep <- cheapr::val_find(slice_sizes, 0, invert = TRUE)
-  if (length(rows) - length(keep) > 0L){
-    rows <- rows[keep]
-    group_sizes <- group_sizes[keep]
-    slice_sizes <- slice_sizes[keep]
-  }
+  # keep <- cheapr::val_find(slice_sizes, 0, invert = TRUE)
+  # if (length(rows) - length(keep) > 0L){
+  #   rows <- rows[keep]
+  #   group_sizes <- group_sizes[keep]
+  #   slice_sizes <- slice_sizes[keep]
+  # }
   list("rows" = rows,
        "group_sizes" = group_sizes,
        "slice_sizes" = slice_sizes)

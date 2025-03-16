@@ -265,9 +265,7 @@ tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
 tidy_group_info_datamask <- function(data, ..., .by = NULL,
                                      ungroup = TRUE,
                                      unique_groups = TRUE){
-  n_dots <- dots_length(...)
   group_vars <- get_groups(data, {{ .by }})
-  group_pos <- match(group_vars, names(data))
   extra_groups <- character()
   if (ungroup){
     out <- df_ungroup(data)
@@ -275,7 +273,7 @@ tidy_group_info_datamask <- function(data, ..., .by = NULL,
     out <- data
   }
   # Data-masking for dots expressions
-  if (n_dots > 0){
+  if (dots_length(...) > 0){
     if (ungroup){
       out_info <- mutate_summary_ungrouped(out, ...)
     } else {
@@ -290,15 +288,16 @@ tidy_group_info_datamask <- function(data, ..., .by = NULL,
   } else {
     all_groups <- c(group_vars, fast_setdiff(extra_groups, group_vars))
   }
-  address_equal <- add_names(cpp_frame_addresses_equal(
-    data, cheapr::sset(df_ungroup(out), j = names(data))
-  ), names(data))
-  any_groups_changed <- !all(address_equal[group_vars])
+  address_equal <- add_names(
+    cpp_frame_addresses_equal(
+      data, cheapr::sset_col(out, names(data))
+    ), names(data)
+  )
   list("data" = out,
        "dplyr_groups" = group_vars,
        "extra_groups" = extra_groups,
        "all_groups" = all_groups,
-       "groups_changed" = any_groups_changed,
+       "groups_changed" = !all(address_equal[group_vars]),
        "address_equal" = address_equal)
 }
 
@@ -352,7 +351,7 @@ vctrs_new_list_of <- function(x = list(), ptype){
 
 check_rowwise <- function(data){
   if (inherits(data, "rowwise_df")){
-    stop("fastplyr cannot handle `rowwise_df`, please use `f_rowwise()`")
+    cli::cli_abort("fastplyr cannot handle {.arg rowwise_df}, please use {.fn f_rowwise}")
   }
 }
 
@@ -431,6 +430,7 @@ eval_all_tidy_ungrouped <- function(data, ...){
   expr_names <- names(quos)
 
   data_env <- rlang::as_environment(data)
+  # data_env <- list2env(data, parent = emptyenv())
   data_mask <- rlang::new_data_mask(data_env)
   data_mask$.data <- rlang::as_data_pronoun(data_env)
   out <- cheapr::new_list(length(quos))

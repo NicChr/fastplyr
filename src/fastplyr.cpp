@@ -583,8 +583,6 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
   int n_cols = Rf_length(x);
   int n_rows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
 
-  cpp11::function fastplyr_group_id = cpp11::package("fastplyr")["group_id"];
-
   const SEXP *p_x = VECTOR_PTR_RO(x);
 
   for (int l = n_cols - 1; l >= 0; --l){
@@ -595,7 +593,7 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
       return out;
     }
     if (cpp_is_exotic(p_x[l])){
-      SEXP group_ids = Rf_protect(fastplyr_group_id(p_x[l], cpp11::named_arg("order") = false));
+      SEXP group_ids = Rf_protect(fp_group_id(p_x[l], cpp11::named_arg("order") = false));
       x[l] = group_ids;
       Rf_unprotect(1);
     }
@@ -988,6 +986,24 @@ SEXP cpp_reconstruct(SEXP data, SEXP from, bool keep_attrs){
   Rf_setAttrib(target, R_RowNamesSymbol, cheapr::create_df_row_names(Rf_length(Rf_getAttrib(data, R_RowNamesSymbol))));
   Rf_unprotect(2);
   return target;
+}
+
+[[cpp11::register]]
+SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg){
+  if (!Rf_inherits(x, "data.frame")){
+    Rf_error("x must be a data frame");
+  }
+  SEXP out = Rf_protect(cheapr::shallow_copy(x));
+  for (int i = 0; i < Rf_length(x); ++i){
+    if (cpp_is_exotic(VECTOR_ELT(x, i))){
+     SET_VECTOR_ELT(out, i, fp_group_id(
+         VECTOR_ELT(x, i), cpp11::named_arg("order") = order,
+         cpp11::named_arg("as_qg") = as_qg
+     ));
+    }
+  }
+  Rf_unprotect(1);
+  return out;
 }
 
 

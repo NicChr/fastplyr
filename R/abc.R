@@ -20,11 +20,12 @@ cpp_int64_to_numeric <- get_from_package("cpp_int64_to_numeric", "cheapr")
 cpp_loc_set_replace <- get_from_package("cpp_loc_set_replace", "cheapr")
 named_list <- get_from_package("named_list", "cheapr")
 as_list_of <- get_from_package("as_list_of", "cheapr")
+is_simple_atomic <- get_from_package("is_simple_atomic", "cheapr")
 `%in_%` <- cheapr::`%in_%`
 
 check_length <- function(x, size){
   if (length(x) != size){
-    stop(paste(deparse2(substitute(x)), "must be of length", size))
+   cli::cli_abort("{.arg x} must be of length {size}")
   }
 }
 
@@ -119,10 +120,6 @@ deparse2 <- function(expr, collapse = " ", width.cutoff = 500L, nlines = 10L, ..
   paste(deparse(expr, width.cutoff, nlines = nlines, ...), collapse = collapse)
 }
 
-strip_attrs <- function(x){
-  attributes(x) <- NULL
-  x
-}
 add_attr <- function(x, which, value, set = FALSE){
   if (set){
     set_add_attr(x, which, value)
@@ -147,7 +144,7 @@ add_names <- function(x, value){
 interval_separate <- function(x){
   start <- attr(x, "start")
   end <- start + strip_attrs(x)
-  cheapr::new_df(start = start, end = end)
+  cheapr::fast_df(start = start, end = end)
 }
 is_sorted <- function(x){
   isTRUE(!is.unsorted(x))
@@ -206,11 +203,6 @@ sort_unique <- function(x, sort = FALSE){
 # rlang infix default NULL value function
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
-# Is x a simple lgl, int, dbl, char, cplx or raw?
-is_atomic_vec <- function(x){
-  !is.object(x) && is.atomic(x) && is.vector(x)
-}
-
 # Common function used to find locations of empty strings ''
 empty_str_locs <- function(x){
   cheapr::val_find(nzchar(x), TRUE, invert = TRUE)
@@ -218,17 +210,14 @@ empty_str_locs <- function(x){
 # Get namespace of function
 fun_ns <- function(x, env = rlang::caller_env()){
   if (!is.function(x)){
-    x <- tryCatch(get(as.character(x), envir = env),
-                  error = function(e) ".error")
-    if (identical(x, ".error")){
-      return("")
-    }
+    x <- get0(as.character(x), envir = env, mode = "function")
   }
   env <- environment(x)
-  if (is.null(env)){
+  if (is.null(x) || is.null(env)){
     ""
+  } else if (isBaseNamespace(env)){
+    "base"
   } else {
-    unname(getNamespaceName(env))
+    .getNamespaceInfo(env, "spec")[["name"]] %||% ""
   }
-
 }

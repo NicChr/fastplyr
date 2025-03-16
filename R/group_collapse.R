@@ -17,7 +17,7 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
                                    .drop = df_group_by_drop_default(data)){
   if (is.factor(data)){
     return(
-      raw_group_collapse(cheapr::new_df(data = data),
+      raw_group_collapse(cheapr::fast_df(data = data),
                          order = order,
                          sort = sort,
                          id = id,
@@ -201,7 +201,7 @@ group_collapse.data.frame <- function(data, ..., order = df_group_by_order_defau
     rowids <- seq_len(N)
     ss <- min(N, 1L)
     rowids <- list(rowids)[ss]
-    out <- new_tbl(".group" = integer(ss) + 1L)
+    out <- fast_tbl(".group" = integer(ss) + 1L)
     if (loc){
       out[[".loc"]] <- rowids
     }

@@ -131,6 +131,13 @@ extern "C" SEXP _fastplyr_cpp_reconstruct(SEXP data, SEXP from, SEXP keep_attrs)
     return cpp11::as_sexp(cpp_reconstruct(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(from), cpp11::as_cpp<cpp11::decay_t<bool>>(keep_attrs)));
   END_CPP11
 }
+// fastplyr.cpp
+SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg);
+extern "C" SEXP _fastplyr_cpp_df_transform_exotic(SEXP x, SEXP order, SEXP as_qg) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_df_transform_exotic(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<bool>>(order), cpp11::as_cpp<cpp11::decay_t<bool>>(as_qg)));
+  END_CPP11
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
@@ -138,6 +145,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_any_frames_exotic",     (DL_FUNC) &_fastplyr_cpp_any_frames_exotic,     1},
     {"_fastplyr_cpp_consecutive_id",        (DL_FUNC) &_fastplyr_cpp_consecutive_id,        1},
     {"_fastplyr_cpp_df_group_indices",      (DL_FUNC) &_fastplyr_cpp_df_group_indices,      2},
+    {"_fastplyr_cpp_df_transform_exotic",   (DL_FUNC) &_fastplyr_cpp_df_transform_exotic,   3},
     {"_fastplyr_cpp_fill_grouped",          (DL_FUNC) &_fastplyr_cpp_fill_grouped,          4},
     {"_fastplyr_cpp_frame_addresses_equal", (DL_FUNC) &_fastplyr_cpp_frame_addresses_equal, 2},
     {"_fastplyr_cpp_frame_dims",            (DL_FUNC) &_fastplyr_cpp_frame_dims,            3},

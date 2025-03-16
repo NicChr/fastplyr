@@ -74,10 +74,9 @@ group_id.default <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
     )
   }
 
-  if (!as_qg && ascending && is_atomic_vec(x)){
+  if (!as_qg && ascending && is_simple_atomic(x)){
     out <- collapse::qG(x, sort = order, na.exclude = FALSE)
-    set_rm_attributes(out)
-    return(out)
+    return(set_rm_attributes(out))
   }
 
   g <- GRP2(df_ungroup(x),
@@ -97,6 +96,7 @@ group_id.default <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
   }
   out
 }
+
 #' @export
 group_id.factor <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
   out <- unclass(x)
