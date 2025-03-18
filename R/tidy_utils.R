@@ -87,7 +87,6 @@ fastplyr_quos <- function(..., .named = FALSE){
 
 # Recursively checks call tree for a function call from a specified namespace
 # We use it to check for any dplyr functions in call tree in `eval_all_tidy`
-call_contains_ns <- cpp_call_contains_ns
 # call_contains_ns <- function(expr, ns, env = rlang::caller_env()){
 #   if (rlang::is_quosure(expr)){
 #     expr <- rlang::quo_get_expr(expr)
@@ -432,94 +431,6 @@ eval_all_tidy <- function(data, ..., .by = NULL){
    cpp_eval_all_tidy(quos, rlang::as_data_mask(data))
   }
 }
-
-# We can get functions like `f_expand` to work  using this recursively
-# e.g. `reframe(data, f_expand(data = pick(everything()), ...))`
-# That is unfortunately very slow so basically unuseable
-# eval_all_tidy_ungrouped <- function(data, ...){
-#   quos <- named_quos(...)
-#   expr_names <- names(quos)
-#
-#   data_env <- list2env(data, parent = emptyenv())
-#   # data_env <- rlang::as_environment(data)
-#   data_mask <- rlang::new_data_mask(data_env)
-#   data_mask$.data <- rlang::as_data_pronoun(data_env)
-#   out <- cheapr::new_list(length(quos))
-#
-#   # Loop over the expressions
-#   for (i in seq_along(quos)){
-#     quo <- quos[[i]]
-#     expr <- rlang::quo_get_expr(quo)
-#     expr_name <- expr_names[i]
-#     env <- rlang::quo_get_env(quo)
-#     if (!call_contains_ns(expr, "dplyr", env)){
-#       result <- rlang::eval_tidy(expr, data_mask, env)
-#     } else {
-#       result <- dplyr::reframe(
-#         data,
-#         !!expr_name := rlang::eval_tidy(expr, data_mask, env)
-#       )
-#       result <- .subset2(result, df_ncol(result))
-#     }
-#     data_env[[expr_name]] <- result
-#
-#     if (!is.null(result)){
-#       out[[i]] <- result
-#     }
-#     names(out)[i] <- expr_name
-#   }
-#   out
-# }
-
-# eval_all_tidy2 <- function(data, quos){
-#   expr_names <- names(quos)
-#
-#   data_mask <- rlang::as_data_mask(data)
-#   out <- cheapr::new_list(length(quos))
-#
-#   # Loop over the expressions
-#   for (i in seq_along(quos)){
-#     quo <- quos[[i]]
-#     expr <- rlang::quo_get_expr(quo)
-#     expr_name <- expr_names[i]
-#     env <- rlang::quo_get_env(quo)
-#     if (!call_contains_ns(expr, "dplyr", env)){
-#       result <- rlang::eval_tidy(expr, data_mask, env)
-#     } else {
-#       result <- dplyr::reframe(
-#         data,
-#         !!expr_name := !!quo
-#       )[[1L]]
-#     }
-#     data_mask[[expr_name]] <- result
-#     if (!is.null(result)){
-#       out[[i]] <- result
-#     }
-#     names(out)[i] <- expr_name
-#   }
-#   out
-# }
-
-# eval_all_tidy3 <- function(quos, mask){
-#
-#   expr_names <- names(quos)
-#   out <- vector("list", length(quos))
-#
-#   # Loop over the expressions
-#   for (i in seq_along(quos)){
-#     quo <- quos[[i]]
-#     expr <- rlang::quo_get_expr(quo)
-#     expr_name <- expr_names[i]
-#     env <- rlang::quo_get_env(quo)
-#     result <- rlang::eval_tidy(expr, mask, env)
-#     mask[[expr_name]] <- result
-#     if (!is.null(result)){
-#       out[[i]] <- result
-#     }
-#     names(out)[i] <- expr_name
-#   }
-#   out
-# }
 
 # A fast reframe (Not yet ready)
 fast_reframe <- function(data, ..., .by = NULL){
