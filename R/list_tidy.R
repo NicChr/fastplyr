@@ -12,41 +12,47 @@
 #'
 #' @export
 list_tidy <- function(..., .keep_null = TRUE, .named = FALSE){
-  quos <- rlang::quos(..., .ignore_empty = "all")
-  quo_nms <- names(quos)
-  out <- cheapr::new_list(length(quos))
 
-  # quo_nms2 is for assigning objs to our new environment and so
-  # they can't be empty strings
-  quo_nms2 <- quo_nms
+  cpp_list_tidy(fastplyr_quos(..., .named = .named), .keep_null)
 
-  if (is.null(quo_nms2)){
-    quo_nms2 <- quo_labels(quos, named = FALSE)
-  } else {
-    not_empty <- nzchar(quo_nms2)
-    if (!all(not_empty)){
-      empty <- cheapr::val_find(not_empty, FALSE)
-      quo_nms2[empty] <- quo_labels(quos[empty], named = FALSE)
-    }
-  }
-  if (.named){
-    names(out) <- quo_nms2
-  } else {
-    names(out) <- quo_nms
-  }
-  new_env <- new.env(hash = FALSE, parent = emptyenv())
-  mask <- rlang::new_data_mask(new_env)
-  mask$.data <- rlang::as_data_pronoun(new_env)
+  # quos <- fastplyr_quos(..., .named = .named)
+  # env <- new.env(hash = FALSE, parent = emptyenv())
+  # mask <- rlang::new_data_mask(env)
+  # mask$.data <- rlang::as_data_pronoun(env)
+  #
+  # out <- cpp_eval_all_tidy(quos, mask)
+  #
+  # if (!.keep_null){
+  #   out <- list_rm_null(out)
+  # }
+  # out
 
-  for (i in seq_along(quos)){
-    result <- rlang::eval_tidy(quos[[i]], mask)
-    new_env[[quo_nms2[[i]]]] <- result
-    if (!is.null(result)){
-      out[[i]] <- result
-    }
-  }
-  if (!.keep_null){
-    out <- list_rm_null(out)
-  }
-  out
+
+
+
+
+
+  # quos <- fastplyr_quos(..., .named = .named)
+  # quo_nms <- names(quos)
+  # out <- cheapr::new_list(length(quos))
+  #
+  # new_env <- new.env(hash = FALSE, parent = emptyenv())
+  # mask <- rlang::new_data_mask(new_env)
+  # mask$.data <- rlang::as_data_pronoun(new_env)
+  #
+  # for (i in seq_along(quos)){
+  #   result <- rlang::eval_tidy(quos[[i]], mask, NULL)
+  #   nm <- quo_nms[[i]]
+  #   if (nzchar(nm)){
+  #     new_env[[nm]] <- result
+  #   }
+  #   if (!is.null(result)){
+  #     out[[i]] <- result
+  #   }
+  # }
+  # names(out) <- quo_nms
+  # if (!.keep_null){
+  #   out <- list_rm_null(out)
+  # }
+  # out
 }

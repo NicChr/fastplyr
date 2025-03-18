@@ -1,6 +1,91 @@
 #include "fastplyr.h"
 #include "cheapr_api.h"
 
+// Basically R's get()
+
+// SEXP cpp_get(SEXP sym, SEXP rho){
+//   Rf_protect(sym = Rf_coerceVector(sym, SYMSXP));
+//
+//   if (TYPEOF(rho) != ENVSXP)
+//     Rf_error("second argument to '%s' must be an environment", __func__);
+//
+//   SEXP val = Rf_findVar(sym, rho);
+//   if (val == R_MissingArg){
+//     Rf_unprotect(1);
+//     Rf_error("arg `sym` cannot be missing");
+//   } else if (val == R_UnboundValue){
+//     Rf_unprotect(1);
+//     return R_NilValue;
+//   }
+//   else if (TYPEOF(val) == PROMSXP){
+//     Rf_protect(val);
+//     val = Rf_eval(val, rho);
+//     Rf_unprotect(1);
+//   }
+//   Rf_unprotect(1);
+//   return val;
+// }
+// SEXP cpp_fun_ns(SEXP x, SEXP rho){
+//   int NP = 0;
+//   if (!Rf_isFunction(x)){
+//     Rf_protect(x = cpp_get(x, rho)); ++NP;
+//   }
+//   if (TYPEOF(x) != CLOSXP){
+//     Rf_unprotect(NP); return Rf_mkString("");
+//   }
+//   // SEXP env = Rf_protect(cpp11::package("base")["environment"](x)); ++NP;
+//   SEXP env = Rf_protect(CLOENV(x)); ++NP;
+//   if (Rf_isNull(x) || Rf_isNull(env)){
+//     Rf_unprotect(NP); return Rf_mkString("");
+//   } else if (env == R_BaseNamespace){
+//     Rf_unprotect(NP); return Rf_mkString("base");
+//   } else if (R_IsNamespaceEnv(env)) {
+//     SEXP ns_name = Rf_protect(R_NamespaceEnvSpec(env)); ++NP;
+//     SEXP names = Rf_protect(Rf_getAttrib(ns_name, R_NamesSymbol)); ++NP;
+//     SEXP name = Rf_protect(Rf_mkString("name")); ++NP;
+//     SEXP name_loc = Rf_protect(Rf_match(names, name, NA_INTEGER)); ++NP;
+//
+//     if (TYPEOF(ns_name) == STRSXP &&
+//         Rf_length(name) != 0 &&
+//         INTEGER(name_loc)[0] != NA_INTEGER){
+//       SEXP result = Rf_protect(STRING_ELT(ns_name, INTEGER(name_loc)[0] - 1)); ++NP;
+//       Rf_protect(result = Rf_ScalarString(result)); ++NP;
+//       Rf_unprotect(NP);
+//       return result;
+//     }
+//     Rf_unprotect(NP); return Rf_mkString("");
+//   } else {
+//     Rf_unprotect(NP); return Rf_mkString("");
+//   }
+// }
+
+// bool cpp_call_contains_ns(SEXP expr, SEXP ns, SEXP rho){
+//   if (TYPEOF(expr) != LANGSXP){
+//     return false;
+//   }
+//   int NP = 0;
+//   // if (rlang_is_call(expr, cpp11::named_arg("ns") = ns)){
+//   //   return true;
+//   // }
+//   bool out = false;
+//   Rf_error("error");
+//   SEXP tree = Rf_protect(base_as_list(expr)); ++NP;
+//   SEXP branch;
+//   for (int i = 0; i < Rf_length(tree); ++i){
+//     branch = Rf_protect(VECTOR_ELT(expr, i)); ++NP;
+//     if (TYPEOF(branch) == LANGSXP){
+//       return cpp_call_contains_ns(branch, ns, rho);
+//     }
+//     if (TYPEOF(branch) == SYMSXP &&
+//         cpp_fun_ns(rlang::sym_as_character(branch), rho) == ns){
+//       out = true;
+//       break;
+//     }
+//   }
+//   Rf_unprotect(NP);
+//   return out;
+// }
+
 // Compare the addresses between 2 similar lists
 
 [[cpp11::register]]

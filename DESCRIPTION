@@ -27,7 +27,8 @@ Suggests:
     tidyr
 LinkingTo: 
     cheapr,
-    cpp11
+    cpp11,
+    rlang
 Config/testthat/edition: 3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

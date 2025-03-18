@@ -75,3 +75,27 @@ cpp_reconstruct <- function(data, from, keep_attrs) {
 cpp_df_transform_exotic <- function(x, order, as_qg) {
   .Call(`_fastplyr_cpp_df_transform_exotic`, x, order, as_qg)
 }
+
+cpp_get <- function(sym, rho) {
+  .Call(`_fastplyr_cpp_get`, sym, rho)
+}
+
+cpp_call_contains_ns <- function(expr, ns, rho) {
+  .Call(`_fastplyr_cpp_call_contains_ns`, expr, ns, rho)
+}
+
+get_mask_top_env <- function(mask) {
+  .Call(`_fastplyr_get_mask_top_env`, mask)
+}
+
+cpp_eval_tidy <- function(quo, mask) {
+  .Call(`_fastplyr_cpp_eval_tidy`, quo, mask)
+}
+
+cpp_eval_all_tidy <- function(quos, mask) {
+  .Call(`_fastplyr_cpp_eval_all_tidy`, quos, mask)
+}
+
+cpp_list_tidy <- function(quos, keep_null) {
+  .Call(`_fastplyr_cpp_list_tidy`, quos, keep_null)
+}

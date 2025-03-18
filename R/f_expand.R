@@ -28,7 +28,7 @@ f_expand <- function(data, ..., .sort = FALSE,
 
   # If the user is simply selecting cols then we can use an optimised method
   if (is.null(.cols)){
-    dots <- rlang::enquos(...)
+    dots <- rlang::quos(...)
     dot_labels <- quo_labels(dots)
     if (all(dot_labels %in% names(data)) && !any(names(dots) %in% names(data))){
       .cols <- dot_labels

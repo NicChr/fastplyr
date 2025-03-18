@@ -209,15 +209,21 @@ empty_str_locs <- function(x){
 }
 # Get namespace of function
 fun_ns <- function(x, env = rlang::caller_env()){
-  if (!is.function(x)){
-    x <- get0(as.character(x), envir = env, mode = "function")
-  }
-  env <- environment(x)
-  if (is.null(x) || is.null(env)){
-    ""
-  } else if (isBaseNamespace(env)){
-    "base"
-  } else {
-    .getNamespaceInfo(env, "spec")[["name"]] %||% ""
-  }
+  cpp_fun_ns(x, env)
 }
+
+# R version
+# fun_ns <- function(x, env = rlang::caller_env()){
+#   if (!is.function(x)){
+#     x <- get0(x, env)
+#     # x <- cpp_get(x, env)
+#   }
+#   env <- environment(x)
+#   if (is.null(x) || is.null(env) || !is.function(x)){
+#     ""
+#   } else if (isBaseNamespace(env)){
+#     "base"
+#   } else {
+#     .getNamespaceInfo(env, "spec")[["name"]] %||% ""
+#   }
+# }
