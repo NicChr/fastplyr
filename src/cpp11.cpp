@@ -188,10 +188,10 @@ extern "C" SEXP _fastplyr_cpp_list_tidy(SEXP quos, SEXP keep_null) {
   END_CPP11
 }
 // tidy_eval.cpp
-SEXP cpp_grouped_eval_tidy(SEXP group_data, SEXP data, SEXP quos);
-extern "C" SEXP _fastplyr_cpp_grouped_eval_tidy(SEXP group_data, SEXP data, SEXP quos) {
+SEXP cpp_grouped_eval_tidy(SEXP group_data, SEXP data, SEXP quos, bool as_df);
+extern "C" SEXP _fastplyr_cpp_grouped_eval_tidy(SEXP group_data, SEXP data, SEXP quos, SEXP as_df) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cpp_grouped_eval_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
+    return cpp11::as_sexp(cpp_grouped_eval_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<bool>>(as_df)));
   END_CPP11
 }
 
@@ -211,7 +211,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_frame_dims",            (DL_FUNC) &_fastplyr_cpp_frame_dims,            3},
     {"_fastplyr_cpp_get",                   (DL_FUNC) &_fastplyr_cpp_get,                   2},
     {"_fastplyr_cpp_group_locs",            (DL_FUNC) &_fastplyr_cpp_group_locs,            2},
-    {"_fastplyr_cpp_grouped_eval_tidy",     (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy,     3},
+    {"_fastplyr_cpp_grouped_eval_tidy",     (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy,     4},
     {"_fastplyr_cpp_grouped_run_id",        (DL_FUNC) &_fastplyr_cpp_grouped_run_id,        3},
     {"_fastplyr_cpp_is_exotic",             (DL_FUNC) &_fastplyr_cpp_is_exotic,             1},
     {"_fastplyr_cpp_list_subset",           (DL_FUNC) &_fastplyr_cpp_list_subset,           4},

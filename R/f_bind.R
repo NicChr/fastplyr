@@ -24,10 +24,10 @@
 f_bind_rows <- function(..., .fill = TRUE){
   dots <- tidy_as_list_of(...)
   n_dots <- length(dots)
+  dots <- cpp_as_list_of_frames(dots)
   dims <- cpp_frame_dims(dots, check_rows_equal = FALSE, check_cols_equal = !.fill)
   nrows <- dims[[1L]]
   ncols <- dims[[2L]]
-
 
   if (n_dots == 0){
     new_tbl()

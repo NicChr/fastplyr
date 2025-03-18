@@ -229,7 +229,7 @@ SEXP cpp_list_tidy(SEXP quos, bool keep_null){
 }
 
 [[cpp11::register]]
-SEXP cpp_grouped_eval_tidy(SEXP group_data, SEXP data, SEXP quos){
+SEXP cpp_grouped_eval_tidy(SEXP group_data, SEXP data, SEXP quos, bool as_df){
   SEXP rows = Rf_protect(VECTOR_ELT(group_data, Rf_length(group_data) - 1));
 
   int n_groups = Rf_length(Rf_GetRowNames(group_data));
@@ -259,7 +259,9 @@ SEXP cpp_grouped_eval_tidy(SEXP group_data, SEXP data, SEXP quos){
     R_Reprotect(chunk = cheapr::df_slice(chunk, chunk_locs, false), index2);
     R_Reprotect(mask = rlang::as_data_mask(chunk), index3);
     R_Reprotect(result = cpp_eval_all_tidy(quos, mask), index4);
-    R_Reprotect(result = cheapr::list_as_df(result), index4);
+    if (as_df){
+      R_Reprotect(result = cheapr::list_as_df(result), index4);
+    }
     SET_VECTOR_ELT(out, i, result);
   }
 

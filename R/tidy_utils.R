@@ -479,7 +479,7 @@ fast_reframe <- function(data, ..., .by = NULL, .order = df_group_by_order_defau
   groups <- group_data(temp)
 
   results <- cpp_grouped_eval_tidy(
-    groups, data, quos
+    groups, data, quos, as_df = TRUE
   )
   reframed_groups <- df_rep(
     cheapr::sset_col(groups, seq_len(df_ncol(groups) - 1L)),

@@ -104,6 +104,6 @@ cpp_list_tidy <- function(quos, keep_null) {
   .Call(`_fastplyr_cpp_list_tidy`, quos, keep_null)
 }
 
-cpp_grouped_eval_tidy <- function(group_data, data, quos) {
-  .Call(`_fastplyr_cpp_grouped_eval_tidy`, group_data, data, quos)
+cpp_grouped_eval_tidy <- function(group_data, data, quos, as_df) {
+  .Call(`_fastplyr_cpp_grouped_eval_tidy`, group_data, data, quos, as_df)
 }
