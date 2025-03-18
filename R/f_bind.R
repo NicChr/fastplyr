@@ -22,7 +22,7 @@
 #' @rdname f_bind_rows
 #' @export
 f_bind_rows <- function(..., .fill = TRUE){
-  dots <- list_rm_null(as_list_of(...))
+  dots <- tidy_as_list_of(...)
   n_dots <- length(dots)
   dims <- cpp_frame_dims(dots, check_rows_equal = FALSE, check_cols_equal = !.fill)
   nrows <- dims[[1L]]
@@ -146,12 +146,12 @@ f_bind_rows <- function(..., .fill = TRUE){
 #' @rdname f_bind_rows
 #' @export
 f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE, .sep = "..."){
-  dots <- list_rm_null(as_list_of(...))
+  dots <- tidy_as_list_of(...)
   if (.recycle){
     dots <- do.call(cheapr::recycle, dots)
   }
 
-  dots <- as_list_of_frames(dots)
+  dots <- cpp_as_list_of_frames(dots)
 
   nrows <- cpp_frame_dims(dots, check_rows_equal = !.recycle, check_cols_equal = FALSE)[[1L]]
   out <- as.list(unlist(unname(dots), recursive = FALSE))

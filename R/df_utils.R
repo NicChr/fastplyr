@@ -163,14 +163,14 @@ df_seq_along <- function(data, along = "rows"){
 df_rep <- function(data, times){
   N <- df_nrow(data)
   if (N > 0L && length(times) > N){
-    stop("times must not be greater than nrow(data)")
+    cli::cli_abort("{.arg times} must not be greater than {nrow(data)}")
   }
   if (length(times) != N){
     if (length(times) != 1L){
-      stop("times must be of length 1 or nrow(data)")
+      cli::cli_abort("{.arg times} must be of length 1 or {nrow(data)}")
     }
   }
-  df_row_slice(data, rep.int(df_seq_along(data, "rows"), times = times))
+  reconstruct(data, list_as_df(lapply(data, \(x) rep(x, times))))
 }
 # Repeat each row
 df_rep_each <- function(data, each){

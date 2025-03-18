@@ -50,6 +50,16 @@ as_named <- function(x){
   x
 }
 
+tidy_as_list_of <- function (...){
+  dots <- list_tidy(..., .keep_null = FALSE)
+  if (length(dots) == 1 && !is.object(dots[[1L]]) && is.list(dots[[1L]])) {
+    dots[[1L]]
+  }
+  else {
+    dots
+  }
+}
+
 quo_labels <- function(quos, named = TRUE){
   out <- vapply(quos, function(x) deparse2(rlang::quo_get_expr(x)), "", USE.NAMES = FALSE)
   if (named){
@@ -114,6 +124,29 @@ fastplyr_quos <- function(..., .named = FALSE){
 #   }
 #   out
 # }
+
+# Recursively turn calls into lists
+# unnest_call <- function(x){
+#   if (!is.call(x)){
+#     x
+#   } else {
+#     rapply(as.list(x), \(x) if (is.call(x)) as.list(x) else x, how = "list")
+#   }
+# }
+
+# Get data variables from call
+call_vars <- function(expr, data){
+  if (rlang::is_quosure(expr)){
+    expr <- rlang::quo_get_expr(expr)
+  }
+  out <- all.vars(expr)
+  which_in(names(data), out)
+}
+# Get data variables from list of calls
+call_vars_v <- function(exprs, data){
+  lapply(exprs, call_vars, data)
+}
+
 
 # Tidyselect col positions with names
 tidy_select_pos <- function(data, ..., .cols = NULL){
@@ -437,20 +470,35 @@ eval_all_tidy <- function(data, ..., .by = NULL){
 fast_reframe <- function(data, ..., .by = NULL, .order = df_group_by_order_default(data)){
   quos <- fastplyr_quos(..., .named = TRUE)
   by_quo <- rlang::enquo(.by)
+  temp <- data
   if (!rlang::quo_is_null(by_quo)){
-    data <- f_group_by(
-      data, .by = !!by_quo, .add = TRUE, .order = .order
+    temp <- f_group_by(
+      temp, .by = !!by_quo, .add = TRUE, .order = .order
     )
   }
-  groups <- group_data(data)
+  groups <- group_data(temp)
 
   results <- cpp_grouped_eval_tidy(
     groups, data, quos
   )
-  reconstruct(
-    data,
-    f_bind_rows(
-      lapply(results, list_as_df)
+  reframed_groups <- df_rep(
+    cheapr::sset_col(groups, seq_len(df_ncol(groups) - 1L)),
+    cpp_frame_dims(results, FALSE, FALSE)[[1L]]
+  )
+  as_tbl(
+    f_bind_cols(
+      reframed_groups,
+      f_bind_rows(
+        results
+      )
     )
   )
+  # as_tbl(
+  #   f_bind_cols(
+  #     reframed_groups,
+  #     f_bind_rows(
+  #       lapply(results, list_as_df)
+  #     )
+  #   )
+  # )
 }

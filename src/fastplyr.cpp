@@ -122,6 +122,46 @@ bool cpp_any_frames_exotic(SEXP x){
   return out;
 }
 
+[[cpp11::register]]
+SEXP cpp_as_list_of_frames(SEXP x){
+  Rf_protect(x = Rf_coerceVector(x, VECSXP));
+  const SEXP *p_x = VECTOR_PTR_RO(x);
+
+  int n = Rf_length(x);
+
+  SEXP out = Rf_protect(Rf_allocVector(VECSXP, n));
+  SEXP names = Rf_protect(Rf_getAttrib(x, R_NamesSymbol));
+  bool has_names = !Rf_isNull(names);
+  SEXP tbl_class = Rf_protect(Rf_allocVector(STRSXP, 3));
+  SET_STRING_ELT(tbl_class, 0, Rf_mkChar("tbl_df"));
+  SET_STRING_ELT(tbl_class, 1, Rf_mkChar("tbl"));
+  SET_STRING_ELT(tbl_class, 2, Rf_mkChar("data.frame"));
+
+  SEXP result;
+  PROTECT_INDEX index;
+
+  R_ProtectWithIndex(result = R_NilValue, &index);
+
+  for (int i = 0; i < n; ++i) {
+    R_Reprotect(result = p_x[i], index);
+    if (!Rf_inherits(result, "data.frame")){
+      R_Reprotect(result = Rf_allocVector(VECSXP, 1), index);
+      SET_VECTOR_ELT(result, 0, p_x[i]);
+      if (has_names){
+        Rf_setAttrib(result, R_NamesSymbol, Rf_ScalarString(STRING_ELT(names, i)));
+      }
+      R_Reprotect(result = cheapr::list_as_df(result), index);
+      Rf_classgets(result, tbl_class);
+    }
+    SET_VECTOR_ELT(out, i, result);
+  }
+  if (has_names){
+    Rf_setAttrib(out, R_NamesSymbol, names);
+  }
+  Rf_unprotect(5);
+  return out;
+}
+
 // Fast extract 1 element from each list element
 
 [[cpp11::register]]

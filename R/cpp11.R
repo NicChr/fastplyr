@@ -20,6 +20,10 @@ cpp_any_frames_exotic <- function(x) {
   .Call(`_fastplyr_cpp_any_frames_exotic`, x)
 }
 
+cpp_as_list_of_frames <- function(x) {
+  .Call(`_fastplyr_cpp_as_list_of_frames`, x)
+}
+
 cpp_list_subset <- function(x, ptype, i, default_value) {
   .Call(`_fastplyr_cpp_list_subset`, x, ptype, i, default_value)
 }
