@@ -432,11 +432,25 @@ eval_all_tidy <- function(data, ..., .by = NULL){
   }
 }
 
-# A fast reframe (Not yet ready)
-fast_reframe <- function(data, ..., .by = NULL){
+# A fastplyr version of reframe
+# About half-way there (unfortunately not super fast)
+fast_reframe <- function(data, ..., .by = NULL, .order = df_group_by_order_default(data)){
   quos <- fastplyr_quos(..., .named = TRUE)
-  mask <- rlang::as_data_mask(data)
-  out <- cpp_eval_all_tidy(quos, mask)
-  out <- do.call(cheapr::recycle, out)
-  list_as_tbl(out)
+  by_quo <- rlang::enquo(.by)
+  if (!rlang::quo_is_null(by_quo)){
+    data <- f_group_by(
+      data, .by = !!by_quo, .add = TRUE, .order = .order
+    )
+  }
+  groups <- group_data(data)
+
+  results <- cpp_grouped_eval_tidy(
+    groups, data, quos
+  )
+  reconstruct(
+    data,
+    f_bind_rows(
+      lapply(results, list_as_df)
+    )
+  )
 }

@@ -99,3 +99,7 @@ cpp_eval_all_tidy <- function(quos, mask) {
 cpp_list_tidy <- function(quos, keep_null) {
   .Call(`_fastplyr_cpp_list_tidy`, quos, keep_null)
 }
+
+cpp_grouped_eval_tidy <- function(group_data, data, quos) {
+  .Call(`_fastplyr_cpp_grouped_eval_tidy`, group_data, data, quos)
+}

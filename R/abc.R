@@ -208,9 +208,9 @@ empty_str_locs <- function(x){
   cheapr::val_find(nzchar(x), TRUE, invert = TRUE)
 }
 # Get namespace of function
-fun_ns <- function(x, env = rlang::caller_env()){
-  cpp_fun_ns(x, env)
-}
+# fun_ns <- function(x, env = rlang::caller_env()){
+#   cpp_fun_ns(x, env)
+# }
 
 # R version
 # fun_ns <- function(x, env = rlang::caller_env()){

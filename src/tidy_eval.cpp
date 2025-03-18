@@ -230,3 +230,24 @@ SEXP cpp_list_tidy(SEXP quos, bool keep_null){
   }
 }
 
+[[cpp11::register]]
+SEXP cpp_grouped_eval_tidy(SEXP group_data, SEXP data, SEXP quos){
+  SEXP rows = Rf_protect(VECTOR_ELT(group_data, Rf_length(group_data) - 1));
+
+  int n_groups = Rf_length(Rf_getAttrib(group_data, R_RowNamesSymbol));
+
+  SEXP out = Rf_protect(Rf_allocVector(VECSXP, n_groups));
+
+  for (int i = 0; i < n_groups; ++i){
+    SEXP chunk_locs = Rf_protect(VECTOR_ELT(rows, i));
+    SEXP chunk = Rf_protect(cheapr::df_slice(data, chunk_locs));
+    SEXP mask = Rf_protect(rlang::as_data_mask(chunk));
+    SEXP result = Rf_protect(cpp_eval_all_tidy(quos, mask));
+    SET_VECTOR_ELT(out, i, result);
+    Rf_unprotect(4);
+  }
+
+  Rf_unprotect(2);
+  return out;
+}
+
