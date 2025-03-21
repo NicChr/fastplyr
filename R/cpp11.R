@@ -100,10 +100,22 @@ cpp_eval_all_tidy <- function(quos, mask) {
   .Call(`_fastplyr_cpp_eval_all_tidy`, quos, mask)
 }
 
+new_bare_data_mask <- function() {
+  .Call(`_fastplyr_new_bare_data_mask`)
+}
+
 cpp_list_tidy <- function(quos, keep_null) {
   .Call(`_fastplyr_cpp_list_tidy`, quos, keep_null)
 }
 
-cpp_grouped_eval_tidy <- function(group_data, data, quos, as_df) {
-  .Call(`_fastplyr_cpp_grouped_eval_tidy`, group_data, data, quos, as_df)
+cpp_grouped_eval_mutate <- function(data, quos) {
+  .Call(`_fastplyr_cpp_grouped_eval_mutate`, data, quos)
+}
+
+cpp_grouped_eval_tidy <- function(data, quos, as_df, check_size) {
+  .Call(`_fastplyr_cpp_grouped_eval_tidy`, data, quos, as_df, check_size)
+}
+
+cpp_grouped_eval_tidy2 <- function(group_data, data, quos, as_df, check_size) {
+  .Call(`_fastplyr_cpp_grouped_eval_tidy2`, group_data, data, quos, as_df, check_size)
 }

@@ -18,6 +18,10 @@
 
 inline cpp11::function fp_group_id = cpp11::package("fastplyr")["group_id"];
 
+inline int df_nrow(SEXP x){
+  return Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
+}
+
 namespace rlang {
 SEXP eval_tidy(SEXP expr, SEXP data, SEXP env);
 SEXP as_data_pronoun(SEXP x);

@@ -48,15 +48,14 @@ f_nest_by <- function(data, ..., .add = FALSE,
     group_data()
   group_vars <- names(out[seq_len(length(out) - 1)])
   temp <- f_select(data, .cols = fast_setdiff(names(data), group_vars))
-  fast_df_sset <- get_from_package("cpp_sset_df", "cheapr")
   rows <- out[[".rows"]]
   frames <- cheapr::new_list(length(rows))
   for (i in seq_along(rows)){
-    frames[[i]] <- `class<-`(fast_df_sset(temp, .subset2(rows, i)), c("tbl_df", "tbl", "data.frame"))
+    frames[[i]] <- `class<-`(cheapr::sset_row(temp, .subset2(rows, i)), c("tbl_df", "tbl", "data.frame"))
   }
   out[["data"]] <- frames
   out[[".rows"]] <- NULL
-  out[["data"]] <- vctrs_new_list_of(out[["data"]], cheapr::sset(as_tbl(temp), 0))
+  out[["data"]] <- vctrs_new_list_of(out[["data"]], as_tbl(cheapr::sset_row(temp, 0)))
   groups <- f_select(out, .cols = group_vars)
   attr(groups, ".drop") <- .drop
   attr(groups, "ordered") <- .order

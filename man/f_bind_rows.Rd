@@ -5,15 +5,12 @@
 \alias{f_bind_cols}
 \title{Bind data frame rows and columns}
 \usage{
-f_bind_rows(..., .fill = TRUE)
+f_bind_rows(...)
 
 f_bind_cols(..., .repair_names = TRUE, .recycle = TRUE, .sep = "...")
 }
 \arguments{
 \item{...}{Data frames to bind.}
-
-\item{.fill}{Should missing columns be filled with \code{NA}?
-Default is \code{TRUE}.}
 
 \item{.repair_names}{Should duplicate column names be made unique?
 Default is \code{TRUE}.}

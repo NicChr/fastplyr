@@ -39,7 +39,7 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
         Rf_unprotect(3);
         Rf_error("All inputs must be data frames");
       }
-      p_nrows[i] = Rf_length(Rf_getAttrib(p_x[i], R_RowNamesSymbol));
+      p_nrows[i] = df_nrow(p_x[i]);
       p_ncols[i] = Rf_length(p_x[i]);
     }
   } else {
@@ -50,7 +50,7 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
       Rf_unprotect(3);
       Rf_error("All inputs must be data frames");
     }
-    int n_rows = Rf_length(Rf_getAttrib(p_x[0], R_RowNamesSymbol));
+    int n_rows = df_nrow(p_x[0]);
     int n_cols = Rf_length(p_x[0]);
     p_nrows[0] = n_rows;
     p_ncols[0] = n_cols;
@@ -62,7 +62,7 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
         Rf_unprotect(3);
         Rf_error("All inputs must be data frames");
       }
-      p_nrows[i] = Rf_length(Rf_getAttrib(p_x[i], R_RowNamesSymbol));
+      p_nrows[i] = df_nrow(p_x[i]);
       p_ncols[i] = Rf_length(p_x[i]);
       if (check_rows_equal && p_nrows[i] != n_rows){
         Rf_unprotect(3);
@@ -415,7 +415,7 @@ SEXP cpp_which_all(SEXP x){
   int NP = 0;
   int n_true = 0;
   int n_cols = Rf_length(x);
-  int n_rows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
+  int n_rows = df_nrow(x);
 
   SEXP out;
 
@@ -621,7 +621,7 @@ SEXP cpp_run_id(SEXP x){
 SEXP cpp_df_run_id(cpp11::writable::list x){
   int NP = 0;
   int n_cols = Rf_length(x);
-  int n_rows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
+  int n_rows = df_nrow(x);
 
   const SEXP *p_x = VECTOR_PTR_RO(x);
 
@@ -1033,7 +1033,7 @@ SEXP cpp_reconstruct(SEXP data, SEXP from, bool keep_attrs){
   // Re-add original data attributes as these cannot be changed
   Rf_setAttrib(target, R_NamesSymbol, Rf_getAttrib(data, R_NamesSymbol));
   Rf_setAttrib(target, R_ClassSymbol, Rf_getAttrib(from, R_ClassSymbol));
-  Rf_setAttrib(target, R_RowNamesSymbol, cheapr::create_df_row_names(Rf_length(Rf_getAttrib(data, R_RowNamesSymbol))));
+  Rf_setAttrib(target, R_RowNamesSymbol, cheapr::create_df_row_names(df_nrow(data)));
   Rf_unprotect(2);
   return target;
 }

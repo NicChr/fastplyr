@@ -178,10 +178,6 @@ tidy_select_names <- function(data, ..., .cols = NULL){
   add_names(names(data)[match(pos, seq_along(data))], names(pos))
 }
 
-mutate_cols <- get_from_package("mutate_cols", "dplyr")
-dplyr_quosures <- get_from_package("dplyr_quosures", "dplyr")
-compute_by <- get_from_package("compute_by", "dplyr")
-
 mutate_summary_ungrouped <- function(.data, ...,
                                      .keep = c("all", "used", "unused", "none"),
                                      error_call = rlang::caller_env()){
@@ -467,6 +463,7 @@ eval_all_tidy <- function(data, ..., .by = NULL){
 
 # A fastplyr version of reframe
 # About half-way there (unfortunately not super fast)
+
 fast_reframe <- function(data, ..., .by = NULL, .order = df_group_by_order_default(data)){
   quos <- fastplyr_quos(..., .named = TRUE)
   by_quo <- rlang::enquo(.by)
@@ -476,29 +473,66 @@ fast_reframe <- function(data, ..., .by = NULL, .order = df_group_by_order_defau
       temp, .by = !!by_quo, .add = TRUE, .order = .order
     )
   }
-  groups <- group_data(temp)
 
-  results <- cpp_grouped_eval_tidy(
-    groups, data, quos, as_df = TRUE
-  )
-  reframed_groups <- df_rep(
-    cheapr::sset_col(groups, seq_len(df_ncol(groups) - 1L)),
-    cpp_frame_dims(results, FALSE, FALSE)[[1L]]
-  )
-  as_tbl(
-    f_bind_cols(
-      reframed_groups,
-      f_bind_rows(
-        results
-      )
+  if (any(
+    vapply(
+      quos, \(x)
+      cpp_call_contains_ns(x, "dplyr", rlang::quo_get_env(x)), FALSE
     )
+  )){
+    return(
+      as_tbl(dplyr::reframe(data, ..., .by = {{  .by }}))
+    )
+  }
+
+  cpp_grouped_eval_tidy(
+    temp, quos, as_df = FALSE, check_size = FALSE
   )
-  # as_tbl(
-  #   f_bind_cols(
-  #     reframed_groups,
-  #     f_bind_rows(
-  #       lapply(results, list_as_df)
-  #     )
-  #   )
-  # )
+
+}
+
+# fast_reframe <- function(data, ..., .by = NULL, .order = df_group_by_order_default(data)){
+#   quos <- fastplyr_quos(..., .named = TRUE)
+#   by_quo <- rlang::enquo(.by)
+#   temp <- data
+#   if (!rlang::quo_is_null(by_quo)){
+#     temp <- f_group_by(
+#       temp, .by = !!by_quo, .add = TRUE, .order = .order
+#     )
+#   }
+#
+#   if (any(
+#     vapply(
+#       quos, \(x)
+#       cpp_call_contains_ns(x, "dplyr", rlang::quo_get_env(x)), FALSE
+#     )
+#   )){
+#     return(
+#       as_tbl(dplyr::reframe(data, ..., .by = {{  .by }}))
+#     )
+#   }
+#
+#   groups <- group_data(temp)
+#
+#   results <- cpp_grouped_eval_tidy(
+#     groups, data, quos, as_df = TRUE, check_size = FALSE
+#   )
+#   out <- f_bind_rows(results)
+#
+#   if (df_ncol(groups) > 1){
+#     reframed_groups <- df_rep(
+#       cheapr::sset_col(groups, seq_len(df_ncol(groups) - 1L)),
+#       cpp_frame_dims(results, FALSE, FALSE)[[1L]]
+#     )
+#     out <- f_bind_cols(reframed_groups, out)
+#   }
+#   as_tbl(out)
+# }
+fast_mutate <- function(data, ...,  .by = NULL){
+  quos <- fastplyr_quos(..., .named = TRUE)
+  mask <- rlang::as_data_mask(data)
+
+  data <- f_group_by(data, .by = {{ .by }})
+
+  cpp_grouped_eval_tidy(group_data(data), data, quos, TRUE, TRUE)
 }

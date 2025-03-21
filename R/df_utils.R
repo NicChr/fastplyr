@@ -79,8 +79,6 @@ fast_bind_cols <- function(...){
   list_as_df(c(...))
 }
 
-cheapr_add_cols <- get_from_package("df_add_cols", "cheapr")
-
 df_add_cols <- function(data, cols){
   reconstruct(data, cheapr_add_cols(data, cols))
 }
@@ -277,22 +275,6 @@ df_group_by_order_default <- function(x){
   } else {
     out %||% (order_groups %||% TRUE)
   }
-}
-unique_name_repair <- function(x, .sep = "..."){
-  if (is.null(x)){
-    return(x)
-  }
-  x <- as.character(x)
-  dup <- collapse::fduplicated(x, all = TRUE)
-  which_dup <- cheapr::val_find(dup, TRUE)
-  if (length(which_dup)){
-    x[which_dup] <- paste0(x[which_dup], .sep, which_dup)
-  }
-  which_empty <- empty_str_locs(x)
-  if (length(which_empty)){
-    x[which_empty] <- paste0(x[which_empty], .sep, which_empty)
-  }
-  x
 }
 
 df_cross_join <- function(x, y, .repair_names = TRUE){

@@ -68,7 +68,7 @@ f_fill <- function(data, ..., .by = NULL, .cols = NULL,
     if (!locf){
       # Reverse vector without copy (by reference)
       rev_in_place <- function(x){
-        get_from_package("cpp_rev", "cheapr")(x, set = TRUE)
+        cheapr_cpp_rev(x, set = TRUE)
       }
       o <- rev_in_place(o)
       sizes <- rev_in_place(sizes)
