@@ -528,11 +528,11 @@ fast_reframe <- function(data, ..., .by = NULL, .order = df_group_by_order_defau
 #   }
 #   as_tbl(out)
 # }
-fast_mutate <- function(data, ...,  .by = NULL){
-  quos <- fastplyr_quos(..., .named = TRUE)
-  mask <- rlang::as_data_mask(data)
-
-  data <- f_group_by(data, .by = {{ .by }})
-
-  cpp_grouped_eval_tidy(group_data(data), data, quos, TRUE, TRUE)
-}
+# fast_mutate <- function(data, ...,  .by = NULL){
+#   quos <- fastplyr_quos(..., .named = TRUE)
+#   mask <- rlang::as_data_mask(data)
+#
+#   data <- f_group_by(data, .by = {{ .by }})
+#
+#   cpp_grouped_eval_tidy(group_data(data), data, quos, TRUE, TRUE)
+# }

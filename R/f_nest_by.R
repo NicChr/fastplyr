@@ -43,6 +43,7 @@ f_nest_by <- function(data, ..., .add = FALSE,
                       .drop = df_group_by_drop_default(data)){
   data %>%
     f_group_by(..., .cols = .cols, .order = .order,
+               .add = .add,
                .by = {{ .by }},
                .drop = .drop) %>%
     cpp_group_split(.drop, .order)

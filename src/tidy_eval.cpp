@@ -689,6 +689,10 @@ SEXP cpp_grouped_eval_tidy2(SEXP group_data, SEXP data, SEXP quos, bool as_df, b
 SEXP cpp_group_split(SEXP data, SEXP drop, SEXP order){
   int NP = 0;
 
+  SEXP tbl_class = Rf_protect(Rf_allocVector(STRSXP, 3)); ++NP;
+  SET_STRING_ELT(tbl_class, 0, Rf_mkChar("tbl_df"));
+  SET_STRING_ELT(tbl_class, 1, Rf_mkChar("tbl"));
+  SET_STRING_ELT(tbl_class, 2, Rf_mkChar("data.frame"));
 
   SEXP group_data = Rf_protect(get_group_data(data)); ++NP;
   SEXP names = Rf_protect(Rf_getAttrib(group_data, R_NamesSymbol)); ++NP;
@@ -712,10 +716,13 @@ SEXP cpp_group_split(SEXP data, SEXP drop, SEXP order){
   SEXP frames = Rf_protect(Rf_allocVector(VECSXP, n_groups)); ++NP;
   SHALLOW_DUPLICATE_ATTRIB(frames, rows);
 
+
+  // Slice group chunks
+
   for (int i = 0; i < n_groups; ++i){
     R_Reprotect(locs = p_rows[i], locs_idx);
     R_Reprotect(frame = cheapr::df_slice(temp, locs, false), frame_idx);
-    set_as_tbl(frame);
+    Rf_classgets(frame, tbl_class);
     SET_VECTOR_ELT(frames, i, frame);
   }
 
