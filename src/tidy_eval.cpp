@@ -246,34 +246,46 @@ SEXP cpp_list_tidy(SEXP quos, bool keep_null){
   }
 }
 
+void set_as_tbl(SEXP x){
+  SEXP tbl_class = Rf_protect(Rf_allocVector(STRSXP, 3));
+  SET_STRING_ELT(tbl_class, 0, Rf_mkChar("tbl_df"));
+  SET_STRING_ELT(tbl_class, 1, Rf_mkChar("tbl"));
+  SET_STRING_ELT(tbl_class, 2, Rf_mkChar("data.frame"));
+  Rf_classgets(x, tbl_class);
+  Rf_unprotect(1);
+}
+
+void set_as_vctrs_new_list_of_int(SEXP x){
+  if (TYPEOF(x) != VECSXP){
+    Rf_error("`x` must be a list of integers in %s", __func__);
+  }
+  SEXP rows_class = Rf_protect(Rf_allocVector(STRSXP, 3));
+  SET_STRING_ELT(rows_class, 0, Rf_mkChar("vctrs_list_of"));
+  SET_STRING_ELT(rows_class, 1, Rf_mkChar("vctrs_vctr"));
+  SET_STRING_ELT(rows_class, 2, Rf_mkChar("list"));
+  Rf_setAttrib(x, Rf_install("ptype"), Rf_allocVector(INTSXP, 0));
+  Rf_classgets(x, rows_class);
+  Rf_unprotect(1);
+}
+
 SEXP get_group_data(SEXP x){
   if (Rf_inherits(x, "grouped_df")){
     return Rf_getAttrib(x, Rf_install("groups"));
   } else if (Rf_inherits(x, "data.frame")){
-   SEXP groups = Rf_protect(Rf_allocVector(VECSXP, 1));
+
+    SEXP groups = Rf_protect(Rf_allocVector(VECSXP, 1));
     SEXP names = Rf_protect(Rf_allocVector(STRSXP, 1));
     SET_STRING_ELT(names, 0, Rf_mkChar(".rows"));
 
     // Rows
     SEXP rows = Rf_protect(Rf_allocVector(VECSXP, 1));
-    SEXP rows_class = Rf_protect(Rf_allocVector(STRSXP, 3));
-    SET_STRING_ELT(rows_class, 0, Rf_mkChar("vctrs_list_of"));
-    SET_STRING_ELT(rows_class, 1, Rf_mkChar("vctrs_vctr"));
-    SET_STRING_ELT(rows_class, 2, Rf_mkChar("list"));
-    Rf_setAttrib(rows, Rf_install("ptype"), Rf_allocVector(INTSXP, 0));
-    Rf_classgets(rows, rows_class);
-
-    SET_VECTOR_ELT(rows, 0, cheapr::seq_len(Rf_length(Rf_getAttrib(x, R_RowNamesSymbol))));
+    SET_VECTOR_ELT(rows, 0, cheapr::seq_len(df_nrow(x)));
+    set_as_vctrs_new_list_of_int(rows);
     SET_VECTOR_ELT(groups, 0, rows);
-    Rf_setAttrib(groups, R_NamesSymbol, names);
+    Rf_namesgets(groups, names);
     Rf_protect(groups = cheapr::list_as_df(groups));
-
-    SEXP tbl_class = Rf_protect(Rf_allocVector(STRSXP, 3));
-    SET_STRING_ELT(tbl_class, 0, Rf_mkChar("tbl_df"));
-    SET_STRING_ELT(tbl_class, 1, Rf_mkChar("tbl"));
-    SET_STRING_ELT(tbl_class, 2, Rf_mkChar("data.frame"));
-    Rf_classgets(groups, tbl_class);
-    Rf_unprotect(6);
+    set_as_tbl(groups);
+    Rf_unprotect(4);
     return groups;
   } else {
     Rf_error("`x` must be a data frame");
@@ -671,3 +683,82 @@ SEXP cpp_grouped_eval_tidy2(SEXP group_data, SEXP data, SEXP quos, bool as_df, b
 //   return out;
 // }
 
+
+
+[[cpp11::register]]
+SEXP cpp_group_split(SEXP data, SEXP drop, SEXP order){
+  int NP = 0;
+
+
+  SEXP group_data = Rf_protect(get_group_data(data)); ++NP;
+  SEXP names = Rf_protect(Rf_getAttrib(group_data, R_NamesSymbol)); ++NP;
+  SEXP seq = Rf_protect(cheapr::seq_len(Rf_length(group_data) - 1)); ++NP;
+  SEXP group_vars = Rf_protect(cheapr::sset(names, seq)); ++NP;
+
+  Rf_protect(names = Rf_getAttrib(data, R_NamesSymbol)); ++NP;
+
+  SEXP locs, frame;
+
+  PROTECT_INDEX locs_idx, frame_idx;
+  R_ProtectWithIndex(locs = R_NilValue, &locs_idx); ++NP;
+  R_ProtectWithIndex(frame = R_NilValue, &frame_idx); ++NP;
+
+  SEXP temp_cols = Rf_protect(cheapr::setdiff(names, group_vars)); ++NP;
+  SEXP temp = Rf_protect(cheapr::df_select(data, temp_cols)); ++NP;
+
+  SEXP rows = Rf_protect(VECTOR_ELT(group_data, Rf_length(group_data) - 1)); ++NP;
+  const SEXP *p_rows = VECTOR_PTR_RO(rows);
+  int n_groups = Rf_length(rows);
+  SEXP frames = Rf_protect(Rf_allocVector(VECSXP, n_groups)); ++NP;
+  SHALLOW_DUPLICATE_ATTRIB(frames, rows);
+
+  for (int i = 0; i < n_groups; ++i){
+    R_Reprotect(locs = p_rows[i], locs_idx);
+    R_Reprotect(frame = cheapr::df_slice(temp, locs, false), frame_idx);
+    set_as_tbl(frame);
+    SET_VECTOR_ELT(frames, i, frame);
+  }
+
+  SEXP out = Rf_protect(cheapr::shallow_copy(group_data)); ++NP;
+  SEXP out_names = Rf_protect(Rf_duplicate(Rf_getAttrib(out, R_NamesSymbol))); ++NP;
+  SET_STRING_ELT(out_names, Rf_length(out) - 1, Rf_mkChar("data"));
+  Rf_namesgets(out, out_names);
+
+
+  // Set prototype of data
+
+  SEXP frames_class = Rf_protect(Rf_allocVector(STRSXP, 3)); ++NP;
+  SET_STRING_ELT(frames_class, 0, Rf_mkChar("vctrs_list_of"));
+  SET_STRING_ELT(frames_class, 1, Rf_mkChar("vctrs_vctr"));
+  SET_STRING_ELT(frames_class, 2, Rf_mkChar("list"));
+  SEXP frame_ptype = Rf_protect(cheapr::get_ptype(VECTOR_ELT(frames, 0))); ++NP;
+  set_as_tbl(frame_ptype);
+  Rf_setAttrib(frames, Rf_install("ptype"), frame_ptype);
+  Rf_classgets(frames, frames_class);
+
+  SET_VECTOR_ELT(out, Rf_length(out) - 1, frames);
+
+  // Add groups attribute
+
+  SEXP groups = Rf_protect(cheapr::shallow_copy(group_data)); ++NP;
+  Rf_setAttrib(groups, Rf_install(".drop"), drop);
+  Rf_setAttrib(groups, Rf_install("ordered"), order);
+  SEXP group_rows_seq = Rf_protect(cheapr::seq_len(df_nrow(groups))); ++NP;
+  SEXP group_rows = Rf_protect(Rf_coerceVector(group_rows_seq, VECSXP)); ++NP;
+  set_as_vctrs_new_list_of_int(group_rows);
+  SET_VECTOR_ELT(groups, Rf_length(groups) - 1, group_rows);
+  Rf_setAttrib(out, Rf_install("groups"), groups);
+
+  SEXP out_class = Rf_protect(Rf_allocVector(STRSXP, 4)); ++NP;
+
+  SET_STRING_ELT(out_class, 0, Rf_mkChar("grouped_df"));
+  SET_STRING_ELT(out_class, 1, Rf_mkChar("tbl_df"));
+  SET_STRING_ELT(out_class, 2, Rf_mkChar("tbl"));
+  SET_STRING_ELT(out_class, 3, Rf_mkChar("data.frame"));
+
+  Rf_classgets(out, out_class);
+  Rf_unprotect(NP);
+  return out;
+
+
+}

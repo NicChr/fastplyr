@@ -119,3 +119,7 @@ cpp_grouped_eval_tidy <- function(data, quos, as_df, check_size) {
 cpp_grouped_eval_tidy2 <- function(group_data, data, quos, as_df, check_size) {
   .Call(`_fastplyr_cpp_grouped_eval_tidy2`, group_data, data, quos, as_df, check_size)
 }
+
+cpp_group_split <- function(data, drop, order) {
+  .Call(`_fastplyr_cpp_group_split`, data, drop, order)
+}

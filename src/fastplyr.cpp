@@ -1056,7 +1056,6 @@ SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg){
   return out;
 }
 
-
 // Low-level add cols to data frame
 // SEXP cpp_df_add_cols(SEXP x, SEXP cols) {
 //   if (TYPEOF(cols) != VECSXP){
