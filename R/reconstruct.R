@@ -1,14 +1,8 @@
 
-reconstruct <- function(template, data, copy_extra_attributes = TRUE){
-  if (inherits(template, "grouped_df")){
-    grp_df_reconstruct(data, template, copy_extra_attributes)
-  } else if (inherits(template, "data.table")){
-    dt_reconstruct(data, template, copy_extra_attributes)
-  } else {
-    .Call(`_fastplyr_cpp_reconstruct`, data, template, copy_extra_attributes)
-  }
-}
-grp_df_reconstruct <- function(data, template, copy_extra_attributes = TRUE){
+#' @exportS3Method cheapr::reconstruct
+reconstruct.grouped_df <- function(x, template){
+  data <- x
+
   ad <- attributes(data)
   at <- attributes(template)
   at[["names"]] <- names(data)
@@ -56,23 +50,6 @@ grp_df_reconstruct <- function(data, template, copy_extra_attributes = TRUE){
       at[["groups"]] <- groups
     }
   }
-  if (!copy_extra_attributes){
-    at[fast_setdiff(names(at), c("names", "row.names", "class", "groups"))] <- NULL
-  }
   attributes(data) <- at
   data
-}
-dt_reconstruct <- function(data, template, copy_extra_attributes = TRUE){
-  ad <- attributes(data)
-  at <- attributes(template)
-  row_names <- .row_names_info(data, type = 0L)
-  out <- collapse::qDT(data)
-  out <- add_attr(out, "row.names", row_names, set = TRUE)
-  if (copy_extra_attributes){
-    for (a in fast_setdiff(names(at),
-                      c("row.names", "names", "class", "sorted", ".internal.selfref"))){
-      out <- add_attr(out, a, at[[a]], set = TRUE)
-    }
-  }
-  add_attr(out, "sorted", attr(data, "sorted"), set = TRUE)
 }

@@ -103,5 +103,5 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
       vind1 = TRUE
     )
   }
-  reconstruct(data, out)
+  cheapr::reconstruct(out, data)
 }

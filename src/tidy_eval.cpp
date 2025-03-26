@@ -153,11 +153,6 @@ SEXP get_mask_top_env(SEXP mask){
 
   SEXP top_env_sym = Rf_protect(Rf_install(".top_env"));
   SEXP top_env = Rf_protect(Rf_findVar(top_env_sym, mask));
-  // SEXP top_env = Rf_protect(cpp_get(top_env_sym, mask));
-  // if (Rf_isNull(top_env)){
-  //   Rf_unprotect(2);
-  //   Rf_error("`.top_env` cannot be found in data mask");
-  // }
   Rf_unprotect(2);
   return top_env;
 }
@@ -225,17 +220,7 @@ SEXP new_bare_data_mask(){
 
 [[cpp11::register]]
 SEXP cpp_list_tidy(SEXP quos, bool keep_null){
-  // SEXP env = Rf_protect(R_NewEnv(R_EmptyEnv, false, 0));
-  // SEXP mask = Rf_protect(rlang::new_data_mask(env, env));
-  // SEXP top_env = Rf_protect(get_mask_top_env(mask));
-  //
-  // // Add .data pronoun
-  // SEXP data_pronoun_sym = Rf_protect(Rf_install(".data"));
-  // SEXP data_pronoun = Rf_protect(rlang::as_data_pronoun(env));
-  // Rf_defineVar(data_pronoun_sym, data_pronoun, top_env);
-
   SEXP mask = Rf_protect(new_bare_data_mask());
-
   SEXP out = Rf_protect(cpp_eval_all_tidy(quos, mask));
 
   if (!keep_null){
@@ -766,6 +751,4 @@ SEXP cpp_group_split(SEXP data, SEXP drop, SEXP order){
   Rf_classgets(out, out_class);
   Rf_unprotect(NP);
   return out;
-
-
 }

@@ -25,7 +25,7 @@ f_select <- function(data, ..., .cols = NULL){
 #' @export
 f_select.data.frame <- function(data, ..., .cols = NULL){
   pos <- tidy_select_pos(data, ..., .cols = .cols)
-  out <- cheapr::sset_df(data, j = pos, keep_attrs = TRUE)
+  out <- cheapr::sset_df(data, j = pos)
   names(out) <- names(pos)
   out
 }
@@ -63,22 +63,6 @@ f_select.grouped_df <- function(data, ..., .cols = NULL){
   attr(out, "groups") <- groups
   class(out) <- class(data)
   # class(out) <- c("grouped_df", "tbl_df", "tbl", "data.frame")
-  out
-}
-#' @export
-f_select.data.table <- function(data, ..., .cols = NULL){
-  pos <- tidy_select_pos(data, ..., .cols = .cols)
-  out <- cheapr::sset(data, j = pos)
-  keys <- attr(data, "sorted")
-  if (length(keys) >= 1 && all(keys %in% names(out))){
-    if (all(cpp_frame_addresses_equal(
-      cheapr::sset_col(out, keys),
-      cheapr::sset_col(data, keys)
-    ))){
-      attr(out, "sorted") <- keys
-    }
-  }
-  names(out) <- names(pos)
   out
 }
 #' @rdname f_select

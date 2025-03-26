@@ -72,10 +72,6 @@ cpp_unlist_group_locs <- function(x, group_sizes) {
   .Call(`_fastplyr_cpp_unlist_group_locs`, x, group_sizes)
 }
 
-cpp_reconstruct <- function(data, from, keep_attrs) {
-  .Call(`_fastplyr_cpp_reconstruct`, data, from, keep_attrs)
-}
-
 cpp_df_transform_exotic <- function(x, order, as_qg) {
   .Call(`_fastplyr_cpp_df_transform_exotic`, x, order, as_qg)
 }

@@ -91,7 +91,7 @@ test_that("col-bind", {
 
   expect_identical(
     f_bind_cols(iris, iris),
-    add_names(fast_bind_cols(iris, iris), unique_name_repair(rep(names(iris), 2)))
+    add_names(f_bind_cols(iris, iris), unique_name_repair(rep(names(iris), 2), "...", "..."))
   )
 
   ## List of data frames

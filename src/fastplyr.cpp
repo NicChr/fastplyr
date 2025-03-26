@@ -1005,40 +1005,6 @@ SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
 }
 
 [[cpp11::register]]
-SEXP cpp_reconstruct(SEXP data, SEXP from, bool keep_attrs){
-  if (!Rf_inherits(data, "data.frame")){
-    Rf_error("`data` must be a `data.frame`");
-  }
-  if (!Rf_inherits(from, "data.frame")){
-    Rf_error("`from` must be a `data.frame`");
-  }
-
-  // Create shallow copies so that we can manipulate attributes freely
-
-  SEXP target = Rf_protect(cheapr::shallow_copy(data));
-  SEXP source = Rf_protect(cheapr::shallow_copy(from));
-
-  // The below strips any leftover attributes from `data`,
-  // I wonder if these should be kept
-
-  cheapr::set_rm_attrs(target);
-
-  if (keep_attrs){
-    Rf_setAttrib(source, R_NamesSymbol, R_NilValue);
-    Rf_setAttrib(source, R_ClassSymbol, R_NilValue);
-    Rf_setAttrib(source, R_RowNamesSymbol, R_NilValue);
-    SHALLOW_DUPLICATE_ATTRIB(target, source);
-  }
-
-  // Re-add original data attributes as these cannot be changed
-  Rf_setAttrib(target, R_NamesSymbol, Rf_getAttrib(data, R_NamesSymbol));
-  Rf_setAttrib(target, R_ClassSymbol, Rf_getAttrib(from, R_ClassSymbol));
-  Rf_setAttrib(target, R_RowNamesSymbol, cheapr::create_df_row_names(df_nrow(data)));
-  Rf_unprotect(2);
-  return target;
-}
-
-[[cpp11::register]]
 SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg){
   if (!Rf_inherits(x, "data.frame")){
     Rf_error("x must be a data frame");

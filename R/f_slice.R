@@ -63,19 +63,20 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
   if (is.logical(i)){
     cli::cli_abort("{.arg i} must be an {.cls integer} vector, not a {.cls logical} vector, use {.fn f_filter} instead")
   }
-  i <- as.integer(i)
-  if (length(i) == 0L){
-    i <- 0L
-  }
-  N <- df_nrow(data)
 
   # Groups
 
   group_vars <- get_groups(data, .by = {{ .by }})
 
+  N <- df_nrow(data)
+
   if (length(group_vars) == 0L){
     data_locs <- i[cheapr::which_(i >= -N & i <= N)]
   } else {
+    i <- as.integer(i)
+    if (length(i) == 0L){
+      i <- 0L
+    }
     groups <- data %>%
       group_collapse(.cols = group_vars, .add = TRUE,
                      order = .order)
@@ -99,7 +100,7 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
   if (keep_order){
     data_locs <- sort(data_locs)
   }
-  df_row_slice(data, data_locs)
+  cheapr::sset_df(data, data_locs)
 }
 #' @rdname f_slice
 #' @export
@@ -139,7 +140,7 @@ f_slice_head <- function(data, n, prop, .by = NULL,
     i <- sort(i)
   }
   if (slice){
-    df_row_slice(data, i)
+    cheapr::sset_df(data, i)
   } else {
     data
   }
@@ -171,7 +172,7 @@ f_slice_tail <- function(data, n, prop, .by = NULL,
   if (keep_order){
     i <- sort(i)
   }
-  df_row_slice(data, i)
+  cheapr::sset_df(data, i)
 }
 #' @rdname f_slice
 #' @export
@@ -222,7 +223,7 @@ f_slice_min <- function(data, order_by, n, prop, .by = NULL,
   if (keep_order){
     i <- sort(i)
   }
-  df_row_slice(data, i)
+  cheapr::sset_df(data, i)
 }
 #' @rdname f_slice
 #' @export
@@ -274,7 +275,7 @@ f_slice_max <- function(data, order_by, n, prop, .by = NULL,
   if (keep_order){
     i <- sort(i)
   }
-  df_row_slice(data, i)
+  cheapr::sset_df(data, i)
 }
 #' @rdname f_slice
 #' @export
@@ -324,7 +325,7 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
   if (keep_order){
     i <- sort(i)
   }
-  df_row_slice(data, i)
+  cheapr::sset_df(data, i)
 }
 df_slice_prepare <- function(data, n, prop, .by = NULL,
                              sort_groups = df_group_by_order_default(data),

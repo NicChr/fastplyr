@@ -50,7 +50,7 @@ f_expand <- function(data, ..., .sort = FALSE,
     # This is more correct but much slower
     # if (length(group_vars) > 0){
     #   return(
-    #     reconstruct(
+    #     cheapr::reconstruct(
     #       data,
     #       dplyr::reframe(f_group_by(data, .cols = group_vars, .add = TRUE),
     #                      f_expand(data = pick(everything()), ..., .sort = .sort)
@@ -99,7 +99,7 @@ f_expand <- function(data, ..., .sort = FALSE,
   if (length(out) == 0){
     out <- f_distinct(data2, .cols = group_vars, .sort = .sort)
   }
-  reconstruct(data, out)
+  cheapr::reconstruct(out, data)
 }
 #' @rdname f_expand
 #' @export
@@ -141,7 +141,7 @@ f_complete <- function(data, ...,
   }
   out_order <- c(names(data), fast_setdiff(names(out), names(data)))
   out <- f_select(out, .cols = out_order)
-  reconstruct(data, out)
+  cheapr::reconstruct(out, data)
 }
 #' @rdname f_expand
 #' @export

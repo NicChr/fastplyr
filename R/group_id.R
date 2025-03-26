@@ -74,7 +74,7 @@ group_id.default <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
     )
   }
 
-  if (!as_qg && ascending && is_simple_atomic(x)){
+  if (!as_qg && ascending && cpp_is_simple_atomic_vec(x)){
     out <- collapse::qG(x, sort = order, na.exclude = FALSE)
     return(set_rm_attributes(out))
   }

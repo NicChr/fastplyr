@@ -66,75 +66,6 @@ list_as_tbl <- function(x){
 
 # df manipulation helpers -------------------------------------------------
 
-# Row slice
-df_row_slice <- function(data, i, reconstruct = TRUE){
-  out <- cheapr::sset_row(data, i)
-  if (reconstruct){
-    out <- reconstruct(data, out)
-  }
-  out
-}
-# Bare-bones col bind
-fast_bind_cols <- function(...){
-  list_as_df(c(...))
-}
-
-df_add_cols <- function(data, cols){
-  reconstruct(data, cheapr_add_cols(data, cols))
-}
-
-combine <- function(...){
-  if (nargs() == 0) {
-    return(NULL)
-  }
-  dots <- as_list_of(...)
-  if (length(dots) == 1) {
-    return(dots[[1L]])
-  }
-
-  if (cpp_any_frames(dots)){
-    do.call(f_bind_rows, dots)
-  } else {
-    do.call(c, dots)
-  }
-}
-
-# The below is fine but doesn't work with matrix cols
-
-# df_modify_cols <- function(data, cols){
-#   if (!(is.list(cols) && !is.null(names(cols)))){
-#     stop("cols must be a named list")
-#   }
-#   N <- df_nrow(data)
-#   out <- unclass(data)
-#   temp <- unclass(cols)
-#   # temp <- do.call(function(...) cheapr::recycle(..., length = N), cols)
-#   for (col in names(temp)){
-#     # out[[col]] <- temp[[col]]
-#     vec <- temp[[col]]
-#     if (NROW(vec) != N){
-#       if (is_df(vec)){
-#         vec <- cheapr::sset(vec, rep_len(attr(x, "row.names"), N))
-#       } else {
-#         vec <- rep_len(vec, N)
-#       }
-#     }
-#     out[[col]] <- vec
-#   }
-#   class(out) <- class(data)
-#   reconstruct(data, out)
-# }
-
-# df_add_cols2 <- function(data, cols, check = TRUE){
-#   if (check){
-#     if ( (!(is.list(cols) && !is.object(cols))) || is.null(names(cols))){
-#       stop("cols must be a named list")
-#     }
-#     cols <- do.call(function(...) cheapr::recycle(..., length = df_nrow(data)), cols)
-#   }
-#   cpp_df_add_cols(data, cols)
-# }
-
 # This is not only faster than dplyr col modify for large data frames
 # but also works with data.tables because of reconstruct.data.table
 df_rm_cols <- function(data, cols){
@@ -147,7 +78,7 @@ df_rm_cols <- function(data, cols){
   out[rm_cols] <- NULL
 
   class(out) <- class(data)
-  reconstruct(data, out)
+  cheapr::reconstruct(out, data)
 }
 
 # Seq along df rows/cols
@@ -168,7 +99,7 @@ df_rep <- function(data, times){
       cli::cli_abort("{.arg times} must be of length 1 or {nrow(data)}")
     }
   }
-  reconstruct(data, list_as_df(lapply(data, \(x) rep(x, times))))
+  cheapr::reconstruct(list_as_df(lapply(data, \(x) rep(x, times))), data)
 }
 # Repeat each row
 df_rep_each <- function(data, each){
@@ -196,17 +127,6 @@ df_paste_names <- function(data,  sep = "_", .cols = names(data)){
                    list(sep = sep)))
 }
 
-# Theoretically safe data frame initialisation
-# for all objs with a rep() and [ method
-df_init <- function(x, size = 1L){
-  ncols <- df_ncol(x)
-  if (ncols == 0){
-    init_df <- cheapr::new_df(.nrows = size)
-  } else {
-    init_df <- list_as_df(lapply(x, na_init, size))
-  }
-  reconstruct(x, init_df)
-}
 # Group IDs (same as dplyr::group_indices)
 df_group_id <- function(x){
   if (!inherits(x, "grouped_df") && !inherits(x, "data.frame")){
@@ -306,14 +226,4 @@ cross_join <- function(...){
 
 df_mutate_exotic_to_ids <- function(x, order = TRUE, as_qg = FALSE){
   cpp_df_transform_exotic(x, order = order, as_qg = as_qg)
-}
-
-# Turn all list elements into data frames
-as_list_of_frames <- function(x){
-  for (i in seq_along(x)){
-    if (!inherits(x[[i]], "data.frame")){
-      x[[i]] <- list_as_tbl(x[i])
-    }
-  }
-  x
 }

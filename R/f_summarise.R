@@ -120,7 +120,7 @@ f_summarise <- function(data, ..., .by = NULL,
   } else {
     out <- groups[["groups"]]
   }
-  out <- reconstruct(new_tbl(), out)
+  out <- cheapr::reconstruct(out, new_tbl())
   for (i in seq_along(dots)){
     dot <- dots[[i]]
     dot_label <- rlang::as_label(dot)
@@ -293,7 +293,7 @@ f_summarise <- function(data, ..., .by = NULL,
       out <- f_bind_cols(out, f_select(temp, .cols = setdiff(names(temp), group_vars)))
     }
   }
-  reconstruct(df_ungroup(data), out)
+  cheapr::reconstruct(out, df_ungroup(data))
 }
 #' @rdname f_summarise
 #' @export

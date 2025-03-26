@@ -22,7 +22,7 @@ remove_rows_if_any_na <- function(data, ..., .cols = NULL){
   if (length(keep) == df_nrow(data)){
     data
   } else {
-    df_row_slice(data, keep)
+    cheapr::sset_df(data, keep)
   }
 }
 #' @rdname remove_na
@@ -37,6 +37,6 @@ remove_rows_if_all_na <- function(data, ..., .cols = NULL){
   if (length(keep) == df_nrow(data)){
     data
   } else {
-    df_row_slice(data, keep)
+    cheapr::sset_df(data, keep)
   }
 }

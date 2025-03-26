@@ -149,14 +149,6 @@ fast_intersect <- function(x, y){
   x[match(x, y, nomatch = 0L) != 0L]
 }
 
-na_init <- function(x, size = 1L){
-  if (is_df(x)){
-    df_init(x, size)
-  } else {
-    rep(x[NA_integer_], size)
-  }
-}
-
 # Very fast unique function
 sort_unique <- function(x, sort = FALSE){
   if (sort){

@@ -21,11 +21,10 @@
 #' @export
 f_bind_rows <- function(...){
   dots <- cpp_as_list_of_frames(as_list_of(...))
-
   if (length(dots) == 0){
     new_tbl()
   } else {
-    reconstruct(dots[[1L]], cpp_c(dots))
+    cpp_c(dots)
   }
 }
 #' @rdname f_bind_rows
@@ -48,7 +47,7 @@ f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE, .sep = "..."
   names(out) <- names(out) %||% character(length(out))
 
   if (.repair_names){
-    names(out) <- unique_name_repair(names(out), .sep = .sep)
+    names(out) <- unique_name_repair(names(out), .sep, .sep)
   }
   out <- list_as_df(out)
   if (length(dots) >= 1){
@@ -58,5 +57,5 @@ f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE, .sep = "..."
       attr(out, "row.names") <- .set_row_names(N)
     }
   }
-  reconstruct(template, out)
+  cheapr::reconstruct(out, template)
 }

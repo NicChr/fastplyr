@@ -353,7 +353,7 @@ GRP_is_sorted <- function(GRP){
 GRP_group_data <- function(GRP, expand = FALSE){
   out <- list_as_tbl(as.list(GRP_groups(GRP)))
   if (expand){
-    out <- df_row_slice(out, GRP_group_id(GRP))
+    out <- cheapr::sset_df(out, GRP_group_id(GRP))
   }
   out
 }

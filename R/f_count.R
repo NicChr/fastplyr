@@ -82,7 +82,7 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
   if (is.null(out)){
     out <- f_select(data_transformed, .cols = all_vars)
     gstarts <- GRP_starts(g)
-    out <- df_row_slice(out, gstarts, reconstruct = FALSE)
+    out <- cheapr::sset_row(out, gstarts)
   }
   group_sizes <- GRP_group_sizes(g)
   if (length(all_vars) == 0L){
@@ -94,7 +94,7 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
   }
   # Edge-case, not sure how to fix this
   if (N == 0L && length(all_vars) == 0L){
-    out <- df_init(out, 1L)
+    out <- na_init(out, 1L)
   }
   if (length(wt_var) == 0){
     nobs <- group_sizes
@@ -111,7 +111,7 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
   if (sort){
     out <- f_arrange(out, .cols = name, .descending = TRUE)
   }
-  reconstruct(data, out)
+  cheapr::reconstruct(out, data)
 }
 # A basic and very fast count() method
 # The above method is faster when there are many groups
@@ -139,7 +139,7 @@ count_simple <- function(data, ..., wt = NULL, sort = FALSE,
   if (sort){
     out <- f_arrange(out, .cols = name, .descending = TRUE)
   }
-  reconstruct(data, out)
+  cheapr::reconstruct(out, data)
 }
 add_count_simple <- function(data, ..., wt = NULL, sort = FALSE,
                              .order = df_group_by_order_default(data),
@@ -161,7 +161,7 @@ add_count_simple <- function(data, ..., wt = NULL, sort = FALSE,
   if (sort){
     out <- f_arrange(out, .cols = name, .descending = TRUE)
   }
-  reconstruct(data, out)
+  cheapr::reconstruct(out, data)
 }
 
 #' @rdname f_count
@@ -228,5 +228,5 @@ f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
   if (sort){
     out <- f_arrange(out, .cols = name, .descending = TRUE)
   }
-  reconstruct(data, out)
+  cheapr::reconstruct(out, data)
 }

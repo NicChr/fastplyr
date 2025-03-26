@@ -58,6 +58,6 @@ f_arrange <- function(data, ..., .by = NULL, .by_group = FALSE,
   if (isTRUE(sorted)){
     data
   } else {
-    df_row_slice(data, out_order)
+    cheapr::sset(data, out_order)
   }
 }

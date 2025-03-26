@@ -62,7 +62,7 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
   }
   if (!sort && order){
     unsorted_i <- collapse::funique(GRP_group_id(g), sort = FALSE)
-    out <- df_row_slice(out, unsorted_i, reconstruct = FALSE)
+    out <- cheapr::sset_row(out, unsorted_i)
   }
   # Method for when not dropping unused factor levels
   # At the moment a bit convoluted

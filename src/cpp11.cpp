@@ -132,13 +132,6 @@ extern "C" SEXP _fastplyr_cpp_unlist_group_locs(SEXP x, SEXP group_sizes) {
   END_CPP11
 }
 // fastplyr.cpp
-SEXP cpp_reconstruct(SEXP data, SEXP from, bool keep_attrs);
-extern "C" SEXP _fastplyr_cpp_reconstruct(SEXP data, SEXP from, SEXP keep_attrs) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_reconstruct(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(from), cpp11::as_cpp<cpp11::decay_t<bool>>(keep_attrs)));
-  END_CPP11
-}
-// fastplyr.cpp
 SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg);
 extern "C" SEXP _fastplyr_cpp_df_transform_exotic(SEXP x, SEXP order, SEXP as_qg) {
   BEGIN_CPP11
@@ -247,7 +240,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_is_exotic",             (DL_FUNC) &_fastplyr_cpp_is_exotic,             1},
     {"_fastplyr_cpp_list_subset",           (DL_FUNC) &_fastplyr_cpp_list_subset,           4},
     {"_fastplyr_cpp_list_tidy",             (DL_FUNC) &_fastplyr_cpp_list_tidy,             2},
-    {"_fastplyr_cpp_reconstruct",           (DL_FUNC) &_fastplyr_cpp_reconstruct,           3},
     {"_fastplyr_cpp_row_id",                (DL_FUNC) &_fastplyr_cpp_row_id,                3},
     {"_fastplyr_cpp_set_list_element",      (DL_FUNC) &_fastplyr_cpp_set_list_element,      3},
     {"_fastplyr_cpp_slice_locs",            (DL_FUNC) &_fastplyr_cpp_slice_locs,            2},

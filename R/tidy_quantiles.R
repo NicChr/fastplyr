@@ -88,7 +88,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     names(empty_quant_df) <- quant_nms
     empty_quant_df <- as.data.frame(empty_quant_df)
     out <- f_bind_cols(f_select(data2, .cols = group_vars), empty_quant_df)
-    return(reconstruct(data, out))
+    return(cheapr::reconstruct(out, data))
   }
   if (df_nrow(data) == 0L || n_probs == 0L){
     if (wide){
@@ -114,7 +114,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
         f_select(data2, .cols = dot_vars)
       )
     }
-    return(reconstruct(data, out))
+    return(cheapr::reconstruct(out, data))
   }
 
   ### Do this because if groups is a GRP then collapse::fnth allocates
@@ -162,7 +162,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
 
     # Grouped method for pivot == "wide"
 
-    out <- df_row_slice(f_select(data2, .cols = group_vars), group_starts)
+    out <- cheapr::sset_df(f_select(data2, .cols = group_vars), group_starts)
     # Allocate enough space
     out <- c(as.list(out), vector("list", length(dot_vars) * n_probs))
     if (length(dot_vars) == 1){
@@ -220,7 +220,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     ## Shaping the data
     ## We want it sorted by group + quantile
 
-    out <- df_row_slice(data2, group_starts)
+    out <- cheapr::sset_df(data2, group_starts)
     out <- df_rep_each(out, n_probs)
     out[[".quantile"]] <- rep(quant_categories, df_nrow(out) / n_probs)
     out <- f_select(out, .cols = c(group_vars, ".quantile", dot_vars))
@@ -288,8 +288,8 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   }
 
   if (.drop_groups){
-    reconstruct(df_ungroup(data), out)
+    cheapr::reconstruct(out, df_ungroup(data))
   } else {
-    reconstruct(data, out)
+    cheapr::reconstruct(out, data)
   }
 }

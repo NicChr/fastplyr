@@ -19,12 +19,14 @@ cpp_int64_to_numeric <- get_from_package("cpp_int64_to_numeric", "cheapr")
 cpp_loc_set_replace <- get_from_package("cpp_loc_set_replace", "cheapr")
 named_list <- get_from_package("named_list", "cheapr")
 as_list_of <- get_from_package("as_list_of", "cheapr")
-is_simple_atomic <- get_from_package("is_simple_atomic", "cheapr")
+cpp_is_simple_atomic_vec <- get_from_package("cpp_is_simple_atomic_vec", "cheapr")
 cpp_recycle <- get_from_package("cpp_recycle", "cheapr")
 cpp_c <- get_from_package("cpp_c", "cheapr")
 cheapr_add_cols <- get_from_package("df_add_cols", "cheapr")
 cheapr_cpp_rev <- get_from_package("cpp_rev", "cheapr")
 unique_name_repair <- get_from_package("unique_name_repair", "cheapr")
+na_init <- get_from_package("cpp_na_init", "cheapr")
+df_add_cols <- get_from_package("cpp_df_assign_cols", "cheapr")
 `%in_%` <- cheapr::`%in_%`
 
 

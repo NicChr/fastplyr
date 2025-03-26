@@ -82,5 +82,5 @@ f_distinct <- function(data, ..., .keep_all = FALSE,
   if (slice){
     out <- cheapr::sset_row(out, unique_locs)
   }
-  reconstruct(data, out)
+  cheapr::reconstruct(out, data)
 }
