@@ -25,7 +25,7 @@ f_bind_rows <- function(...){
     new_tbl()
   } else {
     out <- cpp_c(dots)
-    names(out) <- name_repair(names(out))
+    names(out) <- cheapr::name_repair(names(out))
     out
   }
 }

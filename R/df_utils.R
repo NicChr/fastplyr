@@ -217,7 +217,7 @@ cross_join <- function(...){
     out <- new_tbl(x = out)
     names(out) <- names(dots)
   }
-  names(out) <- name_repair(names(out))
+  names(out) <- cheapr::name_repair(names(out))
   out
 }
 

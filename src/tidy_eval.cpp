@@ -711,7 +711,7 @@ SEXP cpp_group_split(SEXP data, SEXP drop, SEXP order){
     SET_VECTOR_ELT(frames, i, frame);
   }
 
-  SEXP out = Rf_protect(cheapr::shallow_copy(group_data)); ++NP;
+  SEXP out = Rf_protect(Rf_shallow_duplicate(group_data)); ++NP;
   SEXP out_names = Rf_protect(Rf_duplicate(Rf_getAttrib(out, R_NamesSymbol))); ++NP;
   SET_STRING_ELT(out_names, Rf_length(out) - 1, Rf_mkChar("data"));
   Rf_namesgets(out, out_names);
@@ -732,7 +732,7 @@ SEXP cpp_group_split(SEXP data, SEXP drop, SEXP order){
 
   // Add groups attribute
 
-  SEXP groups = Rf_protect(cheapr::shallow_copy(group_data)); ++NP;
+  SEXP groups = Rf_protect(Rf_shallow_duplicate(group_data)); ++NP;
   Rf_setAttrib(groups, Rf_install(".drop"), drop);
   Rf_setAttrib(groups, Rf_install("ordered"), order);
   SEXP group_rows_seq = Rf_protect(cheapr::seq_len(df_nrow(groups))); ++NP;

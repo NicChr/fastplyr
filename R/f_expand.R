@@ -75,7 +75,7 @@ f_expand <- function(data, ..., .sort = FALSE,
     }
     out <- Reduce(anon_join, frames)
 
-    ## Here we remove the distinct join suffix and use name_repair()
+    ## Here we remove the distinct join suffix and use cheapr::name_repair()
     ## for duplicate col names
 
     which_suffix_names <- which(grepl(".fastplyr.suffix", names(out), fixed = TRUE))
@@ -94,7 +94,7 @@ f_expand <- function(data, ..., .sort = FALSE,
     # Alternative
     # out <- do.call(cross_join, frames)
   }
-  names(out) <- name_repair(names(out))
+  names(out) <- cheapr::name_repair(names(out))
   # If just empty list
   if (length(out) == 0){
     out <- f_distinct(data2, .cols = group_vars, .sort = .sort)

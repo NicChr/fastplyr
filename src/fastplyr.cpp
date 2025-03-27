@@ -1009,7 +1009,7 @@ SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg){
   if (!Rf_inherits(x, "data.frame")){
     Rf_error("x must be a data frame");
   }
-  SEXP out = Rf_protect(cheapr::shallow_copy(x));
+  SEXP out = Rf_protect(Rf_shallow_duplicate(x));
   for (int i = 0; i < Rf_length(x); ++i){
     if (cpp_is_exotic(VECTOR_ELT(x, i))){
      SET_VECTOR_ELT(out, i, fp_group_id(

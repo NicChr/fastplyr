@@ -17,8 +17,8 @@ reconstruct.grouped_df <- function(x, template){
   groups_are_identical <-
     all(template_groups %in% names(data)) &&
     identical(
-      strip_attrs(as.list(cheapr::sset_col(data, j = template_groups))),
-      strip_attrs(as.list(cheapr::sset_col(template, j = template_groups)))
+      cheapr::sset_col(data, j = template_groups),
+      cheapr::sset_col(template, j = template_groups)
     )
 
   if (!groups_are_identical){
