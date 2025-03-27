@@ -7,7 +7,7 @@
 \usage{
 f_bind_rows(...)
 
-f_bind_cols(..., .repair_names = TRUE, .recycle = TRUE, .sep = "...")
+f_bind_cols(..., .repair_names = TRUE, .recycle = TRUE)
 }
 \arguments{
 \item{...}{Data frames to bind.}
@@ -17,8 +17,6 @@ Default is \code{TRUE}.}
 
 \item{.recycle}{Should inputs be recycled to a common row size?
 Default is \code{TRUE}.}
-
-\item{.sep}{Separator to use for creating unique column names.}
 }
 \value{
 \code{f_bind_rows()} performs a union of the data frames specified via \code{...} and

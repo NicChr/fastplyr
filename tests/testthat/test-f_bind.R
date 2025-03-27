@@ -62,7 +62,7 @@ test_that("col-bind", {
   # Check that naming is correct, non df objs can be joined and recycled
   expect_identical(
     f_bind_cols(iris, ok = 1L, 1:3),
-    dplyr::mutate(iris, ok = 1L, `...7` = rep_len(1:3, 150))
+    dplyr::mutate(iris, ok = 1L, `col_7` = rep_len(1:3, 150))
   )
 
   # Check that class is kept
@@ -91,7 +91,7 @@ test_that("col-bind", {
 
   expect_identical(
     f_bind_cols(iris, iris),
-    add_names(f_bind_cols(iris, iris), unique_name_repair(rep(names(iris), 2), "...", "..."))
+    add_names(f_bind_cols(iris, iris), name_repair(rep(names(iris), 2)))
   )
 
   ## List of data frames

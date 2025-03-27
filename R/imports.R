@@ -27,7 +27,13 @@ cheapr_cpp_rev <- get_from_package("cpp_rev", "cheapr")
 unique_name_repair <- get_from_package("unique_name_repair", "cheapr")
 na_init <- get_from_package("cpp_na_init", "cheapr")
 df_add_cols <- get_from_package("cpp_df_assign_cols", "cheapr")
+cpp_new_df <- get_from_package("cpp_new_df", "cheapr")
+cpp_df_col_c <- get_from_package("cpp_df_col_c", "cheapr")
 `%in_%` <- cheapr::`%in_%`
+
+name_repair <- function(x){
+  unique_name_repair(x, dup_sep = "_", empty_sep = "col_")
+}
 
 
 # dplyr -------------------------------------------------------------------

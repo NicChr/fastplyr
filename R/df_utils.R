@@ -217,7 +217,7 @@ cross_join <- function(...){
     out <- new_tbl(x = out)
     names(out) <- names(dots)
   }
-  names(out) <- unique_name_repair(names(out))
+  names(out) <- name_repair(names(out))
   out
 }
 
