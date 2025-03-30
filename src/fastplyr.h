@@ -22,6 +22,8 @@ inline int df_nrow(SEXP x){
   return Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
 }
 
+bool frame_any_exotic(SEXP x);
+
 namespace rlang {
 SEXP eval_tidy(SEXP expr, SEXP data, SEXP env);
 SEXP as_data_pronoun(SEXP x);

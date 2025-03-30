@@ -7,14 +7,14 @@ check_by <- function(data, .by){
     if (inherits(data, "grouped_df")){
       by_nms <- tidy_select_pos(data, {{ .by }})
       if (length(by_nms) > 0L){
-        stop(".by cannot be used on a grouped_df")
+        cli::cli_abort("{.arg .by} cannot be used on a grouped_df")
       }
     }
   }
 }
 check_cols <- function(n_dots, .cols = NULL){
   if (n_dots > 0 && !is.null(.cols)){
-    stop("Cannot supply variables through ... and .cols, use one argument.")
+    cli::cli_abort("Cannot supply variables through {.arg ...} and {.arg .cols}, use one argument")
   }
 }
 
@@ -29,7 +29,7 @@ get_groups <- function(data, .by = NULL){
   }
   if (length(by_groups) > 0L){
     if (length(dplyr_groups) > 0L){
-      stop(".by cannot be used on a grouped_df")
+      cli::cli_abort("{.arg .by} cannot be used on a grouped_df")
     }
     by_groups
   } else {
@@ -126,12 +126,25 @@ fastplyr_quos <- function(..., .named = FALSE){
 # }
 
 # Recursively turn calls into lists
+
+# has_call <- function(x){
+#   any(rapply(x, is.call, how = "unlist"))
+# }
+#
 # unnest_call <- function(x){
-#   if (!is.call(x)){
-#     x
-#   } else {
-#     rapply(as.list(x), \(x) if (is.call(x)) as.list(x) else x, how = "list")
+#   out <- as.list(x)
+#
+#   for (i in seq_along(out)){
+#    if (is.call(out[[i]])){
+#      result <- as.list(out[[i]])
+#      while(has_call(result)){
+#        result <- unnest_call(result)
+#      }
+#      out[[i]] <- result
+#    }
 #   }
+#
+#   out
 # }
 
 # Get data variables from call
@@ -139,12 +152,21 @@ call_vars <- function(expr, data){
   if (rlang::is_quosure(expr)){
     expr <- rlang::quo_get_expr(expr)
   }
-  out <- all.vars(expr)
+  out <- all.names(expr)
   which_in(names(data), out)
+}
+call_vars2 <- function(expr, data){
+  if (rlang::is_quosure(expr)){
+    expr <- rlang::quo_get_expr(expr)
+  }
+  fast_intersect(all.names(expr), names(data))
 }
 # Get data variables from list of calls
 call_vars_v <- function(exprs, data){
   lapply(exprs, call_vars, data)
+}
+call_vars_v2 <- function(exprs, data){
+  cpp_c(lapply(exprs, call_vars2, data))
 }
 
 
@@ -243,6 +265,37 @@ mutate_summary_grouped <- function(.data, ...,
   out
 }
 
+mutate_summary <- function(.data, ...,
+                            .keep = c("all", "used", "unused", "none"),
+                            .by = NULL){
+  .keep <- rlang::arg_match(.keep)
+  original_cols <- names(.data)
+  by_expr <- rlang::enquo(.by)
+  if (rlang::quo_is_null(by_expr)){
+    data <- .data
+  } else {
+    data <- f_group_by(.data, .by = !!by_expr, .add = TRUE)
+  }
+  group_vars <- group_vars(data)
+  quos <- fastplyr_quos(..., .named = TRUE)
+  new_data <- cpp_grouped_eval_mutate(data, quos)
+  out_data <- df_add_cols(data, new_data)
+  new_cols <- names(new_data)
+  all_cols <- names(out_data)
+
+  keep_cols <- switch(.keep,
+                      all = all_cols,
+                      none = new_cols,
+                      used = c(call_vars_v2(quos, data), new_cols),
+                      unused = fast_setdiff(original_cols, new_cols))
+
+  # Add missed group vars and keep original ordering
+  keep_cols <- fast_intersect(all_cols, c(group_vars, keep_cols))
+  out_data <- cheapr::sset_df(out_data, j = keep_cols)
+  out <- list(data = out_data, cols = new_cols)
+  out
+}
+
 tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
                                        ungroup = TRUE, rename = TRUE,
                                        unique_groups = TRUE){
@@ -294,11 +347,7 @@ tidy_group_info_datamask <- function(data, ..., .by = NULL,
   }
   # Data-masking for dots expressions
   if (dots_length(...) > 0){
-    if (ungroup){
-      out_info <- mutate_summary_ungrouped(out, ...)
-    } else {
-      out_info <- mutate_summary_grouped(out, ..., .by = {{ .by }})
-    }
+    out_info <- mutate_summary(out, ..., .by = {{ .by }})
     out <- out_info[["data"]]
     extra_groups <- out_info[["cols"]]
   }
@@ -528,11 +577,13 @@ fast_reframe <- function(data, ..., .by = NULL, .order = df_group_by_order_defau
 #   }
 #   as_tbl(out)
 # }
-# fast_mutate <- function(data, ...,  .by = NULL){
-#   quos <- fastplyr_quos(..., .named = TRUE)
-#   mask <- rlang::as_data_mask(data)
-#
-#   data <- f_group_by(data, .by = {{ .by }})
-#
-#   cpp_grouped_eval_tidy(group_data(data), data, quos, TRUE, TRUE)
-# }
+fast_mutate <- function(data, ...,  .by = NULL){
+  quos <- fastplyr_quos(..., .named = TRUE)
+
+  cols_to_add <- data %>%
+    f_group_by(.by = {{ .by }}, .add = TRUE) %>%
+    cpp_grouped_eval_mutate(quos)
+
+  cols_to_add
+  # df_add_cols(data, cols_to_add)
+}

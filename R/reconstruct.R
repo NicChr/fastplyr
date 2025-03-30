@@ -16,9 +16,15 @@ reconstruct.grouped_df <- function(x, template){
 
   groups_are_identical <-
     all(template_groups %in% names(data)) &&
-    identical(
-      cheapr::sset_col(data, j = template_groups),
-      cheapr::sset_col(template, j = template_groups)
+    (
+      all(cpp_frame_addresses_equal(
+        cheapr::sset_col(data, j = template_groups),
+        cheapr::sset_col(template, j = template_groups)
+      )) ||
+        identical(
+          cheapr::sset_col(data, j = template_groups),
+          cheapr::sset_col(template, j = template_groups)
+        )
     )
 
   if (!groups_are_identical){

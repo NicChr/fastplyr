@@ -83,8 +83,17 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
 
 [[cpp11::register]]
 bool cpp_is_exotic(SEXP x){
-  // integer64 needs to be turned into proxy group IDs in this package
-  return !Rf_isNull(x) && (!Rf_isVectorAtomic(x) || Rf_isS4(x) || Rf_inherits(x, "integer64"));
+  return !cheapr::is_simple_atomic_vec(x);
+}
+
+bool frame_any_exotic(SEXP x){
+  bool out = false;
+  for (int i = 0; i < Rf_length(x); ++i){
+    if (cpp_is_exotic(VECTOR_ELT(x, i))){
+      out = true; break;
+    }
+  }
+  return out;
 }
 
 

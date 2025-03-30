@@ -104,8 +104,16 @@ cpp_list_tidy <- function(quos, keep_null) {
   .Call(`_fastplyr_cpp_list_tidy`, quos, keep_null)
 }
 
+get_group_data <- function(x) {
+  .Call(`_fastplyr_get_group_data`, x)
+}
+
 cpp_grouped_eval_mutate <- function(data, quos) {
   .Call(`_fastplyr_cpp_grouped_eval_mutate`, data, quos)
+}
+
+cpp_grouped_eval_mutate2 <- function(data, quos) {
+  .Call(`_fastplyr_cpp_grouped_eval_mutate2`, data, quos)
 }
 
 cpp_grouped_eval_tidy <- function(data, quos, as_df, check_size) {

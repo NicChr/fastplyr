@@ -1,5 +1,7 @@
 #' Bind data frame rows and columns
 #'
+#' @name f_bind
+#'
 #' @description
 #' Faster bind rows and columns.
 #'
@@ -17,7 +19,7 @@
 #' any duplicates by default.
 #'
 #'
-#' @rdname f_bind_rows
+#' @rdname f_bind
 #' @export
 f_bind_rows <- function(...){
   dots <- cpp_as_list_of_frames(list_rm_null(as_list_of(...)))
@@ -29,7 +31,7 @@ f_bind_rows <- function(...){
     out
   }
 }
-#' @rdname f_bind_rows
+#' @rdname f_bind
 #' @export
 f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE){
   frames <- cpp_as_list_of_frames(list_rm_null(as_list_of(...)))
