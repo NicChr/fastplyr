@@ -141,10 +141,13 @@ bool cpp_call_contains_ns(SEXP expr, SEXP ns, SEXP rho){
         break;
       }
     }
-    if (TYPEOF(branch) == SYMSXP &&
-        cpp_fun_ns(rlang::sym_as_string(branch), rho) == ns_str){
-      out = true;
-      break;
+    if (TYPEOF(branch) == SYMSXP){
+     SEXP branch_name = Rf_protect(rlang::sym_as_character(branch)); ++NP;
+     SEXP fun_ns = Rf_protect(cpp_fun_ns(branch_name, rho)); ++NP;
+     if (std::strcmp(CHAR(fun_ns), CHAR(ns_str)) == 0){
+       out = true;
+       break;
+     }
     }
   }
   Rf_unprotect(NP);
@@ -238,6 +241,29 @@ cpp11::writable::strings all_call_names(SEXP expr){
       }
     }
   }
+  return out;
+}
+
+// Which variables are quosures pointing to?
+
+[[cpp11::register]]
+SEXP cpp_quo_data_vars(SEXP quos, SEXP data){
+
+  SEXP list_container = Rf_protect(Rf_allocVector(VECSXP, 2));
+
+  SEXP quo_vars, out;
+  PROTECT_INDEX quo_vars_idx, out_idx;
+  R_ProtectWithIndex(quo_vars = R_NilValue, &quo_vars_idx);
+  R_ProtectWithIndex(out = Rf_allocVector(STRSXP, 0), &out_idx);
+
+  for (int i = 0; i < Rf_length(quos); ++i){
+    R_Reprotect(quo_vars = all_call_names(VECTOR_ELT(quos, i)), quo_vars_idx);
+    SET_VECTOR_ELT(list_container, 0, out);
+    SET_VECTOR_ELT(list_container, 1, quo_vars);
+    R_Reprotect(out = cheapr::c(list_container), out_idx);
+  }
+  Rf_protect(out = cheapr::intersect(Rf_getAttrib(data, R_NamesSymbol), out, false));
+  Rf_unprotect(4);
   return out;
 }
 
@@ -464,7 +490,7 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
 
 
   // calls_vars_v grabs the variable names the quosures point to
-  SEXP quo_data_vars = Rf_protect(cpp11::package("fastplyr")["call_vars_v2"](quos, data)); ++NP;
+  SEXP quo_data_vars = Rf_protect(cpp_quo_data_vars(quos, data)); ++NP;
   int chunk_n_cols = Rf_length(quo_data_vars);
   SEXP quo_data_syms = Rf_protect(Rf_allocVector(VECSXP, chunk_n_cols)); ++NP;
 
@@ -636,7 +662,7 @@ SEXP cpp_grouped_eval_mutate2(SEXP data, SEXP quos){
 
 
   // calls_vars_v grabs the variable names the quosures point to
-  SEXP quo_data_vars = Rf_protect(cpp11::package("fastplyr")["call_vars_v2"](quos, data)); ++NP;
+  SEXP quo_data_vars = Rf_protect(cpp_quo_data_vars(quos, data)); ++NP;
   int chunk_n_cols = Rf_length(quo_data_vars);
   SEXP quo_data_syms = Rf_protect(Rf_allocVector(VECSXP, chunk_n_cols)); ++NP;
 

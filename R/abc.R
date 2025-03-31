@@ -13,6 +13,7 @@ str_coalesce <- function(...) cpp_str_coalesce(list(...))
 
 # Fast way of getting named col positions
 col_select_pos <- function(data, .cols = character()){
+  .cols <- .cols %||% integer()
   data_names <- attr(data, "names", TRUE)
   names(data_names) <- data_names
   out <- data_names[.cols]
@@ -33,6 +34,7 @@ col_select_pos <- function(data, .cols = character()){
 }
 
 col_select_names <- function(data, .cols = character()){
+  .cols <- .cols %||% integer()
   data_names <- attr(data, "names", TRUE)
   names(data_names) <- data_names
   out <- data_names[.cols]

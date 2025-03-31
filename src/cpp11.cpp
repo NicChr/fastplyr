@@ -181,6 +181,13 @@ extern "C" SEXP _fastplyr_all_call_names(SEXP expr) {
   END_CPP11
 }
 // tidy_eval.cpp
+SEXP cpp_quo_data_vars(SEXP quos, SEXP data);
+extern "C" SEXP _fastplyr_cpp_quo_data_vars(SEXP quos, SEXP data) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_quo_data_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
+  END_CPP11
+}
+// tidy_eval.cpp
 SEXP cpp_quos_adjust_across(SEXP quos);
 extern "C" SEXP _fastplyr_cpp_quos_adjust_across(SEXP quos) {
   BEGIN_CPP11
@@ -293,6 +300,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_is_exotic",             (DL_FUNC) &_fastplyr_cpp_is_exotic,             1},
     {"_fastplyr_cpp_list_subset",           (DL_FUNC) &_fastplyr_cpp_list_subset,           4},
     {"_fastplyr_cpp_list_tidy",             (DL_FUNC) &_fastplyr_cpp_list_tidy,             2},
+    {"_fastplyr_cpp_quo_data_vars",         (DL_FUNC) &_fastplyr_cpp_quo_data_vars,         2},
     {"_fastplyr_cpp_quos_adjust_across",    (DL_FUNC) &_fastplyr_cpp_quos_adjust_across,    1},
     {"_fastplyr_cpp_row_id",                (DL_FUNC) &_fastplyr_cpp_row_id,                3},
     {"_fastplyr_cpp_set_list_element",      (DL_FUNC) &_fastplyr_cpp_set_list_element,      3},

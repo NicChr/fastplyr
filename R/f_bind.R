@@ -22,13 +22,13 @@
 #' @rdname f_bind
 #' @export
 f_bind_rows <- function(...){
-  dots <- cpp_as_list_of_frames(list_rm_null(as_list_of(...)))
-  if (length(dots) == 0){
-    new_tbl()
-  } else {
-    out <- cpp_c(dots)
+  frames <- cpp_as_list_of_frames(list_rm_null(as_list_of(...)))
+  if (length(frames)){
+    out <- cpp_c(frames)
     names(out) <- cheapr::name_repair(names(out))
     out
+  } else {
+    new_tbl()
   }
 }
 #' @rdname f_bind

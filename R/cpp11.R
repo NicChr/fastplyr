@@ -100,6 +100,10 @@ all_call_names <- function(expr) {
   .Call(`_fastplyr_all_call_names`, expr)
 }
 
+cpp_quo_data_vars <- function(quos, data) {
+  .Call(`_fastplyr_cpp_quo_data_vars`, quos, data)
+}
+
 cpp_quos_adjust_across <- function(quos) {
   .Call(`_fastplyr_cpp_quos_adjust_across`, quos)
 }

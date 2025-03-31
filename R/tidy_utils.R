@@ -154,6 +154,8 @@ unpack_across <- function(quo, data){
   if (rlang::is_call(across_fns, "list")){
     fn_tree <- as.list(across_fns)[-1L]
     fn_names <- names(fn_tree) %||% character(length(fn_tree))
+  } else if (!".fns" %in% names(clean_expr)){
+    fn_tree <- list(identity)
   } else {
     fn_tree <- list(across_fns)
   }
@@ -246,26 +248,26 @@ unnest_call <- function(x){
 }
 
 # Get data variables from call
-call_vars <- function(expr, data){
-  if (rlang::is_quosure(expr)){
-    expr <- rlang::quo_get_expr(expr)
-  }
-  out <- all.names(expr)
-  which_in(names(data), out)
-}
-call_vars2 <- function(expr, data){
-  if (rlang::is_quosure(expr)){
-    expr <- rlang::quo_get_expr(expr)
-  }
-  fast_intersect(all.names(expr), names(data))
-}
-# Get data variables from list of calls
-call_vars_v <- function(exprs, data){
-  lapply(exprs, call_vars, data)
-}
-call_vars_v2 <- function(exprs, data){
-  cpp_c(lapply(exprs, call_vars2, data))
-}
+# call_vars <- function(expr, data){
+#   if (rlang::is_quosure(expr)){
+#     expr <- rlang::quo_get_expr(expr)
+#   }
+#   out <- all.names(expr)
+#   which_in(names(data), out)
+# }
+# call_vars2 <- function(expr, data){
+#   if (rlang::is_quosure(expr)){
+#     expr <- rlang::quo_get_expr(expr)
+#   }
+#   fast_intersect(all.names(expr), names(data))
+# }
+# # Get data variables from list of calls
+# call_vars_v <- function(exprs, data){
+#   lapply(exprs, call_vars, data)
+# }
+# call_vars_v2 <- function(exprs, data){
+#   cpp_c(lapply(exprs, call_vars2, data))
+# }
 
 
 # Tidyselect col positions with names
@@ -380,8 +382,10 @@ mutate_summary <- function(.data, ...,
   if (cpp_any_quo_contains_ns(quos, "dplyr")){
     new_data <- as.list(dplyr::mutate(data, !!!quos, .keep = "none"))[names(quos)]
   } else {
-    new_data <- cpp_grouped_eval_mutate(data, quos)
+    new_data <- as.list(cpp_grouped_eval_mutate(data, quos))
   }
+
+  new_data <- list_rm_null(new_data)
 
   out_data <- df_add_cols(data, new_data)
   new_cols <- names(new_data)
@@ -392,22 +396,24 @@ mutate_summary <- function(.data, ...,
     new_data[common_cols]
   )
   changed_cols <- common_cols[cheapr::val_find(changed, FALSE)]
-  used_cols <- call_vars_v2(quos, data)
+  used_cols <- cpp_quo_data_vars(quos, data)
   used_cols <- c(used_cols, fast_setdiff(new_cols, used_cols))
+  unused_cols <- fast_setdiff(original_cols, new_cols)
 
-  # keep_cols <- switch(.keep,
-  #                     all = all_cols,
-  #                     none = new_cols,
-  #                     used = c(call_vars_v2(quos, data), new_cols),
-  #                     unused = fast_setdiff(original_cols, new_cols))
-  # # Add missed group vars and keep original ordering
-  # keep_cols <- fast_intersect(all_cols, c(group_vars, keep_cols))
-  # out_data <- cheapr::sset_df(out_data, j = keep_cols)
+  keep_cols <- switch(.keep,
+                      all = all_cols,
+                      none = new_cols,
+                      used = used_cols,
+                      unused = unused_cols)
+
+  # Add missed group vars and keep original ordering
+  keep_cols <- fast_intersect(all_cols, c(group_vars, keep_cols))
+  out_data <- cheapr::sset_df(out_data, j = keep_cols)
   list(
     data = out_data,
     new_cols = new_cols,
     used_cols = used_cols,
-    unused_cols = fast_setdiff(original_cols, new_cols),
+    unused_cols = unused_cols,
     changed_cols = changed_cols
   )
 }
@@ -465,7 +471,9 @@ tidy_group_info_datamask <- function(data, ..., .by = NULL,
   if (dots_length(...) > 0){
     out_info <- mutate_summary(out, ..., .by = {{ .by }})
     out <- out_info[["data"]]
-    extra_groups <- out_info[["cols"]]
+    extra_groups <- out_info[["new_cols"]]
+  } else {
+    out_info <- NULL
   }
   if (unique_groups){
     extra_groups <- fast_setdiff(extra_groups, group_vars)
@@ -473,11 +481,11 @@ tidy_group_info_datamask <- function(data, ..., .by = NULL,
   } else {
     all_groups <- c(group_vars, fast_setdiff(extra_groups, group_vars))
   }
-  address_equal <- add_names(
-    cpp_frame_addresses_equal(
-      data, cheapr::sset_col(out, names(data))
-    ), names(data)
-  )
+  if (is.null(out_info)){
+    address_equal <- add_names(logical(length(names(data))), names(data))
+  } else {
+    address_equal <- add_names(is.na(match(names(data), out_info[["changed_cols"]])), names(data))
+  }
   list("data" = out,
        "dplyr_groups" = group_vars,
        "extra_groups" = extra_groups,
