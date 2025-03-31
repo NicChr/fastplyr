@@ -332,7 +332,9 @@ across_col_names <- function (.cols = NULL, .fns = NULL, .names = NULL){
     out <- .cols
   } else if (nms_null && n_cols == 1L) {
     out <- .fns
+    out <- cheapr::name_repair(out, empty_sep = paste0(.cols, "_"), dup_sep = "_")
   } else {
+    .fns <- cheapr::name_repair(.fns, empty_sep = "", dup_sep = "")
     out <- character(n_cols * n_fns)
     init <- 0L
     if (nms_null) {
@@ -347,9 +349,6 @@ across_col_names <- function (.cols = NULL, .fns = NULL, .names = NULL){
         init <- init + n_fns
       }
     }
-  }
-  if (anyDuplicated(out) > 0) {
-    stop("Column names must be unique")
   }
   out
 }

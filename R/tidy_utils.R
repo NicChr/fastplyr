@@ -77,22 +77,120 @@ named_quos <- function(...){
   # Fix empty names
   if (is.null(nms)){
     nms <- quo_labels(exprs, named = FALSE)
-  } else {
-    empty <- empty_str_locs(nms)
-    if (length(empty)){
-      nms[empty] <- quo_labels(exprs[empty], named = FALSE)
-    }
+  } else if (!all(nzchar(nms))){
+    nms <- str_coalesce(nms, quo_labels(exprs, named = FALSE))
   }
   names(exprs) <- nms
   exprs
 }
 
-fastplyr_quos <- function(..., .named = FALSE){
+fastplyr_quos <- function(..., .named = FALSE, .data = NULL){
   if (.named){
-    named_quos(...)
+    out <- named_quos(...)
   } else {
-    rlang::quos(..., .ignore_empty = "all")
+    out <- rlang::quos(..., .ignore_empty = "all")
   }
+  if (!is.null(.data)){
+    for (i in seq_along(out)){
+      quo <- out[[i]]
+      if (rlang::quo_is_call(quo, "across")){
+        left <- out[seq_len(i - 1L)]
+        unpacked_quos <- unpack_across(quo, .data)
+        if (i < length(out)){
+          right <- out[seq.int(i + 1L, length(out), 1L)]
+        } else {
+          right <- list()
+        }
+        out[[i]] <- NULL
+        out <- c(left, unpacked_quos, right)
+      }
+    }
+  }
+  out
+}
+
+unpack_across <- function(quo, data){
+
+  expr <- rlang::quo_get_expr(quo)
+  quo_env <- rlang::quo_get_env(quo)
+
+  clean_expr <- match.call(
+    definition = dplyr::across,
+    call = expr,
+    expand.dots = FALSE,
+    envir = quo_env
+  )
+
+  if (!".cols" %in% names(clean_expr)){
+    cli::cli_abort("{.arg .cols} must be supplied in {.fn across}")
+  }
+  unused_args <- fast_setdiff(names(clean_expr)[-1], c(".cols", ".fns", ".names"))
+
+  if (length(unused_args) > 0){
+    cli::cli_abort("{.arg ...} must be unused")
+  }
+
+  across_vars <- clean_expr[[".cols"]]
+  across_fns <- clean_expr[[".fns"]]
+  across_nms <- clean_expr[[".names"]]
+  across_unpack <- clean_expr[[".unpack"]]
+
+  fn_names <- NULL
+  unpack <- FALSE
+
+  if (is.atomic(across_vars)){
+    cols <- names(col_select_pos(data, across_vars))
+  } else if (rlang::is_call(across_vars, ":")){
+    args <- as.list(across_vars[-1L])
+    if (length(args) == 2 && is.atomic(args[[1L]]) && is.atomic(args[[2L]])){
+      cols <- names(col_select_pos(data, eval(across_vars, envir = quo_env)))
+    } else {
+      cols <- names(tidyselect::eval_select(across_vars, data))
+    }
+  } else {
+    cols <- names(tidyselect::eval_select(across_vars, data))
+  }
+
+  if (rlang::is_call(across_fns, "list")){
+    fn_tree <- as.list(across_fns)[-1L]
+    fn_names <- names(fn_tree) %||% character(length(fn_tree))
+  } else {
+    fn_tree <- list(across_fns)
+  }
+
+  # Evaluate functions
+
+  for (i in seq_along(fn_tree)){
+    fn <- eval(fn_tree[[i]], envir = quo_env)
+    if (!is.function(fn)){
+      fn <- rlang::as_function(fn)
+    }
+    fn_tree[[i]] <- fn
+  }
+
+  if (".unpack" %in% names(expr)){
+    unpack <- eval(across_unpack, envir = quo_env)
+  }
+  if (unpack){
+    return(list(quo))
+  }
+
+  out_names <- across_col_names(cols, .names = across_nms, .fns = fn_names)
+  out_size <- length(out_names)
+
+  # Recycle cols/fns
+  cols <- rep_len(cols, out_size)
+  fn_tree <- rep_len(fn_tree, out_size)
+
+  out <- cheapr::new_list(out_size)
+  names(out) <- out_names
+
+  for (i in seq_along(out)){
+    fn <- fn_tree[[i]]
+    col <- cols[[i]]
+    out[[i]] <- rlang::new_quosure(rlang::call2(fn, as.symbol(col)), quo_env)
+  }
+  out
 }
 
 # Recursively checks call tree for a function call from a specified namespace
@@ -127,25 +225,25 @@ fastplyr_quos <- function(..., .named = FALSE){
 
 # Recursively turn calls into lists
 
-# has_call <- function(x){
-#   any(rapply(x, is.call, how = "unlist"))
-# }
+has_call <- function(x){
+  any(rapply(x, is.call, how = "unlist"))
+}
 #
-# unnest_call <- function(x){
-#   out <- as.list(x)
-#
-#   for (i in seq_along(out)){
-#    if (is.call(out[[i]])){
-#      result <- as.list(out[[i]])
-#      while(has_call(result)){
-#        result <- unnest_call(result)
-#      }
-#      out[[i]] <- result
-#    }
-#   }
-#
-#   out
-# }
+unnest_call <- function(x){
+  out <- as.list(x)
+
+  for (i in seq_along(out)){
+   if (is.call(out[[i]])){
+     result <- as.list(out[[i]])
+     while(has_call(result)){
+       result <- unnest_call(result)
+     }
+     out[[i]] <- result
+   }
+  }
+
+  out
+}
 
 # Get data variables from call
 call_vars <- function(expr, data){
@@ -277,23 +375,41 @@ mutate_summary <- function(.data, ...,
     data <- f_group_by(.data, .by = !!by_expr, .add = TRUE)
   }
   group_vars <- group_vars(data)
-  quos <- fastplyr_quos(..., .named = TRUE)
-  new_data <- cpp_grouped_eval_mutate(data, quos)
+  quos <- fastplyr_quos(..., .named = TRUE, .data = data)
+
+  if (cpp_any_quo_contains_ns(quos, "dplyr")){
+    new_data <- as.list(dplyr::mutate(data, !!!quos, .keep = "none"))[names(quos)]
+  } else {
+    new_data <- cpp_grouped_eval_mutate(data, quos)
+  }
+
   out_data <- df_add_cols(data, new_data)
   new_cols <- names(new_data)
   all_cols <- names(out_data)
+  common_cols <- fast_intersect(original_cols, new_cols)
+  changed <- cpp_frame_addresses_equal(
+    cheapr::sset_col(data, common_cols),
+    new_data[common_cols]
+  )
+  changed_cols <- common_cols[cheapr::val_find(changed, FALSE)]
+  used_cols <- call_vars_v2(quos, data)
+  used_cols <- c(used_cols, fast_setdiff(new_cols, used_cols))
 
-  keep_cols <- switch(.keep,
-                      all = all_cols,
-                      none = new_cols,
-                      used = c(call_vars_v2(quos, data), new_cols),
-                      unused = fast_setdiff(original_cols, new_cols))
-
-  # Add missed group vars and keep original ordering
-  keep_cols <- fast_intersect(all_cols, c(group_vars, keep_cols))
-  out_data <- cheapr::sset_df(out_data, j = keep_cols)
-  out <- list(data = out_data, cols = new_cols)
-  out
+  # keep_cols <- switch(.keep,
+  #                     all = all_cols,
+  #                     none = new_cols,
+  #                     used = c(call_vars_v2(quos, data), new_cols),
+  #                     unused = fast_setdiff(original_cols, new_cols))
+  # # Add missed group vars and keep original ordering
+  # keep_cols <- fast_intersect(all_cols, c(group_vars, keep_cols))
+  # out_data <- cheapr::sset_df(out_data, j = keep_cols)
+  list(
+    data = out_data,
+    new_cols = new_cols,
+    used_cols = used_cols,
+    unused_cols = fast_setdiff(original_cols, new_cols),
+    changed_cols = changed_cols
+  )
 }
 
 tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
@@ -578,12 +694,70 @@ fast_reframe <- function(data, ..., .by = NULL, .order = df_group_by_order_defau
 #   as_tbl(out)
 # }
 fast_mutate <- function(data, ...,  .by = NULL){
-  quos <- fastplyr_quos(..., .named = TRUE)
+  # quos <- fastplyr_quos(..., .named = TRUE)
 
-  cols_to_add <- data %>%
+  out <- data %>%
     f_group_by(.by = {{ .by }}, .add = TRUE) %>%
-    cpp_grouped_eval_mutate(quos)
-
-  cols_to_add
+    mutate_summary(...)
+  out[["data"]]
   # df_add_cols(data, cols_to_add)
 }
+
+# unpack_across <- function(quo, data){
+#
+#   expr <- rlang::quo_get_expr(quo)
+#   quo_env <- rlang::quo_get_env(quo)
+#
+#   call_tree <- as.list(quo)
+#   call_names <- names(call_tree)
+#
+#   across_args <- c(".cols", ".fns", ".names", ".unpack")
+#
+#   clean_expr <- match.call(
+#     definition = dplyr::across,
+#     call = expr,
+#     expand.dots = FALSE,
+#     envir = quo_env
+#   )
+#
+#   if (!".cols" %in% names(clean_expr)){
+#     cli::cli_abort("{.arg .cols} must be supplied in {.fn across}")
+#   }
+#   unused_args <- fast_setdiff(names(clean_expr)[-1], c(".cols", ".fns", ".names"))
+#
+#   if (length(unused_args) > 0){
+#     cli::cli_abort("{.arg ...} must be unused")
+#   }
+#
+#   across_vars <- clean_expr[[".cols"]]
+#   across_fns <- clean_expr[[".fns"]]
+#   across_nms <- clean_expr[[".names"]]
+#
+#   fn_names <- NULL
+#
+#   if (rlang::is_call(across_fns, "list")){
+#     fn_tree <- as.list(across_fns)
+#     fn_names <- names(fn_tree)[-1L]
+#     empty_strs <- empty_str_locs(fn_names)
+#     fn_names[empty_strs] <- vapply(fn_tree[-1L][empty_strs], rlang::as_label, "")
+#   } else if (!".fns" %in% names(clean_expr)){
+#     fn_names <- "identity"
+#   } else {
+#     fn_names <- rlang::as_label(across_fns)
+#   }
+#
+#   cols <- names(tidyselect::eval_select(across_vars, data))
+#   out_names <- across_col_names(cols, .names = across_nms, .fns = fn_names)
+#
+#   out <- cheapr::new_list(length(out_names))
+#   names(out) <- out_names
+#
+#   k <- 1L
+#   for (col in cols){
+#     for (fn in fn_names){
+#       out[[k]] <- rlang::new_quosure(call(fn, col), quo_env)
+#       k <- k + 1L
+#     }
+#   }
+#   out
+# }

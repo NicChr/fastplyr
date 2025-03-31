@@ -31,6 +31,7 @@ SEXP new_data_mask(SEXP bottom, SEXP top);
 SEXP as_data_mask(SEXP data);
 SEXP str_as_symbol(SEXP str);
 SEXP sym_as_character(SEXP sym);
+SEXP sym_as_string(SEXP sym);
 SEXP quo_get_expr(SEXP quo);
 SEXP quo_get_env(SEXP quo);
 void env_unbind(SEXP env, SEXP sym);

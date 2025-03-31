@@ -10,6 +10,7 @@ struct rlang_api_ptrs_t {
   SEXP (*as_data_mask)(SEXP data);
   SEXP (*str_as_symbol)(SEXP str);
   SEXP (*sym_as_character)(SEXP sym);
+  SEXP (*sym_as_string)(SEXP sym);
   SEXP (*quo_get_expr)(SEXP quo);
   SEXP (*quo_get_env)(SEXP quo);
   void (*env_unbind)(SEXP, SEXP);
@@ -21,6 +22,7 @@ struct rlang_api_ptrs_t {
     as_data_mask   = (SEXP (*)(SEXP))              R_GetCCallable("rlang", "rlang_as_data_mask_3.0.0");
     str_as_symbol   = (SEXP (*)(SEXP))             R_GetCCallable("rlang", "rlang_str_as_symbol");
     sym_as_character = (SEXP (*)(SEXP))            R_GetCCallable("rlang", "rlang_sym_as_character");
+    sym_as_string = (SEXP (*)(SEXP))            R_GetCCallable("rlang", "rlang_sym_as_string");
     quo_get_expr    = (SEXP (*)(SEXP))             R_GetCCallable("rlang", "rlang_quo_get_expr");
     quo_get_env     = (SEXP (*)(SEXP))             R_GetCCallable("rlang", "rlang_quo_get_env");
     env_unbind      = (void (*)(SEXP, SEXP))       R_GetCCallable("rlang", "rlang_env_unbind");
@@ -55,6 +57,9 @@ SEXP str_as_symbol(SEXP str) {
 
 SEXP sym_as_character(SEXP sym) {
   return rlang_api().sym_as_character(sym);
+}
+SEXP sym_as_string(SEXP sym) {
+  return rlang_api().sym_as_string(sym);
 }
 
 SEXP quo_get_expr(SEXP quo) {

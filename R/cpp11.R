@@ -80,8 +80,28 @@ cpp_get <- function(sym, rho) {
   .Call(`_fastplyr_cpp_get`, sym, rho)
 }
 
+cpp_is_call <- function(expr, ns) {
+  .Call(`_fastplyr_cpp_is_call`, expr, ns)
+}
+
 cpp_call_contains_ns <- function(expr, ns, rho) {
   .Call(`_fastplyr_cpp_call_contains_ns`, expr, ns, rho)
+}
+
+cpp_any_quo_contains_ns <- function(quos, ns) {
+  .Call(`_fastplyr_cpp_any_quo_contains_ns`, quos, ns)
+}
+
+cpp_unnest_expr <- function(expr) {
+  .Call(`_fastplyr_cpp_unnest_expr`, expr)
+}
+
+all_call_names <- function(expr) {
+  .Call(`_fastplyr_all_call_names`, expr)
+}
+
+cpp_quos_adjust_across <- function(quos) {
+  .Call(`_fastplyr_cpp_quos_adjust_across`, quos)
 }
 
 get_mask_top_env <- function(mask) {

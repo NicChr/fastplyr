@@ -8,50 +8,50 @@ check_length <- function(x, size){
   }
 }
 
+# Coalesce empty strings instead of NA
+str_coalesce <- function(...) cpp_str_coalesce(list(...))
+
 # Fast way of getting named col positions
 col_select_pos <- function(data, .cols = character()){
-  data_nms <- names(data)
-  nm_seq <- seq_along(data_nms)
-  # Method for when cols is supplied
-  if (is.numeric(.cols)){
-    rng_sign <- slice_sign(.cols)
-    if (rng_sign == -1){
-      .cols <- nm_seq[match(nm_seq, abs(.cols), 0L) == 0L]
-    } else {
-      .cols <- .subset(.cols, .cols != 0)
-    }
-    out <- match(.cols, nm_seq)
-  } else if (is.character(.cols)){
-    out <- match(.cols, data_nms)
-  } else {
-    cli::cli_abort("{.arg .cols} must be a {.cls numeric} or {.cls character} vector")
-  }
-  # is_na <- is.na(out)
-  if (cheapr::any_na(out)){
-    first_na_col <- .subset(.cols, .subset(cheapr::which_na(out), 1L))
+  data_names <- attr(data, "names", TRUE)
+  names(data_names) <- data_names
+  out <- data_names[.cols]
+
+  if (anyNA(out)){
+    first_na_col <- .cols[cheapr::which_na(out)[1L]]
     if (is.numeric(first_na_col)){
       cli::cli_abort("Location {first_na_col} doesn't exist")
     } else {
       cli::cli_abort("Column {first_na_col} doesn't exist")
     }
   }
-  out_nms <- names(.cols)
-  if (is.null(out_nms)){
-    names(out) <- .subset(data_nms, out)
-  } else {
-    es <- empty_str_locs(out_nms)
-    if (length(es)){
-      out_nms[es] <- .subset(data_nms, .subset(out, es))
-    }
-    names(out) <- out_nms
+  out_names <- names(out)
+  if (!is.null(names(.cols))){
+    out_names <- str_coalesce(names(.cols), out_names)
   }
-  out
+  `names<-`(match(out, data_names), out_names)
 }
-col_select_names <- function(data, .cols = NULL){
-  pos <- col_select_pos(data, .cols = .cols)
-  add_names(names(data)[match(unname(pos), seq_along(data))], names(pos))
 
+col_select_names <- function(data, .cols = character()){
+  data_names <- attr(data, "names", TRUE)
+  names(data_names) <- data_names
+  out <- data_names[.cols]
+
+  if (anyNA(out)){
+    first_na_col <- .cols[cheapr::which_na(out)[1L]]
+    if (is.numeric(first_na_col)){
+      cli::cli_abort("Location {first_na_col} doesn't exist")
+    } else {
+      cli::cli_abort("Column {first_na_col} doesn't exist")
+    }
+  }
+  out_names <- names(out)
+  if (!is.null(names(.cols))){
+    out_names <- str_coalesce(names(.cols), out_names)
+  }
+  `names<-`(out, out_names)
 }
+
 # (Internal) Fast col rename
 col_rename <- function(data, .cols = integer()){
   .cols <- .subset(.cols, nzchar(names(.cols)))

@@ -146,10 +146,45 @@ extern "C" SEXP _fastplyr_cpp_get(SEXP sym, SEXP rho) {
   END_CPP11
 }
 // tidy_eval.cpp
+bool cpp_is_call(SEXP expr, SEXP ns);
+extern "C" SEXP _fastplyr_cpp_is_call(SEXP expr, SEXP ns) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_is_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(ns)));
+  END_CPP11
+}
+// tidy_eval.cpp
 bool cpp_call_contains_ns(SEXP expr, SEXP ns, SEXP rho);
 extern "C" SEXP _fastplyr_cpp_call_contains_ns(SEXP expr, SEXP ns, SEXP rho) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_call_contains_ns(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(ns), cpp11::as_cpp<cpp11::decay_t<SEXP>>(rho)));
+  END_CPP11
+}
+// tidy_eval.cpp
+bool cpp_any_quo_contains_ns(SEXP quos, SEXP ns);
+extern "C" SEXP _fastplyr_cpp_any_quo_contains_ns(SEXP quos, SEXP ns) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_any_quo_contains_ns(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<SEXP>>(ns)));
+  END_CPP11
+}
+// tidy_eval.cpp
+SEXP cpp_unnest_expr(SEXP expr);
+extern "C" SEXP _fastplyr_cpp_unnest_expr(SEXP expr) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_unnest_expr(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr)));
+  END_CPP11
+}
+// tidy_eval.cpp
+cpp11::writable::strings all_call_names(SEXP expr);
+extern "C" SEXP _fastplyr_all_call_names(SEXP expr) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(all_call_names(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr)));
+  END_CPP11
+}
+// tidy_eval.cpp
+SEXP cpp_quos_adjust_across(SEXP quos);
+extern "C" SEXP _fastplyr_cpp_quos_adjust_across(SEXP quos) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_quos_adjust_across(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
   END_CPP11
 }
 // tidy_eval.cpp
@@ -232,8 +267,10 @@ extern "C" SEXP _fastplyr_cpp_group_split(SEXP data, SEXP drop, SEXP order) {
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
+    {"_fastplyr_all_call_names",            (DL_FUNC) &_fastplyr_all_call_names,            1},
     {"_fastplyr_cpp_any_frames",            (DL_FUNC) &_fastplyr_cpp_any_frames,            1},
     {"_fastplyr_cpp_any_frames_exotic",     (DL_FUNC) &_fastplyr_cpp_any_frames_exotic,     1},
+    {"_fastplyr_cpp_any_quo_contains_ns",   (DL_FUNC) &_fastplyr_cpp_any_quo_contains_ns,   2},
     {"_fastplyr_cpp_as_list_of_frames",     (DL_FUNC) &_fastplyr_cpp_as_list_of_frames,     1},
     {"_fastplyr_cpp_call_contains_ns",      (DL_FUNC) &_fastplyr_cpp_call_contains_ns,      3},
     {"_fastplyr_cpp_consecutive_id",        (DL_FUNC) &_fastplyr_cpp_consecutive_id,        1},
@@ -252,14 +289,17 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_grouped_eval_tidy",     (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy,     4},
     {"_fastplyr_cpp_grouped_eval_tidy2",    (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy2,    5},
     {"_fastplyr_cpp_grouped_run_id",        (DL_FUNC) &_fastplyr_cpp_grouped_run_id,        3},
+    {"_fastplyr_cpp_is_call",               (DL_FUNC) &_fastplyr_cpp_is_call,               2},
     {"_fastplyr_cpp_is_exotic",             (DL_FUNC) &_fastplyr_cpp_is_exotic,             1},
     {"_fastplyr_cpp_list_subset",           (DL_FUNC) &_fastplyr_cpp_list_subset,           4},
     {"_fastplyr_cpp_list_tidy",             (DL_FUNC) &_fastplyr_cpp_list_tidy,             2},
+    {"_fastplyr_cpp_quos_adjust_across",    (DL_FUNC) &_fastplyr_cpp_quos_adjust_across,    1},
     {"_fastplyr_cpp_row_id",                (DL_FUNC) &_fastplyr_cpp_row_id,                3},
     {"_fastplyr_cpp_set_list_element",      (DL_FUNC) &_fastplyr_cpp_set_list_element,      3},
     {"_fastplyr_cpp_slice_locs",            (DL_FUNC) &_fastplyr_cpp_slice_locs,            2},
     {"_fastplyr_cpp_sorted_group_starts",   (DL_FUNC) &_fastplyr_cpp_sorted_group_starts,   2},
     {"_fastplyr_cpp_unlist_group_locs",     (DL_FUNC) &_fastplyr_cpp_unlist_group_locs,     2},
+    {"_fastplyr_cpp_unnest_expr",           (DL_FUNC) &_fastplyr_cpp_unnest_expr,           1},
     {"_fastplyr_cpp_which_all",             (DL_FUNC) &_fastplyr_cpp_which_all,             1},
     {"_fastplyr_get_group_data",            (DL_FUNC) &_fastplyr_get_group_data,            1},
     {"_fastplyr_get_mask_top_env",          (DL_FUNC) &_fastplyr_get_mask_top_env,          1},
