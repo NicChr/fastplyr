@@ -184,7 +184,7 @@ f_slice_min <- function(data, order_by, n, prop, .by = NULL,
   grp_nm1 <- unique_col_name(names(data), "g")
   out <- data %>%
     add_group_id(.name = grp_nm1, .cols = group_vars, .order = .order) %>%
-    df_ungroup()
+    cpp_ungroup()
 
   g1 <- out[[grp_nm1]]
   out_info <- mutate_summary(out, !!rlang::enquo(order_by), .keep = "none", .by = all_of(grp_nm1))
@@ -233,7 +233,7 @@ f_slice_max <- function(data, order_by, n, prop, .by = NULL,
 
   out <- data %>%
     add_group_id(.name = grp_nm1, .cols = group_vars, .order = .order) %>%
-    df_ungroup()
+    cpp_ungroup()
 
   g1 <- out[[grp_nm1]]
   out_info <- mutate_summary(out,

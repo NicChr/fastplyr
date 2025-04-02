@@ -128,8 +128,28 @@ cpp_list_tidy <- function(quos, keep_null) {
   .Call(`_fastplyr_cpp_list_tidy`, quos, keep_null)
 }
 
-get_group_data <- function(x) {
-  .Call(`_fastplyr_get_group_data`, x)
+cpp_group_data <- function(x) {
+  .Call(`_fastplyr_cpp_group_data`, x)
+}
+
+cpp_group_keys <- function(x) {
+  .Call(`_fastplyr_cpp_group_keys`, x)
+}
+
+cpp_group_vars <- function(x) {
+  .Call(`_fastplyr_cpp_group_vars`, x)
+}
+
+cpp_group_rows <- function(x) {
+  .Call(`_fastplyr_cpp_group_rows`, x)
+}
+
+cpp_ungroup <- function(data) {
+  .Call(`_fastplyr_cpp_ungroup`, data)
+}
+
+cpp_grouped_eval_tidy <- function(data, quos) {
+  .Call(`_fastplyr_cpp_grouped_eval_tidy`, data, quos)
 }
 
 cpp_grouped_eval_mutate2 <- function(data, quos) {
@@ -142,10 +162,6 @@ cpp_grouped_eval_mutate <- function(data, quos) {
 
 cpp_grouped_eval_mutate3 <- function(data, quos) {
   .Call(`_fastplyr_cpp_grouped_eval_mutate3`, data, quos)
-}
-
-cpp_grouped_eval_tidy <- function(data, quos, as_df, check_size) {
-  .Call(`_fastplyr_cpp_grouped_eval_tidy`, data, quos, as_df, check_size)
 }
 
 cpp_grouped_eval_tidy2 <- function(group_data, data, quos, as_df, check_size) {

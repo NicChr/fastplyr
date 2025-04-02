@@ -33,7 +33,7 @@ reconstruct.grouped_df <- function(x, template){
       drop_by_default <- df_group_by_drop_default(template)
       order <- df_group_by_order_default(template)
       ordered <- attr(attr(template, "groups"), "ordered")
-      groups <- group_collapse(df_ungroup(x),
+      groups <- group_collapse(cpp_ungroup(x),
                                .cols = out_groups,
                                sort = TRUE,
                                order = order,
@@ -48,7 +48,7 @@ reconstruct.grouped_df <- function(x, template){
       attr(groups, ".drop") <- drop_by_default
     }
   }
-  out <- cheapr::reconstruct(x, df_ungroup(template))
+  out <- cheapr::reconstruct(x, cpp_ungroup(template))
   attr(out, "groups") <- groups
   class(out) <- class(template)
   out

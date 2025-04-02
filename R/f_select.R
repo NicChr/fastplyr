@@ -58,7 +58,7 @@ f_select.grouped_df <- function(data, ..., .cols = NULL){
             names(attr(data, "groups")))] <- names(renamed_groups)
   }
   groups <- group_data(data)
-  out <- cheapr::sset(df_ungroup(data), j = unname(pos))
+  out <- cheapr::sset(cpp_ungroup(data), j = unname(pos))
   names(out) <- names(pos)
   attr(out, "groups") <- groups
   class(out) <- class(data)
@@ -81,7 +81,7 @@ f_rename.grouped_df <- function(data, ..., .cols = NULL){
   groups <- group_data(data)
   group_vars <- setdiff(names(groups), ".rows")
   # Rename data columns
-  out <- col_rename(df_ungroup(data), .cols = pos)
+  out <- col_rename(cpp_ungroup(data), .cols = pos)
   # Rename group data columns
   group_pos <- which(group_vars %in% names(data)[pos])
   names(group_pos) <- names(out)[which(names(out) %in% names(pos) &

@@ -116,7 +116,7 @@ f_summarise <- function(data, ..., .by = NULL,
     rlang::quo_is_call(x, "across", ns = c("", "dplyr"))
   }
   if (is.null(groups[["groups"]])){
-    out <- cheapr::sset(df_ungroup(temp_data), min(1L, df_nrow(temp_data)), j = group_vars)
+    out <- cheapr::sset(cpp_ungroup(temp_data), min(1L, df_nrow(temp_data)), j = group_vars)
   } else {
     out <- groups[["groups"]]
   }
@@ -293,7 +293,7 @@ f_summarise <- function(data, ..., .by = NULL,
       out <- f_bind_cols(out, f_select(temp, .cols = setdiff(names(temp), group_vars)))
     }
   }
-  cheapr::reconstruct(out, df_ungroup(data))
+  cheapr::reconstruct(out, cpp_ungroup(data))
 }
 #' @rdname f_summarise
 #' @export

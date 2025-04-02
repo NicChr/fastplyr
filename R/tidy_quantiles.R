@@ -288,7 +288,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   }
 
   if (.drop_groups){
-    cheapr::reconstruct(out, df_ungroup(data))
+    cheapr::reconstruct(out, cpp_ungroup(data))
   } else {
     cheapr::reconstruct(out, data)
   }

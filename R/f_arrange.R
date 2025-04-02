@@ -31,7 +31,7 @@ f_arrange <- function(data, ..., .by = NULL, .by_group = FALSE,
     if (.by_group){
       data
     } else {
-      df_ungroup(data)
+      cpp_ungroup(data)
     }, ..., .by = {{ .by }},
     .cols = .cols,
     ungroup = TRUE,

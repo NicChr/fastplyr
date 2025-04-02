@@ -79,7 +79,7 @@ group_id.default <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
     return(set_rm_attributes(out))
   }
 
-  g <- GRP2(df_ungroup(x),
+  g <- GRP2(cpp_ungroup(x),
             sort = order,
             decreasing = !ascending,
             na.last = TRUE,

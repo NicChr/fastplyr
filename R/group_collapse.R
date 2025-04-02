@@ -28,7 +28,7 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
                          .drop = .drop)
     )
   }
-  g <- GRP2(df_ungroup(data),
+  g <- GRP2(cpp_ungroup(data),
             sort = order,
             decreasing = !ascending,
             na.last = TRUE,
@@ -291,14 +291,14 @@ group_collapse.grouped_df <- function(data, ..., order = df_group_by_order_defau
       attr(out, ".drop") <- .drop
     }
   } else {
-    group_info <- tidy_group_info(df_ungroup(data), ..., .by = {{ .by }},
+    group_info <- tidy_group_info(cpp_ungroup(data), ..., .by = {{ .by }},
                                   .cols = .cols,
                                   ungroup = TRUE,
                                   rename = TRUE)
     all_groups <- group_info[["all_groups"]]
     if (length(all_groups) == 0){
       out <- group_data_collapse(
-        df_ungroup(data), id = id, size = size, loc = loc,
+        cpp_ungroup(data), id = id, size = size, loc = loc,
         start = start, end = start
       )
     } else {

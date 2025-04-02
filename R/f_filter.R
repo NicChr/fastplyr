@@ -14,7 +14,7 @@ f_filter <- function(data, ..., .by = NULL){
                                 ungroup = FALSE,
                                 rename = TRUE)
   filter_cols <- group_info[["extra_groups"]]
-  filter_df <- cheapr::sset_col(df_ungroup(group_info[["data"]]), j = filter_cols)
+  filter_df <- cheapr::sset_col(cpp_ungroup(group_info[["data"]]), j = filter_cols)
   if (df_ncol(filter_df) < 1){
     data
   } else {

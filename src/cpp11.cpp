@@ -230,10 +230,45 @@ extern "C" SEXP _fastplyr_cpp_list_tidy(SEXP quos, SEXP keep_null) {
   END_CPP11
 }
 // tidy_eval.cpp
-SEXP get_group_data(SEXP x);
-extern "C" SEXP _fastplyr_get_group_data(SEXP x) {
+SEXP cpp_group_data(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_data(SEXP x) {
   BEGIN_CPP11
-    return cpp11::as_sexp(get_group_data(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+    return cpp11::as_sexp(cpp_group_data(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// tidy_eval.cpp
+SEXP cpp_group_keys(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_keys(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_keys(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// tidy_eval.cpp
+SEXP cpp_group_vars(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_vars(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// tidy_eval.cpp
+SEXP cpp_group_rows(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_rows(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_rows(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// tidy_eval.cpp
+SEXP cpp_ungroup(SEXP data);
+extern "C" SEXP _fastplyr_cpp_ungroup(SEXP data) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_ungroup(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
+  END_CPP11
+}
+// tidy_eval.cpp
+SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos);
+extern "C" SEXP _fastplyr_cpp_grouped_eval_tidy(SEXP data, SEXP quos) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_grouped_eval_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
   END_CPP11
 }
 // tidy_eval.cpp
@@ -255,13 +290,6 @@ SEXP cpp_grouped_eval_mutate3(SEXP data, SEXP quos);
 extern "C" SEXP _fastplyr_cpp_grouped_eval_mutate3(SEXP data, SEXP quos) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_grouped_eval_mutate3(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
-  END_CPP11
-}
-// tidy_eval.cpp
-SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool as_df, bool check_size);
-extern "C" SEXP _fastplyr_cpp_grouped_eval_tidy(SEXP data, SEXP quos, SEXP as_df, SEXP check_size) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_grouped_eval_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<bool>>(as_df), cpp11::as_cpp<cpp11::decay_t<bool>>(check_size)));
   END_CPP11
 }
 // tidy_eval.cpp
@@ -296,12 +324,16 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_frame_addresses_equal", (DL_FUNC) &_fastplyr_cpp_frame_addresses_equal, 2},
     {"_fastplyr_cpp_frame_dims",            (DL_FUNC) &_fastplyr_cpp_frame_dims,            3},
     {"_fastplyr_cpp_get",                   (DL_FUNC) &_fastplyr_cpp_get,                   2},
+    {"_fastplyr_cpp_group_data",            (DL_FUNC) &_fastplyr_cpp_group_data,            1},
+    {"_fastplyr_cpp_group_keys",            (DL_FUNC) &_fastplyr_cpp_group_keys,            1},
     {"_fastplyr_cpp_group_locs",            (DL_FUNC) &_fastplyr_cpp_group_locs,            2},
+    {"_fastplyr_cpp_group_rows",            (DL_FUNC) &_fastplyr_cpp_group_rows,            1},
     {"_fastplyr_cpp_group_split",           (DL_FUNC) &_fastplyr_cpp_group_split,           3},
+    {"_fastplyr_cpp_group_vars",            (DL_FUNC) &_fastplyr_cpp_group_vars,            1},
     {"_fastplyr_cpp_grouped_eval_mutate",   (DL_FUNC) &_fastplyr_cpp_grouped_eval_mutate,   2},
     {"_fastplyr_cpp_grouped_eval_mutate2",  (DL_FUNC) &_fastplyr_cpp_grouped_eval_mutate2,  2},
     {"_fastplyr_cpp_grouped_eval_mutate3",  (DL_FUNC) &_fastplyr_cpp_grouped_eval_mutate3,  2},
-    {"_fastplyr_cpp_grouped_eval_tidy",     (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy,     4},
+    {"_fastplyr_cpp_grouped_eval_tidy",     (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy,     2},
     {"_fastplyr_cpp_grouped_eval_tidy2",    (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy2,    5},
     {"_fastplyr_cpp_grouped_run_id",        (DL_FUNC) &_fastplyr_cpp_grouped_run_id,        3},
     {"_fastplyr_cpp_is_call",               (DL_FUNC) &_fastplyr_cpp_is_call,               2},
@@ -314,10 +346,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_set_list_element",      (DL_FUNC) &_fastplyr_cpp_set_list_element,      3},
     {"_fastplyr_cpp_slice_locs",            (DL_FUNC) &_fastplyr_cpp_slice_locs,            2},
     {"_fastplyr_cpp_sorted_group_starts",   (DL_FUNC) &_fastplyr_cpp_sorted_group_starts,   2},
+    {"_fastplyr_cpp_ungroup",               (DL_FUNC) &_fastplyr_cpp_ungroup,               1},
     {"_fastplyr_cpp_unlist_group_locs",     (DL_FUNC) &_fastplyr_cpp_unlist_group_locs,     2},
     {"_fastplyr_cpp_unnest_expr",           (DL_FUNC) &_fastplyr_cpp_unnest_expr,           1},
     {"_fastplyr_cpp_which_all",             (DL_FUNC) &_fastplyr_cpp_which_all,             1},
-    {"_fastplyr_get_group_data",            (DL_FUNC) &_fastplyr_get_group_data,            1},
     {"_fastplyr_get_mask_top_env",          (DL_FUNC) &_fastplyr_get_mask_top_env,          1},
     {"_fastplyr_new_bare_data_mask",        (DL_FUNC) &_fastplyr_new_bare_data_mask,        0},
     {NULL, NULL, 0}

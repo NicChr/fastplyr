@@ -25,28 +25,11 @@ df_ncol <- function(x){
 
 
 # Group metadata ----------------------------------------------------------
-
-# Slightly faster dplyr::group_vars
-group_vars <- function(x){
-  if (is_df(x)){
-    if (inherits(x, "grouped_df")){
-      out <- fast_setdiff(names(attr(x, "groups")), ".rows")
-    } else {
-      out <- character()
-    }
-  } else {
-    out <- dplyr::group_vars(x)
-  }
-  out
-}
-# Faster group_data() but shows same error msg
-group_data <- function(x){
-  if (inherits(x, "grouped_df")){
-    attr(x, "groups")
-  }
-  else {
-    dplyr::group_data(x)
-  }
+group_data <- cpp_group_data
+group_vars <- cpp_group_vars
+group_rows <- cpp_group_rows
+group_keys <- function(x){
+  cheapr::reconstruct(cpp_group_keys(x), cpp_ungroup(x))
 }
 
 # df/list constructors ----------------------------------------------------
@@ -69,16 +52,7 @@ list_as_tbl <- function(x){
 # This is not only faster than dplyr col modify for large data frames
 # but also works with data.tables because of reconstruct.data.table
 df_rm_cols <- function(data, cols){
-
-  # un-class to ensure no s3 methods are used below
-  out <- unclass(data)
-  rm_cols <- unname(col_select_pos(data, .cols = cols))
-
-  # Set them to NULL to remove
-  out[rm_cols] <- NULL
-
-  class(out) <- class(data)
-  cheapr::reconstruct(out, data)
+  df_add_cols(data, `names<-`(cheapr::new_list(length(cols)), col_select_names(data, cols)))
 }
 
 # Seq along df rows/cols
@@ -99,7 +73,17 @@ df_rep <- function(data, times){
       cli::cli_abort("{.arg times} must be of length 1 or {nrow(data)}")
     }
   }
-  cheapr::reconstruct(list_as_df(lapply(data, \(x) rep(x, times))), data)
+  if (df_ncol(data) == 0){
+    if (length(times) == 1){
+      out <- data
+      attr(out, "row.names") <- .set_row_names(N * times)
+    } else {
+      out <- cheapr::sset_row(data, rep(attr(data, "row.names"), times))
+    }
+  } else {
+    out <- list_as_df(lapply(data, \(x) rep(x, times)))
+  }
+  cheapr::reconstruct(out, data)
 }
 # Repeat each row
 df_rep_each <- function(data, each){
@@ -110,13 +94,7 @@ df_rep_each <- function(data, each){
 }
 
 # Safe ungroup for any data type
-df_ungroup <- function(data){
-  if (inherits(data, "grouped_df")){
-    attr(data, "groups") <- NULL
-    class(data) <- cheapr::val_rm(class(data), "grouped_df")
-  }
-  data
-}
+df_ungroup <- cpp_ungroup
 df_is_sorted <- function(data){
   df_order <- radixorderv2(data)
   isTRUE(attr(df_order, "sorted"))

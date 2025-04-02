@@ -93,7 +93,7 @@ f_group_by <- function(data, ..., .add = FALSE,
                        .drop = df_group_by_drop_default(data)){
   init_group_vars <- group_vars(data)
   group_info <- tidy_group_info(
-    df_ungroup(data), ...,
+    cpp_ungroup(data), ...,
     .by = {{ .by }},
     .cols = .cols,
     ungroup = TRUE,

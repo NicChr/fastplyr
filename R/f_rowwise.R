@@ -29,7 +29,7 @@ f_rowwise <- function(data, ..., .ascending = TRUE,
   row_id_nm <- names(out)[length(names(out))]
   groups <- as_tbl(
     f_select(
-      df_ungroup(out),
+      cpp_ungroup(out),
       .cols = c(rowwise_cols, row_id_nm)
     )
   )

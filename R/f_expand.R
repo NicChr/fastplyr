@@ -28,7 +28,7 @@ f_expand <- function(data, ..., .sort = FALSE,
 
   # If the user is simply selecting cols then we can use an optimised method
   if (is.null(.cols)){
-    dots <- rlang::quos(...)
+    dots <- fastplyr_quos(..., .data = data, .named = TRUE)
     dot_labels <- quo_labels(dots)
     if (all(dot_labels %in% names(data)) && !any(names(dots) %in% names(data))){
       .cols <- dot_labels
@@ -36,7 +36,7 @@ f_expand <- function(data, ..., .sort = FALSE,
   }
   # Optimised method when just selecting cols
   if (!is.null(.cols)){
-    data2 <- df_ungroup(data)
+    data2 <- cpp_ungroup(data)
     dot_vars <- col_select_names(data2, .cols = .cols)
     frames <- cheapr::new_list(length(dot_vars))
     for (i in seq_along(dot_vars)){
@@ -46,24 +46,8 @@ f_expand <- function(data, ..., .sort = FALSE,
       )
     }
   } else {
-    # Alternative that evaluates grouped df expressions sequentially
-    # This is more correct but much slower
-    # if (length(group_vars) > 0){
-    #   return(
-    #     cheapr::reconstruct(
-    #       data,
-    #       dplyr::reframe(f_group_by(data, .cols = group_vars, .add = TRUE),
-    #                      f_expand(data = pick(everything()), ..., .sort = .sort)
-    #       )
-    #     )
-    #   )
-    # }
-    # frames <- list_rm_null(eval_all_tidy_ungrouped(data, !!!dots))
-    # frames <- lapply(frames, sort_unique, .sort)
-    # frames <- unname(as_list_of_frames(frames))
-
     frames <- list_rm_null(
-      eval_all_tidy(f_group_by(data, .cols = group_vars, .add = TRUE), !!!dots)
+      eval_all_tidy(f_group_by(data, .cols = group_vars, .add = TRUE), dots)
     )
     frames <- lapply(frames, sort_unique, .sort)
     frames <- unname(cpp_as_list_of_frames(frames))

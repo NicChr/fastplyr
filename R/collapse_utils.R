@@ -462,7 +462,7 @@ df_to_GRP <- function(data, .cols = character(0),
   } else if (length(extra_groups) == 0L && order == df_group_by_order_default(data)){
     out <- df_as_GRP(data, return.order = return.order, return.groups = return.groups)
   } else {
-    data <- df_ungroup(data)
+    data <- cpp_ungroup(data)
     data2 <- df_mutate_exotic_to_ids(data, order = order)
     out <- GRP3(
       data2, sort = order,
@@ -550,7 +550,7 @@ radixorderv2 <- function(x, na.last = TRUE, decreasing = FALSE,
       attr(out, "sorted") <- TRUE
       return(out)
     } else {
-      x <- df_mutate_exotic_to_ids(df_ungroup(x), order = TRUE)
+      x <- df_mutate_exotic_to_ids(cpp_ungroup(x), order = TRUE)
     }
   } else if (cpp_is_exotic(x)){
     x <- group_id(x, order = TRUE)
@@ -607,7 +607,7 @@ construct_grouped_df <- function(data, g, group_vars){
   groups <- GRP_groups(g)
 
   if (is.null(groups)){
-    groups <- cheapr::sset(df_ungroup(data), GRP_starts(g), j = group_vars)
+    groups <- cheapr::sset(cpp_ungroup(data), GRP_starts(g), j = group_vars)
   }
   group_locs <- GRP_loc(g)
   groups[[".rows"]] <- vctrs_new_list_of(group_locs, integer())
