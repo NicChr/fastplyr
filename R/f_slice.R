@@ -187,12 +187,9 @@ f_slice_min <- function(data, order_by, n, prop, .by = NULL,
     df_ungroup()
 
   g1 <- out[[grp_nm1]]
-  out_info <- mutate_summary_grouped(out,
-                                     !!rlang::enquo(order_by),
-                                     .keep = "none",
-                                     .by = all_of(grp_nm1))
+  out_info <- mutate_summary(out, !!rlang::enquo(order_by), .keep = "none", .by = all_of(grp_nm1))
   out <- out_info[["data"]]
-  order_by_nm <- out_info[["cols"]]
+  order_by_nm <- out_info[["new_cols"]]
   row_nm <- unique_col_name(names(out), "row_id")
   out[[row_nm]] <- df_seq_along(out)
   g2 <- group_id(out[[order_by_nm]], order = TRUE)
@@ -239,12 +236,12 @@ f_slice_max <- function(data, order_by, n, prop, .by = NULL,
     df_ungroup()
 
   g1 <- out[[grp_nm1]]
-  out_info <- mutate_summary_grouped(out,
-                                     !!rlang::enquo(order_by),
-                                     .keep = "none",
-                                     .by = all_of(grp_nm1))
+  out_info <- mutate_summary(out,
+                             !!rlang::enquo(order_by),
+                             .keep = "none",
+                             .by = all_of(grp_nm1))
   out <- out_info[["data"]]
-  order_by_nm <- out_info[["cols"]]
+  order_by_nm <- out_info[["new_cols"]]
   row_nm <- unique_col_name(names(out), "row_id")
   out[[row_nm]] <- df_seq_along(out)
   g2 <- group_id(out[[order_by_nm]], ascending = FALSE, order = TRUE)
@@ -286,9 +283,9 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
   groups <- get_groups(data, .by = {{ .by }})
   has_weights <- !rlang::quo_is_null(rlang::enquo(weights))
   if (has_weights){
-    data_info  <- mutate_summary_grouped(data, !!rlang::enquo(weights))
+    data_info <- mutate_summary(data, !!rlang::enquo(weights))
     data <- data_info[["data"]]
-    weights_var <- data_info[["cols"]]
+    weights_var <- data_info[["new_cols"]]
   }
   slice_info <- df_slice_prepare(data, n, prop,
                                  .by = {{ .by }},

@@ -237,6 +237,13 @@ extern "C" SEXP _fastplyr_get_group_data(SEXP x) {
   END_CPP11
 }
 // tidy_eval.cpp
+SEXP cpp_grouped_eval_mutate2(SEXP data, SEXP quos);
+extern "C" SEXP _fastplyr_cpp_grouped_eval_mutate2(SEXP data, SEXP quos) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_grouped_eval_mutate2(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
+  END_CPP11
+}
+// tidy_eval.cpp
 SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos);
 extern "C" SEXP _fastplyr_cpp_grouped_eval_mutate(SEXP data, SEXP quos) {
   BEGIN_CPP11
@@ -244,10 +251,10 @@ extern "C" SEXP _fastplyr_cpp_grouped_eval_mutate(SEXP data, SEXP quos) {
   END_CPP11
 }
 // tidy_eval.cpp
-SEXP cpp_grouped_eval_mutate2(SEXP data, SEXP quos);
-extern "C" SEXP _fastplyr_cpp_grouped_eval_mutate2(SEXP data, SEXP quos) {
+SEXP cpp_grouped_eval_mutate3(SEXP data, SEXP quos);
+extern "C" SEXP _fastplyr_cpp_grouped_eval_mutate3(SEXP data, SEXP quos) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cpp_grouped_eval_mutate2(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
+    return cpp11::as_sexp(cpp_grouped_eval_mutate3(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
   END_CPP11
 }
 // tidy_eval.cpp
@@ -293,6 +300,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_group_split",           (DL_FUNC) &_fastplyr_cpp_group_split,           3},
     {"_fastplyr_cpp_grouped_eval_mutate",   (DL_FUNC) &_fastplyr_cpp_grouped_eval_mutate,   2},
     {"_fastplyr_cpp_grouped_eval_mutate2",  (DL_FUNC) &_fastplyr_cpp_grouped_eval_mutate2,  2},
+    {"_fastplyr_cpp_grouped_eval_mutate3",  (DL_FUNC) &_fastplyr_cpp_grouped_eval_mutate3,  2},
     {"_fastplyr_cpp_grouped_eval_tidy",     (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy,     4},
     {"_fastplyr_cpp_grouped_eval_tidy2",    (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy2,    5},
     {"_fastplyr_cpp_grouped_run_id",        (DL_FUNC) &_fastplyr_cpp_grouped_run_id,        3},

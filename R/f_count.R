@@ -59,8 +59,8 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
   N <- df_nrow(data_transformed)
   # Weights
   if (!rlang::quo_is_null(rlang::enquo(wt))){
-    out_info <- mutate_summary_grouped(data_transformed, !!rlang::enquo(wt))
-    wt_var <- out_info[["cols"]]
+    out_info <- mutate_summary(data_transformed, !!rlang::enquo(wt))
+    wt_var <- out_info[["new_cols"]]
     data_transformed <- out_info[["data"]]
   } else {
     wt_var <- character()
@@ -126,8 +126,8 @@ count_simple <- function(data, ..., wt = NULL, sort = FALSE,
                     .order = .order, .cols = .cols,
                     .by = {{ .by }})
   if (!rlang::quo_is_null(rlang::enquo(wt))){
-    out_info <- mutate_summary_ungrouped(out, !!rlang::enquo(wt))
-    wt_var <- out_info[["cols"]]
+    out_info <- mutate_summary(out, !!rlang::enquo(wt))
+    wt_var <- out_info[["new_cols"]]
     weights <- out_info[["data"]][[wt_var]]
   } else {
     weights <- NULL
@@ -148,8 +148,8 @@ add_count_simple <- function(data, ..., wt = NULL, sort = FALSE,
                     .order = .order, .cols = .cols,
                     .by = {{ .by }})
   if (!rlang::quo_is_null(rlang::enquo(wt))){
-    out_info <- mutate_summary_ungrouped(out, !!rlang::enquo(wt))
-    wt_var <- out_info[["cols"]]
+    out_info <- mutate_summary(out, !!rlang::enquo(wt))
+    wt_var <- out_info[["new_cols"]]
     weights <- out_info[["data"]][[wt_var]]
   } else {
     weights <- NULL
@@ -187,11 +187,11 @@ f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
     wt_var <- character()
   } else {
     ncol1 <- df_ncol(out)
-    out_info <- mutate_summary_grouped(out, !!rlang::enquo(wt))
+    out_info <- mutate_summary(out, !!rlang::enquo(wt))
     out <- out_info[["data"]]
     ncol2 <- df_ncol(out)
     has_wt <- (ncol2 == ncol1)
-    wt_var <- out_info[["cols"]]
+    wt_var <- out_info[["new_cols"]]
     if (length(wt_var) > 0L){
       wtv <- out[[wt_var]]
       if (!has_wt){

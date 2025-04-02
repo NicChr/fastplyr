@@ -33,7 +33,7 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
   }
   if (!sort && !return.groups && !is.factor(X)) {
     if (!is.null(by)) {
-      X <- f_select(X, .cols = by)
+      X <- cheapr::sset_df(X, j = by)
     }
     out <- add_names(
       vector("list", 9),
@@ -397,7 +397,7 @@ df_as_GRP <- function(data, return.groups = TRUE, return.order = TRUE){
   out[["group.id"]] <- group_id
   out[["group.sizes"]] <- gsizes
   if (length(gvars) > 0L && return.groups){
-    out[["groups"]] <- f_select(gdata, .cols = gvars)
+    out[["groups"]] <- cheapr::sset_df(gdata, j = gvars)
     out[["group.vars"]] <- gvars
     out[["group.starts"]] <- gstarts
   }
@@ -455,7 +455,7 @@ df_to_GRP <- function(data, .cols = character(0),
   cols <- unname(col_select_names(data, .cols = .cols))
   extra_groups <- fast_setdiff(cols, dplyr_groups)
   group_vars <- c(dplyr_groups, extra_groups)
-  data <- f_select(data, .cols = group_vars)
+  data <- cheapr::sset_df(data, j = group_vars)
 
   if (length(names(data)) == 0L){
     out <- df_as_one_GRP(data, order = order, return.order = return.order)

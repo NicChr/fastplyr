@@ -1,12 +1,8 @@
 
 #' @exportS3Method cheapr::reconstruct
 reconstruct.grouped_df <- function(x, template){
-  data <- x
 
-  ad <- attributes(data)
-  at <- attributes(template)
-  at[["names"]] <- names(data)
-  at[["row.names"]] <- .row_names_info(data, type = 0L)
+  plain_tbl <- fast_tbl()
 
   template_groups <- group_vars(template)
 
@@ -15,28 +11,29 @@ reconstruct.grouped_df <- function(x, template){
   # are identical to those in data, then no need to recalculate
 
   groups_are_identical <-
-    all(template_groups %in% names(data)) &&
+    all(template_groups %in% names(x)) &&
     (
       all(cpp_frame_addresses_equal(
-        cheapr::sset_col(data, j = template_groups),
+        cheapr::sset_col(x, j = template_groups),
         cheapr::sset_col(template, j = template_groups)
       )) ||
         identical(
-          cheapr::sset_col(data, j = template_groups),
+          cheapr::sset_col(x, j = template_groups),
           cheapr::sset_col(template, j = template_groups)
         )
     )
 
-  if (!groups_are_identical){
-    out_groups <- fast_intersect(template_groups, names(data))
+  if (groups_are_identical){
+    groups <- attr(template, "groups")
+  } else {
+    out_groups <- fast_intersect(template_groups, names(x))
     if (length(out_groups) == 0L){
-      at[["class"]] <- fast_setdiff(at[["class"]], "grouped_df")
-      at[["groups"]] <- NULL
+      groups <- NULL
     } else {
       drop_by_default <- df_group_by_drop_default(template)
       order <- df_group_by_order_default(template)
-      ordered <- attr(at[["groups"]], "ordered")
-      groups <- group_collapse(df_ungroup(data),
+      ordered <- attr(attr(template, "groups"), "ordered")
+      groups <- group_collapse(df_ungroup(x),
                                .cols = out_groups,
                                sort = TRUE,
                                order = order,
@@ -45,17 +42,14 @@ reconstruct.grouped_df <- function(x, template){
                                loc = TRUE,
                                .drop = drop_by_default)
       groups <- f_rename(groups, .cols = c(".rows" = ".loc"))
-      attributes(groups[[".rows"]]) <- attributes(at[["groups"]][[".rows"]])
-      for (a in fast_setdiff(names(attributes(groups)),
-                         c("row.names", "class", "names"))){
-        attr(groups, a) <- NULL
-      }
+      attributes(groups[[".rows"]]) <- attributes(attr(template, "groups")[[".rows"]])
+      groups <- cheapr::reconstruct(groups, plain_tbl)
       attr(groups, "ordered") <- ordered
-      class(groups) <- c("tbl_df", "tbl", "data.frame")
       attr(groups, ".drop") <- drop_by_default
-      at[["groups"]] <- groups
     }
   }
-  attributes(data) <- at
-  data
+  out <- cheapr::reconstruct(x, df_ungroup(template))
+  attr(out, "groups") <- groups
+  class(out) <- class(template)
+  out
 }

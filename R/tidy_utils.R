@@ -41,12 +41,11 @@ get_groups <- function(data, .by = NULL){
 as_named <- function(x){
   nms <- names(x)
   if (is.null(nms)){
-    names(x) <- x
+    nms <- x
   } else {
-    empty <- empty_str_locs(nms)
-    nms[empty] <- x[empty]
-    names(x) <- nms
+    nms <- str_coalesce(nms, x)
   }
+  names(x) <- nms
   x
 }
 
@@ -225,51 +224,6 @@ unpack_across <- function(quo, data){
 #   out
 # }
 
-# Recursively turn calls into lists
-
-has_call <- function(x){
-  any(rapply(x, is.call, how = "unlist"))
-}
-#
-unnest_call <- function(x){
-  out <- as.list(x)
-
-  for (i in seq_along(out)){
-   if (is.call(out[[i]])){
-     result <- as.list(out[[i]])
-     while(has_call(result)){
-       result <- unnest_call(result)
-     }
-     out[[i]] <- result
-   }
-  }
-
-  out
-}
-
-# Get data variables from call
-# call_vars <- function(expr, data){
-#   if (rlang::is_quosure(expr)){
-#     expr <- rlang::quo_get_expr(expr)
-#   }
-#   out <- all.names(expr)
-#   which_in(names(data), out)
-# }
-# call_vars2 <- function(expr, data){
-#   if (rlang::is_quosure(expr)){
-#     expr <- rlang::quo_get_expr(expr)
-#   }
-#   fast_intersect(all.names(expr), names(data))
-# }
-# # Get data variables from list of calls
-# call_vars_v <- function(exprs, data){
-#   lapply(exprs, call_vars, data)
-# }
-# call_vars_v2 <- function(exprs, data){
-#   cpp_c(lapply(exprs, call_vars2, data))
-# }
-
-
 # Tidyselect col positions with names
 tidy_select_pos <- function(data, ..., .cols = NULL){
   data_nms <- names(data)
@@ -300,71 +254,6 @@ tidy_select_names <- function(data, ..., .cols = NULL){
   add_names(names(data)[match(pos, seq_along(data))], names(pos))
 }
 
-mutate_summary_ungrouped <- function(.data, ...,
-                                     .keep = c("all", "used", "unused", "none"),
-                                     error_call = rlang::caller_env()){
-  .keep <- rlang::arg_match(.keep)
-  original_cols <- names(.data)
-  bare_data <- df_ungroup(.data)
-  group_data <- new_tbl(".rows" = add_attr(list(seq_len(df_nrow(bare_data))),
-                                           "class",
-                                           c("vctrs_list_of", "vctrs_vctr", "list")))
-  by <- add_attr(
-    list(
-      type = "ungrouped",
-      names = character(),
-      data = group_data
-    ),
-    "class",
-    "dplyr_by"
-  )
-  dplyr_quos <- dplyr_quosures(...)
-  # names(dplyr_quos) <- dot_expr_names(...)
-  cols <- mutate_cols(bare_data, dplyr_quos,
-                      by = by, error_call = error_call)
-  out_data <- dplyr::dplyr_col_modify(bare_data, cols)
-  final_cols <- names(cols)
-  used <- attr(cols, "used")
-  keep_cols <- switch(.keep,
-                      all = names(used),
-                      none = final_cols,
-                      used = names(used)[which(used)],
-                      unused = names(used)[cheapr::which_(used, invert = TRUE)])
-  out_data <- f_select(out_data, .cols = keep_cols)
-  out <- list(data = out_data, cols = final_cols)
-  out
-}
-
-mutate_summary_grouped <- function(.data, ...,
-                                   .keep = c("all", "used", "unused", "none"),
-                                   .by = NULL,
-                                   error_call = rlang::caller_env()){
-  .keep <- rlang::arg_match(.keep)
-  original_cols <- names(.data)
-  by <- compute_by(by = {{ .by }}, data = .data,
-                   by_arg = ".by", data_arg = ".data")
-  group_vars <- get_groups(.data, .by = {{ .by }})
-  dplyr_quos <- dplyr_quosures(...)
-  # names(dplyr_quos) <- dot_expr_names(...)
-  cols <- mutate_cols(.data, dplyr_quos,
-                      by = by, error_call = error_call)
-  out_data <- dplyr::dplyr_col_modify(.data, cols)
-  final_cols <- names(cols)
-  used <- attr(cols, "used")
-  keep_cols <- switch(.keep,
-                      all = names(used),
-                      none = final_cols,
-                      used = names(used)[which(used)],
-                      unused = names(used)[cheapr::which_(used, invert = TRUE)])
-  # Add missed group vars
-  keep_cols <- c(group_vars, keep_cols[match(keep_cols, group_vars, 0L) == 0L])
-  # Match the original ordering of columns
-  keep_cols <- keep_cols[order(match(keep_cols, original_cols))]
-  out_data <- f_select(out_data, .cols = keep_cols)
-  out <- list(data = out_data, cols = final_cols)
-  out
-}
-
 mutate_summary <- function(.data, ...,
                             .keep = c("all", "used", "unused", "none"),
                             .by = NULL){
@@ -387,6 +276,7 @@ mutate_summary <- function(.data, ...,
 
   new_data <- list_rm_null(new_data)
 
+  data <- cheapr::reconstruct(data, .data)
   out_data <- df_add_cols(data, new_data)
   new_cols <- names(new_data)
   all_cols <- names(out_data)
@@ -548,121 +438,35 @@ check_rowwise <- function(data){
   }
 }
 
-# `eval_tidy()` that works in a dplyr context for data frames
-# which means that calls to dplyr functions like `across`, `pick`, `n()`
-# can be supplied directly here
-# `eval_all_tidy` is like `reframe` except the output is a list of
-# arbitrary size expressions which makes it very flexible
-
-# To do this properly a data mask is created with each expression result
-# being added to the data mask, while using that data mask to evaluate the
-# expressions, allowing for sequential dependent evaluation
-# so that e.g. `eval_all_tidy(iris, x = 1, y = x)` can work
-
-# To get this to work, eval_tidy must be supplied inside dplyr::reframe
-# But we can use eval_tidy directly, so long as data is not grouped and
-# None of the expressions are dplyr calls
-# We use `call_contains_ns()` to check if any of the calls are to dplyr
-# functions
-
-# eval_all_tidy <- function(data, ...){
-#   quos <- named_quos(...)
-#   expr_names <- names(quos)
-#   group_vars <- group_vars(data)
-#   n_groups <- length(group_vars)
-#
-#   data_mask <- rlang::as_data_mask(data)
-#   out <- cheapr::new_list(length(quos))
-#
-#   # Loop over the expressions
-#   for (i in seq_along(quos)){
-#     quo <- quos[[i]]
-#     expr <- rlang::quo_get_expr(quo)
-#     expr_name <- expr_names[i]
-#     env <- rlang::quo_get_env(quo)
-#     if (n_groups == 0 && !call_contains_ns(expr, "dplyr", env)){
-#       result <- cpp_eval_tidy(quo, data_mask)
-#       data_mask[[expr_name]] <- result
-#     } else {
-#       if (n_groups == 0){
-#         result <- dplyr::reframe(
-#           data,
-#           !!expr_name := rlang::eval_tidy(expr, data_mask, env)
-#         )
-#         result <- .subset2(result, df_ncol(result))
-#         data_mask[[expr_name]] <- result
-#       } else {
-#         #  Fix this later as new objects don't take precedence over data variables here
-#         # e.g. eval_all_tidy(group_by(data, x), v1 = 1, v2 = v1)
-#         result <- dplyr::reframe(
-#           data, !!expr_name := !!quo
-#         )
-#         # result <- dplyr::reframe(
-#         #   data,
-#         #   !!expr_name := rlang::eval_tidy(expr, data_mask, env)
-#         # )
-#       }
-#     }
-#     if (!is.null(result)){
-#       out[[i]] <- result
-#     }
-#     names(out)[i] <- expr_name
-#   }
-#   out
-# }
-
-eval_all_tidy <- function(data, ..., .by = NULL){
-  quos <- named_quos(...)
-  quo_names <- names(quos)
-  group_vars <- get_groups(data, .by = {{ .by }})
-
-  if (length(group_vars) > 0 || any(
-    vapply(
-    quos, \(x)
-    cpp_call_contains_ns(x, "dplyr", rlang::quo_get_env(x)), FALSE
-    )
-  )){
-    out <- cheapr::new_list(length(quos))
-    names(out) <- quo_names
-    for (i in seq_along(quos)){
-      result <- dplyr::reframe(data, !!quo_names[[i]] := !!quos[[i]], .by = {{ .by }})
-      out[[i]] <- result
-    }
-    out
-  } else {
-   cpp_eval_all_tidy(quos, rlang::as_data_mask(data))
-  }
-}
-
 # A fastplyr version of reframe
 # About half-way there (unfortunately not super fast)
 
-fast_reframe <- function(data, ..., .by = NULL, .order = df_group_by_order_default(data)){
-  quos <- fastplyr_quos(..., .named = TRUE)
-  by_quo <- rlang::enquo(.by)
-  temp <- data
-  if (!rlang::quo_is_null(by_quo)){
-    temp <- f_group_by(
-      temp, .by = !!by_quo, .add = TRUE, .order = .order
-    )
-  }
-
-  if (any(
-    vapply(
-      quos, \(x)
-      cpp_call_contains_ns(x, "dplyr", rlang::quo_get_env(x)), FALSE
-    )
-  )){
-    return(
-      as_tbl(dplyr::reframe(data, ..., .by = {{  .by }}))
-    )
-  }
-
-  cpp_grouped_eval_tidy(
-    temp, quos, as_df = FALSE, check_size = FALSE
-  )
-
-}
+# fast_reframe <- function(data, ..., .by = NULL, .order = df_group_by_order_default(data)){
+#   quos <- fastplyr_quos(..., .named = TRUE)
+#   by_quo <- rlang::enquo(.by)
+#   temp <- data
+#   if (!rlang::quo_is_null(by_quo)){
+#     temp <- f_group_by(
+#       temp, .by = !!by_quo, .add = TRUE, .order = .order
+#     )
+#   }
+#
+#   if (any(
+#     vapply(
+#       quos, \(x)
+#       cpp_call_contains_ns(x, "dplyr", rlang::quo_get_env(x)), FALSE
+#     )
+#   )){
+#     return(
+#       as_tbl(dplyr::reframe(data, ..., .by = {{  .by }}))
+#     )
+#   }
+#
+#   cpp_grouped_eval_tidy(
+#     temp, quos, as_df = FALSE, check_size = FALSE
+#   )
+#
+# }
 
 # fast_reframe <- function(data, ..., .by = NULL, .order = df_group_by_order_default(data)){
 #   quos <- fastplyr_quos(..., .named = TRUE)
@@ -701,71 +505,10 @@ fast_reframe <- function(data, ..., .by = NULL, .order = df_group_by_order_defau
 #   }
 #   as_tbl(out)
 # }
-fast_mutate <- function(data, ...,  .by = NULL){
-  # quos <- fastplyr_quos(..., .named = TRUE)
-
+fast_mutate <- function(data, ...,  .by = NULL, .keep = "all"){
   out <- data %>%
     f_group_by(.by = {{ .by }}, .add = TRUE) %>%
-    mutate_summary(...)
+    mutate_summary(..., .keep = .keep)
   out[["data"]]
-  # df_add_cols(data, cols_to_add)
 }
 
-# unpack_across <- function(quo, data){
-#
-#   expr <- rlang::quo_get_expr(quo)
-#   quo_env <- rlang::quo_get_env(quo)
-#
-#   call_tree <- as.list(quo)
-#   call_names <- names(call_tree)
-#
-#   across_args <- c(".cols", ".fns", ".names", ".unpack")
-#
-#   clean_expr <- match.call(
-#     definition = dplyr::across,
-#     call = expr,
-#     expand.dots = FALSE,
-#     envir = quo_env
-#   )
-#
-#   if (!".cols" %in% names(clean_expr)){
-#     cli::cli_abort("{.arg .cols} must be supplied in {.fn across}")
-#   }
-#   unused_args <- fast_setdiff(names(clean_expr)[-1], c(".cols", ".fns", ".names"))
-#
-#   if (length(unused_args) > 0){
-#     cli::cli_abort("{.arg ...} must be unused")
-#   }
-#
-#   across_vars <- clean_expr[[".cols"]]
-#   across_fns <- clean_expr[[".fns"]]
-#   across_nms <- clean_expr[[".names"]]
-#
-#   fn_names <- NULL
-#
-#   if (rlang::is_call(across_fns, "list")){
-#     fn_tree <- as.list(across_fns)
-#     fn_names <- names(fn_tree)[-1L]
-#     empty_strs <- empty_str_locs(fn_names)
-#     fn_names[empty_strs] <- vapply(fn_tree[-1L][empty_strs], rlang::as_label, "")
-#   } else if (!".fns" %in% names(clean_expr)){
-#     fn_names <- "identity"
-#   } else {
-#     fn_names <- rlang::as_label(across_fns)
-#   }
-#
-#   cols <- names(tidyselect::eval_select(across_vars, data))
-#   out_names <- across_col_names(cols, .names = across_nms, .fns = fn_names)
-#
-#   out <- cheapr::new_list(length(out_names))
-#   names(out) <- out_names
-#
-#   k <- 1L
-#   for (col in cols){
-#     for (fn in fn_names){
-#       out[[k]] <- rlang::new_quosure(call(fn, col), quo_env)
-#       k <- k + 1L
-#     }
-#   }
-#   out
-# }
