@@ -452,6 +452,9 @@ fast_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_defa
   }
   quos <- fastplyr_quos(..., .named = TRUE, .data = data, .drop_null = TRUE)
 
+  if (length(quos) == 0){
+    return(cheapr::reconstruct(group_keys(data), cpp_ungroup(.data)))
+  }
   if (cpp_any_quo_contains_ns(quos, "dplyr")){
     out <- dplyr::reframe(data, !!!quos)
     cheapr::reconstruct(out, cpp_ungroup(.data))
@@ -506,7 +509,7 @@ eval_all_tidy <- function(.data, ...){
     result_nm <- result_names[[i]]
     sizes <- cheapr::lengths_(result)
 
-    if (collapse::allv(sizes, 1L)){
+    if (!collapse::allv(sizes, 1L)){
       group_col <- df_rep(groups, sizes)
     } else {
       group_col <- groups
