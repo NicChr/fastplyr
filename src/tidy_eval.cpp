@@ -477,13 +477,16 @@ SEXP cpp_ungroup(SEXP data){
   return data;
 }
 
+// the recycle arg recyles results on a by-group basis
+// useful for `reframe()`
+//
 [[cpp11::register]]
 SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
   int NP = 0;
   int n_quos = Rf_length(quos);
   bool has_groups = Rf_inherits(data, "grouped_df");
   SEXP group_data = R_NilValue;
-  SEXP groups = R_NilValue;
+  SEXP groups = Rf_protect(cpp_group_keys(data)); ++NP;
   SEXP rows = R_NilValue;
   SEXP exprs = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
   SEXP envs = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
@@ -496,13 +499,12 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
 
   if (has_groups){
     Rf_protect(group_data = cpp_group_data(data)); ++NP;
-    Rf_protect(groups = cpp_group_keys(data)); ++NP;
     n_groups = df_nrow(group_data);
+
     // Get group locations
     Rf_protect(rows = VECTOR_ELT(group_data, Rf_length(group_data) - 1)); ++NP;
     p_rows = VECTOR_PTR_RO(rows);
   } else {
-    // n_groups = std::min(1, n_rows);
     p_rows = VECTOR_PTR_RO(data);
   }
 
@@ -518,16 +520,20 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
     SET_VECTOR_ELT(quo_data_syms, i, Rf_installChar(STRING_ELT(quo_data_vars, i)));
   }
 
+  // Initialise expressions, environments and symbols of expression names
   for (int i = 0; i < n_quos; ++i){
     SET_VECTOR_ELT(exprs, i, rlang::quo_get_expr(VECTOR_ELT(quos, i)));
     SET_VECTOR_ELT(envs, i, rlang::quo_get_env(VECTOR_ELT(quos, i)));
     SET_VECTOR_ELT(quo_name_syms, i, Rf_installChar(STRING_ELT(quo_names, i)));
   }
 
-  SEXP data_subset = Rf_protect(cheapr::df_select(data, quo_data_vars)); ++NP;
 
   // Initialise components
 
+  SEXP data_subset = Rf_protect(cheapr::df_select(data, quo_data_vars)); ++NP;
+
+  // We will re-use the mask across all groups but add the same
+  // vars for each slice in each iteration
   SEXP mask = Rf_protect(new_bare_data_mask()); ++NP;
   SEXP top_env = Rf_protect(get_mask_top_env(mask)); ++NP;
 
@@ -543,25 +549,63 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
 
 
   // outer container will contain lists of expressions for each group
-  // group container will contain the rows of each distinct group
+  // Basically for the mask to work nicely we loop through each and group and
+  // in each group we loop through the expressions
+
+  // At the end we invert that so that we have a
+  // list of results of length `length(quos)`
+
   SEXP outer_container = Rf_protect(Rf_allocVector(VECSXP, n_groups)); ++NP;
+
+  // Recycling in this context means to recycle the results to a common size
+  // on a by-group basis, meaning the recycled sizes may differ between different
+  // groups
+
   int recycled_size;
   int result_size;
 
+    SEXP recycled_sizes;
+    PROTECT_INDEX recycled_sizes_idx;
+    R_ProtectWithIndex(recycled_sizes = R_NilValue, &recycled_sizes_idx); ++NP;
+
+    SEXP recycled_sizes_container = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
+    const SEXP *p_recycled_sizes_container = VECTOR_PTR_RO(recycled_sizes_container);
+
+    // Some C trickery here.. We repeat out the rows of the group keys at the end
+    // but if we recycle we only need to do this once and we only need one
+    // result sizes vector, otherwise we need one for each expression
+    if (recycle){
+      R_Reprotect(recycled_sizes = Rf_allocVector(INTSXP, n_groups), recycled_sizes_idx);
+      for (int m = 0; m < n_quos; ++m){
+        SET_VECTOR_ELT(recycled_sizes_container, m, recycled_sizes);
+      }
+    } else {
+      for (int m = 0; m < n_quos; ++m){
+        SET_VECTOR_ELT(recycled_sizes_container, m, Rf_allocVector(INTSXP, n_groups));
+      }
+    }
+
+
   for (int i = 0; i < n_groups; ++i){
 
-    recycled_size = -1;
+    recycled_size = -1; // Initialise this to < 0 for later logic to work
+
+    // Filter on the rows relevant to the current group
 
     if (has_groups){
       R_Reprotect(chunk_locs = p_rows[i], chunk_locs_idx);
       R_Reprotect(chunk = cheapr::df_slice(data_subset, chunk_locs, false), chunk_idx);
     }
 
-    // Assign variables to new mask
+    // assign variables to existing data mask
     // essentially list2env()
+
     for (int l = 0; l < chunk_n_cols; ++l){
       Rf_defineVar(VECTOR_ELT(quo_data_syms, l), VECTOR_ELT(chunk, l), top_env);
     }
+
+    // inner container will contain the results of our expressions
+    // and we assign these inner containers to the bigger outer container
     R_Reprotect(inner_container = Rf_allocVector(VECSXP, n_quos), inner_container_idx);
 
     for (int m = 0; m < n_quos; ++m){
@@ -572,30 +616,181 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
       Rf_defineVar(VECTOR_ELT(quo_name_syms, m), result, top_env);
       SET_VECTOR_ELT(inner_container, m, result);
       recycled_size = (recycled_size == 0 || result_size == 0) ? 0 : std::max(recycled_size, result_size);
+      INTEGER(p_recycled_sizes_container[m])[i] = recycled_size;
     }
+
+    // recycle expression results to a common length
+
     if (recycle){
       for (int j = 0; j < n_quos; ++j){
-       SET_VECTOR_ELT(inner_container, j, cheapr::rep_len(VECTOR_ELT(inner_container, j), recycled_size));
+        SET_VECTOR_ELT(inner_container, j, cheapr::rep_len(VECTOR_ELT(inner_container, j), recycled_size));
       }
     }
     SET_VECTOR_ELT(outer_container, i, inner_container);
   }
+
   // Combine results
+
   SEXP results = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
   Rf_setAttrib(results, R_NamesSymbol, quo_names);
   const SEXP *p_outer_container = VECTOR_PTR_RO(outer_container);
-  SEXP intermediate_container = R_NilValue;
+
+
+  // groups container will hold the repeated out rows of the group keys
+
+  SEXP groups_container;
+  PROTECT_INDEX groups_container_idx;
+
+  if (recycle && n_quos > 0){
+    R_ProtectWithIndex(groups_container = cheapr::rep(groups, p_recycled_sizes_container[0]), &groups_container_idx); ++NP;
+  } else {
+    R_ProtectWithIndex(groups_container = R_NilValue, &groups_container_idx); ++NP;
+  }
+
+  SEXP intermediate_container = Rf_protect(Rf_allocVector(VECSXP, 2)); ++NP;
+  SEXP result_container = Rf_protect(Rf_allocVector(VECSXP, 1)); ++NP;
 
   for (int m = 0; m < n_quos; ++m){
-    intermediate_container = Rf_protect(Rf_allocVector(VECSXP, n_groups)); ++NP;
+    R_Reprotect(inner_container = Rf_allocVector(VECSXP, n_groups), inner_container_idx);
     for (int j = 0; j < n_groups; ++j){
-      SET_VECTOR_ELT(intermediate_container, j, VECTOR_ELT(p_outer_container[j], m));
+      SET_VECTOR_ELT(inner_container, j, VECTOR_ELT(p_outer_container[j], m));
     }
-    SET_VECTOR_ELT(results, m, intermediate_container);
+    R_Reprotect(result = cheapr::c(inner_container), result_idx);
+    if (!recycle){
+      R_Reprotect(groups_container = cheapr::rep(groups, p_recycled_sizes_container[m]), groups_container_idx);
+    }
+    SET_VECTOR_ELT(result_container, 0, result);
+    Rf_setAttrib(result_container, R_NamesSymbol, Rf_ScalarString(STRING_ELT(quo_names, m)));
+
+    // Here we're just combining the repeated group keys and results together
+    SET_VECTOR_ELT(intermediate_container, 0, groups_container);
+    SET_VECTOR_ELT(intermediate_container, 1, result_container);
+    R_Reprotect(result = cheapr::list_c(intermediate_container), result_idx);
+    R_Reprotect(result = cheapr::list_as_df(result), result_idx);
+    set_as_tbl(result);
+    SET_VECTOR_ELT(results, m, result);
   }
   Rf_unprotect(NP);
   return results;
 }
+// SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
+//   int NP = 0;
+//   int n_quos = Rf_length(quos);
+//   bool has_groups = Rf_inherits(data, "grouped_df");
+//   SEXP group_data = R_NilValue;
+//   SEXP groups = R_NilValue;
+//   SEXP rows = R_NilValue;
+//   SEXP exprs = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
+//   SEXP envs = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
+//   SEXP quo_name_syms = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
+//   SEXP quo_names = Rf_protect(Rf_getAttrib(quos, R_NamesSymbol)); ++NP;
+//
+//   const SEXP *p_rows;
+//
+//   int n_groups = 1;
+//
+//   if (has_groups){
+//     Rf_protect(group_data = cpp_group_data(data)); ++NP;
+//     Rf_protect(groups = cpp_group_keys(data)); ++NP;
+//     n_groups = df_nrow(group_data);
+//     // Get group locations
+//     Rf_protect(rows = VECTOR_ELT(group_data, Rf_length(group_data) - 1)); ++NP;
+//     p_rows = VECTOR_PTR_RO(rows);
+//   } else {
+//     // n_groups = std::min(1, n_rows);
+//     p_rows = VECTOR_PTR_RO(data);
+//   }
+//
+//   n_groups = std::max(n_groups, 1);
+//
+//
+//   // grab the variable names the expressions point to
+//   SEXP quo_data_vars = Rf_protect(cpp_quo_data_vars(quos, data)); ++NP;
+//   int chunk_n_cols = Rf_length(quo_data_vars);
+//   SEXP quo_data_syms = Rf_protect(Rf_allocVector(VECSXP, chunk_n_cols)); ++NP;
+//
+//   for (int i = 0; i < chunk_n_cols; ++i){
+//     SET_VECTOR_ELT(quo_data_syms, i, Rf_installChar(STRING_ELT(quo_data_vars, i)));
+//   }
+//
+//   for (int i = 0; i < n_quos; ++i){
+//     SET_VECTOR_ELT(exprs, i, rlang::quo_get_expr(VECTOR_ELT(quos, i)));
+//     SET_VECTOR_ELT(envs, i, rlang::quo_get_env(VECTOR_ELT(quos, i)));
+//     SET_VECTOR_ELT(quo_name_syms, i, Rf_installChar(STRING_ELT(quo_names, i)));
+//   }
+//
+//   SEXP data_subset = Rf_protect(cheapr::df_select(data, quo_data_vars)); ++NP;
+//
+//   // Initialise components
+//
+//   SEXP mask = Rf_protect(new_bare_data_mask()); ++NP;
+//   SEXP top_env = Rf_protect(get_mask_top_env(mask)); ++NP;
+//
+//   SEXP chunk_locs, chunk, result, inner_container;
+//
+//   PROTECT_INDEX chunk_locs_idx, chunk_idx,
+//   result_idx, inner_container_idx;
+//
+//   R_ProtectWithIndex(chunk_locs = R_NilValue, &chunk_locs_idx); ++NP;
+//   R_ProtectWithIndex(chunk = data_subset, &chunk_idx); ++NP;
+//   R_ProtectWithIndex(result = R_NilValue, &result_idx); ++NP;
+//   R_ProtectWithIndex(inner_container = R_NilValue, &inner_container_idx); ++NP;
+//
+//
+//   // outer container will contain lists of expressions for each group
+//   // group container will contain the rows of each distinct group
+//   SEXP outer_container = Rf_protect(Rf_allocVector(VECSXP, n_groups)); ++NP;
+//   int recycled_size;
+//   int result_size;
+//
+//   for (int i = 0; i < n_groups; ++i){
+//
+//     recycled_size = -1;
+//
+//     if (has_groups){
+//       R_Reprotect(chunk_locs = p_rows[i], chunk_locs_idx);
+//       R_Reprotect(chunk = cheapr::df_slice(data_subset, chunk_locs, false), chunk_idx);
+//     }
+//
+//     // Assign variables to new mask
+//     // essentially list2env()
+//     for (int l = 0; l < chunk_n_cols; ++l){
+//       Rf_defineVar(VECTOR_ELT(quo_data_syms, l), VECTOR_ELT(chunk, l), top_env);
+//     }
+//     R_Reprotect(inner_container = Rf_allocVector(VECSXP, n_quos), inner_container_idx);
+//
+//     for (int m = 0; m < n_quos; ++m){
+//       R_Reprotect(result = rlang::eval_tidy(
+//         VECTOR_ELT(exprs, m), mask, VECTOR_ELT(envs, m)
+//       ), result_idx);
+//       result_size = cheapr::vec_length(result);
+//       Rf_defineVar(VECTOR_ELT(quo_name_syms, m), result, top_env);
+//       SET_VECTOR_ELT(inner_container, m, result);
+//       recycled_size = (recycled_size == 0 || result_size == 0) ? 0 : std::max(recycled_size, result_size);
+//     }
+//     if (recycle){
+//       for (int j = 0; j < n_quos; ++j){
+//        SET_VECTOR_ELT(inner_container, j, cheapr::rep_len(VECTOR_ELT(inner_container, j), recycled_size));
+//       }
+//     }
+//     SET_VECTOR_ELT(outer_container, i, inner_container);
+//   }
+//   // Combine results
+//   SEXP results = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
+//   Rf_setAttrib(results, R_NamesSymbol, quo_names);
+//   const SEXP *p_outer_container = VECTOR_PTR_RO(outer_container);
+//   SEXP intermediate_container = R_NilValue;
+//
+//   for (int m = 0; m < n_quos; ++m){
+//     intermediate_container = Rf_protect(Rf_allocVector(VECSXP, n_groups)); ++NP;
+//     for (int j = 0; j < n_groups; ++j){
+//       SET_VECTOR_ELT(intermediate_container, j, VECTOR_ELT(p_outer_container[j], m));
+//     }
+//     SET_VECTOR_ELT(results, m, intermediate_container);
+//   }
+//   Rf_unprotect(NP);
+//   return results;
+// }
 // SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
 //   int NP = 0;
 //   int n_quos = Rf_length(quos);
