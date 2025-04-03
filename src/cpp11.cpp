@@ -279,27 +279,6 @@ extern "C" SEXP _fastplyr_cpp_grouped_eval_tidy(SEXP data, SEXP quos, SEXP recyc
   END_CPP11
 }
 // tidy_eval.cpp
-SEXP cpp_grouped_eval_tidy0(SEXP data, SEXP quos, bool recycle);
-extern "C" SEXP _fastplyr_cpp_grouped_eval_tidy0(SEXP data, SEXP quos, SEXP recycle) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_grouped_eval_tidy0(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<bool>>(recycle)));
-  END_CPP11
-}
-// tidy_eval.cpp
-SEXP cpp_grouped_eval_tidy2(SEXP data, SEXP quos);
-extern "C" SEXP _fastplyr_cpp_grouped_eval_tidy2(SEXP data, SEXP quos) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_grouped_eval_tidy2(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
-  END_CPP11
-}
-// tidy_eval.cpp
-SEXP cpp_grouped_eval_tidy3(SEXP data, SEXP quos);
-extern "C" SEXP _fastplyr_cpp_grouped_eval_tidy3(SEXP data, SEXP quos) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_grouped_eval_tidy3(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
-  END_CPP11
-}
-// tidy_eval.cpp
 SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos);
 extern "C" SEXP _fastplyr_cpp_grouped_eval_mutate(SEXP data, SEXP quos) {
   BEGIN_CPP11
@@ -339,9 +318,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_group_vars",            (DL_FUNC) &_fastplyr_cpp_group_vars,            1},
     {"_fastplyr_cpp_grouped_eval_mutate",   (DL_FUNC) &_fastplyr_cpp_grouped_eval_mutate,   2},
     {"_fastplyr_cpp_grouped_eval_tidy",     (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy,     3},
-    {"_fastplyr_cpp_grouped_eval_tidy0",    (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy0,    3},
-    {"_fastplyr_cpp_grouped_eval_tidy2",    (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy2,    2},
-    {"_fastplyr_cpp_grouped_eval_tidy3",    (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy3,    2},
     {"_fastplyr_cpp_grouped_run_id",        (DL_FUNC) &_fastplyr_cpp_grouped_run_id,        3},
     {"_fastplyr_cpp_is_call",               (DL_FUNC) &_fastplyr_cpp_is_call,               2},
     {"_fastplyr_cpp_is_exotic",             (DL_FUNC) &_fastplyr_cpp_is_exotic,             1},

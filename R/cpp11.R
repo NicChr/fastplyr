@@ -156,18 +156,6 @@ cpp_grouped_eval_tidy <- function(data, quos, recycle) {
   .Call(`_fastplyr_cpp_grouped_eval_tidy`, data, quos, recycle)
 }
 
-cpp_grouped_eval_tidy0 <- function(data, quos, recycle) {
-  .Call(`_fastplyr_cpp_grouped_eval_tidy0`, data, quos, recycle)
-}
-
-cpp_grouped_eval_tidy2 <- function(data, quos) {
-  .Call(`_fastplyr_cpp_grouped_eval_tidy2`, data, quos)
-}
-
-cpp_grouped_eval_tidy3 <- function(data, quos) {
-  .Call(`_fastplyr_cpp_grouped_eval_tidy3`, data, quos)
-}
-
 cpp_grouped_eval_mutate <- function(data, quos) {
   .Call(`_fastplyr_cpp_grouped_eval_mutate`, data, quos)
 }
