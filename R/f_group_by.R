@@ -96,7 +96,7 @@ f_group_by <- function(data, ..., .add = FALSE,
     cpp_ungroup(data), ...,
     .by = {{ .by }},
     .cols = .cols,
-    ungroup = TRUE,
+    ungroup = FALSE,
     rename = TRUE
   )
   out <- group_info[["data"]]

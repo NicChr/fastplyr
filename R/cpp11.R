@@ -108,6 +108,10 @@ cpp_quos_adjust_across <- function(quos) {
   .Call(`_fastplyr_cpp_quos_adjust_across`, quos)
 }
 
+cpp_quos_drop_null <- function(quos) {
+  .Call(`_fastplyr_cpp_quos_drop_null`, quos)
+}
+
 get_mask_top_env <- function(mask) {
   .Call(`_fastplyr_get_mask_top_env`, mask)
 }
@@ -148,24 +152,24 @@ cpp_ungroup <- function(data) {
   .Call(`_fastplyr_cpp_ungroup`, data)
 }
 
-cpp_grouped_eval_tidy <- function(data, quos) {
-  .Call(`_fastplyr_cpp_grouped_eval_tidy`, data, quos)
+cpp_grouped_eval_tidy <- function(data, quos, recycle) {
+  .Call(`_fastplyr_cpp_grouped_eval_tidy`, data, quos, recycle)
 }
 
-cpp_grouped_eval_mutate2 <- function(data, quos) {
-  .Call(`_fastplyr_cpp_grouped_eval_mutate2`, data, quos)
+cpp_grouped_eval_tidy0 <- function(data, quos, recycle) {
+  .Call(`_fastplyr_cpp_grouped_eval_tidy0`, data, quos, recycle)
+}
+
+cpp_grouped_eval_tidy2 <- function(data, quos) {
+  .Call(`_fastplyr_cpp_grouped_eval_tidy2`, data, quos)
+}
+
+cpp_grouped_eval_tidy3 <- function(data, quos) {
+  .Call(`_fastplyr_cpp_grouped_eval_tidy3`, data, quos)
 }
 
 cpp_grouped_eval_mutate <- function(data, quos) {
   .Call(`_fastplyr_cpp_grouped_eval_mutate`, data, quos)
-}
-
-cpp_grouped_eval_mutate3 <- function(data, quos) {
-  .Call(`_fastplyr_cpp_grouped_eval_mutate3`, data, quos)
-}
-
-cpp_grouped_eval_tidy2 <- function(group_data, data, quos, as_df, check_size) {
-  .Call(`_fastplyr_cpp_grouped_eval_tidy2`, group_data, data, quos, as_df, check_size)
 }
 
 cpp_group_split <- function(data, drop, order) {

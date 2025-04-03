@@ -83,7 +83,7 @@ named_quos <- function(...){
   exprs
 }
 
-fastplyr_quos <- function(..., .named = FALSE, .data = NULL){
+fastplyr_quos <- function(..., .named = FALSE, .data = NULL, .drop_null = FALSE){
   if (.named){
     out <- named_quos(...)
   } else {
@@ -104,6 +104,9 @@ fastplyr_quos <- function(..., .named = FALSE, .data = NULL){
         out <- c(left, unpacked_quos, right)
       }
     }
+  }
+  if (.drop_null){
+    out <- cpp_quos_drop_null(out)
   }
   out
 }
@@ -260,7 +263,11 @@ mutate_summary <- function(.data, ...,
                            .order = df_group_by_order_default(.data)){
   .keep <- rlang::arg_match(.keep)
   original_cols <- names(.data)
-  data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
+  if (missing(.by)){
+    data <- .data
+  } else {
+    data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
+  }
   group_vars <- group_vars(data)
   quos <- fastplyr_quos(..., .named = TRUE, .data = data)
 
@@ -437,23 +444,46 @@ check_rowwise <- function(data){
 # A fastplyr version of reframe
 # About half-way there (unfortunately not super fast)
 fast_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
-  data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
-  quos <- fastplyr_quos(..., .named = TRUE, .data = data)
+
+  if (missing(.by)){
+    data <- .data
+  } else {
+    data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
+  }
+  quos <- fastplyr_quos(..., .named = TRUE, .data = data, .drop_null = TRUE)
 
   if (cpp_any_quo_contains_ns(quos, "dplyr")){
     out <- dplyr::reframe(data, !!!quos)
-    cheapr::reconstruct(out, .data)
+    cheapr::reconstruct(out, cpp_ungroup(.data))
   } else {
-    results <- cpp_grouped_eval_tidy(data, quos)
-    group_data <- group_data(data)
+    results <- cpp_grouped_eval_tidy(data, quos, recycle = TRUE)
+    group_keys <- group_keys(data)
 
-    groups <- df_rep(cheapr::sset_col(group_data, seq_along(group_data) - 1L),
-                     results[["result_sizes"]])
+    groups <- df_rep(group_keys, cheapr::lengths_(results[[1L]]))
 
-    f_bind_cols(groups, list_as_df(results[-1L])) |>
+    f_bind_cols(groups, list_as_df(lapply(results, cpp_c))) %>%
       cheapr::reconstruct(cpp_ungroup(.data))
   }
 }
+# fast_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
+#   data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
+#   quos <- fastplyr_quos(..., .named = TRUE, .data = data)
+#
+#   if (cpp_any_quo_contains_ns(quos, "dplyr")){
+#     out <- dplyr::reframe(data, !!!quos)
+#     cheapr::reconstruct(out, .data)
+#   } else {
+#     results <- cpp_grouped_eval_tidy3(data, quos)
+#     # results <- cpp_grouped_eval_tidy(data, quos, TRUE)
+#     group_data <- group_data(data)
+#
+#     groups <- df_rep(cheapr::sset_col(group_data, seq_along(group_data) - 1L),
+#                      results[[1L]])
+#
+#     f_bind_cols(groups, list_as_df(results[-1L])) |>
+#       cheapr::reconstruct(cpp_ungroup(.data))
+#   }
+# }
 
 fast_mutate <- function(.data, ...,  .by = NULL, .order = df_group_by_order_default(.data), .keep = "all"){
   out <- .data %>%
@@ -461,17 +491,27 @@ fast_mutate <- function(.data, ...,  .by = NULL, .order = df_group_by_order_defa
   out[["data"]]
 }
 
+eval_all_tidy <- function(.data, ...){
+  quos <- fastplyr_quos(..., .data = .data, .named = TRUE, .drop_null = TRUE)
+  results <- cpp_grouped_eval_tidy(.data, quos, recycle = FALSE)
+  result_names <- names(results)
 
+  out <- cheapr::new_list(length(results))
 
-eval_all_tidy <- function(.data, quos){
-  cpp_grouped_eval_tidy(.data, quos)[-1L]
+  groups <- group_keys(.data)
 
-  # results <- cpp_grouped_eval_tidy(data, quos)
-  # group_data <- group_data(data)
-  #
-  # groups <- df_rep(cheapr::sset_col(group_data, seq_along(group_data) - 1L),
-  #                  results[["result_sizes"]])
-  #
-  # f_bind_cols(groups, list_as_df(results[-1L])) |>
-  #   cheapr::reconstruct(cpp_ungroup(.data))
+  for (i in seq_along(results)){
+    result <- results[[i]]
+    if (length(result) == 0) next
+    result_nm <- result_names[[i]]
+    sizes <- cheapr::lengths_(result)
+
+    if (collapse::allv(sizes, 1L)){
+      group_col <- df_rep(groups, sizes)
+    } else {
+      group_col <- groups
+    }
+    out[[i]] <- f_bind_cols(group_col, !!result_nm := cpp_c(result))
+  }
+  out
 }

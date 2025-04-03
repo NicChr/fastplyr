@@ -46,11 +46,9 @@ f_expand <- function(data, ..., .sort = FALSE,
       )
     }
   } else {
-    frames <- list_rm_null(
-      eval_all_tidy(f_group_by(data, .cols = group_vars, .add = TRUE), dots)
-    )
+    frames <- eval_all_tidy(f_group_by(data, .cols = group_vars, .add = TRUE), !!!dots)
     frames <- lapply(frames, sort_unique, .sort)
-    frames <- unname(cpp_as_list_of_frames(frames))
+    # frames <- unname(cpp_as_list_of_frames(frames))
   }
   if (length(group_vars) > 0){
     anon_join <- function(x, y){
