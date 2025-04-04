@@ -43,7 +43,7 @@ as_named <- function(x){
   if (is.null(nms)){
     nms <- x
   } else {
-    nms <- str_coalesce(nms, x)
+    nms <- str_coalesce(nms, as.character(x))
   }
   names(x) <- nms
   x
@@ -83,32 +83,12 @@ named_quos <- function(...){
   exprs
 }
 
-fastplyr_quos <- function(..., .named = FALSE, .data = NULL, .drop_null = FALSE){
-  if (.named){
-    out <- named_quos(...)
-  } else {
-    out <- rlang::quos(..., .ignore_empty = "all")
-  }
-  if (!is.null(.data)){
-    for (i in seq_along(out)){
-      quo <- out[[i]]
-      if (rlang::quo_is_call(quo, "across")){
-        left <- out[seq_len(i - 1L)]
-        unpacked_quos <- unpack_across(quo, .data)
-        if (i < length(out)){
-          right <- out[seq.int(i + 1L, length(out), 1L)]
-        } else {
-          right <- list()
-        }
-        out[[i]] <- NULL
-        out <- c(left, unpacked_quos, right)
-      }
-    }
-  }
-  if (.drop_null){
-    out <- cpp_quos_drop_null(out)
-  }
-  out
+
+is_fn_call <- function(quo, fn, ns = NULL){
+  cpp_is_fn_call(
+    rlang::quo_get_expr(quo), fn, ns,
+    rlang::quo_get_env(quo)
+  )
 }
 
 unpack_across <- function(quo, data){
@@ -126,7 +106,7 @@ unpack_across <- function(quo, data){
   if (!".cols" %in% names(clean_expr)){
     cli::cli_abort("{.arg .cols} must be supplied in {.fn across}")
   }
-  unused_args <- fast_setdiff(names(clean_expr)[-1], c(".cols", ".fns", ".names"))
+  unused_args <- fast_setdiff(names(clean_expr)[-1], c(".cols", ".fns", ".names", ".unpack"))
 
   if (length(unused_args) > 0){
     cli::cli_abort("{.arg ...} must be unused")
@@ -151,7 +131,7 @@ unpack_across <- function(quo, data){
     }
   } else if (is.symbol(across_vars) && (rlang::as_string(across_vars) %in% names(data))){
     cols <- rlang::as_string(across_vars)
-    } else {
+  } else {
     cols <- names(tidyselect::eval_select(across_vars, data))
   }
 
@@ -195,6 +175,38 @@ unpack_across <- function(quo, data){
     fn <- fn_tree[[i]]
     col <- cols[[i]]
     out[[i]] <- rlang::new_quosure(rlang::call2(fn, as.symbol(col)), quo_env)
+  }
+  out
+}
+
+fastplyr_quos <- function(..., .named = FALSE, .data = NULL, .drop_null = FALSE){
+  if (.named){
+    out <- named_quos(...)
+  } else {
+    out <- rlang::quos(..., .ignore_empty = "all")
+  }
+  if (!is.null(.data)){
+    for (i in seq_along(out)){
+      quo <- out[[i]]
+      if (is_fn_call(quo, "across", ns = "dplyr")){
+        left <- out[seq_len(i - 1L)]
+        unpacked_quos <- unpack_across(quo, .data)
+        if (length(unpacked_quos) == 1 &&
+            is_fn_call(unpacked_quos[[1L]], "across", ns = "dplyr")){
+          break
+        }
+        if (i < length(out)){
+          right <- out[seq.int(i + 1L, length(out), 1L)]
+        } else {
+          right <- list()
+        }
+        out[[i]] <- NULL
+        out <- c(left, unpacked_quos, right)
+      }
+    }
+  }
+  if (.drop_null){
+    out <- cpp_quos_drop_null(out)
   }
   out
 }
@@ -279,7 +291,7 @@ mutate_summary <- function(.data, ...,
     new_data <- as.list(cpp_grouped_eval_mutate(data, quos))
   }
 
-  new_data <- list_rm_null(new_data)
+  new_data <- cheapr::list_drop_null(new_data)
 
   data <- cheapr::reconstruct(data, .data)
   out_data <- df_add_cols(data, new_data)
@@ -453,7 +465,7 @@ fast_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_defa
     data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
   }
   quos <- fastplyr_quos(..., .named = TRUE, .data = data, .drop_null = TRUE)
-
+  quo_names <- names(quos)
   if (length(quos) == 0){
     return(cheapr::reconstruct(group_keys(data), cpp_ungroup(.data)))
   }
@@ -462,9 +474,11 @@ fast_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_defa
     cheapr::reconstruct(out, cpp_ungroup(.data))
   } else {
     results <- cpp_grouped_eval_tidy(data, quos, recycle = TRUE)
-    cols_to_add <- lapply(results[-1L], \(x) cheapr::sset_col(x, df_ncol(x))[[1L]])
-    out <- df_add_cols(results[[1L]], cols_to_add)
+    out <- f_bind_cols(lapply(results, \(x) x[[length(x)]]))
+    # cols_to_add <- lapply(results[-1L], \(x) cheapr::sset_col(x, df_ncol(x))[[1L]])
+    # out <- df_add_cols(results[[1L]], cols_to_add)
     cheapr::reconstruct(out, cpp_ungroup(.data))
+    # do.call(f_bind_cols, results)
   }
 }
 # fast_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){

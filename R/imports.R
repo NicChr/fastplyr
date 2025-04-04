@@ -7,7 +7,6 @@ get_from_package <- function(x, package){
 
 val_rm <- get_from_package("val_rm", "cheapr")
 list_as_df <- get_from_package("list_as_df", "cheapr")
-list_rm_null <- get_from_package("cpp_list_rm_null", "cheapr")
 set_add_attr <- get_from_package("cpp_set_add_attr", "cheapr")
 set_add_attributes <- get_from_package("cpp_set_add_attributes", "cheapr")
 set_rm_attr <- get_from_package("cpp_set_rm_attr", "cheapr")
