@@ -141,15 +141,17 @@ unpack_across <- function(quo, data){
   unpack <- FALSE
 
   if (is.atomic(across_vars)){
-    cols <- names(col_select_pos(data, across_vars))
+    cols <- unname(col_select_names(data, across_vars))
   } else if (rlang::is_call(across_vars, ":")){
     args <- as.list(across_vars[-1L])
     if (length(args) == 2 && is.atomic(args[[1L]]) && is.atomic(args[[2L]])){
-      cols <- names(col_select_pos(data, eval(across_vars, envir = quo_env)))
+      cols <- unname(col_select_names(data, eval(across_vars, envir = quo_env)))
     } else {
       cols <- names(tidyselect::eval_select(across_vars, data))
     }
-  } else {
+  } else if (is.symbol(across_vars) && (rlang::as_string(across_vars) %in% names(data))){
+    cols <- rlang::as_string(across_vars)
+    } else {
     cols <- names(tidyselect::eval_select(across_vars, data))
   }
 
@@ -456,7 +458,7 @@ fast_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_defa
     return(cheapr::reconstruct(group_keys(data), cpp_ungroup(.data)))
   }
   if (cpp_any_quo_contains_ns(quos, "dplyr")){
-    out <- dplyr::reframe(data, !!!quos)
+    out <- dplyr::reframe(data, ...)
     cheapr::reconstruct(out, cpp_ungroup(.data))
   } else {
     results <- cpp_grouped_eval_tidy(data, quos, recycle = TRUE)

@@ -76,24 +76,16 @@ cpp_df_transform_exotic <- function(x, order, as_qg) {
   .Call(`_fastplyr_cpp_df_transform_exotic`, x, order, as_qg)
 }
 
-cpp_get <- function(sym, rho) {
-  .Call(`_fastplyr_cpp_get`, sym, rho)
-}
-
-cpp_is_call <- function(expr, ns) {
-  .Call(`_fastplyr_cpp_is_call`, expr, ns)
-}
-
 cpp_call_contains_ns <- function(expr, ns, rho) {
   .Call(`_fastplyr_cpp_call_contains_ns`, expr, ns, rho)
 }
 
-cpp_any_quo_contains_ns <- function(quos, ns) {
-  .Call(`_fastplyr_cpp_any_quo_contains_ns`, quos, ns)
+cpp_call_contains_fn <- function(expr, fn, ns, rho) {
+  .Call(`_fastplyr_cpp_call_contains_fn`, expr, fn, ns, rho)
 }
 
-cpp_unnest_expr <- function(expr) {
-  .Call(`_fastplyr_cpp_unnest_expr`, expr)
+cpp_any_quo_contains_ns <- function(quos, ns) {
+  .Call(`_fastplyr_cpp_any_quo_contains_ns`, quos, ns)
 }
 
 all_call_names <- function(expr) {
@@ -104,28 +96,8 @@ cpp_quo_data_vars <- function(quos, data) {
   .Call(`_fastplyr_cpp_quo_data_vars`, quos, data)
 }
 
-cpp_quos_adjust_across <- function(quos) {
-  .Call(`_fastplyr_cpp_quos_adjust_across`, quos)
-}
-
 cpp_quos_drop_null <- function(quos) {
   .Call(`_fastplyr_cpp_quos_drop_null`, quos)
-}
-
-get_mask_top_env <- function(mask) {
-  .Call(`_fastplyr_get_mask_top_env`, mask)
-}
-
-cpp_eval_tidy <- function(quo, mask) {
-  .Call(`_fastplyr_cpp_eval_tidy`, quo, mask)
-}
-
-cpp_eval_all_tidy <- function(quos, mask) {
-  .Call(`_fastplyr_cpp_eval_all_tidy`, quos, mask)
-}
-
-new_bare_data_mask <- function() {
-  .Call(`_fastplyr_new_bare_data_mask`)
 }
 
 cpp_list_tidy <- function(quos, keep_null) {

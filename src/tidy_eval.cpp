@@ -3,7 +3,6 @@
 
 // Basically R's get()
 
-[[cpp11::register]]
 SEXP cpp_get(SEXP sym, SEXP rho){
 
   int NP = 0;
@@ -47,9 +46,43 @@ SEXP as_list_call(SEXP expr) {
   return result;
 }
 
+bool call_is_namespaced(SEXP expr){
+
+  int NP = 0;
+
+  if (TYPEOF(expr) != LANGSXP){
+    Rf_error("`expr` must be a `call` in %s", __func__);
+  }
+
+  SEXP expr_call = CAR(expr);
+  if (TYPEOF(expr_call) != LANGSXP) return false;
+
+  SEXP call_list = Rf_protect(as_list_call(expr_call)); ++NP;
+
+  if (Rf_length(call_list) != 3){
+    Rf_unprotect(NP);
+    return false;
+  }
+
+  SEXP first = Rf_protect(VECTOR_ELT(call_list, 0)); ++NP;
+  SEXP second = Rf_protect(VECTOR_ELT(call_list, 1)); ++NP;
+
+  if (TYPEOF(first) != SYMSXP ||
+      (first != R_DoubleColonSymbol &&
+      first != R_TripleColonSymbol)){
+    Rf_unprotect(NP);
+    return false;
+  }
+  if (TYPEOF(second) != SYMSXP){
+    Rf_unprotect(NP);
+    return false;
+  }
+  Rf_unprotect(NP);
+  return true;
+}
+
 // Basic version of rlang::is_call(expr, ns = ns)
-[[cpp11::register]]
-bool cpp_is_call(SEXP expr, SEXP ns){
+bool is_ns_call(SEXP expr, SEXP ns){
 
   int NP = 0;
 
@@ -72,8 +105,8 @@ bool cpp_is_call(SEXP expr, SEXP ns){
   SEXP second = Rf_protect(VECTOR_ELT(call_list, 1)); ++NP;
 
   if (TYPEOF(first) != SYMSXP ||
-      (std::strcmp(CHAR(rlang::sym_as_string(first)), "::") != 0 &&
-      std::strcmp(CHAR(rlang::sym_as_string(first)), ":::") != 0)){
+      (first != R_DoubleColonSymbol &&
+      first != R_TripleColonSymbol)){
     Rf_unprotect(NP);
     return false;
   }
@@ -117,22 +150,74 @@ SEXP cpp_fun_ns(SEXP x, SEXP rho){
     Rf_unprotect(NP); return Rf_mkChar("");
   }
 }
+
+// A function similar to rlang::is_call(expr, fn)
+// but it is more aggressive in finding the specified function
+// The call need not be namespaced to check that the call contains a function
+// in a specified namespace
+
+bool is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
+
+  if (TYPEOF(fn) != STRSXP || Rf_length(fn) != 1){
+    Rf_error("`fn` must be a character vector of length one in %s", __func__);
+  }
+
+  if (TYPEOF(ns) != NILSXP && (TYPEOF(fn) != STRSXP || Rf_length(fn) != 1)){
+    Rf_error("`ns` must be `NULL` or a character vector of length one in %s", __func__);
+  }
+
+  int NP = 0;
+  bool out = false;
+
+  SEXP fn_sym = Rf_protect(Rf_coerceVector(fn, SYMSXP)); ++NP;
+
+  if (TYPEOF(ns) == NILSXP){
+
+    if (TYPEOF(expr) == LANGSXP && call_is_namespaced(expr)){
+      SEXP call_tree = Rf_protect(as_list_call(expr)); ++NP;
+      SEXP fn_expr_tree = Rf_protect(as_list_call(VECTOR_ELT(call_tree, 0))); ++NP;
+      out = VECTOR_ELT(fn_expr_tree, 2) == fn_sym;
+    } else if (TYPEOF(expr) == LANGSXP && TYPEOF(CAR(expr)) == SYMSXP){
+      out = CAR(expr) == fn_sym;
+    }
+  } else if (is_ns_call(expr, ns) && TYPEOF(CAR(expr)) == LANGSXP){
+    SEXP fn_call = Rf_protect(as_list_call(CAR(expr))); ++NP;
+    if (Rf_length(fn_call) == 3 && TYPEOF(VECTOR_ELT(fn_call, 2)) == SYMSXP){
+      out = VECTOR_ELT(fn_call, 2) == fn_sym;
+    }
+  } else {
+    // Here we get the namespace of the function
+    if (TYPEOF(expr) == LANGSXP && TYPEOF(CAR(expr)) == SYMSXP && CAR(expr) == fn_sym){
+      SEXP fn_ns = Rf_protect(cpp_fun_ns(CAR(expr), rho)); ++NP;
+      out = fn_ns == STRING_ELT(ns, 0);
+    }
+  }
+  Rf_unprotect(NP);
+  return out;
+}
+
+// checks if call is or contains any calls to a namespace
+// it doesn't require the function to actually be called via `::`
 [[cpp11::register]]
 bool cpp_call_contains_ns(SEXP expr, SEXP ns, SEXP rho){
   if (TYPEOF(expr) != LANGSXP){
     return false;
   }
   int NP = 0;
-  if (cpp_is_call(expr, ns)){
+  if (is_ns_call(expr, ns)){
     return true;
   }
   bool out = false;
 
-  SEXP ns_str = Rf_protect(Rf_asChar(ns)); ++NP;
+  if (TYPEOF(ns) != STRSXP || Rf_length(ns) != 1){
+    Rf_error("`ns` must be a length 1 character vector in %s", __func__);
+  }
+
+  SEXP ns_str = Rf_protect(STRING_ELT(ns, 0)); ++NP;
   SEXP tree = Rf_protect(as_list_call(expr)); ++NP;
   SEXP branch;
   for (int i = 0; i < Rf_length(tree); ++i){
-    branch = Rf_protect(VECTOR_ELT(tree, i)); ++NP;
+    branch = VECTOR_ELT(tree, i);
 
     // If branch is a call
     if (TYPEOF(branch) == LANGSXP){
@@ -150,6 +235,76 @@ bool cpp_call_contains_ns(SEXP expr, SEXP ns, SEXP rho){
      }
     }
   }
+  Rf_unprotect(NP);
+  return out;
+}
+
+[[cpp11::register]]
+bool cpp_call_contains_fn(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
+  if (TYPEOF(expr) != LANGSXP){
+    return false;
+  }
+  int NP = 0;
+  if (is_fn_call(expr, fn, ns, rho)){
+    return true;
+  }
+  bool out = false;
+
+  if (TYPEOF(fn) != STRSXP || Rf_length(fn) != 1){
+    Rf_error("`fn` must be a length 1 character vector in %s", __func__);
+  }
+  if (TYPEOF(ns) != NILSXP && (TYPEOF(ns) != STRSXP || Rf_length(ns) != 1)){
+    Rf_error("`ns` must be `NULL` or a length 1 character vector in %s", __func__);
+  }
+  // SEXP fn_str = Rf_protect(STRING_ELT(fn, 0)); ++NP;
+  // SEXP fn_sym = Rf_protect(Rf_installChar(fn_str)); ++NP;
+  // SEXP ns_str;
+  // if (TYPEOF(ns) == NILSXP){
+  //   ns_str = Rf_protect(Rf_allocVector(STRSXP, 1)); ++NP;
+  // } else {
+  //   ns_str = Rf_protect(STRING_ELT(ns, 0)); ++NP;
+  // }
+  SEXP tree = Rf_protect(as_list_call(expr)); ++NP;
+  SEXP branch;
+  for (int i = 0; i < Rf_length(tree); ++i){
+    branch = VECTOR_ELT(tree, i);
+
+    // If branch is a call
+    if (TYPEOF(branch) == LANGSXP){
+      if (cpp_call_contains_fn(branch, fn, ns, rho)){
+        out = true;
+        break;
+      }
+    }
+    if (is_fn_call(branch, fn, ns, rho)){
+      out = true;
+      break;
+    }
+  }
+  // for (int i = 0; i < Rf_length(tree); ++i){
+  //   branch = VECTOR_ELT(tree, i);
+  //
+  //   // If branch is a call
+  //   if (TYPEOF(branch) == LANGSXP){
+  //     if (cpp_call_contains_fn(branch, fn, ns, rho)){
+  //       out = true;
+  //       break;
+  //     }
+  //   }
+  //   if (TYPEOF(branch) == SYMSXP){
+  //     if (TYPEOF(ns) == NILSXP){
+  //       if (branch == fn_sym){
+  //         out = true; break;
+  //       }
+  //     } else {
+  //       SEXP branch_name = Rf_protect(rlang::sym_as_character(branch)); ++NP;
+  //       SEXP fn_ns = Rf_protect(cpp_fun_ns(branch_name, rho)); ++NP;
+  //       if (branch == fn_sym && std::strcmp(CHAR(fn_ns), CHAR(ns_str)) == 0){
+  //         out = true; break;
+  //       }
+  //     }
+  //   }
+  // }
   Rf_unprotect(NP);
   return out;
 }
@@ -183,24 +338,6 @@ bool cpp_any_quo_contains_ns(SEXP quos, SEXP ns){
   return out;
 }
 
-bool is_call2(SEXP expr, SEXP fn){
-
-  if (TYPEOF(fn) != STRSXP || Rf_length(fn) != 1){
-    Rf_error("`fn` must be a character vector of length one in %s", __func__);
-  }
-
-  int NP = 0;
-  bool out = false;
-
-  if (TYPEOF(expr) == LANGSXP && TYPEOF(CAR(expr)) == SYMSXP){
-    SEXP expr_str = Rf_protect(rlang::sym_as_string(CAR(expr))); ++NP;
-    out = expr_str == STRING_ELT(fn, 0);
-  }
-  Rf_unprotect(NP);
-  return out;
-}
-
-[[cpp11::register]]
 SEXP cpp_unnest_expr(SEXP expr){
   int NP = 0;
   if (Rf_inherits(expr, "quosure")){
@@ -269,26 +406,25 @@ SEXP cpp_quo_data_vars(SEXP quos, SEXP data){
 
 // unname the names of quos with calls to `dplyr::across()`
 
-[[cpp11::register]]
-SEXP cpp_quos_adjust_across(SEXP quos){
-
-  SEXP names = Rf_protect(Rf_getAttrib(quos, R_NamesSymbol));
-
-  if (Rf_isNull(names)){
-    Rf_unprotect(1);
-    Rf_error("`quos` must be a named list of quosures in %s", __func__);
-  }
-
-  SEXP across_str = Rf_protect(Rf_mkString("across"));
-
-  for (int i = 0; i < Rf_length(quos); ++i){
-    if (is_call2(rlang::quo_get_expr(VECTOR_ELT(quos, i)), across_str)){
-      SET_STRING_ELT(names, i, R_BlankString);
-    }
-  }
-  Rf_unprotect(2);
-  return quos;
-}
+// SEXP cpp_quos_adjust_across(SEXP quos){
+//
+//   SEXP names = Rf_protect(Rf_getAttrib(quos, R_NamesSymbol));
+//
+//   if (Rf_isNull(names)){
+//     Rf_unprotect(1);
+//     Rf_error("`quos` must be a named list of quosures in %s", __func__);
+//   }
+//
+//   SEXP across_str = Rf_protect(Rf_mkString("across"));
+//
+//   for (int i = 0; i < Rf_length(quos); ++i){
+//     if (is_fn_call(rlang::quo_get_expr(VECTOR_ELT(quos, i)), across_str)){
+//       SET_STRING_ELT(names, i, R_BlankString);
+//     }
+//   }
+//   Rf_unprotect(2);
+//   return quos;
+// }
 
 [[cpp11::register]]
 cpp11::list cpp_quos_drop_null(cpp11::list quos){
@@ -296,14 +432,13 @@ cpp11::list cpp_quos_drop_null(cpp11::list quos){
   cpp11::writable::integers not_null_locs;
 
   for (int i = 0; i < quos.size(); ++i){
-    if (!Rf_isNull(rlang::quo_get_expr(quos[i]))){
+    if (TYPEOF(rlang::quo_get_expr(quos[i])) != NILSXP){
       not_null_locs.push_back(i + 1);
     }
   }
   cpp11::list out = cheapr::sset(quos, not_null_locs, false);
   return out;
 }
-[[cpp11::register]]
 SEXP get_mask_top_env(SEXP mask){
 
   if (TYPEOF(mask) != ENVSXP){
@@ -319,7 +454,6 @@ SEXP get_mask_top_env(SEXP mask){
 // Just a wrapper around rlang::eval_tidy
 // but only supplying a quosure and data mask
 
-[[cpp11::register]]
 SEXP cpp_eval_tidy(SEXP quo, SEXP mask){
   SEXP expr = Rf_protect(rlang::quo_get_expr(quo));
   SEXP rho = Rf_protect(rlang::quo_get_env(quo));
@@ -330,7 +464,6 @@ SEXP cpp_eval_tidy(SEXP quo, SEXP mask){
 
 // Eval a list of quos
 
-[[cpp11::register]]
 SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
   int NP = 0;
   int n_exprs = Rf_length(quos);
@@ -362,7 +495,6 @@ SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
   return out;
 }
 
-[[cpp11::register]]
 SEXP new_bare_data_mask(){
   SEXP env = Rf_protect(R_NewEnv(R_EmptyEnv, false, 0));
   SEXP mask = Rf_protect(rlang::new_data_mask(env, env));
@@ -612,18 +744,18 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
       R_Reprotect(result = rlang::eval_tidy(
         VECTOR_ELT(exprs, m), mask, VECTOR_ELT(envs, m)
       ), result_idx);
-      result_size = cheapr::vec_length(result);
       Rf_defineVar(VECTOR_ELT(quo_name_syms, m), result, top_env);
       SET_VECTOR_ELT(inner_container, m, result);
-      recycled_size = (recycled_size == 0 || result_size == 0) ? 0 : std::max(recycled_size, result_size);
+      result_size = cheapr::vec_length(result);
+      recycled_size = recycle ? (result_size == 0 ? 0 : std::max(recycled_size, result_size)) : result_size;
       INTEGER(p_recycled_sizes_container[m])[i] = recycled_size;
     }
 
     // recycle expression results to a common length
 
     if (recycle){
-      for (int j = 0; j < n_quos; ++j){
-        SET_VECTOR_ELT(inner_container, j, cheapr::rep_len(VECTOR_ELT(inner_container, j), recycled_size));
+      for (int m = 0; m < n_quos; ++m){
+        SET_VECTOR_ELT(inner_container, m, cheapr::rep_len(VECTOR_ELT(inner_container, m), recycled_size));
       }
     }
     SET_VECTOR_ELT(outer_container, i, inner_container);
@@ -638,8 +770,9 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
 
   // groups container will hold the repeated out rows of the group keys
 
-  SEXP groups_container;
-  PROTECT_INDEX groups_container_idx;
+  SEXP groups_container, result_container;
+  PROTECT_INDEX groups_container_idx, result_container_idx;
+  R_ProtectWithIndex(result_container = R_NilValue, &result_container_idx); ++NP;
 
   if (recycle && n_quos > 0){
     R_ProtectWithIndex(groups_container = cheapr::rep(groups, p_recycled_sizes_container[0]), &groups_container_idx); ++NP;
@@ -648,8 +781,6 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
   }
 
   SEXP intermediate_container = Rf_protect(Rf_allocVector(VECSXP, 2)); ++NP;
-  SEXP result_container = Rf_protect(Rf_allocVector(VECSXP, 1)); ++NP;
-
   for (int m = 0; m < n_quos; ++m){
     R_Reprotect(inner_container = Rf_allocVector(VECSXP, n_groups), inner_container_idx);
     for (int j = 0; j < n_groups; ++j){
@@ -659,9 +790,13 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
     if (!recycle){
       R_Reprotect(groups_container = cheapr::rep(groups, p_recycled_sizes_container[m]), groups_container_idx);
     }
-    SET_VECTOR_ELT(result_container, 0, result);
-    Rf_setAttrib(result_container, R_NamesSymbol, Rf_ScalarString(STRING_ELT(quo_names, m)));
-
+    if (Rf_inherits(result, "data.frame")){
+      R_Reprotect(result_container = result, result_container_idx);
+    } else {
+      R_Reprotect(result_container = Rf_allocVector(VECSXP, 1), result_container_idx);
+      SET_VECTOR_ELT(result_container, 0, result);
+      Rf_setAttrib(result_container, R_NamesSymbol, Rf_ScalarString(STRING_ELT(quo_names, m)));
+    }
     // Here we're just combining the repeated group keys and results together
     SET_VECTOR_ELT(intermediate_container, 0, groups_container);
     SET_VECTOR_ELT(intermediate_container, 1, result_container);
