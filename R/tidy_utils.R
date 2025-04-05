@@ -220,11 +220,20 @@ fastplyr_quos <- function(..., .named = FALSE, .data = NULL, .drop_null = FALSE)
     }
   }
   names(out) <- quo_nms
-  # set_add_attr(out, "names", quo_nms)
   if (.drop_null){
     out <- cpp_quos_drop_null(out)
   }
+  set_add_attr(out, ".fastplyr_quos", TRUE)
   out
+}
+
+are_fastplyr_quos <- function(quos){
+  isTRUE(attr(quos, ".fastplyr_quos", TRUE))
+}
+check_fastplyr_quos <- function(quos){
+  if (!are_fastplyr_quos(quos)){
+    cli::cli_abort("{.arg quos} must be built using {.fn fastplyr_quos}")
+  }
 }
 
 # Recursively checks call tree for a function call from a specified namespace
@@ -577,7 +586,39 @@ fast_mutate <- function(.data, ...,  .by = NULL, .order = df_group_by_order_defa
   out[["data"]]
 }
 
-eval_all_tidy <- function(.data, ...){
-  quos <- fastplyr_quos(..., .data = .data, .named = TRUE, .drop_null = TRUE)
-  cpp_grouped_eval_tidy(.data, quos, recycle = FALSE)
+eval_all_tidy <- function(.data, quos, .recycle = FALSE){
+  check_fastplyr_quos(quos)
+  quo_names <- names(quos)
+  results <- cpp_grouped_eval_tidy(.data, quos, recycle = .recycle)
+  n_group_vars <- length(group_vars(.data))
+  sset_seq <- seq_len(n_group_vars)
+
+  ## Clean up results by removing group vars
+  ## each result always starts with vectors of group variables
+
+  clean_results <- cheapr::new_list(length(quos))
+  groups <- cheapr::new_list(length(quos))
+  names(clean_results) <- quo_names
+  names(groups) <- quo_names
+
+  k <- 1L
+  for (i in seq_along(results)){
+
+    groups[[i]] <- results[[i]][sset_seq]
+
+    # Unpack
+    if (attr(quos[[i]], ".unpack") && is_df(results[[i]][[n_group_vars + 1L]])){
+      results_to_append <- as.list(results[[i]][[n_group_vars + 1L]])
+      if (nzchar(quo_names[[i]])){
+        names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
+      }
+      clean_results <- append(clean_results, results_to_append, after = k - 1L)
+      k <- k + length(results_to_append)
+      clean_results[[k]] <- NULL
+    } else {
+      clean_results[[k]] <- results[[i]][[n_group_vars + 1L]]
+      k <- k + 1L
+    }
+  }
+  list(groups = groups, results = clean_results)
 }

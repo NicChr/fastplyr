@@ -216,51 +216,6 @@ bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
       return out;
     }
 }
-// bool is_fn_call2(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
-//
-//   if (TYPEOF(fn) != STRSXP || Rf_length(fn) != 1){
-//     Rf_error("`fn` must be a character vector of length one in %s", __func__);
-//   }
-//
-//   if (TYPEOF(ns) != NILSXP && (TYPEOF(fn) != STRSXP || Rf_length(fn) != 1)){
-//     Rf_error("`ns` must be `NULL` or a character vector of length one in %s", __func__);
-//   }
-//
-//   int NP = 0;
-//   bool out = false;
-//
-//   SEXP fn_sym = Rf_protect(Rf_coerceVector(fn, SYMSXP)); ++NP;
-//
-//   if (TYPEOF(ns) == NILSXP){
-//
-//     if (TYPEOF(expr) == LANGSXP && call_is_namespaced(expr)){
-//       SEXP call_tree = Rf_protect(as_list_call(expr)); ++NP;
-//       SEXP fn_expr_tree = Rf_protect(as_list_call(VECTOR_ELT(call_tree, 0))); ++NP;
-//       out = TYPEOF(VECTOR_ELT(fn_expr_tree, 2)) == SYMSXP && VECTOR_ELT(fn_expr_tree, 2) == fn_sym;
-//     } else if (TYPEOF(expr) == LANGSXP && TYPEOF(CAR(expr)) == SYMSXP){
-//       out = CAR(expr) == fn_sym;
-//     }
-//   } else if (is_ns_call(expr, ns) && TYPEOF(CAR(expr)) == LANGSXP){
-//     SEXP fn_call = Rf_protect(as_list_call(CAR(expr))); ++NP;
-//     if (Rf_length(fn_call) == 3 && TYPEOF(VECTOR_ELT(fn_call, 2)) == SYMSXP){
-//       out = VECTOR_ELT(fn_call, 2) == fn_sym;
-//     }
-//   } else {
-//     // Here we get the namespace of the function
-//     if (TYPEOF(expr) == LANGSXP && TYPEOF(CAR(expr)) == SYMSXP && CAR(expr) == fn_sym){
-//       SEXP fn_ns = Rf_protect(cpp_fun_ns(CAR(expr), rho)); ++NP;
-//       out = fn_ns == STRING_ELT(ns, 0);
-//     }
-//   }
-//   Rf_unprotect(NP);
-//   return out;
-// }
-
-
-// TO-DO:
-// MAYBE WE CAN JUST USE THE PREVIOUS is_call2 && cpp_fun_ns == ns...
-// Might be simpler!
-
 
 // checks if call is or contains any calls to a namespace
 // it doesn't require the function to actually be called via `::`
@@ -495,18 +450,42 @@ SEXP cpp_quo_data_vars(SEXP quos, SEXP data){
 // }
 
 [[cpp11::register]]
-cpp11::list cpp_quos_drop_null(cpp11::list quos){
+SEXP cpp_quos_drop_null(SEXP quos){
 
-  cpp11::writable::integers not_null_locs;
+  int n = Rf_length(quos);
 
-  for (int i = 0; i < quos.size(); ++i){
-    if (TYPEOF(rlang::quo_get_expr(quos[i])) != NILSXP){
-      not_null_locs.push_back(i + 1);
-    }
+  SEXP not_null = Rf_protect(Rf_allocVector(LGLSXP, n));
+  int *p_not_null = INTEGER(not_null);
+  const SEXP *p_quos = VECTOR_PTR_RO(quos);
+  int n_null = 0;
+
+  for (int i = 0; i < n; ++i){
+    p_not_null[i] = TYPEOF(rlang::quo_get_expr(p_quos[i])) != NILSXP;
+    n_null += !p_not_null[i];
   }
-  cpp11::list out = cheapr::sset(quos, not_null_locs, false);
+  if (n_null == 0){
+    Rf_unprotect(1);
+    return quos;
+  }
+  SEXP out = Rf_protect(cheapr::sset_vec(quos, not_null, true));
+  Rf_copyMostAttrib(quos, out);
+  Rf_setAttrib(out, R_NamesSymbol, cheapr::sset_vec(Rf_getAttrib(quos, R_NamesSymbol), not_null, true));
+  Rf_classgets(out, Rf_getAttrib(quos, R_ClassSymbol));
+  Rf_unprotect(2);
   return out;
 }
+// cpp11::list cpp_quos_drop_null2(cpp11::list quos){
+//
+//   cpp11::writable::integers not_null_locs;
+//
+//   for (int i = 0; i < quos.size(); ++i){
+//     if (TYPEOF(rlang::quo_get_expr(quos[i])) != NILSXP){
+//       not_null_locs.push_back(i + 1);
+//     }
+//   }
+//   cpp11::list out = cheapr::sset(quos, not_null_locs, false);
+//   return out;
+// }
 SEXP get_mask_top_env(SEXP mask){
 
   if (TYPEOF(mask) != ENVSXP){

@@ -195,10 +195,10 @@ extern "C" SEXP _fastplyr_cpp_quo_data_vars(SEXP quos, SEXP data) {
   END_CPP11
 }
 // tidy_eval.cpp
-cpp11::list cpp_quos_drop_null(cpp11::list quos);
+SEXP cpp_quos_drop_null(SEXP quos);
 extern "C" SEXP _fastplyr_cpp_quos_drop_null(SEXP quos) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cpp_quos_drop_null(cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(quos)));
+    return cpp11::as_sexp(cpp_quos_drop_null(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
   END_CPP11
 }
 // tidy_eval.cpp
