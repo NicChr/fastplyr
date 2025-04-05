@@ -692,7 +692,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
   SEXP envs = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
   SEXP quo_name_syms = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
   SEXP quo_names = Rf_protect(Rf_getAttrib(quos, R_NamesSymbol)); ++NP;
-
+  const SEXP *p_quo_name_syms = VECTOR_PTR_RO(quo_name_syms);
   const SEXP *p_rows;
 
   int n_groups = 1;
@@ -724,9 +724,12 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
   for (int i = 0; i < n_quos; ++i){
     SET_VECTOR_ELT(exprs, i, rlang::quo_get_expr(VECTOR_ELT(quos, i)));
     SET_VECTOR_ELT(envs, i, rlang::quo_get_env(VECTOR_ELT(quos, i)));
-    SET_VECTOR_ELT(quo_name_syms, i, Rf_installChar(STRING_ELT(quo_names, i)));
+    if (STRING_ELT(quo_names, i) == R_BlankString){
+      SET_VECTOR_ELT(quo_name_syms, i, R_UnboundValue);
+    } else {
+      SET_VECTOR_ELT(quo_name_syms, i, Rf_installChar(STRING_ELT(quo_names, i)));
+    }
   }
-
 
   // Initialise components
 
@@ -812,7 +815,9 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
       R_Reprotect(result = rlang::eval_tidy(
         VECTOR_ELT(exprs, m), mask, VECTOR_ELT(envs, m)
       ), result_idx);
-      Rf_defineVar(VECTOR_ELT(quo_name_syms, m), result, top_env);
+      if (p_quo_name_syms[m] != R_UnboundValue){
+        Rf_defineVar(p_quo_name_syms[m], result, top_env);
+      }
       SET_VECTOR_ELT(inner_container, m, result);
       result_size = cheapr::vec_length(result);
       recycled_size = recycle ? (result_size == 0 ? 0 : std::max(recycled_size, result_size)) : result_size;

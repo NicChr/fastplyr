@@ -156,9 +156,8 @@ unpack_across <- function(quo, data){
 
   if (".unpack" %in% names(expr)){
     unpack <- eval(across_unpack, envir = quo_env)
-  }
-  if (unpack){
-    return(list(quo))
+  } else {
+    unpack <- FALSE
   }
 
   out_names <- across_col_names(cols, .names = across_nms, .fns = fn_names)
@@ -174,37 +173,54 @@ unpack_across <- function(quo, data){
   for (i in seq_along(out)){
     fn <- fn_tree[[i]]
     col <- cols[[i]]
-    out[[i]] <- rlang::new_quosure(rlang::call2(fn, as.symbol(col)), quo_env)
+    new_quo <- rlang::new_quosure(rlang::call2(fn, as.symbol(col)), quo_env)
+    set_add_attr(new_quo, ".unpack", unpack)
+    # attr(new_quo, ".unpack") <- unpack
+    out[[i]] <- new_quo
+
   }
   out
 }
 
 fastplyr_quos <- function(..., .named = FALSE, .data = NULL, .drop_null = FALSE){
-  if (.named){
-    out <- named_quos(...)
-  } else {
-    out <- rlang::quos(..., .ignore_empty = "all")
-  }
-  if (!is.null(.data)){
+  out <- rlang::quos(..., .ignore_empty = "all")
+  quo_nms <- attr(out, "names", TRUE)
+
+  if (is.null(.data)){
     for (i in seq_along(out)){
-      quo <- out[[i]]
-      if (is_fn_call(quo, "across", ns = "dplyr")){
-        left <- out[seq_len(i - 1L)]
+      attr(out[[i]], ".unpack") %||% set_add_attr(out[[i]], ".unpack", FALSE)
+      if (.named && !nzchar(quo_nms[[i]])){
+        quo_nms[[i]] <- deparse2(rlang::quo_get_expr(out[[i]]))
+      }
+    }
+  } else {
+    k <- 1L
+    for (i in seq_along(out)){
+      quo <- out[[k]]
+      attr(quo, ".unpack") %||% set_add_attr(quo, ".unpack", FALSE)
+      if (!nzchar(quo_nms[[k]]) && is_fn_call(quo, "across", ns = "dplyr")){
+        left <- out[seq_len(k - 1L)]
         unpacked_quos <- unpack_across(quo, .data)
-        if (length(unpacked_quos) == 1 &&
-            is_fn_call(unpacked_quos[[1L]], "across", ns = "dplyr")){
-          break
-        }
-        if (i < length(out)){
-          right <- out[seq.int(i + 1L, length(out), 1L)]
+        if (k < length(out)){
+          right <- out[seq.int(k + 1L, length(out), 1L)]
         } else {
           right <- list()
         }
-        out[[i]] <- NULL
+        out[[k]] <- NULL
         out <- c(left, unpacked_quos, right)
+        quo_nms <- names(out)
+        k <- k + length(right)
+      } else if (rlang::quo_is_call(quo, c("nesting", "crossing"))){
+        set_add_attr(quo, ".unpack", TRUE)
+        k <- k + 1L
+      } else if (.named && !nzchar(quo_nms[[k]])){
+        quo_nms[[k]] <- deparse2(rlang::quo_get_expr(quo))
+        k <- k + 1L
       }
     }
   }
+  names(out) <- quo_nms
+  # set_add_attr(out, "names", quo_nms)
   if (.drop_null){
     out <- cpp_quos_drop_null(out)
   }
@@ -213,33 +229,33 @@ fastplyr_quos <- function(..., .named = FALSE, .data = NULL, .drop_null = FALSE)
 
 # Recursively checks call tree for a function call from a specified namespace
 # We use it to check for any dplyr functions in call tree in `eval_all_tidy`
-# call_contains_ns <- function(expr, ns, env = rlang::caller_env()){
-#   if (rlang::is_quosure(expr)){
-#     expr <- rlang::quo_get_expr(expr)
-#   }
-#   if (!is.call(expr)){
-#     return(FALSE)
-#   }
-#   if (rlang::is_call(expr, ns = ns)){
-#     return(TRUE)
-#   }
-#   out <- FALSE
-#   tree <- as.list(expr)
-#   for (branch in tree){
-#     if (is.call(branch)){
-#       # return(call_contains_ns(branch, ns, env)) # Old version
-#       if (call_contains_ns(branch, ns, env = env)){
-#         out <- TRUE
-#         break
-#       }
-#     }
-#     if (is.symbol(branch) && fun_ns(rlang::as_string(branch), env = env) == ns){
-#       out <- TRUE
-#       break
-#     }
-#   }
-#   out
-# }
+call_contains_ns <- function(expr, ns, env = rlang::caller_env()){
+  if (rlang::is_quosure(expr)){
+    expr <- rlang::quo_get_expr(expr)
+  }
+  if (!is.call(expr)){
+    return(FALSE)
+  }
+  if (rlang::is_call(expr, ns = ns)){
+    return(TRUE)
+  }
+  out <- FALSE
+  tree <- as.list(expr)
+  for (branch in tree){
+    if (is.call(branch)){
+      # return(call_contains_ns(branch, ns, env)) # Old version
+      if (call_contains_ns(branch, ns, env = env)){
+        out <- TRUE
+        break
+      }
+    }
+    if (is.symbol(branch) && fun_ns(rlang::as_string(branch), env = env) == ns){
+      out <- TRUE
+      break
+    }
+  }
+  out
+}
 
 # Tidyselect col positions with names
 tidy_select_pos <- function(data, ..., .cols = NULL){
@@ -457,29 +473,83 @@ check_rowwise <- function(data){
 
 # A fastplyr version of reframe
 # About half-way there (unfortunately not super fast)
-fast_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
+f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
 
   if (missing(.by)){
     data <- .data
   } else {
     data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
   }
-  quos <- fastplyr_quos(..., .named = TRUE, .data = data, .drop_null = TRUE)
+  quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE, .named = TRUE)
   quo_names <- names(quos)
+
   if (length(quos) == 0){
     return(cheapr::reconstruct(group_keys(data), cpp_ungroup(.data)))
   }
   if (cpp_any_quo_contains_ns(quos, "dplyr")){
     out <- dplyr::reframe(data, ...)
-    cheapr::reconstruct(out, cpp_ungroup(.data))
   } else {
     results <- cpp_grouped_eval_tidy(data, quos, recycle = TRUE)
-    out <- f_bind_cols(lapply(results, \(x) x[[length(x)]]))
+
+    n_group_vars <- length(group_vars(data))
+
+    ## Clean up results by removing group vars
+    ## each result always starts with vectors of group variables
+
+    clean_results <- cheapr::new_list(length(quos))
+    names(clean_results) <- quo_names
+    k <- 1L
+    for (i in seq_along(results)){
+      # Unpack
+      if (attr(quos[[i]], ".unpack") && is_df(results[[i]][[n_group_vars + 1L]])){
+        results_to_append <- as.list(results[[i]][[n_group_vars + 1L]])
+        if (nzchar(quo_names[[i]])){
+          names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
+        }
+        clean_results <- append(clean_results, results_to_append, after = k - 1L)
+        k <- k + length(results_to_append)
+        clean_results[[k]] <- NULL
+      } else {
+        clean_results[[k]] <- results[[i]][[n_group_vars + 1L]]
+        k <- k + 1L
+      }
+    }
+
+    if (n_group_vars == 0){
+      groups <- cheapr::new_df(.nrows = cheapr::vector_length(clean_results[[1L]]))
+    } else {
+      groups <- list_as_df(results[[1L]][seq_len(n_groups)])
+    }
+
+    ### Method 1 - This keeps data frame results as columns and retains
+    ### number of cols == number of quosures
+    out <- f_bind_cols(groups, list_as_df(clean_results))
+
     # cols_to_add <- lapply(results[-1L], \(x) cheapr::sset_col(x, df_ncol(x))[[1L]])
     # out <- df_add_cols(results[[1L]], cols_to_add)
-    cheapr::reconstruct(out, cpp_ungroup(.data))
+
+
+    ### Method 1 - This keeps data frame results as columns and retains
+    ### number of cols == number of quosures
+    # out <- list_as_df(results[[1L]])
+    # if (length(results) > 1){
+    #   append <- list_as_df(lapply(results[-1L], \(x) x[[length(x)]]))
+    #   out <- f_bind_cols(out, append, .recycle = FALSE)
+    # }
+
+    ### Method 2 - Always unpacks data frames into multiple columns
+    # if (length(group_vars(data)) > 0){
+    #   groups <- list_as_df(results[[1L]][seq_len(length(results[[1L]]) - 1L)])
+    # } else {
+    #   groups <- cheapr::new_df(.nrows = cheapr::vector_length(results[[1L]][[1L]]))
+    # }
+    # out <- f_bind_cols(groups, lapply(results, \(x) x[[length(x)]]), .recycle = FALSE)
+    # cheapr::reconstruct(out, cpp_ungroup(.data))
+
+
     # do.call(f_bind_cols, results)
   }
+  cheapr::reconstruct(out, cpp_ungroup(.data))
 }
 # fast_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
 #   data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
