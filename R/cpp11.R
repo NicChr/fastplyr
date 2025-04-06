@@ -128,6 +128,10 @@ cpp_group_vars <- function(x) {
   .Call(`_fastplyr_cpp_group_vars`, x)
 }
 
+cpp_n_group_vars <- function(x) {
+  .Call(`_fastplyr_cpp_n_group_vars`, x)
+}
+
 cpp_group_rows <- function(x) {
   .Call(`_fastplyr_cpp_group_rows`, x)
 }

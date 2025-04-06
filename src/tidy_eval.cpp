@@ -615,16 +615,29 @@ SEXP cpp_group_data(SEXP x){
 
 [[cpp11::register]]
 SEXP cpp_group_keys(SEXP x){
-  SEXP group_data = Rf_protect(cpp_group_data(x));
-  SEXP seq = Rf_protect(cheapr::seq_len(Rf_length(group_data) - 1));
-  SEXP groups = Rf_protect(cheapr::df_select(group_data, seq));
-  Rf_unprotect(3);
-  return groups;
+  if (cpp_n_group_vars(x) == 0){
+    SEXP r_nrows = Rf_protect(Rf_ScalarInteger(1));
+    SEXP empty_list = Rf_protect(Rf_allocVector(VECSXP, 0));
+    SEXP out = Rf_protect(cheapr::new_df(empty_list, r_nrows, false, false));
+    Rf_unprotect(3);
+    return out;
+  } else {
+    SEXP group_data = Rf_protect(cpp_group_data(x));
+    SEXP seq = Rf_protect(cheapr::seq_len(Rf_length(group_data) - 1));
+    SEXP groups = Rf_protect(cheapr::df_select(group_data, seq));
+    Rf_unprotect(3);
+    return groups;
+  }
 }
 
 [[cpp11::register]]
 SEXP cpp_group_vars(SEXP x){
   return Rf_inherits(x, "grouped_df") ? Rf_getAttrib(cpp_group_keys(x), R_NamesSymbol) : Rf_allocVector(STRSXP, 0);
+}
+
+[[cpp11::register]]
+int cpp_n_group_vars(SEXP x){
+  return Rf_length(cpp_group_vars(x));
 }
 
 [[cpp11::register]]

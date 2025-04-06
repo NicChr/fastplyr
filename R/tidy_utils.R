@@ -182,14 +182,15 @@ unpack_across <- function(quo, data){
   out
 }
 
-fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE){
+fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE,
+                          .unpack_default = FALSE){
 
   out <- rlang::quos(..., .ignore_empty = "all")
   quo_nms <- attr(out, "names", TRUE)
 
   if (is.null(.data)){
     for (i in seq_along(out)){
-      attr(out[[i]], ".unpack") %||% set_add_attr(out[[i]], ".unpack", FALSE)
+      attr(out[[i]], ".unpack") %||% set_add_attr(out[[i]], ".unpack", .unpack_default)
       if (.named && !nzchar(quo_nms[[i]])){
         quo_nms[[i]] <- deparse2(rlang::quo_get_expr(out[[i]]))
       }
@@ -198,7 +199,7 @@ fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE){
     k <- 1L
     for (i in seq_along(out)){
       quo <- out[[k]]
-      attr(quo, ".unpack") %||% set_add_attr(quo, ".unpack", FALSE)
+      attr(quo, ".unpack") %||% set_add_attr(quo, ".unpack", .unpack_default)
       if (!nzchar(quo_nms[[k]]) && is_fn_call(quo, "across", ns = "dplyr")){
         left <- out[seq_len(k - 1L)]
         unpacked_quos <- unpack_across(quo, .data)
@@ -212,7 +213,7 @@ fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE){
         quo_nms <- names(out)
         k <- k + length(right)
       } else if (rlang::quo_is_call(quo, c("nesting", "crossing"))){
-        set_add_attr(quo, ".unpack", TRUE)
+        set_add_attr(quo, ".unpack", .unpack_default)
         k <- k + 1L
       } else if (.named && !nzchar(quo_nms[[k]])){
         quo_nms[[k]] <- deparse2(rlang::quo_get_expr(quo))
@@ -492,7 +493,8 @@ f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default
   } else {
     data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
   }
-  quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE, .named = TRUE)
+  quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE, .named = TRUE,
+                        .unpack_default = TRUE)
 
   if (length(quos) == 0){
     return(cheapr::reconstruct(group_keys(data), cpp_ungroup(.data)))
@@ -533,7 +535,7 @@ f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default
 #   }
 # }
 
-fast_mutate <- function(.data, ...,  .by = NULL, .order = df_group_by_order_default(.data), .keep = "all"){
+f_mutate <- function(.data, ...,  .by = NULL, .order = df_group_by_order_default(.data), .keep = "all"){
   out <- .data %>%
     mutate_summary(..., .keep = .keep, .order = .order, .by = {{ .by }})
   out[["data"]]
@@ -550,11 +552,11 @@ eval_all_tidy <- function(.data, quos, recycle = FALSE){
   k <- 1L
   for (i in seq_along(results)){
     # Unpack
-    if (attr(quos[[i]], ".unpack", TRUE) && is_df(results[[i]])){
-      results_to_append <- as.list(results[[i]])
-      if (nzchar(quo_names[[i]])){
-        names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
-      }
+    if (attr(quos[[i]], ".unpack", TRUE) && is_df(results[[k]])){
+      results_to_append <- as.list(results[[k]])
+      # if (nzchar(quo_names[[i]])){
+      #   names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
+      # }
       results <- append(results, results_to_append, after = k - 1L)
       k <- k + length(results_to_append)
       results[[k]] <- NULL
