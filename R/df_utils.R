@@ -189,7 +189,7 @@ cross_join2 <- function(x, y){
 }
 
 cross_join <- function(...){
-  dots <- named_list(..., .keep_null = FALSE)
+  dots <- list_tidy(..., .named = TRUE, .keep_null = FALSE)
   out <- Reduce(cross_join2, unname(dots))
   if (!is_df(out)){
     out <- new_tbl(x = out)

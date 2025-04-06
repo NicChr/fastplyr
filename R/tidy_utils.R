@@ -182,7 +182,8 @@ unpack_across <- function(quo, data){
   out
 }
 
-fastplyr_quos <- function(..., .named = FALSE, .data = NULL, .drop_null = FALSE){
+fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE){
+
   out <- rlang::quos(..., .ignore_empty = "all")
   quo_nms <- attr(out, "names", TRUE)
 
@@ -216,6 +217,8 @@ fastplyr_quos <- function(..., .named = FALSE, .data = NULL, .drop_null = FALSE)
       } else if (.named && !nzchar(quo_nms[[k]])){
         quo_nms[[k]] <- deparse2(rlang::quo_get_expr(quo))
         k <- k + 1L
+      } else {
+       k <- k + 1L
       }
     }
   }
@@ -490,7 +493,6 @@ f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default
     data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
   }
   quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE, .named = TRUE)
-  quo_names <- names(quos)
 
   if (length(quos) == 0){
     return(cheapr::reconstruct(group_keys(data), cpp_ungroup(.data)))
@@ -498,65 +500,16 @@ f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default
   if (cpp_any_quo_contains_ns(quos, "dplyr")){
     out <- dplyr::reframe(data, ...)
   } else {
-    results <- cpp_grouped_eval_tidy(data, quos, recycle = TRUE)
-
+    results <- eval_all_tidy(data, quos, recycle = TRUE)
+    groups <- results[["groups"]]
+    results <- results[["results"]]
     n_group_vars <- length(group_vars(data))
-
-    ## Clean up results by removing group vars
-    ## each result always starts with vectors of group variables
-
-    clean_results <- cheapr::new_list(length(quos))
-    names(clean_results) <- quo_names
-    k <- 1L
-    for (i in seq_along(results)){
-      # Unpack
-      if (attr(quos[[i]], ".unpack") && is_df(results[[i]][[n_group_vars + 1L]])){
-        results_to_append <- as.list(results[[i]][[n_group_vars + 1L]])
-        if (nzchar(quo_names[[i]])){
-          names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
-        }
-        clean_results <- append(clean_results, results_to_append, after = k - 1L)
-        k <- k + length(results_to_append)
-        clean_results[[k]] <- NULL
-      } else {
-        clean_results[[k]] <- results[[i]][[n_group_vars + 1L]]
-        k <- k + 1L
-      }
-    }
-
     if (n_group_vars == 0){
-      groups <- cheapr::new_df(.nrows = cheapr::vector_length(clean_results[[1L]]))
+      groups <- cheapr::new_df(.nrows = cheapr::vector_length(results[[1L]]))
     } else {
-      groups <- list_as_df(results[[1L]][seq_len(n_groups)])
+      groups <- list_as_df(groups[[1L]])
     }
-
-    ### Method 1 - This keeps data frame results as columns and retains
-    ### number of cols == number of quosures
-    out <- f_bind_cols(groups, list_as_df(clean_results))
-
-    # cols_to_add <- lapply(results[-1L], \(x) cheapr::sset_col(x, df_ncol(x))[[1L]])
-    # out <- df_add_cols(results[[1L]], cols_to_add)
-
-
-    ### Method 1 - This keeps data frame results as columns and retains
-    ### number of cols == number of quosures
-    # out <- list_as_df(results[[1L]])
-    # if (length(results) > 1){
-    #   append <- list_as_df(lapply(results[-1L], \(x) x[[length(x)]]))
-    #   out <- f_bind_cols(out, append, .recycle = FALSE)
-    # }
-
-    ### Method 2 - Always unpacks data frames into multiple columns
-    # if (length(group_vars(data)) > 0){
-    #   groups <- list_as_df(results[[1L]][seq_len(length(results[[1L]]) - 1L)])
-    # } else {
-    #   groups <- cheapr::new_df(.nrows = cheapr::vector_length(results[[1L]][[1L]]))
-    # }
-    # out <- f_bind_cols(groups, lapply(results, \(x) x[[length(x)]]), .recycle = FALSE)
-    # cheapr::reconstruct(out, cpp_ungroup(.data))
-
-
-    # do.call(f_bind_cols, results)
+    out <- cheapr::col_c(groups, results, .name_repair = TRUE, .recycle = FALSE)
   }
   cheapr::reconstruct(out, cpp_ungroup(.data))
 }
@@ -586,39 +539,28 @@ fast_mutate <- function(.data, ...,  .by = NULL, .order = df_group_by_order_defa
   out[["data"]]
 }
 
-eval_all_tidy <- function(.data, quos, .recycle = FALSE){
+eval_all_tidy <- function(.data, quos, recycle = FALSE){
   check_fastplyr_quos(quos)
   quo_names <- names(quos)
-  results <- cpp_grouped_eval_tidy(.data, quos, recycle = .recycle)
+  all_results <- cpp_grouped_eval_tidy(.data, quos, recycle = recycle)
+  groups <- all_results[[1L]]
+  results <- all_results[[2L]]
   n_group_vars <- length(group_vars(.data))
-  sset_seq <- seq_len(n_group_vars)
-
-  ## Clean up results by removing group vars
-  ## each result always starts with vectors of group variables
-
-  clean_results <- cheapr::new_list(length(quos))
-  groups <- cheapr::new_list(length(quos))
-  names(clean_results) <- quo_names
-  names(groups) <- quo_names
 
   k <- 1L
   for (i in seq_along(results)){
-
-    groups[[i]] <- results[[i]][sset_seq]
-
     # Unpack
-    if (attr(quos[[i]], ".unpack") && is_df(results[[i]][[n_group_vars + 1L]])){
-      results_to_append <- as.list(results[[i]][[n_group_vars + 1L]])
+    if (attr(quos[[i]], ".unpack", TRUE) && is_df(results[[i]])){
+      results_to_append <- as.list(results[[i]])
       if (nzchar(quo_names[[i]])){
         names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
       }
-      clean_results <- append(clean_results, results_to_append, after = k - 1L)
+      results <- append(results, results_to_append, after = k - 1L)
       k <- k + length(results_to_append)
-      clean_results[[k]] <- NULL
+      results[[k]] <- NULL
     } else {
-      clean_results[[k]] <- results[[i]][[n_group_vars + 1L]]
       k <- k + 1L
     }
   }
-  list(groups = groups, results = clean_results)
+  list(groups = groups, results = results)
 }

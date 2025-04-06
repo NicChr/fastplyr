@@ -46,9 +46,12 @@ f_expand <- function(data, ..., .sort = FALSE,
       )
     }
   } else {
-    frames <- eval_all_tidy(f_group_by(data, .cols = group_vars, .add = TRUE), !!!dots)
+    frames <- eval_all_tidy(f_group_by(data, .cols = group_vars, .add = TRUE), dots, recycle = FALSE)
+    frames <- purrr::map2(
+      frames[[1L]], cpp_as_list_of_frames(frames[[2L]]),
+      \(x, y) cheapr::col_c(x, y)
+    )
     frames <- lapply(frames, sort_unique, .sort)
-    # frames <- unname(cpp_as_list_of_frames(frames))
   }
   if (length(group_vars) > 0){
     anon_join <- function(x, y){
@@ -128,23 +131,29 @@ f_complete <- function(data, ...,
 #' @rdname f_expand
 #' @export
 crossing <- function(..., .sort = FALSE){
-  dots <- cheapr::named_list(..., .keep_null = FALSE)
+  dots <- list_tidy(..., .named = TRUE, .keep_null = FALSE)
   for (i in seq_along(dots)){
     if (!is_df(dots[[i]])){
       dots[[i]] <- sort_unique(`names<-`(cheapr::fast_df(x = dots[[i]]), names(dots)[i]),
                                sort = .sort)
     }
   }
+  # dots <- lapply(dots, sort_unique, .sort)
   df_as_tbl(do.call(cross_join, dots))
 }
 #' @rdname f_expand
 #' @export
 nesting <- function(..., .sort = FALSE){
-  dots <- cheapr::named_list(..., .keep_null = FALSE)
+  dots <- list_tidy(..., .named = TRUE, .keep_null = FALSE)
   for (i in seq_along(dots)){
     if (!is_df(dots[[i]])){
       dots[[i]] <- `names<-`(cheapr::fast_df(x = dots[[i]]), names(dots)[i])
     }
   }
   df_as_tbl(sort_unique(do.call(f_bind_cols, dots), sort = .sort))
+  # df_as_tbl(
+  #   sort_unique(
+  #     cpp_df_col_c(list_tidy(..., .named = TRUE, .keep_null = FALSE), TRUE, TRUE), sort = .sort
+  #   )
+  # )
 }

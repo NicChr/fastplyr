@@ -112,8 +112,8 @@ cpp_quos_drop_null <- function(quos) {
   .Call(`_fastplyr_cpp_quos_drop_null`, quos)
 }
 
-cpp_list_tidy <- function(quos, keep_null) {
-  .Call(`_fastplyr_cpp_list_tidy`, quos, keep_null)
+cpp_list_tidy <- function(quos) {
+  .Call(`_fastplyr_cpp_list_tidy`, quos)
 }
 
 cpp_group_data <- function(x) {

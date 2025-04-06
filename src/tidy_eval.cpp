@@ -467,11 +467,14 @@ SEXP cpp_quos_drop_null(SEXP quos){
     Rf_unprotect(1);
     return quos;
   }
-  SEXP out = Rf_protect(cheapr::sset_vec(quos, not_null, true));
+  SEXP r_true = Rf_protect(Rf_allocVector(LGLSXP, 1));
+  LOGICAL(r_true)[0] = TRUE;
+  SEXP not_null_locs = Rf_protect(cheapr::val_find(not_null, r_true, false));
+  SEXP out = Rf_protect(cheapr::sset_vec(quos, not_null_locs, false));
   Rf_copyMostAttrib(quos, out);
-  Rf_setAttrib(out, R_NamesSymbol, cheapr::sset_vec(Rf_getAttrib(quos, R_NamesSymbol), not_null, true));
+  Rf_setAttrib(out, R_NamesSymbol, cheapr::sset_vec(Rf_getAttrib(quos, R_NamesSymbol), not_null_locs, false));
   Rf_classgets(out, Rf_getAttrib(quos, R_ClassSymbol));
-  Rf_unprotect(2);
+  Rf_unprotect(4);
   return out;
 }
 // cpp11::list cpp_quos_drop_null2(cpp11::list quos){
@@ -557,16 +560,10 @@ SEXP new_bare_data_mask(){
 }
 
 [[cpp11::register]]
-SEXP cpp_list_tidy(SEXP quos, bool keep_null){
+SEXP cpp_list_tidy(SEXP quos){
   SEXP mask = Rf_protect(new_bare_data_mask());
   SEXP out = Rf_protect(cpp_eval_all_tidy(quos, mask));
-
-  if (!keep_null){
-    Rf_protect(out = cheapr::drop_null(out, false));
-    Rf_unprotect(3); return out;
-  } else {
-    Rf_unprotect(2); return out;
-  }
+  Rf_unprotect(2); return out;
 }
 
 void set_as_tbl(SEXP x){
@@ -821,18 +818,16 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
 
 
   // groups container will hold the repeated out rows of the group keys
+  SEXP groups_container = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
 
-  SEXP groups_container, result_container;
-  PROTECT_INDEX groups_container_idx, result_container_idx;
-  R_ProtectWithIndex(result_container = R_NilValue, &result_container_idx); ++NP;
+  SEXP repeated_groups;
+  PROTECT_INDEX repeated_groups_idx;
 
   if (recycle && n_quos > 0){
-    R_ProtectWithIndex(groups_container = cheapr::rep(groups, p_recycled_sizes_container[0]), &groups_container_idx); ++NP;
+    R_ProtectWithIndex(repeated_groups = cheapr::rep(groups, p_recycled_sizes_container[0]), &repeated_groups_idx); ++NP;
   } else {
-    R_ProtectWithIndex(groups_container = R_NilValue, &groups_container_idx); ++NP;
+    R_ProtectWithIndex(repeated_groups = R_NilValue, &repeated_groups_idx); ++NP;
   }
-
-  SEXP intermediate_container = Rf_protect(Rf_allocVector(VECSXP, 2)); ++NP;
   for (int m = 0; m < n_quos; ++m){
     R_Reprotect(inner_container = Rf_allocVector(VECSXP, n_groups), inner_container_idx);
     for (int j = 0; j < n_groups; ++j){
@@ -840,25 +835,20 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
     }
     R_Reprotect(result = cheapr::c(inner_container), result_idx);
     if (!recycle){
-      R_Reprotect(groups_container = cheapr::rep(groups, p_recycled_sizes_container[m]), groups_container_idx);
+      R_Reprotect(repeated_groups = cheapr::rep(groups, p_recycled_sizes_container[m]), repeated_groups_idx);
     }
-    // if (Rf_inherits(result, "data.frame")){
-    //   R_Reprotect(result_container = result, result_container_idx);
-    // } else {
-      R_Reprotect(result_container = Rf_allocVector(VECSXP, 1), result_container_idx);
-      SET_VECTOR_ELT(result_container, 0, result);
-      Rf_setAttrib(result_container, R_NamesSymbol, Rf_ScalarString(STRING_ELT(quo_names, m)));
-    // }
-    // Here we're just combining the repeated group keys and results together
-    SET_VECTOR_ELT(intermediate_container, 0, groups_container);
-    SET_VECTOR_ELT(intermediate_container, 1, result_container);
-    R_Reprotect(result = cheapr::list_c(intermediate_container), result_idx);
-    // R_Reprotect(result = cheapr::list_as_df(result), result_idx);
-    // set_as_tbl(result);
+    SET_VECTOR_ELT(groups_container, m, repeated_groups);
     SET_VECTOR_ELT(results, m, result);
   }
+  SEXP out = Rf_protect(Rf_allocVector(VECSXP, 2)); ++NP;
+  SET_VECTOR_ELT(out, 0, groups_container);
+  SET_VECTOR_ELT(out, 1, results);
+  SEXP out_names = Rf_protect(Rf_allocVector(STRSXP, 2)); ++NP;
+  SET_STRING_ELT(out_names, 0, Rf_mkChar("groups"));
+  SET_STRING_ELT(out_names, 1, Rf_mkChar("results"));
+  Rf_namesgets(out, out_names);
   Rf_unprotect(NP);
-  return results;
+  return out;
 }
 // Working, pretty fast but very messy
 

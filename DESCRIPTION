@@ -17,6 +17,7 @@ Imports:
     dplyr (>= 1.1.0),
     lifecycle,
     magrittr,
+    purrr,
     rlang,
     stringr,
     tidyselect,
