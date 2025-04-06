@@ -461,28 +461,6 @@ SEXP cpp_which_all(SEXP x){
   return out;
 }
 
-// Taken from dplyr::group_indices,
-// All credits go to dplyr
-
-[[cpp11::register]]
-SEXP cpp_df_group_indices(SEXP rows, int size) {
-  SEXP indices = Rf_protect(Rf_allocVector(INTSXP, size));
-  int *p_indices = INTEGER(indices);
-  int ng = Rf_length(rows);
-  const SEXP* p_rows = VECTOR_PTR_RO(rows);
-
-  for (int i = 0; i < ng; ++i) {
-    SEXP rows_i = p_rows[i];
-    int n_i = Rf_length(rows_i);
-    int *p_rows_i = INTEGER(rows_i);
-    for (int j = 0; j < n_i; j++, ++p_rows_i) {
-      p_indices[*p_rows_i - 1] = i + 1;
-    }
-  }
-  Rf_unprotect(1);
-  return indices;
-}
-
 
 // Slice integers (only in-bounds data is returned)
 // indices must NOT INCLUDE NA values
@@ -965,52 +943,6 @@ SEXP cpp_fill_grouped(SEXP x, SEXP order, SEXP group_sizes, double fill_limit) {
   }
   Rf_unprotect(NP);
   return out;
-}
-
-// unlist `group_data(data)$.rows` quickly
-
-[[cpp11::register]]
-SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
-  if (!Rf_isVectorList(x)){
-   return x;
-  }
-  int n = Rf_length(x);
-  int m, k = 0,  out_size = 0;
-  const SEXP *p_x = VECTOR_PTR_RO(x);
-
-  if (Rf_isNull(group_sizes)){
-    // Figure out unlisted length
-    for (int i = 0; i < n; ++i) out_size += Rf_length(p_x[i]);
-
-    SEXP out = Rf_protect(Rf_allocVector(INTSXP, out_size));
-    int *p_out = INTEGER(out);
-
-    for (int i = 0; i < n; k += m, ++i){
-      int *p_int = INTEGER(p_x[i]);
-      m = Rf_length(p_x[i]);
-      memcpy(&p_out[k], &p_int[0], m * sizeof(int));
-    }
-    Rf_unprotect(1);
-    return out;
-  } else {
-    if (Rf_length(group_sizes) != n){
-     Rf_error("`length(x)` must match `length(group_sizes)`");
-    }
-    int *p_gs = INTEGER(group_sizes);
-    // Figure out unlisted length
-    for (int i = 0; i < n; ++i) out_size += p_gs[i];
-
-    SEXP out = Rf_protect(Rf_allocVector(INTSXP, out_size));
-    int *p_out = INTEGER(out);
-
-    for (int i = 0; i < n; k += m, ++i){
-      int *p_int = INTEGER(p_x[i]);
-      m = p_gs[i];
-      memcpy(&p_out[k], &p_int[0], m * sizeof(int));
-    }
-    Rf_unprotect(1);
-    return out;
-  }
 }
 
 [[cpp11::register]]

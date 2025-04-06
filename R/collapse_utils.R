@@ -278,11 +278,7 @@ GRP_order <- function(GRP){
     if (GRP_is_sorted(GRP) || is_sorted(group_id)){
       out <- seq_along(group_id)
       sizes <- GRP_group_sizes(GRP)
-      if (is.null(GRP[["group.starts"]])){
-        starts <- sorted_group_starts(sizes)
-      } else {
-        starts <- GRP[["group.starts"]]
-      }
+      starts <- GRP_starts(GRP)
       attributes(out) <- list(starts = starts,
                               maxgrpn = collapse::fmax(sizes),
                               sorted = TRUE)
@@ -328,7 +324,7 @@ group_locs <- function(x){
 # Groups are assumed to be sorted and
 # index locations are also assumed to be sorted
 GRP_loc_starts <- function(loc){
-  list_subset(loc, 1L, default = 0L)
+  cpp_list_subset(loc, integer(), 1L, 0L)
 }
 GRP_loc_ends <- function(loc, sizes = NULL){
   if (is.null(sizes)){
@@ -369,79 +365,67 @@ GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
 # Convert data frame to GRP safely
 # Either treats data as 1 big group or
 # Uses dplyr group vars
-df_as_GRP <- function(data, return.groups = TRUE, return.order = TRUE){
-  out <- vector("list", 9L)
-  names(out) <- c("N.groups", "group.id",
-                  "group.sizes", "groups",
-                  "group.vars",
-                  "ordered", "order",
-                  "group.starts", "call")
+df_as_GRP <- function(data, return.order = FALSE, ...){
+  # cpp_df_as_collapse_grp(data, return.order)
+
+  out <- cheapr::new_list(9L)
+  n_rows <- df_nrow(data)
   gdata <- group_data(data)
   gvars <- group_vars(data)
   n_groups <- df_nrow(gdata)
+  gkeys <- group_keys(data)
   group_id <- df_group_id(data)
-  gsizes <- cheapr::lengths_(gdata[[".rows"]])
-  if (return.order){
-    gorder <- cpp_unlist_group_locs(gdata[[".rows"]], gsizes)
-    sorted <- attr(gorder, "sorted")
+  grows <- group_rows(data)
+  gsizes <- cheapr::list_lengths(grows)
+  groups_are_ordered <- df_group_by_order_default(data)
+
+  gorder <- NULL
+  sorted <- NA
+
+  if (length(gvars) == 0){
+    gstarts <- min(1L, n_rows)
   } else {
-    gorder <- NULL
-    sorted <- NA
+    gstarts <- GRP_loc_starts(grows)
   }
-  gordered <- c("ordered" = TRUE,
-                "sorted" = sorted)
-  if (return.groups){
-    gstarts <- GRP_loc_starts(gdata[[".rows"]])
+
+  if (return.order && groups_are_ordered){
+    if (length(gvars) == 0){
+      gorder <- grows[[1L]]
+      sorted <- TRUE
+      attributes(gorder) <- list(starts = gstarts,
+                                 maxgrpn = gsizes,
+                                 sorted = TRUE)
+    } else {
+      sorted <- cpp_group_id_sorted(group_id)
+      if (isTRUE(sorted)){
+        gorder <- seq_along(group_id)
+        attributes(gorder) <- list(starts = gstarts,
+                                   maxgrpn = gsizes[length(gsizes)],
+                                   sorted = TRUE)
+      } else {
+        # gorder <- cpp_unlist_group_locs(grows, gsizes)
+        gorder <- collapse::radixorderv(group_id, starts = TRUE)
+      }
+    }
   }
-  out[["N.groups"]] <- n_groups
-  out[["group.id"]] <- group_id
-  out[["group.sizes"]] <- gsizes
-  if (length(gvars) > 0L && return.groups){
-    out[["groups"]] <- cheapr::sset_df(gdata, j = gvars)
-    out[["group.vars"]] <- gvars
-    out[["group.starts"]] <- gstarts
+  gordered <- c("ordered" = groups_are_ordered, "sorted" = sorted)
+  out[[1L]] <- n_groups
+  out[[2L]] <- group_id
+  out[[3L]] <- gsizes
+  if (length(gvars) != 0){
+    out[[4L]] <- gkeys
+    out[[5L]] <- gvars
   }
+  out[[6L]] <- gordered
   if (!is.null(gorder)){
-    out[["order"]] <- gorder
+    out[[7L]] <- gorder
   }
-  out[["ordered"]] <- gordered
-  class(out) <- "GRP"
-  out
-}
-df_as_one_GRP <- function(data, order = TRUE,
-                          return.order = TRUE){
-  out <- vector("list", 9L)
+  out[[8L]] <- gstarts
   names(out) <- c("N.groups", "group.id",
                   "group.sizes", "groups",
                   "group.vars",
                   "ordered", "order",
                   "group.starts", "call")
-  gsizes <- df_nrow(data)
-  n_groups <- min(gsizes, 1L)
-  gstarts <- if (n_groups == 0L) NULL else n_groups
-  group_id <- collapse::alloc(1L, gsizes)
-  if (order && return.order){
-    gorder <- seq_len(gsizes)
-    sorted <- TRUE
-    attributes(gorder) <- list(starts = gstarts,
-                               maxgrpn = gsizes,
-                               sorted = TRUE)
-  } else {
-    gorder <- NULL
-    sorted <- NA
-  }
-  gordered <- c("ordered" = order,
-                "sorted" = sorted)
-  out[["N.groups"]] <- n_groups
-  out[["group.id"]] <- group_id
-  out[["group.sizes"]] <- gsizes
-  if (!is.null(gorder)){
-    out[["order"]] <- gorder
-  }
-  if (!is.null(gstarts)){
-    out[["group.starts"]] <- gstarts
-  }
-  out[["ordered"]] <- gordered
   class(out) <- "GRP"
   out
 }
@@ -452,13 +436,13 @@ df_to_GRP <- function(data, .cols = character(0),
                       return.order = order,
                       return.groups = FALSE){
   dplyr_groups <- group_vars(data)
-  cols <- unname(col_select_names(data, .cols = .cols))
+  cols <- `names<-`(col_select_names(data, .cols = .cols), NULL)
   extra_groups <- fast_setdiff(cols, dplyr_groups)
   group_vars <- c(dplyr_groups, extra_groups)
   data <- cheapr::sset_df(data, j = group_vars)
 
   if (length(names(data)) == 0L){
-    out <- df_as_one_GRP(data, order = order, return.order = return.order)
+    out <- df_as_GRP(cpp_ungroup(data), return.order = return.order)
   } else if (length(extra_groups) == 0L && order == df_group_by_order_default(data)){
     out <- df_as_GRP(data, return.order = return.order, return.groups = return.groups)
   } else {

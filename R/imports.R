@@ -28,6 +28,8 @@ df_add_cols <- get_from_package("cpp_df_assign_cols", "cheapr")
 cpp_new_df <- get_from_package("cpp_new_df", "cheapr")
 cpp_df_col_c <- get_from_package("cpp_df_col_c", "cheapr")
 cpp_str_coalesce <- get_from_package("cpp_str_coalesce", "cheapr")
+cheapr_rep <- get_from_package("cheapr_rep", "cheapr")
+cheapr_rep_each <- get_from_package("cheapr_rep_each", "cheapr")
 `%in_%` <- cheapr::`%in_%`
 
 

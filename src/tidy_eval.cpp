@@ -588,6 +588,16 @@ void set_as_vctrs_new_list_of_int(SEXP x){
   Rf_unprotect(1);
 }
 
+// A pretty hacky way of recreating `seq_len()`
+SEXP compact_int_seq_len(int n){
+  SEXP r_n = Rf_protect(Rf_ScalarInteger(n));
+  SEXP empty_list = Rf_protect(Rf_allocVector(VECSXP, 0));
+  SEXP temp = Rf_protect(cheapr::new_df(empty_list, r_n, false, false));
+  SEXP out = Rf_getAttrib(temp, R_RowNamesSymbol);
+  Rf_unprotect(3);
+  return out;
+}
+
 [[cpp11::register]]
 SEXP cpp_group_data(SEXP x){
   if (Rf_inherits(x, "grouped_df")){
@@ -600,7 +610,7 @@ SEXP cpp_group_data(SEXP x){
 
     // Rows
     SEXP rows = Rf_protect(Rf_allocVector(VECSXP, 1));
-    SET_VECTOR_ELT(rows, 0, cheapr::seq_len(df_nrow(x)));
+    SET_VECTOR_ELT(rows, 0, compact_int_seq_len(df_nrow(x)));
     set_as_vctrs_new_list_of_int(rows);
     SET_VECTOR_ELT(groups, 0, rows);
     Rf_namesgets(groups, names);
@@ -661,6 +671,183 @@ SEXP cpp_ungroup(SEXP data){
   return data;
 }
 
+// Taken from dplyr::group_indices,
+// All credits go to dplyr
+
+[[cpp11::register]]
+SEXP cpp_df_group_indices(SEXP rows, int size) {
+  SEXP indices = Rf_protect(Rf_allocVector(INTSXP, size));
+  int *p_indices = INTEGER(indices);
+  int ng = Rf_length(rows);
+  const SEXP* p_rows = VECTOR_PTR_RO(rows);
+
+  for (int i = 0; i < ng; ++i) {
+    SEXP rows_i = p_rows[i];
+    int n_i = Rf_length(rows_i);
+    int *p_rows_i = INTEGER(rows_i);
+    for (int j = 0; j < n_i; j++, ++p_rows_i) {
+      p_indices[*p_rows_i - 1] = i + 1;
+    }
+  }
+  Rf_unprotect(1);
+  return indices;
+}
+
+[[cpp11::register]]
+int n_group_vars(SEXP x){
+  return Rf_length(cpp_group_vars(x));
+}
+
+[[cpp11::register]]
+SEXP cpp_group_id(SEXP x){
+  if (!Rf_inherits(x, "grouped_df") && !Rf_inherits(x, "data.frame")){
+    Rf_error("Can only calculate group indices on data frames in %s", __func__);
+  }
+  int n = df_nrow(x);
+  SEXP out;
+  if (n_group_vars(x) == 0){
+    SEXP r_one = Rf_protect(Rf_ScalarInteger(1));
+    out = Rf_protect(cheapr::rep_len(r_one, n));
+  } else {
+    SEXP group_rows = Rf_protect(cpp_group_rows(x));
+    out = Rf_protect(cpp_df_group_indices(group_rows, n));
+  }
+  Rf_unprotect(2);
+  return out;
+}
+
+
+// unlist `group_data(data)$.rows` quickly
+
+[[cpp11::register]]
+SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
+  if (!Rf_isVectorList(x)){
+    return x;
+  }
+  int n = Rf_length(x);
+  int m, k = 0,  out_size = 0;
+  const SEXP *p_x = VECTOR_PTR_RO(x);
+
+  if (Rf_isNull(group_sizes)){
+    // Figure out unlisted length
+    for (int i = 0; i < n; ++i) out_size += Rf_length(p_x[i]);
+
+    SEXP out = Rf_protect(Rf_allocVector(INTSXP, out_size));
+    int *p_out = INTEGER(out);
+
+    for (int i = 0; i < n; k += m, ++i){
+      int *p_int = INTEGER(p_x[i]);
+      m = Rf_length(p_x[i]);
+      memcpy(&p_out[k], &p_int[0], m * sizeof(int));
+    }
+    Rf_unprotect(1);
+    return out;
+  } else {
+    if (Rf_length(group_sizes) != n){
+      Rf_error("`length(x)` must match `length(group_sizes)`");
+    }
+    int *p_gs = INTEGER(group_sizes);
+    // Figure out unlisted length
+    for (int i = 0; i < n; ++i) out_size += p_gs[i];
+
+    SEXP out = Rf_protect(Rf_allocVector(INTSXP, out_size));
+    int *p_out = INTEGER(out);
+
+    for (int i = 0; i < n; k += m, ++i){
+      int *p_int = INTEGER(p_x[i]);
+      m = p_gs[i];
+      memcpy(&p_out[k], &p_int[0], m * sizeof(int));
+    }
+    Rf_unprotect(1);
+    return out;
+  }
+}
+
+// Are group IDs sorted?
+// This function expects no NAs
+[[cpp11::register]]
+bool cpp_group_id_sorted(SEXP x){
+  bool out = true;
+  int n = Rf_length(x);
+  int *p_x = INTEGER(x);
+  for (int i = 1; i < n; ++i){
+    if (p_x[i] < p_x[i - 1]){
+      return false;
+    }
+  }
+  return out;
+}
+
+// SEXP cpp_df_as_collapse_grp(SEXP x, bool return_order){
+//   int NP = 0;
+//
+//   SEXP out = Rf_protect(Rf_allocVector(VECSXP, 9)); ++NP;
+//   SEXP out_names = Rf_protect(Rf_allocVector(STRSXP, 9)); ++NP;
+//   SET_STRING_ELT(out_names, 0, Rf_mkChar("N.groups"));
+//   SET_STRING_ELT(out_names, 1, Rf_mkChar("group.id"));
+//   SET_STRING_ELT(out_names, 2, Rf_mkChar("group.sizes"));
+//   SET_STRING_ELT(out_names, 3, Rf_mkChar("groups"));
+//   SET_STRING_ELT(out_names, 4, Rf_mkChar("group.vars"));
+//   SET_STRING_ELT(out_names, 5, Rf_mkChar("ordered"));
+//   SET_STRING_ELT(out_names, 6, Rf_mkChar("order"));
+//   SET_STRING_ELT(out_names, 7, Rf_mkChar("group.starts"));
+//   SET_STRING_ELT(out_names, 8, Rf_mkChar("call"));
+//   Rf_namesgets(out, out_names);
+//
+//   int n_rows = df_nrow(x);
+//
+//   SEXP group_data = Rf_protect(cpp_group_data(x)); ++NP;
+//   SEXP group_vars = Rf_protect(cpp_group_vars(x)); ++NP;
+//   int n_groups = df_nrow(group_data);
+//   SEXP group_keys = Rf_protect(cpp_group_keys(x)); ++NP;
+//   SEXP group_id = Rf_protect(cpp_group_id(x)); ++NP;
+//   SEXP group_rows = Rf_protect(cpp_group_rows(x)); ++NP;
+//   SEXP group_sizes = Rf_protect(cheapr::lengths(group_rows, false)); ++NP;
+//   int ngvars = n_group_vars(x);
+//
+//   SEXP group_order = R_NilValue;
+//   SEXP sorted = Rf_protect(Rf_allocVector(LGLSXP, 1)); ++NP;
+//   LOGICAL(sorted)[0] = NA_LOGICAL;
+//
+//   if (return_order){
+//     if (ngvars == 0){
+//       Rf_protect(group_order = VECTOR_ELT(group_rows, 0)); ++NP;
+//       LOGICAL(sorted)[0] = TRUE;
+//     } else {
+//       Rf_protect(group_order = cpp_unlist_group_locs(group_rows, group_sizes)); ++NP;
+//     }
+//   }
+//   SEXP group_ordered = Rf_protect(Rf_allocVector(LGLSXP, 2)); ++NP;
+//   LOGICAL(group_ordered)[0] = TRUE;
+//   LOGICAL(group_ordered)[1] = LOGICAL(sorted)[0];
+//   SEXP group_ordered_names = Rf_protect(Rf_allocVector(STRSXP, 2)); ++NP;
+//   SET_STRING_ELT(group_ordered_names, 0, Rf_mkChar("ordered"));
+//   SET_STRING_ELT(group_ordered_names, 1, Rf_mkChar("sorted"));
+//   Rf_namesgets(group_ordered, group_ordered_names);
+//   SEXP group_starts;
+//
+//     if (ngvars == 0){
+//       Rf_protect(group_starts = Rf_ScalarInteger(std::min(1, n_rows))); ++NP;
+//     } else {
+//       SEXP r_one = Rf_protect(Rf_ScalarInteger(1)); ++NP;
+//       Rf_protect(group_starts = cpp11::package("fastplyr")["list_subset"](group_rows, r_one)); ++NP;
+//     }
+//     SET_VECTOR_ELT(out, 0, Rf_ScalarInteger(n_groups));
+//     SET_VECTOR_ELT(out, 1, group_id);
+//     SET_VECTOR_ELT(out, 2, group_sizes);
+//     if (ngvars != 0){
+//       SET_VECTOR_ELT(out, 3, group_keys);
+//       SET_VECTOR_ELT(out, 4, group_vars);
+//     }
+//     SET_VECTOR_ELT(out, 7, group_starts);
+//     if (TYPEOF(group_order) != NILSXP){
+//       SET_VECTOR_ELT(out, 6, group_order);
+//     }
+//     SET_VECTOR_ELT(out, 5, group_ordered);
+//     Rf_classgets(out, Rf_mkString("GRP"));
+//     Rf_unprotect(NP);
+//     return out;
+// }
 // the recycle arg recyles results on a by-group basis
 // useful for `reframe()`
 //

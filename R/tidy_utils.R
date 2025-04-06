@@ -25,7 +25,11 @@ get_groups <- function(data, .by = NULL){
   if (rlang::quo_is_null(rlang::enquo(.by))){
     by_groups <- NULL
   } else {
-    by_groups <- names(tidy_select_names(data, {{ .by }}))
+    by_groups <- tidy_select_names(data, {{ .by }})
+    if (any(names(by_groups) != by_groups)){
+      cli::cli_abort("Can't rename groups through {.arg .by}")
+    }
+    attr(by_groups, "names") <- NULL
   }
   if (length(by_groups) > 0L){
     if (length(dplyr_groups) > 0L){
@@ -242,33 +246,33 @@ check_fastplyr_quos <- function(quos){
 
 # Recursively checks call tree for a function call from a specified namespace
 # We use it to check for any dplyr functions in call tree in `eval_all_tidy`
-call_contains_ns <- function(expr, ns, env = rlang::caller_env()){
-  if (rlang::is_quosure(expr)){
-    expr <- rlang::quo_get_expr(expr)
-  }
-  if (!is.call(expr)){
-    return(FALSE)
-  }
-  if (rlang::is_call(expr, ns = ns)){
-    return(TRUE)
-  }
-  out <- FALSE
-  tree <- as.list(expr)
-  for (branch in tree){
-    if (is.call(branch)){
-      # return(call_contains_ns(branch, ns, env)) # Old version
-      if (call_contains_ns(branch, ns, env = env)){
-        out <- TRUE
-        break
-      }
-    }
-    if (is.symbol(branch) && fun_ns(rlang::as_string(branch), env = env) == ns){
-      out <- TRUE
-      break
-    }
-  }
-  out
-}
+# call_contains_ns <- function(expr, ns, env = rlang::caller_env()){
+#   if (rlang::is_quosure(expr)){
+#     expr <- rlang::quo_get_expr(expr)
+#   }
+#   if (!is.call(expr)){
+#     return(FALSE)
+#   }
+#   if (rlang::is_call(expr, ns = ns)){
+#     return(TRUE)
+#   }
+#   out <- FALSE
+#   tree <- as.list(expr)
+#   for (branch in tree){
+#     if (is.call(branch)){
+#       # return(call_contains_ns(branch, ns, env)) # Old version
+#       if (call_contains_ns(branch, ns, env = env)){
+#         out <- TRUE
+#         break
+#       }
+#     }
+#     if (is.symbol(branch) && fun_ns(rlang::as_string(branch), env = env) == ns){
+#       out <- TRUE
+#       break
+#     }
+#   }
+#   out
+# }
 
 # Tidyselect col positions with names
 tidy_select_pos <- function(data, ..., .cols = NULL){
@@ -407,9 +411,11 @@ tidy_group_info_datamask <- function(data, ..., .by = NULL,
   if (dots_length(...) > 0){
     out_info <- mutate_summary(out, ..., .by = {{ .by }})
     out <- out_info[["data"]]
+    # group_info <- df_as_GRP(out)
     extra_groups <- out_info[["new_cols"]]
   } else {
     out_info <- NULL
+    group_info <- NULL
   }
   if (unique_groups){
     extra_groups <- fast_setdiff(extra_groups, group_vars)
@@ -418,16 +424,21 @@ tidy_group_info_datamask <- function(data, ..., .by = NULL,
     all_groups <- c(group_vars, fast_setdiff(extra_groups, group_vars))
   }
   if (is.null(out_info)){
+    changed_groups <- character()
     address_equal <- add_names(logical(length(names(data))), names(data))
   } else {
+    changed_groups <- fast_intersect(names(data), out_info[["changed_cols"]])
     address_equal <- add_names(is.na(match(names(data), out_info[["changed_cols"]])), names(data))
   }
-  list("data" = out,
-       "dplyr_groups" = group_vars,
-       "extra_groups" = extra_groups,
-       "all_groups" = all_groups,
-       "groups_changed" = !all(address_equal[group_vars]),
-       "address_equal" = address_equal)
+  list(
+    data = out,
+    dplyr_groups = group_vars,
+    extra_groups = extra_groups,
+    all_groups = all_groups,
+    changed_groups = changed_groups,
+    groups_changed = !all(address_equal[group_vars]),
+    address_equal = address_equal
+  )
 }
 
 tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,

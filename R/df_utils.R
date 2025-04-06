@@ -61,37 +61,6 @@ df_seq_along <- function(data, along = "rows"){
          rows = seq_len(df_nrow(data)),
          seq_len(df_ncol(data)))
 }
-# Repeat data frame rows
-# Such that identical(df_rep(data, 3), bind_rows(data, data, data))
-df_rep <- function(data, times){
-  N <- df_nrow(data)
-  if (N > 0L && length(times) > N){
-    cli::cli_abort("{.arg times} must not be greater than {nrow(data)}")
-  }
-  if (length(times) != N){
-    if (length(times) != 1L){
-      cli::cli_abort("{.arg times} must be of length 1 or {nrow(data)}")
-    }
-  }
-  if (df_ncol(data) == 0){
-    if (length(times) == 1){
-      out <- data
-      attr(out, "row.names") <- .set_row_names(N * times)
-    } else {
-      out <- cheapr::sset_row(data, rep(attr(data, "row.names"), times))
-    }
-  } else {
-    out <- list_as_df(lapply(data, \(x) rep(x, times)))
-  }
-  cheapr::reconstruct(out, data)
-}
-# Repeat each row
-df_rep_each <- function(data, each){
-  if (length(each) == 1L){
-    each <- rep_len(each, df_nrow(data))
-  }
-  df_rep(data, each)
-}
 
 # Safe ungroup for any data type
 df_ungroup <- cpp_ungroup
@@ -106,19 +75,7 @@ df_paste_names <- function(data,  sep = "_", .cols = names(data)){
 }
 
 # Group IDs (same as dplyr::group_indices)
-df_group_id <- function(x){
-  if (!inherits(x, "grouped_df") && !inherits(x, "data.frame")){
-    stop("Can only calculate group indices on data frames")
-  }
-  N <- df_nrow(x)
-  groups <- attr(x, "groups")
-  if (is.null(groups)){
-    out <- rep_len(1L, N)
-  } else {
-    out <- cpp_df_group_indices(groups[[".rows"]], N)
-  }
-  out
-}
+df_group_id <- cpp_group_id
 
 # Extremely simple count functions for grouped_df
 df_count <- function(.data, name = "n", weights = NULL){
@@ -177,7 +134,7 @@ df_group_by_order_default <- function(x){
 
 df_cross_join <- function(x, y, .repair_names = TRUE){
   f_bind_cols(
-    df_rep_each(x, df_nrow(y)), df_rep(y, df_nrow(x)),
+    cheapr_rep_each(x, df_nrow(y)), cheapr_rep(y, df_nrow(x)),
     .repair_names = .repair_names, .recycle = FALSE
   )
 }

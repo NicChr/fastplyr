@@ -44,10 +44,6 @@ cpp_which_all <- function(x) {
   .Call(`_fastplyr_cpp_which_all`, x)
 }
 
-cpp_df_group_indices <- function(rows, size) {
-  .Call(`_fastplyr_cpp_df_group_indices`, rows, size)
-}
-
 cpp_slice_locs <- function(group_locs, locs) {
   .Call(`_fastplyr_cpp_slice_locs`, group_locs, locs)
 }
@@ -66,10 +62,6 @@ cpp_set_list_element <- function(x, i, value) {
 
 cpp_fill_grouped <- function(x, order, group_sizes, fill_limit) {
   .Call(`_fastplyr_cpp_fill_grouped`, x, order, group_sizes, fill_limit)
-}
-
-cpp_unlist_group_locs <- function(x, group_sizes) {
-  .Call(`_fastplyr_cpp_unlist_group_locs`, x, group_sizes)
 }
 
 cpp_df_transform_exotic <- function(x, order, as_qg) {
@@ -134,6 +126,26 @@ cpp_group_rows <- function(x) {
 
 cpp_ungroup <- function(data) {
   .Call(`_fastplyr_cpp_ungroup`, data)
+}
+
+cpp_df_group_indices <- function(rows, size) {
+  .Call(`_fastplyr_cpp_df_group_indices`, rows, size)
+}
+
+n_group_vars <- function(x) {
+  .Call(`_fastplyr_n_group_vars`, x)
+}
+
+cpp_group_id <- function(x) {
+  .Call(`_fastplyr_cpp_group_id`, x)
+}
+
+cpp_unlist_group_locs <- function(x, group_sizes) {
+  .Call(`_fastplyr_cpp_unlist_group_locs`, x, group_sizes)
+}
+
+cpp_group_id_sorted <- function(x) {
+  .Call(`_fastplyr_cpp_group_id_sorted`, x)
 }
 
 cpp_grouped_eval_tidy <- function(data, quos, recycle) {
