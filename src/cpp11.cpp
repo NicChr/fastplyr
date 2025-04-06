@@ -230,13 +230,6 @@ extern "C" SEXP _fastplyr_cpp_group_vars(SEXP x) {
   END_CPP11
 }
 // tidy_eval.cpp
-int cpp_n_group_vars(SEXP x);
-extern "C" SEXP _fastplyr_cpp_n_group_vars(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_n_group_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
-  END_CPP11
-}
-// tidy_eval.cpp
 SEXP cpp_group_rows(SEXP x);
 extern "C" SEXP _fastplyr_cpp_group_rows(SEXP x) {
   BEGIN_CPP11
@@ -301,7 +294,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_is_fn_call",            (DL_FUNC) &_fastplyr_cpp_is_fn_call,            4},
     {"_fastplyr_cpp_list_subset",           (DL_FUNC) &_fastplyr_cpp_list_subset,           4},
     {"_fastplyr_cpp_list_tidy",             (DL_FUNC) &_fastplyr_cpp_list_tidy,             1},
-    {"_fastplyr_cpp_n_group_vars",          (DL_FUNC) &_fastplyr_cpp_n_group_vars,          1},
     {"_fastplyr_cpp_quo_data_vars",         (DL_FUNC) &_fastplyr_cpp_quo_data_vars,         2},
     {"_fastplyr_cpp_quos_drop_null",        (DL_FUNC) &_fastplyr_cpp_quos_drop_null,        1},
     {"_fastplyr_cpp_row_id",                (DL_FUNC) &_fastplyr_cpp_row_id,                3},

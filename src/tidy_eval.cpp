@@ -615,7 +615,7 @@ SEXP cpp_group_data(SEXP x){
 
 [[cpp11::register]]
 SEXP cpp_group_keys(SEXP x){
-  if (cpp_n_group_vars(x) == 0){
+  if (!Rf_inherits(x, "grouped_df")){
     SEXP r_nrows = Rf_protect(Rf_ScalarInteger(1));
     SEXP empty_list = Rf_protect(Rf_allocVector(VECSXP, 0));
     SEXP out = Rf_protect(cheapr::new_df(empty_list, r_nrows, false, false));
@@ -633,11 +633,6 @@ SEXP cpp_group_keys(SEXP x){
 [[cpp11::register]]
 SEXP cpp_group_vars(SEXP x){
   return Rf_inherits(x, "grouped_df") ? Rf_getAttrib(cpp_group_keys(x), R_NamesSymbol) : Rf_allocVector(STRSXP, 0);
-}
-
-[[cpp11::register]]
-int cpp_n_group_vars(SEXP x){
-  return Rf_length(cpp_group_vars(x));
 }
 
 [[cpp11::register]]
