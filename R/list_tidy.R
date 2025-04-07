@@ -11,14 +11,10 @@
 #' Default is `FALSE`.
 #'
 #' @export
-# list_tidy2 <- function(..., .keep_null = TRUE, .named = FALSE){
-#   cpp_list_tidy(fastplyr_quos(..., .named = .named), .keep_null)
-# }
 list_tidy <- function(..., .keep_null = TRUE, .named = FALSE){
+  quos <- rlang::quos(..., .ignore_empty = "all")
   if (.named){
-    quos <- named_quos(...)
-  } else {
-    quos <- rlang::quos(..., .ignore_empty = "all")
+    quos <- fix_quo_names(quos)
   }
   if (!.keep_null){
     quos <- cpp_quos_drop_null(quos)

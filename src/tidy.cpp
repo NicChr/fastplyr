@@ -514,6 +514,7 @@ SEXP cpp_eval_tidy(SEXP quo, SEXP mask){
 
 // Eval a list of quos
 
+[[cpp11::register]]
 SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
   int NP = 0;
   int n_exprs = Rf_length(quos);

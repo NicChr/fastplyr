@@ -124,161 +124,168 @@ extern "C" SEXP _fastplyr_cpp_df_transform_exotic(SEXP x, SEXP order, SEXP as_qg
     return cpp11::as_sexp(cpp_df_transform_exotic(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<bool>>(order), cpp11::as_cpp<cpp11::decay_t<bool>>(as_qg)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_fun_ns(SEXP x, SEXP rho);
 extern "C" SEXP _fastplyr_cpp_fun_ns(SEXP x, SEXP rho) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_fun_ns(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(rho)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho);
 extern "C" SEXP _fastplyr_cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_is_fn_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(fn), cpp11::as_cpp<cpp11::decay_t<SEXP>>(ns), cpp11::as_cpp<cpp11::decay_t<SEXP>>(rho)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 bool cpp_call_contains_ns(SEXP expr, SEXP ns, SEXP rho);
 extern "C" SEXP _fastplyr_cpp_call_contains_ns(SEXP expr, SEXP ns, SEXP rho) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_call_contains_ns(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(ns), cpp11::as_cpp<cpp11::decay_t<SEXP>>(rho)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 bool cpp_call_contains_fn(SEXP expr, SEXP fn, SEXP ns, SEXP rho);
 extern "C" SEXP _fastplyr_cpp_call_contains_fn(SEXP expr, SEXP fn, SEXP ns, SEXP rho) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_call_contains_fn(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(fn), cpp11::as_cpp<cpp11::decay_t<SEXP>>(ns), cpp11::as_cpp<cpp11::decay_t<SEXP>>(rho)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 bool cpp_any_quo_contains_ns(SEXP quos, SEXP ns);
 extern "C" SEXP _fastplyr_cpp_any_quo_contains_ns(SEXP quos, SEXP ns) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_any_quo_contains_ns(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<SEXP>>(ns)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_unnest_expr(SEXP expr);
 extern "C" SEXP _fastplyr_cpp_unnest_expr(SEXP expr) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_unnest_expr(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 cpp11::writable::strings all_call_names(SEXP expr);
 extern "C" SEXP _fastplyr_all_call_names(SEXP expr) {
   BEGIN_CPP11
     return cpp11::as_sexp(all_call_names(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_quo_data_vars(SEXP quos, SEXP data);
 extern "C" SEXP _fastplyr_cpp_quo_data_vars(SEXP quos, SEXP data) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_quo_data_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_quos_drop_null(SEXP quos);
 extern "C" SEXP _fastplyr_cpp_quos_drop_null(SEXP quos) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_quos_drop_null(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
+SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask);
+extern "C" SEXP _fastplyr_cpp_eval_all_tidy(SEXP quos, SEXP mask) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_eval_all_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<SEXP>>(mask)));
+  END_CPP11
+}
+// tidy.cpp
 SEXP cpp_list_tidy(SEXP quos);
 extern "C" SEXP _fastplyr_cpp_list_tidy(SEXP quos) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_list_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_group_data(SEXP x);
 extern "C" SEXP _fastplyr_cpp_group_data(SEXP x) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_group_data(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_group_keys(SEXP x);
 extern "C" SEXP _fastplyr_cpp_group_keys(SEXP x) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_group_keys(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_group_vars(SEXP x);
 extern "C" SEXP _fastplyr_cpp_group_vars(SEXP x) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_group_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_group_rows(SEXP x);
 extern "C" SEXP _fastplyr_cpp_group_rows(SEXP x) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_group_rows(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_ungroup(SEXP data);
 extern "C" SEXP _fastplyr_cpp_ungroup(SEXP data) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_ungroup(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_df_group_indices(SEXP rows, int size);
 extern "C" SEXP _fastplyr_cpp_df_group_indices(SEXP rows, SEXP size) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_df_group_indices(cpp11::as_cpp<cpp11::decay_t<SEXP>>(rows), cpp11::as_cpp<cpp11::decay_t<int>>(size)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 int n_group_vars(SEXP x);
 extern "C" SEXP _fastplyr_n_group_vars(SEXP x) {
   BEGIN_CPP11
     return cpp11::as_sexp(n_group_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_group_id(SEXP x);
 extern "C" SEXP _fastplyr_cpp_group_id(SEXP x) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_group_id(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes);
 extern "C" SEXP _fastplyr_cpp_unlist_group_locs(SEXP x, SEXP group_sizes) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_unlist_group_locs(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_sizes)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 bool cpp_group_id_sorted(SEXP x);
 extern "C" SEXP _fastplyr_cpp_group_id_sorted(SEXP x) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_group_id_sorted(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle);
 extern "C" SEXP _fastplyr_cpp_grouped_eval_tidy(SEXP data, SEXP quos, SEXP recycle) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_grouped_eval_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<bool>>(recycle)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos);
 extern "C" SEXP _fastplyr_cpp_grouped_eval_mutate(SEXP data, SEXP quos) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_grouped_eval_mutate(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
   END_CPP11
 }
-// tidy_eval.cpp
+// tidy.cpp
 SEXP cpp_group_split(SEXP data, SEXP drop, SEXP order);
 extern "C" SEXP _fastplyr_cpp_group_split(SEXP data, SEXP drop, SEXP order) {
   BEGIN_CPP11
@@ -298,6 +305,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_consecutive_id",        (DL_FUNC) &_fastplyr_cpp_consecutive_id,        1},
     {"_fastplyr_cpp_df_group_indices",      (DL_FUNC) &_fastplyr_cpp_df_group_indices,      2},
     {"_fastplyr_cpp_df_transform_exotic",   (DL_FUNC) &_fastplyr_cpp_df_transform_exotic,   3},
+    {"_fastplyr_cpp_eval_all_tidy",         (DL_FUNC) &_fastplyr_cpp_eval_all_tidy,         2},
     {"_fastplyr_cpp_fill_grouped",          (DL_FUNC) &_fastplyr_cpp_fill_grouped,          4},
     {"_fastplyr_cpp_frame_addresses_equal", (DL_FUNC) &_fastplyr_cpp_frame_addresses_equal, 2},
     {"_fastplyr_cpp_frame_dims",            (DL_FUNC) &_fastplyr_cpp_frame_dims,            3},

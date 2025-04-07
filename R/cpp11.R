@@ -104,6 +104,10 @@ cpp_quos_drop_null <- function(quos) {
   .Call(`_fastplyr_cpp_quos_drop_null`, quos)
 }
 
+cpp_eval_all_tidy <- function(quos, mask) {
+  .Call(`_fastplyr_cpp_eval_all_tidy`, quos, mask)
+}
+
 cpp_list_tidy <- function(quos) {
   .Call(`_fastplyr_cpp_list_tidy`, quos)
 }

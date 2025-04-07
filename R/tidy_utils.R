@@ -72,19 +72,26 @@ quo_labels <- function(quos, named = TRUE){
   out
 }
 
-# rlang::enquos() but quosures are always named
-named_quos <- function(...){
-  exprs <- rlang::quos(..., .ignore_empty = "all")
-  nms <- names(exprs)
+fix_quo_names <- function(quos){
 
-  # Fix empty names
+  nms <- names(quos)
+
   if (is.null(nms)){
     nms <- quo_labels(exprs, named = FALSE)
-  } else if (!all(nzchar(nms))){
-    nms <- str_coalesce(nms, quo_labels(exprs, named = FALSE))
+  } else {
+    for (i in seq_along(quos)){
+      if (!nzchar(nms[[i]])){
+        expr <- rlang::quo_get_expr(quos[[i]])
+        if (is.symbol(expr)){
+          nms[i] <- rlang::as_string(expr)
+        } else {
+          nms[i] <- deparse2(rlang::quo_get_expr(quos[[i]]))
+        }
+      }
+    }
   }
-  names(exprs) <- nms
-  exprs
+  names(quos) <- nms
+  quos
 }
 
 
@@ -179,7 +186,6 @@ unpack_across <- function(quo, data){
     col <- cols[[i]]
     new_quo <- rlang::new_quosure(rlang::call2(fn, as.symbol(col)), quo_env)
     set_add_attr(new_quo, ".unpack", unpack)
-    # attr(new_quo, ".unpack") <- unpack
     out[[i]] <- new_quo
 
   }
@@ -194,7 +200,7 @@ fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE,
 
   if (is.null(.data)){
     for (i in seq_along(out)){
-      attr(out[[i]], ".unpack") %||% set_add_attr(out[[i]], ".unpack", .unpack_default)
+      attr(out[[i]], ".unpack", TRUE) %||% set_add_attr(out[[i]], ".unpack", .unpack_default)
       if (.named && !nzchar(quo_nms[[i]])){
         quo_nms[[i]] <- deparse2(rlang::quo_get_expr(out[[i]]))
       }
@@ -203,7 +209,7 @@ fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE,
     k <- 1L
     for (i in seq_along(out)){
       quo <- out[[k]]
-      attr(quo, ".unpack") %||% set_add_attr(quo, ".unpack", .unpack_default)
+      attr(quo, ".unpack", TRUE) %||% set_add_attr(quo, ".unpack", .unpack_default)
       if (!nzchar(quo_nms[[k]]) && is_fn_call(quo, "across", ns = "dplyr")){
         left <- out[seq_len(k - 1L)]
         unpacked_quos <- unpack_across(quo, .data)
@@ -216,9 +222,6 @@ fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE,
         out <- c(left, unpacked_quos, right)
         quo_nms <- names(out)
         k <- k + length(right)
-      } else if (rlang::quo_is_call(quo, c("nesting", "crossing"))){
-        set_add_attr(quo, ".unpack", .unpack_default)
-        k <- k + 1L
       } else if (.named && !nzchar(quo_nms[[k]])){
         quo_nms[[k]] <- deparse2(rlang::quo_get_expr(quo))
         k <- k + 1L
@@ -244,35 +247,6 @@ check_fastplyr_quos <- function(quos){
   }
 }
 
-# Recursively checks call tree for a function call from a specified namespace
-# We use it to check for any dplyr functions in call tree in `eval_all_tidy`
-# call_contains_ns <- function(expr, ns, env = rlang::caller_env()){
-#   if (rlang::is_quosure(expr)){
-#     expr <- rlang::quo_get_expr(expr)
-#   }
-#   if (!is.call(expr)){
-#     return(FALSE)
-#   }
-#   if (rlang::is_call(expr, ns = ns)){
-#     return(TRUE)
-#   }
-#   out <- FALSE
-#   tree <- as.list(expr)
-#   for (branch in tree){
-#     if (is.call(branch)){
-#       # return(call_contains_ns(branch, ns, env)) # Old version
-#       if (call_contains_ns(branch, ns, env = env)){
-#         out <- TRUE
-#         break
-#       }
-#     }
-#     if (is.symbol(branch) && fun_ns(rlang::as_string(branch), env = env) == ns){
-#       out <- TRUE
-#       break
-#     }
-#   }
-#   out
-# }
 
 # Tidyselect col positions with names
 tidy_select_pos <- function(data, ..., .cols = NULL){
@@ -526,25 +500,6 @@ f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default
   }
   cheapr::reconstruct(out, cpp_ungroup(.data))
 }
-# fast_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
-#   data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
-#   quos <- fastplyr_quos(..., .named = TRUE, .data = data)
-#
-#   if (cpp_any_quo_contains_ns(quos, "dplyr")){
-#     out <- dplyr::reframe(data, !!!quos)
-#     cheapr::reconstruct(out, .data)
-#   } else {
-#     results <- cpp_grouped_eval_tidy3(data, quos)
-#     # results <- cpp_grouped_eval_tidy(data, quos, TRUE)
-#     group_data <- group_data(data)
-#
-#     groups <- df_rep(cheapr::sset_col(group_data, seq_along(group_data) - 1L),
-#                      results[[1L]])
-#
-#     f_bind_cols(groups, list_as_df(results[-1L])) |>
-#       cheapr::reconstruct(cpp_ungroup(.data))
-#   }
-# }
 
 f_mutate <- function(.data, ...,  .by = NULL, .order = df_group_by_order_default(.data), .keep = "all"){
   out <- .data %>%
