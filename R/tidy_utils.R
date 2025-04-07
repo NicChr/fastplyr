@@ -274,18 +274,18 @@ tidy_select_names <- function(data, ..., .cols = NULL){
 mutate_summary <- function(.data, ...,
                            .keep = "all",
                            .by = NULL,
-                           .order = df_group_by_order_default(.data)){
+                           .order = df_group_by_order_default(.data),
+                           .add_collapse_grp = TRUE){
   original_cols <- names(.data)
   if (rlang::quo_is_null(rlang::enquo(.by))){
+    all_groups <- group_vars(.data)
     data <- .data
   } else {
-    data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
+    all_groups <- get_groups(.data, .by = {{ .by }})
+    data <- f_group_by(.data, .cols = all_groups, .add = TRUE, .order = .order)
   }
-  all_groups <- group_vars(data)
-
-  if (length(all_groups) == 0L){
-    GRP <- NULL
-  } else {
+  GRP <- NULL
+  if (length(all_groups) > 0L && .add_collapse_grp){
     GRP <- df_as_GRP(data)
   }
   if (dots_length(...) == 0L){
@@ -327,7 +327,7 @@ mutate_summary <- function(.data, ...,
                         unused = unused_cols)
 
     # Add missed group vars and keep original ordering
-    keep_cols <- fast_intersect(all_cols, c(group_vars, keep_cols))
+    keep_cols <- fast_intersect(all_cols, c(all_groups, keep_cols))
     out_data <- cheapr::sset_df(out_data, j = keep_cols)
   }
   list(
@@ -340,7 +340,6 @@ mutate_summary <- function(.data, ...,
     GRP = GRP
   )
 }
-
 tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
                                        ungroup = TRUE, rename = TRUE,
                                        unique_groups = TRUE){
