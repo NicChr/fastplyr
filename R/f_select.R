@@ -73,32 +73,28 @@ f_rename <- function(data, ..., .cols = NULL){
 #' @export
 f_rename.data.frame <- function(data, ..., .cols = NULL){
   pos <- tidy_select_pos(data, ..., .cols = .cols)
-  col_rename(data, .cols = pos)
+  out <- col_rename(data, .cols = pos)
+  cheapr::reconstruct(out, data)
 }
 #' @export
 f_rename.grouped_df <- function(data, ..., .cols = NULL){
-  pos <- tidy_select_pos(data, ..., .cols = .cols)
-  groups <- group_data(data)
-  group_vars <- setdiff(names(groups), ".rows")
-  # Rename data columns
-  out <- col_rename(cpp_ungroup(data), .cols = pos)
-  # Rename group data columns
-  group_pos <- which(group_vars %in% names(data)[pos])
-  names(group_pos) <- names(out)[which(names(out) %in% names(pos) &
-                                          names(data) %in% group_vars)]
-  groups <- col_rename(groups, .cols = group_pos)
-  attr(out, "groups") <- groups
-  class(out) <- class(data)
-  # class(out) <- c("grouped_df", "tbl_df", "tbl", "data.frame")
+  group_vars <- group_vars(data)
+  group_data <- group_data(data)
+
+  cols <- tidy_select_names(data, ..., .cols = .cols)
+  renamed_group_vars <- fast_intersect(cols, group_vars)
+
+  out <- col_rename(cpp_ungroup(data), cols)
+
+  if (length(renamed_group_vars) > 0L){
+    group_data <- col_rename(group_data, renamed_group_vars)
+    attr(out, "groups") <- group_data
+  }
+  out <- cheapr::reconstruct(out, cpp_ungroup(data))
+  attr(out, "groups") <- group_data
+  class(out) <- c("grouped_df", class(out))
   out
-}
-# This should be unecessary but data.table:::`names<-.data.table`
-# Sometimes reduces the allocated column slots
-#' @export
-f_rename.data.table <- function(data, ..., .cols = NULL){
-  pos <- tidy_select_pos(data, ..., .cols = .cols)
-  out <- col_rename(data, .cols = pos)
-  collapse::qDT(out)
+
 }
 #' @rdname f_select
 #' @export

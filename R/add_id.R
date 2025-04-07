@@ -126,7 +126,7 @@ add_row_id.data.frame <- function(data, ...,
         length(group_vars) == length(group_vars(data)) &&
         !groups_changed){
       groups <- group_data(data)
-      sizes <- cheapr::lengths_(groups[[".rows"]])
+      sizes <- cheapr::list_lengths(groups[[".rows"]])
       o <- cpp_unlist_group_locs(groups[[".rows"]], sizes)
       row_ids <- cpp_row_id(o, sizes, .ascending)
     } else {

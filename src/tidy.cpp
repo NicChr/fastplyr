@@ -620,30 +620,40 @@ SEXP cpp_group_data(SEXP x){
     Rf_unprotect(4);
     return groups;
   } else {
-    Rf_error("`x` must be a data frame");
+    Rf_error("`x` must be a data frame in %s", __func__);
   }
 }
 
 [[cpp11::register]]
 SEXP cpp_group_keys(SEXP x){
-  if (!Rf_inherits(x, "grouped_df")){
-    SEXP r_nrows = Rf_protect(Rf_ScalarInteger(1));
-    SEXP empty_list = Rf_protect(Rf_allocVector(VECSXP, 0));
-    SEXP out = Rf_protect(cheapr::new_df(empty_list, r_nrows, false, false));
-    Rf_unprotect(3);
-    return out;
-  } else {
+
+  SEXP out = R_NilValue;
+
+  if (Rf_inherits(x, "grouped_df")){
     SEXP group_data = Rf_protect(cpp_group_data(x));
     SEXP seq = Rf_protect(cheapr::seq_len(Rf_length(group_data) - 1));
-    SEXP groups = Rf_protect(cheapr::df_select(group_data, seq));
-    Rf_unprotect(3);
-    return groups;
+    out = Rf_protect(cheapr::df_select(group_data, seq));
+  } else {
+    SEXP r_nrows = Rf_protect(Rf_ScalarInteger(1));
+    SEXP empty_list = Rf_protect(Rf_allocVector(VECSXP, 0));
+    out = Rf_protect(cheapr::new_df(empty_list, r_nrows, false, false));
   }
+  set_as_tbl(out);
+  Rf_unprotect(3);
+  return out;
 }
 
 [[cpp11::register]]
 SEXP cpp_group_vars(SEXP x){
-  return Rf_inherits(x, "grouped_df") ? Rf_getAttrib(cpp_group_keys(x), R_NamesSymbol) : Rf_allocVector(STRSXP, 0);
+  if (Rf_inherits(x, "grouped_df")){
+    SEXP group_keys = Rf_protect(cpp_group_keys(x));
+    SEXP out = Rf_getAttrib(group_keys, R_NamesSymbol);
+    Rf_unprotect(1);
+    return out;
+  } else {
+   return Rf_allocVector(STRSXP, 0);
+  }
+  // return Rf_inherits(x, "grouped_df") ? Rf_getAttrib(cpp_group_keys(x), R_NamesSymbol) : Rf_allocVector(STRSXP, 0);
 }
 
 [[cpp11::register]]

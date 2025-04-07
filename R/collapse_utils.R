@@ -328,7 +328,7 @@ GRP_loc_starts <- function(loc){
 }
 GRP_loc_ends <- function(loc, sizes = NULL){
   if (is.null(sizes)){
-    sizes <- cheapr::lengths_(loc)
+    sizes <- cheapr::list_lengths(loc)
   }
   list_subset(loc, sizes, default = 0L)
 }

@@ -274,7 +274,7 @@ f_summarise <- function(data, ..., .by = NULL,
       out_var_names <- across_col_names(vars, fn_names, across_nms)
       names(full_res) <- out_var_names
 
-      res_sizes <- cheapr::lengths_(full_res)
+      res_sizes <- cheapr::list_lengths(full_res)
       if (any(res_sizes != df_nrow(out))){
         stop("Expressions must return exactly 1 row per `f_summarise()` group")
       }

@@ -11,6 +11,8 @@ check_length <- function(x, size){
 # Coalesce empty strings instead of NA
 str_coalesce <- function(...) cpp_str_coalesce(list(...))
 
+drop_names <- function(x) `names<-`(x, NULL)
+
 # Fast way of getting named col positions
 col_select_pos <- function(data, .cols = character()){
   .cols <- .cols %||% integer()
@@ -56,20 +58,8 @@ col_select_names <- function(data, .cols = character()){
 
 # (Internal) Fast col rename
 col_rename <- function(data, .cols = integer()){
-  .cols <- .subset(.cols, nzchar(names(.cols)))
-  out_nms <- names(.cols)
-  if (length(out_nms) == 0L){
-    return(data)
-  }
-  data_nms <- names(data)
-  if (is.character(.cols)){
-    pos <- add_names(match(.cols, data_nms), out_nms)
-  } else {
-    pos <- .cols
-  }
-  pos_nms <- names(pos)
-  renamed <- .subset(data_nms, pos) != pos_nms
-  names(data)[.subset(pos, renamed)] <- .subset(out_nms, renamed)
+  .cols <- col_select_pos(data, .cols)
+  names(data)[.cols] <- names(.cols)
   data
 }
 
@@ -167,7 +157,7 @@ sort_unique <- function(x, sort = FALSE){
     subset <- length(starts) != NROW(x)
   }
   if (subset){
-    cheapr::sset(x, starts)
+    cpp_sset(x, starts, TRUE)
   } else {
     x
   }
@@ -175,28 +165,3 @@ sort_unique <- function(x, sort = FALSE){
 
 # rlang infix default NULL value function
 `%||%` <- function(x, y) if (is.null(x)) y else x
-
-# Common function used to find locations of empty strings ''
-empty_str_locs <- function(x){
-  cheapr::val_find(nzchar(x), TRUE, invert = TRUE)
-}
-# Get namespace of function
-# fun_ns <- function(x, env = rlang::caller_env()){
-#   cpp_fun_ns(x, env)
-# }
-
-# R version
-# fun_ns <- function(x, env = rlang::caller_env()){
-#   if (!is.function(x)){
-#     x <- get0(x, env)
-#     # x <- cpp_get(x, env)
-#   }
-#   env <- environment(x)
-#   if (is.null(x) || is.null(env) || !is.function(x)){
-#     ""
-#   } else if (isBaseNamespace(env)){
-#     "base"
-#   } else {
-#     .getNamespaceInfo(env, "spec")[["name"]] %||% ""
-#   }
-# }

@@ -127,7 +127,7 @@ raw_group_collapse <- function(data, order = TRUE, sort = order,
         # }
         # if (loc){
         #   out[[".loc"]][cheapr::val_find(
-        #     cheapr::lengths_(out[[".loc"]]),
+        #     cheapr::list_lengths(out[[".loc"]]),
         #     0)] <- list(integer())
         # }
         # if (start){
@@ -331,7 +331,7 @@ group_data_collapse <- function(data, size = TRUE, loc = TRUE,
     ncol <- ncol(out)
     out <- f_select(out, .cols = c(seq_len(ncol - 2L), ncol, ncol - 1L))
   }
-  sizes <- cheapr::lengths_(out[[".loc"]])
+  sizes <- cheapr::list_lengths(out[[".loc"]])
   if (start){
     gstarts <- GRP_loc_starts(out[[".loc"]])
     out[[".start"]] <- gstarts

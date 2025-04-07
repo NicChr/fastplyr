@@ -19,17 +19,22 @@ check_cols <- function(n_dots, .cols = NULL){
 }
 
 # This function returns the groups of a data frame
-get_groups <- function(data, .by = NULL){
+get_groups <- function(data, .by = NULL, named = FALSE){
   check_rowwise(data)
   dplyr_groups <- group_vars(data)
+  if (named){
+    names(dplyr_groups) <- dplyr_groups
+  }
   if (rlang::quo_is_null(rlang::enquo(.by))){
-    by_groups <- NULL
+    by_groups <- character()
   } else {
     by_groups <- tidy_select_names(data, {{ .by }})
     if (any(names(by_groups) != by_groups)){
       cli::cli_abort("Can't rename groups through {.arg .by}")
     }
-    attr(by_groups, "names") <- NULL
+    if (!named){
+      attr(by_groups, "names") <- NULL
+    }
   }
   if (length(by_groups) > 0L){
     if (length(dplyr_groups) > 0L){
@@ -298,6 +303,8 @@ mutate_summary <- function(.data, ...,
     new_data <- as.list(cpp_grouped_eval_mutate(data, quos))
   }
 
+  # Removing duplicate named results
+  new_data <- new_data[!duplicated(names(quos), fromLast = TRUE)]
   new_data <- cheapr::list_drop_null(new_data)
 
   data <- cheapr::reconstruct(data, .data)
@@ -335,7 +342,6 @@ mutate_summary <- function(.data, ...,
 tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
                                        ungroup = TRUE, rename = TRUE,
                                        unique_groups = TRUE){
-  n_dots <- dots_length(...)
   group_vars <- get_groups(data, {{ .by }})
   group_pos <- match(group_vars, names(data))
   extra_groups <- character()
@@ -370,6 +376,47 @@ tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
        "groups_changed" = any_groups_changed,
        "address_equal" = address_equal)
 }
+
+# tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
+#                                        ungroup = TRUE, rename = TRUE,
+#                                        unique_groups = TRUE){
+#   data_names <- names(data)
+#   group_vars <- get_groups(data, {{ .by }}, named = TRUE)
+#   if (ungroup){
+#     out <- cpp_ungroup(data)
+#   } else {
+#     out <- data
+#   }
+#   extra_groups <- tidy_select_names(out, ..., .cols = .cols)
+#   if (!rename){
+#     names(extra_groups) <- drop_names(extra_groups)
+#     names(group_vars) <- drop_names(group_vars)
+#     any_groups_changed <- FALSE
+#   } else {
+#     out <- f_rename(out, .cols = extra_groups)
+#     group_vars <- names(group_vars)
+#     any_groups_changed <- any(names(group_vars) != group_vars)
+#   }
+#
+#   renamed <- names(extra_groups) != extra_groups
+#   address_equal <- rep_len(TRUE, length(data_names))
+#   address_equal[match(extra_groups[renamed], data_names)] <- FALSE
+#   names(address_equal) <- data_names
+#   extra_groups <- drop_names(extra_groups)
+#   group_vars <- fast_intersect(extra_groups, group_vars)
+#   if (unique_groups){
+#     extra_groups <- fast_setdiff(extra_groups, group_vars)
+#     all_groups <- c(group_vars, extra_groups)
+#   } else {
+#     all_groups <- c(group_vars, fast_setdiff(extra_groups, group_vars))
+#   }
+#   list(data = out,
+#        dplyr_groups = group_vars,
+#        extra_groups = extra_groups,
+#        all_groups = all_groups,
+#        groups_changed = any_groups_changed,
+#        address_equal = address_equal)
+# }
 
 tidy_group_info_datamask <- function(data, ..., .by = NULL,
                                      ungroup = TRUE,
@@ -469,45 +516,7 @@ check_rowwise <- function(data){
   }
 }
 
-# A fastplyr version of reframe
-# About half-way there (unfortunately not super fast)
-f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
-
-  if (missing(.by)){
-    data <- .data
-  } else {
-    data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
-  }
-  quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE, .named = TRUE,
-                        .unpack_default = TRUE)
-
-  if (length(quos) == 0){
-    return(cheapr::reconstruct(group_keys(data), cpp_ungroup(.data)))
-  }
-  if (cpp_any_quo_contains_ns(quos, "dplyr")){
-    out <- dplyr::reframe(data, ...)
-  } else {
-    results <- eval_all_tidy(data, quos, recycle = TRUE)
-    groups <- results[["groups"]]
-    results <- results[["results"]]
-    n_group_vars <- length(group_vars(data))
-    if (n_group_vars == 0){
-      groups <- cheapr::new_df(.nrows = cheapr::vector_length(results[[1L]]))
-    } else {
-      groups <- list_as_df(groups[[1L]])
-    }
-    out <- cheapr::col_c(groups, results, .name_repair = TRUE, .recycle = FALSE)
-  }
-  cheapr::reconstruct(out, cpp_ungroup(.data))
-}
-
-f_mutate <- function(.data, ...,  .by = NULL, .order = df_group_by_order_default(.data), .keep = "all"){
-  out <- .data %>%
-    mutate_summary(..., .keep = .keep, .order = .order, .by = {{ .by }})
-  out[["data"]]
-}
-
-eval_all_tidy <- function(.data, quos, recycle = FALSE){
+eval_all_tidy <- function(.data, quos, recycle = FALSE, unique_names = FALSE){
   check_fastplyr_quos(quos)
   quo_names <- names(quos)
   all_results <- cpp_grouped_eval_tidy(.data, quos, recycle = recycle)
@@ -530,5 +539,50 @@ eval_all_tidy <- function(.data, quos, recycle = FALSE){
       k <- k + 1L
     }
   }
+  if (unique_names){
+    # Removing duplicate named results
+    keep <- cheapr::val_find(duplicated(quo_names, fromLast = TRUE), FALSE)
+    groups <- groups[keep]
+    results <- results[keep]
+  }
   list(groups = groups, results = results)
 }
+
+# A fastplyr version of reframe
+# About half-way there (unfortunately not super fast)
+f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
+
+  if (missing(.by)){
+    data <- .data
+  } else {
+    data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
+  }
+  quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE, .named = TRUE,
+                        .unpack_default = TRUE)
+
+  if (length(quos) == 0){
+    return(cheapr::reconstruct(group_keys(data), cpp_ungroup(.data)))
+  }
+  if (cpp_any_quo_contains_ns(quos, "dplyr")){
+    out <- dplyr::reframe(data, ...)
+  } else {
+    results <- eval_all_tidy(data, quos, recycle = TRUE, unique = TRUE)
+    groups <- results[["groups"]]
+    results <- results[["results"]]
+    n_group_vars <- length(group_vars(data))
+    if (n_group_vars == 0){
+      groups <- cheapr::new_df(.nrows = cheapr::vector_length(results[[1L]]))
+    } else {
+      groups <- list_as_df(groups[[1L]])
+    }
+    out <- cheapr::col_c(groups, results, .name_repair = TRUE, .recycle = FALSE)
+  }
+  cheapr::reconstruct(out, cpp_ungroup(.data))
+}
+
+f_mutate <- function(.data, ...,  .by = NULL, .order = df_group_by_order_default(.data), .keep = "all"){
+  out <- .data %>%
+    mutate_summary(..., .keep = .keep, .order = .order, .by = {{ .by }})
+  out[["data"]]
+}
+
