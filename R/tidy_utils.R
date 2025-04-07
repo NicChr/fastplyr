@@ -3,13 +3,8 @@
 # e.g mutate(group_by(iris, Species), .by = any_of("okay"))
 # Should not produce an error with this check
 check_by <- function(data, .by){
-  if (!rlang::quo_is_null(rlang::enquo(.by))){
-    if (inherits(data, "grouped_df")){
-      by_nms <- tidy_select_pos(data, {{ .by }})
-      if (length(by_nms) > 0L){
-        cli::cli_abort("{.arg .by} cannot be used on a grouped_df")
-      }
-    }
+  if (inherits(data, "grouped_df") && !rlang::quo_is_null(rlang::enquo(.by))){
+    cli::cli_abort("{.arg .by} cannot be used on a {.cls grouped_df}")
   }
 }
 check_cols <- function(n_dots, .cols = NULL){
@@ -48,14 +43,7 @@ get_groups <- function(data, .by = NULL, named = FALSE){
 
 # Turn character vector into named character vector
 as_named <- function(x){
-  nms <- names(x)
-  if (is.null(nms)){
-    nms <- x
-  } else {
-    nms <- str_coalesce(nms, as.character(x))
-  }
-  names(x) <- nms
-  x
+  `names<-`(x, str_coalesce(names(x), as.character(x)))
 }
 
 tidy_as_list_of <- function (...){
@@ -284,58 +272,72 @@ tidy_select_names <- function(data, ..., .cols = NULL){
 }
 
 mutate_summary <- function(.data, ...,
-                            .keep = c("all", "used", "unused", "none"),
-                            .by = NULL,
+                           .keep = "all",
+                           .by = NULL,
                            .order = df_group_by_order_default(.data)){
-  .keep <- rlang::arg_match(.keep)
   original_cols <- names(.data)
-  if (missing(.by)){
+  if (rlang::quo_is_null(rlang::enquo(.by))){
     data <- .data
   } else {
     data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
   }
-  group_vars <- group_vars(data)
-  quos <- fastplyr_quos(..., .named = TRUE, .data = data)
+  all_groups <- group_vars(data)
 
-  if (cpp_any_quo_contains_ns(quos, "dplyr")){
-    new_data <- as.list(dplyr::mutate(data, !!!quos, .keep = "none"))[names(quos)]
+  if (length(all_groups) == 0L){
+    GRP <- NULL
   } else {
-    new_data <- as.list(cpp_grouped_eval_mutate(data, quos))
+    GRP <- df_as_GRP(data)
   }
+  if (dots_length(...) == 0L){
+    out_data <- .data
+    new_cols <- character()
+    used_cols <- character()
+    unused_cols <- original_cols
+    changed_cols <- character()
+  } else {
+    quos <- fastplyr_quos(..., .named = TRUE, .data = data)
 
-  # Removing duplicate named results
-  new_data <- new_data[!duplicated(names(quos), fromLast = TRUE)]
-  new_data <- cheapr::list_drop_null(new_data)
+    if (cpp_any_quo_contains_ns(quos, "dplyr")){
+      new_data <- as.list(dplyr::mutate(data, !!!quos, .keep = "none"))[names(quos)]
+    } else {
+      new_data <- as.list(cpp_grouped_eval_mutate(data, quos))
+    }
 
-  data <- cheapr::reconstruct(data, .data)
-  out_data <- df_add_cols(data, new_data)
-  new_cols <- names(new_data)
-  all_cols <- names(out_data)
-  common_cols <- fast_intersect(original_cols, new_cols)
-  changed <- cpp_frame_addresses_equal(
-    cheapr::sset_col(data, common_cols),
-    new_data[common_cols]
-  )
-  changed_cols <- common_cols[cheapr::val_find(changed, FALSE)]
-  used_cols <- cpp_quo_data_vars(quos, data)
-  used_cols <- c(used_cols, fast_setdiff(new_cols, used_cols))
-  unused_cols <- fast_setdiff(original_cols, new_cols)
+    # Removing duplicate named results
+    new_data <- new_data[!duplicated(names(quos), fromLast = TRUE)]
+    new_data <- cheapr::list_drop_null(new_data)
+    data <- cheapr::reconstruct(data, .data)
+    out_data <- df_add_cols(data, new_data)
+    new_cols <- names(new_data)
+    all_cols <- names(out_data)
+    common_cols <- fast_intersect(original_cols, new_cols)
+    changed <- cpp_frame_addresses_equal(
+      cheapr::sset_col(data, common_cols),
+      new_data[common_cols]
+    )
+    changed_cols <- common_cols[cheapr::val_find(changed, FALSE)]
+    used_cols <- cpp_quo_data_vars(quos, data)
+    used_cols <- c(used_cols, fast_setdiff(new_cols, used_cols))
+    unused_cols <- fast_setdiff(original_cols, new_cols)
 
-  keep_cols <- switch(.keep,
-                      all = all_cols,
-                      none = new_cols,
-                      used = used_cols,
-                      unused = unused_cols)
+    keep_cols <- switch(.keep,
+                        all = all_cols,
+                        none = new_cols,
+                        used = used_cols,
+                        unused = unused_cols)
 
-  # Add missed group vars and keep original ordering
-  keep_cols <- fast_intersect(all_cols, c(group_vars, keep_cols))
-  out_data <- cheapr::sset_df(out_data, j = keep_cols)
+    # Add missed group vars and keep original ordering
+    keep_cols <- fast_intersect(all_cols, c(group_vars, keep_cols))
+    out_data <- cheapr::sset_df(out_data, j = keep_cols)
+  }
   list(
     data = out_data,
     new_cols = new_cols,
     used_cols = used_cols,
     unused_cols = unused_cols,
-    changed_cols = changed_cols
+    changed_cols = changed_cols,
+    all_groups = all_groups,
+    GRP = GRP
   )
 }
 
@@ -432,11 +434,11 @@ tidy_group_info_datamask <- function(data, ..., .by = NULL,
   if (dots_length(...) > 0){
     out_info <- mutate_summary(out, ..., .by = {{ .by }})
     out <- out_info[["data"]]
-    # group_info <- df_as_GRP(out)
     extra_groups <- out_info[["new_cols"]]
+    GRP <- out_info[["GRP"]]
   } else {
     out_info <- NULL
-    group_info <- NULL
+    GRP <- NULL
   }
   if (unique_groups){
     extra_groups <- fast_setdiff(extra_groups, group_vars)
@@ -458,7 +460,8 @@ tidy_group_info_datamask <- function(data, ..., .by = NULL,
     all_groups = all_groups,
     changed_groups = changed_groups,
     groups_changed = !all(address_equal[group_vars]),
-    address_equal = address_equal
+    address_equal = address_equal,
+    GRP = GRP
   )
 }
 

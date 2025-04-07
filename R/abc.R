@@ -9,7 +9,7 @@ check_length <- function(x, size){
 }
 
 # Coalesce empty strings instead of NA
-str_coalesce <- function(...) cpp_str_coalesce(list(...))
+str_coalesce <- function(...) cpp_str_coalesce(cheapr::list_drop_null(list(...)))
 
 drop_names <- function(x) `names<-`(x, NULL)
 
@@ -34,6 +34,19 @@ col_select_pos <- function(data, .cols = character()){
   }
   `names<-`(match(out, data_names), out_names)
 }
+
+# col_select_pos <- function(data, .cols = character()){
+#   selected_data <- cheapr::sset_col(data, .cols %||% 0L)
+#   out <- match(names(selected_data), names(data))
+#   names(out) <- str_coalesce(names(.cols), names(selected_data))
+#   out
+# }
+# col_select_names <- function(data, .cols = character()){
+#   selected_data <- cheapr::sset_col(data, .cols %||% 0L)
+#   out <- names(selected_data)
+#   names(out) <- str_coalesce(names(.cols), out)
+#   out
+# }
 
 col_select_names <- function(data, .cols = character()){
   .cols <- .cols %||% integer()

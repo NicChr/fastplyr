@@ -30,39 +30,33 @@ f_select.data.frame <- function(data, ..., .cols = NULL){
   out
 }
 #' @export
+#' @export
 f_select.grouped_df <- function(data, ..., .cols = NULL){
-  data_nms <- names(data)
   group_vars <- group_vars(data)
-  pos <- tidy_select_pos(data, ..., .cols = .cols)
-  group_pos <- add_names(match(group_vars, data_nms), group_vars)
-  pos_nms <- names(pos)
-  # Add group vars missed
-  groups_missed <- group_pos[match(group_pos, pos, 0L) == 0L]
-  if (length(groups_missed) > 0L){
-    text1 <- "Adding missing grouping variables: "
-    message(
-      paste0(text1,
-             "'", paste(data_nms[groups_missed],
-                        collapse = "', '"), "'")
-    )
-    pos <- c(groups_missed, pos)
-    names(pos) <- c(data_nms[groups_missed], pos_nms)
-  }
-  renamed_groups <- pos[pos %in% group_pos &
-                          !names(pos) %in% names(group_pos)]
-  if (length(renamed_groups) > 0L){
-    original_nms <- data_nms[unname(renamed_groups)]
+  group_data <- group_data(data)
 
-    names(attr(data, "groups"))[
-      match(original_nms,
-            names(attr(data, "groups")))] <- names(renamed_groups)
+  cols <- tidy_select_names(data, ..., .cols = .cols)
+
+  missed_groups <- fast_setdiff(group_vars, cols)
+
+  if (length(missed_groups) > 0){
+    missed_groups_msg <- paste(missed_groups, collapse = ", ")
+    cli::cli_inform(c("i" = "Adding missed group variables:", "{missed_groups_msg}"))
+    cols <- c(`names<-`(missed_groups, missed_groups), cols)
   }
-  groups <- group_data(data)
-  out <- cheapr::sset(cpp_ungroup(data), j = unname(pos))
-  names(out) <- names(pos)
-  attr(out, "groups") <- groups
-  class(out) <- class(data)
-  # class(out) <- c("grouped_df", "tbl_df", "tbl", "data.frame")
+
+  out <- cheapr::sset_col(data, cols)
+  out <- col_rename(out, cols)
+
+  # If any groups have been renamed then rename the group data
+  selected_group_vars <- fast_intersect(cols, group_vars)
+  if (any(names(selected_group_vars) != selected_group_vars)){
+    group_data <- col_rename(group_data, selected_group_vars)
+    attr(out, "groups") <- group_data
+  }
+  out <- cheapr::reconstruct(out, cpp_ungroup(data))
+  attr(out, "groups") <- group_data
+  class(out) <- c("grouped_df", class(out))
   out
 }
 #' @rdname f_select
@@ -94,7 +88,6 @@ f_rename.grouped_df <- function(data, ..., .cols = NULL){
   attr(out, "groups") <- group_data
   class(out) <- c("grouped_df", class(out))
   out
-
 }
 #' @rdname f_select
 #' @export

@@ -92,6 +92,7 @@ f_group_by <- function(data, ..., .add = FALSE,
                        .by = NULL, .cols = NULL,
                        .drop = df_group_by_drop_default(data)){
   init_group_vars <- group_vars(data)
+  check_by(data, {{ .by }})
   group_info <- tidy_group_info(
     cpp_ungroup(data), ...,
     .by = {{ .by }},
@@ -104,7 +105,7 @@ f_group_by <- function(data, ..., .add = FALSE,
   if (.add){
     order_unchanged <- .order == df_group_by_order_default(data)
     drop_unchanged <- .drop == df_group_by_drop_default(data)
-    no_extra_groups <- length(groups) == 0 || (length(setdiff(groups, init_group_vars)) == 0)
+    no_extra_groups <- length(groups) == 0 || (length(fast_setdiff(groups, init_group_vars)) == 0)
     groups_unchanged <- all(group_info$address_equal[init_group_vars])
     if (order_unchanged && drop_unchanged && no_extra_groups && groups_unchanged){
       return(data)
