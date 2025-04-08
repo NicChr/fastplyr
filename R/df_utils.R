@@ -53,6 +53,10 @@ df_rm_cols <- function(data, cols){
   df_add_cols(data, `names<-`(cheapr::new_list(length(cols)), col_select_names(data, cols)))
 }
 
+df_add_col <- function(data, col, value){
+  df_add_cols(data, `names<-`(list(value), col))
+}
+
 # Seq along df rows/cols
 df_seq_along <- function(data, along = "rows"){
   switch(along,

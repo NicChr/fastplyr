@@ -113,32 +113,7 @@ f_group_by <- function(data, ..., .add = FALSE,
     groups <- unique(c(init_group_vars, groups))
   }
   if (length(groups) > 0L){
-    # group_summary <- group_collapse(out, .cols = groups,
-    #                          order = .order,
-    #                          id = FALSE,
-    #                          loc = TRUE, sort = TRUE,
-    #                          size = FALSE,
-    #                          start = FALSE, end = FALSE,
-    #                          .drop = .drop)
-    group_summary <- group_collapse2(cheapr::sset_col(out, groups),
-                                     order = .order,
-                                     id = FALSE,
-                                     loc = TRUE, sort = TRUE,
-                                     size = FALSE,
-                                     start = FALSE, end = FALSE,
-                                     drop = .drop)
-    # g <- df_to_GRP(out, .cols = groups, order = .order, return.order = FALSE, return.groups = TRUE)
-    # group_summary <- group_collapse3(
-    #   out, g,
-    #   id = FALSE, loc = TRUE,
-    #   size = FALSE, start = FALSE, end = FALSE, drop = .drop
-    # )
-    group_summary <- col_rename(group_summary, .cols = c(".rows" = ".loc"))
-    group_summary[[".rows"]] <- vctrs_new_list_of(group_summary[[".rows"]], integer())
-    attr(group_summary, ".drop") <- .drop
-    attr(group_summary, "ordered") <- .order
-    attr(out, "groups") <- group_summary
-    class(out) <- c("grouped_df", "tbl_df", "tbl", "data.frame")
+    out <- construct_dplyr_grouped_df(out, groups, order = .order, drop = .drop)
   }
   out
 }

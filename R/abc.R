@@ -35,7 +35,7 @@ col_select_pos <- function(data, .cols = character()){
   `names<-`(match(out, data_names), out_names)
 }
 
-# col_select_pos <- function(data, .cols = character()){
+# col_select_pos2 <- function(data, .cols = character()){
 #   selected_data <- cheapr::sset_col(data, .cols %||% 0L)
 #   out <- match(names(selected_data), names(data))
 #   names(out) <- str_coalesce(names(.cols), names(selected_data))
@@ -79,24 +79,6 @@ col_rename <- function(data, .cols = integer()){
 # N expressions in ...
 dots_length <- function(...){
   nargs()
-}
-
-# Check if signs are all equal
-# Special function to handle -0 selection
-# Returns 1 or -1, with special handling of -0 to allow slicing of all rows
-slice_sign <- function(x){
-  if (length(x) == 0){
-    1L
-  } else if (length(x) == 1){
-    cheapr::int_sign(1/x)
-  } else {
-    rng <- collapse::frange(x, na.rm = FALSE)
-    rng_sum <- sum(cheapr::int_sign(1/rng))
-    if (abs(rng_sum) != 2){
-      cli::cli_abort("Can't mix negative and positive locations")
-    }
-    cheapr::int_sign(rng_sum)
-  }
 }
 
 # Like deparse1 but has a cutoff in case of massive strings

@@ -117,6 +117,11 @@ group3 <- function(X, starts = FALSE, group.sizes = FALSE){
 is_GRP <- function(GRP){
   inherits(GRP, "GRP")
 }
+check_GRP <- function(GRP){
+  if (!is_GRP(GRP)){
+    cli::cli_abort("{.arg GRP} must be a {.cls GRP}")
+  }
+}
 # Number of groups
 GRP_n_groups <- function(GRP){
   GRP[["N.groups"]]
@@ -271,7 +276,7 @@ GRP_order <- function(GRP){
   out <- GRP[["order"]]
   if (is.null(out)){
     group_id <- GRP_group_id(GRP)
-    if (GRP_is_sorted(GRP) || is_sorted(group_id)){
+    if (GRP_is_sorted(GRP) || cpp_group_id_sorted(group_id)){
       out <- seq_along(group_id)
       sizes <- GRP_group_sizes(GRP)
       starts <- GRP_starts(GRP)
@@ -586,7 +591,7 @@ construct_grouped_df <- function(data, g, group_vars){
   groups <- GRP_groups(g)
 
   if (is.null(groups)){
-    groups <- cheapr::sset(cpp_ungroup(data), GRP_starts(g), j = group_vars)
+    groups <- cheapr::sset_df(cpp_ungroup(data), GRP_starts(g), j = group_vars)
   }
   group_locs <- GRP_loc(g)
   groups[[".rows"]] <- vctrs_new_list_of(group_locs, integer())
