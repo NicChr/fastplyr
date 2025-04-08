@@ -46,6 +46,7 @@ SEXP as_list_call(SEXP expr) {
   return result;
 }
 
+[[cpp11::register]]
 bool call_is_namespaced(SEXP expr){
 
   int NP = 0;
@@ -125,7 +126,7 @@ bool is_ns_call(SEXP expr, SEXP ns){
 
 // get the namespace of a function
 
-SEXP cpp_fun_ns(SEXP x, SEXP rho){
+SEXP get_fun_ns(SEXP x, SEXP rho){
   int NP = 0;
   if (!Rf_isFunction(x)){
     Rf_protect(x = cpp_get(x, rho)); ++NP;
@@ -156,6 +157,12 @@ SEXP cpp_fun_ns(SEXP x, SEXP rho){
     Rf_unprotect(NP); return Rf_mkChar("");
   }
 }
+
+[[cpp11::register]]
+SEXP cpp_fun_ns(SEXP x, SEXP rho){
+  return Rf_ScalarString(get_fun_ns(x, rho));
+}
+
 // is this call a call to any function supplied to `fn`?
 
 bool is_call2(SEXP expr, SEXP fn){
@@ -239,7 +246,7 @@ bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
       } else {
         for (int i = 0; i < n_fns; ++i){
           R_Reprotect(fn_sym = Rf_installChar(STRING_ELT(fn, i)), fn_sym_idx);
-          R_Reprotect(fn_ns = cpp_fun_ns(fn_sym, rho), fn_ns_idx);
+          R_Reprotect(fn_ns = get_fun_ns(fn_sym, rho), fn_ns_idx);
           out = out || std::strcmp(CHAR(fn_ns), ns_char) == 0;
         }
       }
@@ -279,7 +286,7 @@ bool cpp_call_contains_ns(SEXP expr, SEXP ns, SEXP rho){
     }
     if (TYPEOF(branch) == SYMSXP){
      SEXP branch_name = Rf_protect(rlang::sym_as_character(branch)); ++NP;
-     SEXP fun_ns = Rf_protect(cpp_fun_ns(branch_name, rho)); ++NP;
+     SEXP fun_ns = Rf_protect(get_fun_ns(branch_name, rho)); ++NP;
      if (std::strcmp(CHAR(fun_ns), CHAR(ns_str)) == 0){
        out = true;
        break;
@@ -348,7 +355,7 @@ bool cpp_call_contains_fn(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
   //       }
   //     } else {
   //       SEXP branch_name = Rf_protect(rlang::sym_as_character(branch)); ++NP;
-  //       SEXP fn_ns = Rf_protect(cpp_fun_ns(branch_name, rho)); ++NP;
+  //       SEXP fn_ns = Rf_protect(get_fun_ns(branch_name, rho)); ++NP;
   //       if (branch == fn_sym && std::strcmp(CHAR(fn_ns), CHAR(ns_str)) == 0){
   //         out = true; break;
   //       }

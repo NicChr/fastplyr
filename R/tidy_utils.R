@@ -178,7 +178,7 @@ unpack_across <- function(quo, data){
 }
 
 fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE,
-                          .unpack_default = FALSE){
+                          .unpack_default = FALSE, .optimise = FALSE, .g = NULL){
 
   out <- rlang::quos(..., .ignore_empty = "all")
   quo_nms <- attr(out, "names", TRUE)
@@ -221,6 +221,32 @@ fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE,
   if (.drop_null){
     out <- cpp_quos_drop_null(out)
   }
+
+  # Second pass to check for optimised calls
+
+  if (.optimise){
+    for (i in seq_along(out)){
+      quo <- out[[i]]
+      expr <- rlang::quo_get_expr(quo)
+      env <- rlang::quo_get_env(quo)
+      if (is_optimised_call(expr, env)){
+        args <- rlang::call_args(expr)
+        if ("g" %in% names(args)){
+         next
+        }
+        if (call_is_namespaced(expr)){
+          ns <- rlang::as_string(expr[[1]][[2]])
+          fn <- expr[[1]][[3]]
+        } else {
+          ns <- "collapse"
+          fn <- expr[[1]]
+        }
+        expr <- call2(rlang::as_string(fn), !!!args, g = .g, .ns = ns)
+        out[[i]] <- rlang::new_quosure(expr, env)
+      }
+    }
+
+  }
   set_add_attr(out, ".fastplyr_quos", TRUE)
   out
 }
@@ -232,6 +258,30 @@ check_fastplyr_quos <- function(quos){
   if (!are_fastplyr_quos(quos)){
     cli::cli_abort("{.arg quos} must be built using {.fn fastplyr_quos}")
   }
+}
+
+.optimised_fns <- c(
+  "sum", "prod", "mean", "median", "min", "max", "first", "last",
+  "sd", "var", "n_distinct", "ndistinct", "fsum", "fprod", "fmean",
+  "fmedian", "fmin", "fmax", "ffirst", "flast", "fsd", "fvar",
+  "fndistinct", "fndistinct"
+)
+.collapse_fns <- c(
+  "fsum", "fprod", "fmean", "fmedian", "fmin", "fmax", "ffirst", "flast",
+  "fsd", "fvar", "fndistinct", "fndistinct", "fsum", "fprod", "fmean",
+  "fmedian", "fmin", "fmax", "ffirst", "flast", "fsd", "fvar",
+  "fndistinct", "fndistinct"
+)
+
+is_optimised_call <- function(expr, env = rlang::caller_env()){
+  cpp_is_fn_call(expr, .optimised_fns,  NULL, env)
+  # out <- cpp_is_fn_call(expr, .optimised_fns,  NULL, env)
+  # if (call_is_namespaced(expr)){
+  #   names(out) <- rlang::as_string(as.list(as.list(expr)[[1]])[[2]])
+  # } else {
+  #   names(out) <- cpp_fun_ns(as.list(expr)[[1]], env)
+  # }
+  # out
 }
 
 # dplyr_mask_fns <- c(

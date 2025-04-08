@@ -125,6 +125,20 @@ extern "C" SEXP _fastplyr_cpp_df_transform_exotic(SEXP x, SEXP order, SEXP as_qg
   END_CPP11
 }
 // tidy.cpp
+bool call_is_namespaced(SEXP expr);
+extern "C" SEXP _fastplyr_call_is_namespaced(SEXP expr) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(call_is_namespaced(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr)));
+  END_CPP11
+}
+// tidy.cpp
+SEXP cpp_fun_ns(SEXP x, SEXP rho);
+extern "C" SEXP _fastplyr_cpp_fun_ns(SEXP x, SEXP rho) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_fun_ns(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(rho)));
+  END_CPP11
+}
+// tidy.cpp
 bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho);
 extern "C" SEXP _fastplyr_cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho) {
   BEGIN_CPP11
@@ -253,6 +267,7 @@ extern "C" SEXP _fastplyr_cpp_group_split(SEXP data, SEXP drop, SEXP order) {
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
+    {"_fastplyr_call_is_namespaced",                   (DL_FUNC) &_fastplyr_call_is_namespaced,                   1},
     {"_fastplyr_cpp_any_frames",                       (DL_FUNC) &_fastplyr_cpp_any_frames,                       1},
     {"_fastplyr_cpp_any_frames_exotic",                (DL_FUNC) &_fastplyr_cpp_any_frames_exotic,                1},
     {"_fastplyr_cpp_any_quo_contains_dplyr_mask_call", (DL_FUNC) &_fastplyr_cpp_any_quo_contains_dplyr_mask_call, 1},
@@ -263,6 +278,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_fill_grouped",                     (DL_FUNC) &_fastplyr_cpp_fill_grouped,                     4},
     {"_fastplyr_cpp_frame_addresses_equal",            (DL_FUNC) &_fastplyr_cpp_frame_addresses_equal,            2},
     {"_fastplyr_cpp_frame_dims",                       (DL_FUNC) &_fastplyr_cpp_frame_dims,                       3},
+    {"_fastplyr_cpp_fun_ns",                           (DL_FUNC) &_fastplyr_cpp_fun_ns,                           2},
     {"_fastplyr_cpp_group_data",                       (DL_FUNC) &_fastplyr_cpp_group_data,                       1},
     {"_fastplyr_cpp_group_id",                         (DL_FUNC) &_fastplyr_cpp_group_id,                         1},
     {"_fastplyr_cpp_group_id_sorted",                  (DL_FUNC) &_fastplyr_cpp_group_id_sorted,                  1},
