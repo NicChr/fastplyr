@@ -177,44 +177,36 @@ unpack_across <- function(quo, data){
   out
 }
 
-fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE,
-                          .unpack_default = FALSE, .optimise = FALSE, .g = NULL){
+fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
+                          .unpack_default = FALSE, .optimise = FALSE, .g = NULL,
+                          .optimise_expand = FALSE){
 
   out <- rlang::quos(..., .ignore_empty = "all")
   quo_nms <- attr(out, "names", TRUE)
-
-  if (is.null(.data)){
-    for (i in seq_along(out)){
-      attr(out[[i]], ".unpack", TRUE) %||% set_add_attr(out[[i]], ".unpack", .unpack_default)
-      if (.named && !nzchar(quo_nms[[i]])){
-        quo_nms[[i]] <- deparse2(rlang::quo_get_expr(out[[i]]))
-      }
-    }
-  } else {
-    k <- 1L
-    for (i in seq_along(out)){
-      quo <- out[[k]]
-      expr <- rlang::quo_get_expr(quo)
-      env <- rlang::quo_get_env(quo)
-      attr(quo, ".unpack", TRUE) %||% set_add_attr(quo, ".unpack", .unpack_default)
-      if (!nzchar(quo_nms[[k]]) && cpp_is_fn_call(expr, "across", ns = "dplyr", env)){
-        left <- out[seq_len(k - 1L)]
-        unpacked_quos <- unpack_across(quo, .data)
-        if (k < length(out)){
-          right <- out[seq.int(k + 1L, length(out), 1L)]
-        } else {
-          right <- list()
-        }
-        out[[k]] <- NULL
-        out <- c(left, unpacked_quos, right)
-        quo_nms <- names(out)
-        k <- k + length(right)
-      } else if (.named && !nzchar(quo_nms[[k]])){
-        quo_nms[[k]] <- deparse2(rlang::quo_get_expr(quo))
-        k <- k + 1L
+  k <- 1L
+  for (i in seq_along(out)){
+    quo <- out[[k]]
+    expr <- rlang::quo_get_expr(quo)
+    env <- rlang::quo_get_env(quo)
+    attr(quo, ".unpack", TRUE) %||% set_add_attr(quo, ".unpack", .unpack_default)
+    attr(quo, ".group_optimise", TRUE) %||% set_add_attr(quo, ".group_optimise", FALSE)
+    if (!nzchar(quo_nms[[k]]) && cpp_is_fn_call(expr, "across", ns = "dplyr", env)){
+      left <- out[seq_len(k - 1L)]
+      unpacked_quos <- unpack_across(quo, .data)
+      if (k < length(out)){
+        right <- out[seq.int(k + 1L, length(out), 1L)]
       } else {
-       k <- k + 1L
+        right <- list()
       }
+      out[[k]] <- NULL
+      out <- c(left, unpacked_quos, right)
+      quo_nms <- names(out)
+      k <- k + length(right)
+    } else if (.named && !nzchar(quo_nms[[k]])){
+      quo_nms[[k]] <- deparse2(rlang::quo_get_expr(quo))
+      k <- k + 1L
+    } else {
+      k <- k + 1L
     }
   }
   names(out) <- quo_nms
@@ -223,16 +215,20 @@ fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE,
   }
 
   # Second pass to check for optimised calls
-
   if (.optimise){
+    if (.optimise_expand){
+      TRA <- "replace_fill"
+    } else {
+      TRA <- NULL
+    }
     for (i in seq_along(out)){
       quo <- out[[i]]
       expr <- rlang::quo_get_expr(quo)
       env <- rlang::quo_get_env(quo)
-      if (is_optimised_call(expr, env)){
+      if (!is_nested_call(expr) && is_optimised_call(expr, env)){
         args <- rlang::call_args(expr)
-        if ("g" %in% names(args)){
-         next
+        if (!cheapr::all_na(match(c("g", "TRA"), names(args)))){
+          next
         }
         if (call_is_namespaced(expr)){
           ns <- rlang::as_string(expr[[1]][[2]])
@@ -241,11 +237,20 @@ fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE,
           ns <- "collapse"
           fn <- expr[[1]]
         }
-        expr <- call2(rlang::as_string(fn), !!!args, g = .g, .ns = ns)
-        out[[i]] <- rlang::new_quosure(expr, env)
+        fn <- rlang::as_string(fn)
+        fn <- .collapse_fns[match(fn, .optimised_fns)]
+        expr <- call2(fn, !!!args, g = .g, TRA = TRA, .ns = ns)
+        quo <- rlang::new_quosure(expr, env)
+        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
+        set_add_attr(quo, ".group_optimise", TRUE)
+        out[[i]] <- quo
       }
     }
-
+  }
+  if (.optimise_expand){
+    set_add_attr(out, ".optimised_result_size", df_nrow(.data))
+  } else {
+    set_add_attr(out, ".optimised_result_size", min(1L, df_nrow(.data)))
   }
   set_add_attr(out, ".fastplyr_quos", TRUE)
   out
@@ -275,25 +280,7 @@ check_fastplyr_quos <- function(quos){
 
 is_optimised_call <- function(expr, env = rlang::caller_env()){
   cpp_is_fn_call(expr, .optimised_fns,  NULL, env)
-  # out <- cpp_is_fn_call(expr, .optimised_fns,  NULL, env)
-  # if (call_is_namespaced(expr)){
-  #   names(out) <- rlang::as_string(as.list(as.list(expr)[[1]])[[2]])
-  # } else {
-  #   names(out) <- cpp_fun_ns(as.list(expr)[[1]], env)
-  # }
-  # out
 }
-
-# dplyr_mask_fns <- c(
-#   "n", "pick",
-#   "cur_group_id", "cur_group_rows", "cur_column",
-#   "cur_data", "cur_data_all"
-# )
-# quo_is_mask_call <- function(quo){
-#   expr <- rlang::quo_get_expr(quo)
-#   env <- rlang::quo_get_env(quo)
-#   cpp_is_fn_call(expr, dplyr_mask_fns, "dplyr", env)
-# }
 
 # Tidyselect col positions with names
 tidy_select_pos <- function(data, ..., .cols = NULL){
@@ -708,13 +695,21 @@ dplyr_eval_all_tidy <- function(data, ...){
 # About half-way there (unfortunately not super fast)
 f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
 
-  if (missing(.by)){
+  if (rlang::quo_is_null(rlang::enquo(.by))){
     data <- .data
   } else {
     data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
   }
+  # if (length(group_vars(data)) == 0){
+    # || df_nrow(group_keys(data)) < 1e03){
+    .optimise <- FALSE
+    GRP <- NULL
+  # } else {
+  #   .optimise <- TRUE
+  #   GRP <- grouped_df_as_GRP(data, return.groups = FALSE, return.order = FALSE)
+  # }
   quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE, .named = TRUE,
-                        .unpack_default = TRUE)
+                        .unpack_default = TRUE, .g = GRP, .optimise = .optimise)
 
   if (length(quos) == 0){
     return(cheapr::reconstruct(group_keys(data), cpp_ungroup(.data)))

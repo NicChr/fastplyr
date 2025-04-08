@@ -68,6 +68,10 @@ cpp_df_transform_exotic <- function(x, order, as_qg) {
   .Call(`_fastplyr_cpp_df_transform_exotic`, x, order, as_qg)
 }
 
+is_nested_call <- function(expr) {
+  .Call(`_fastplyr_is_nested_call`, expr)
+}
+
 call_is_namespaced <- function(expr) {
   .Call(`_fastplyr_call_is_namespaced`, expr)
 }
