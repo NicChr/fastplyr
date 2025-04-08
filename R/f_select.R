@@ -46,7 +46,8 @@ f_select.grouped_df <- function(data, ..., .cols = NULL){
   }
 
   out <- cheapr::sset_col(data, cols)
-  out <- col_rename(out, cols)
+  names(out) <- names(cols)
+  # out <- col_rename(out, cols)
 
   # If any groups have been renamed then rename the group data
   selected_group_vars <- fast_intersect(cols, group_vars)

@@ -35,27 +35,23 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
     if (!is.null(by)) {
       X <- cheapr::sset_df(X, j = by)
     }
-    out <- add_names(
-      vector("list", 9),
-      c("N.groups", "group.id",
-        "group.sizes", "groups", "group.vars", "ordered",
-        "order", "group.starts", "call")
-    )
+    out <- cheapr::new_list(9L)
     # groups <- group2(X)
     groups <- group3(X, starts = TRUE, group.sizes = TRUE)
-    out[["N.groups"]] <- attr(groups, "N.groups")
-    out[["group.sizes"]] <- attr(groups, "group.sizes")
-    out[["group.starts"]] <- attr(groups, "starts")
+    out[[1L]] <- attr(groups, "N.groups")
+    out[[3L]] <- attr(groups, "group.sizes")
+    out[[8L]] <- attr(groups, "starts")
     if (is.factor(X)) {
-      out[["ordered"]] <- add_names(c(NA, TRUE), c("ordered",
-                                                   "sorted"))
+      out[[6L]] <- add_names(c(NA, TRUE), c("ordered","sorted"))
     }
     else {
-      out[["ordered"]] <- add_names(c(FALSE, NA), c("ordered",
-                                                    "sorted"))
+      out[[6L]] <- add_names(c(FALSE, NA), c("ordered", "sorted"))
     }
     strip_attrs(groups, set = TRUE)
-    out[["group.id"]] <- groups
+    out[[2L]] <- groups
+    names(out) <- c("N.groups", "group.id",
+                    "group.sizes", "groups", "group.vars", "ordered",
+                    "order", "group.starts", "call")
     class(out) <- "GRP"
   }
   else {
@@ -365,8 +361,7 @@ GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
 # Convert data frame to GRP safely
 # Either treats data as 1 big group or
 # Uses dplyr group vars
-df_as_GRP <- function(data, return.order = FALSE, ...){
-  # cpp_df_as_collapse_grp(data, return.order)
+grouped_df_as_GRP <- function(data, return.groups = FALSE, return.order = FALSE, ...){
 
   out <- cheapr::new_list(9L)
   n_rows <- df_nrow(data)
@@ -412,7 +407,7 @@ df_as_GRP <- function(data, return.order = FALSE, ...){
   out[[1L]] <- n_groups
   out[[2L]] <- group_id
   out[[3L]] <- gsizes
-  if (length(gvars) != 0){
+  if (return.groups){
     out[[4L]] <- gkeys
     out[[5L]] <- gvars
   }
@@ -431,20 +426,20 @@ df_as_GRP <- function(data, return.order = FALSE, ...){
 }
 # Custom GRP method for data frames
 # Group starts is always returned
-df_to_GRP <- function(data, .cols = character(0),
+df_to_GRP <- function(data, .cols = character(),
                       order = df_group_by_order_default(data),
-                      return.order = order,
+                      return.order = FALSE,
                       return.groups = FALSE){
   dplyr_groups <- group_vars(data)
-  cols <- `names<-`(col_select_names(data, .cols = .cols), NULL)
+  cols <- drop_names(col_select_names(data, .cols = .cols))
   extra_groups <- fast_setdiff(cols, dplyr_groups)
   group_vars <- c(dplyr_groups, extra_groups)
   data <- cheapr::sset_df(data, j = group_vars)
 
   if (length(names(data)) == 0L){
-    out <- df_as_GRP(cpp_ungroup(data), return.order = return.order)
+    out <- grouped_df_as_GRP(cpp_ungroup(data), return.groups = return.groups, return.order = return.order)
   } else if (length(extra_groups) == 0L && order == df_group_by_order_default(data)){
-    out <- df_as_GRP(data, return.order = return.order, return.groups = return.groups)
+    out <- grouped_df_as_GRP(data, return.order = return.order, return.groups = return.groups)
   } else {
     data <- cpp_ungroup(data)
     data2 <- df_mutate_exotic_to_ids(data, order = order)

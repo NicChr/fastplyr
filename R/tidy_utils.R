@@ -250,9 +250,18 @@ tidy_select_pos <- function(data, ..., .cols = NULL){
     out <- col_select_pos(data, .cols)
   } else {
     dots <- rlang::quos(...)
-    labels <- quo_labels(dots, named = TRUE)
-    if (all(labels %in_% data_nms)){
-      out <- add_names(match(labels, data_nms), names(labels))
+    select_cols <- character(length(dots))
+    for (i in seq_along(dots)){
+      expr <- rlang::quo_get_expr(dots[[i]])
+      if (is.symbol(expr)){
+        select_cols[i] <- rlang::as_string(expr)
+      }
+    }
+    out <- match(select_cols, data_nms)
+    if (!anyNA(out)){
+     names(out) <- names(dots)
+     empty <- cheapr::val_find(nzchar(names(out)), FALSE)
+     names(out)[empty] <- data_nms[out[empty]]
       is_dup <- collapse::fduplicated(list(names(out), unname(out)))
       out <- out[!is_dup]
       if (anyDuplicated(names(out))){
@@ -275,7 +284,7 @@ mutate_summary <- function(.data, ...,
                            .keep = "all",
                            .by = NULL,
                            .order = df_group_by_order_default(.data),
-                           .add_collapse_grp = TRUE){
+                           .add_collapse_grp = FALSE){
   original_cols <- names(.data)
   if (rlang::quo_is_null(rlang::enquo(.by))){
     all_groups <- group_vars(.data)
@@ -286,7 +295,7 @@ mutate_summary <- function(.data, ...,
   }
   GRP <- NULL
   if (length(all_groups) > 0L && .add_collapse_grp){
-    GRP <- df_as_GRP(data)
+    GRP <- grouped_df_as_GRP(data)
   }
   if (dots_length(...) == 0L){
     out_data <- .data
