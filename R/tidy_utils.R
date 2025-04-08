@@ -87,14 +87,6 @@ fix_quo_names <- function(quos){
   quos
 }
 
-
-is_fn_call <- function(quo, fn, ns = NULL){
-  cpp_is_fn_call(
-    rlang::quo_get_expr(quo), fn, ns,
-    rlang::quo_get_env(quo)
-  )
-}
-
 unpack_across <- function(quo, data){
 
   expr <- rlang::quo_get_expr(quo)
@@ -202,8 +194,10 @@ fastplyr_quos <- function(..., .named = TRUE, .data = NULL, .drop_null = FALSE,
     k <- 1L
     for (i in seq_along(out)){
       quo <- out[[k]]
+      expr <- rlang::quo_get_expr(quo)
+      env <- rlang::quo_get_env(quo)
       attr(quo, ".unpack", TRUE) %||% set_add_attr(quo, ".unpack", .unpack_default)
-      if (!nzchar(quo_nms[[k]]) && is_fn_call(quo, "across", ns = "dplyr")){
+      if (!nzchar(quo_nms[[k]]) && cpp_is_fn_call(expr, "across", ns = "dplyr", env)){
         left <- out[seq_len(k - 1L)]
         unpacked_quos <- unpack_across(quo, .data)
         if (k < length(out)){
@@ -240,6 +234,16 @@ check_fastplyr_quos <- function(quos){
   }
 }
 
+# dplyr_mask_fns <- c(
+#   "n", "pick",
+#   "cur_group_id", "cur_group_rows", "cur_column",
+#   "cur_data", "cur_data_all"
+# )
+# quo_is_mask_call <- function(quo){
+#   expr <- rlang::quo_get_expr(quo)
+#   env <- rlang::quo_get_env(quo)
+#   cpp_is_fn_call(expr, dplyr_mask_fns, "dplyr", env)
+# }
 
 # Tidyselect col positions with names
 tidy_select_pos <- function(data, ..., .cols = NULL){
@@ -280,22 +284,26 @@ tidy_select_names <- function(data, ..., .cols = NULL){
   add_names(names(data)[match(pos, seq_along(data))], names(pos))
 }
 
+# To replace tidy_group_info_datamask in the future
 mutate_summary <- function(.data, ...,
                            .keep = "all",
                            .by = NULL,
                            .order = df_group_by_order_default(.data),
+                           .drop = df_group_by_drop_default(.data),
                            .add_collapse_grp = FALSE){
   original_cols <- names(.data)
+  data <- .data
   if (rlang::quo_is_null(rlang::enquo(.by))){
     all_groups <- group_vars(.data)
-    data <- .data
   } else {
     all_groups <- get_groups(.data, .by = {{ .by }})
-    data <- f_group_by(.data, .cols = all_groups, .add = TRUE, .order = .order)
+    if (length(all_groups) > 0){
+      data <- construct_dplyr_grouped_df(.data, all_groups, order = .order, drop = .drop)
+    }
   }
   GRP <- NULL
   if (length(all_groups) > 0L && .add_collapse_grp){
-    GRP <- grouped_df_as_GRP(data)
+    GRP <- grouped_df_as_GRP(data, return.groups = TRUE)
   }
   if (dots_length(...) == 0L){
     out_data <- .data
@@ -306,7 +314,7 @@ mutate_summary <- function(.data, ...,
   } else {
     quos <- fastplyr_quos(..., .named = TRUE, .data = data)
 
-    if (cpp_any_quo_contains_ns(quos, "dplyr")){
+    if (cpp_any_quo_contains_dplyr_mask_call(quos)){
       new_data <- as.list(dplyr::mutate(data, !!!quos, .keep = "none"))[names(quos)]
     } else {
       new_data <- as.list(cpp_grouped_eval_mutate(data, quos))
@@ -348,6 +356,32 @@ mutate_summary <- function(.data, ...,
     all_groups = all_groups,
     GRP = GRP
   )
+}
+
+# To replace tidy_group_info_tidyselect in the future
+select_summary <- function(data, ..., .by = NULL, .cols = NULL){
+  group_vars <- get_groups(data, {{ .by }})
+  group_pos <- match(group_vars, names(data))
+  extra_groups <- character()
+  out <- data
+  extra_group_pos <- tidy_select_pos(out, ..., .cols = .cols)
+  out <- f_rename(out, .cols = extra_group_pos)
+  extra_groups <- names(extra_group_pos)
+  # Recalculate group vars in case they were renamed
+  group_vars <- names(out)[group_pos]
+  address_equal <- rep_len(TRUE, df_ncol(data))
+  address_equal[extra_group_pos] <-
+    names(data)[extra_group_pos] == names(extra_group_pos)
+  names(address_equal) <- names(data)
+  any_groups_changed <- !all(address_equal[group_vars])
+  extra_groups <- fast_setdiff(extra_groups, group_vars)
+  all_groups <- c(group_vars, extra_groups)
+  list("data" = out,
+       "dplyr_groups" = group_vars,
+       "extra_groups" = extra_groups,
+       "all_groups" = all_groups,
+       "groups_changed" = any_groups_changed,
+       "address_equal" = address_equal)
 }
 tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
                                        ungroup = TRUE, rename = TRUE,
@@ -492,6 +526,25 @@ tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
   }
 }
 
+tidy_group_info2 <- function(data, ..., .by = NULL, .cols = NULL,
+                            ungroup = TRUE, rename = TRUE,
+                            dots_type = "data-mask",
+                            unique_groups = TRUE){
+  check_cols(n_dots = dots_length(...), .cols = .cols)
+  if (is.null(.cols) && dots_type == "data-mask"){
+    tidy_group_info_datamask(data, ..., .by = {{ .by }},
+                             ungroup = ungroup,
+                             unique_groups = unique_groups)
+
+  } else {
+    tidy_group_info_tidyselect(data, ..., .by = {{ .by }},
+                               .cols = .cols,
+                               ungroup = ungroup,
+                               rename = rename,
+                               unique_groups = unique_groups)
+  }
+}
+
 unique_count_col <- function(data, col = "n"){
   data_nms <- names(data)
   if (is.null(data_nms)) data_nms <- data
@@ -530,6 +583,9 @@ check_rowwise <- function(data){
 eval_all_tidy <- function(.data, quos, recycle = FALSE, unique_names = FALSE){
   check_fastplyr_quos(quos)
   quo_names <- names(quos)
+  if (cpp_any_quo_contains_dplyr_mask_call(quos)){
+    return(dplyr_eval_all_tidy(.data, !!!quos))
+  }
   all_results <- cpp_grouped_eval_tidy(.data, quos, recycle = recycle)
   groups <- all_results[[1L]]
   results <- all_results[[2L]]
@@ -538,7 +594,7 @@ eval_all_tidy <- function(.data, quos, recycle = FALSE, unique_names = FALSE){
   k <- 1L
   for (i in seq_along(results)){
     # Unpack
-    if (attr(quos[[i]], ".unpack", TRUE) && is_df(results[[k]])){
+    if (isTRUE(attr(quos[[i]], ".unpack", TRUE)) && is_df(results[[k]])){
       results_to_append <- as.list(results[[k]])
       # if (nzchar(quo_names[[i]])){
       #   names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
@@ -559,6 +615,45 @@ eval_all_tidy <- function(.data, quos, recycle = FALSE, unique_names = FALSE){
   list(groups = groups, results = results)
 }
 
+### In the future we hope to not have to use this
+### But right now I'm not sure how to evaluate
+### data-mask specific functions like `n()` and friends
+### so I'm relying to dplyr to do it
+### Unfortunately I can't figure out a way to
+### return a structure similar to the one
+### eval_all_tidy() produces while keeping the expressions
+### sequentially dependent
+dplyr_eval_all_tidy <- function(data, ...){
+  cli::cli_warn("{.pkg dplyr} mask function detected, results will be independent of each other")
+
+  quos <- rlang::enquos(...)
+  expr_names <- names(quos)
+  group_vars <- group_vars(data)
+  n_groups <- length(group_vars)
+
+  results <- list()
+  groups <- list()
+
+  # Loop over the expressions
+  for (i in seq_along(quos)){
+    quo <- quos[[i]]
+    expr <- rlang::quo_get_expr(quo)
+    expr_name <- expr_names[i]
+    env <- rlang::quo_get_env(quo)
+    #  Fix this later as new objects don't take precedence over data variables here
+    if (nzchar(expr_name)){
+      result <- dplyr::reframe(data, !!expr_name := !!quo)
+    } else {
+      result <- dplyr::reframe(data, !!quo)
+    }
+    result2 <- as.list(result)[seq_len(df_ncol(result) - n_groups) + n_groups]
+    results <- c(results, result2)
+    groups <- cheapr::list_combine(groups, rep(list(df_as_tbl(cheapr::sset_col(result, group_vars))), length(result2)))
+  }
+  names(groups) <- names(results)
+  list(groups = groups, results = results)
+}
+
 # A fastplyr version of reframe
 # About half-way there (unfortunately not super fast)
 f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
@@ -574,7 +669,7 @@ f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default
   if (length(quos) == 0){
     return(cheapr::reconstruct(group_keys(data), cpp_ungroup(.data)))
   }
-  if (cpp_any_quo_contains_ns(quos, "dplyr")){
+  if (cpp_any_quo_contains_dplyr_mask_call(quos)){
     out <- dplyr::reframe(data, ...)
   } else {
     results <- eval_all_tidy(data, quos, recycle = TRUE, unique = TRUE)

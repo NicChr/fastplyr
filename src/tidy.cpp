@@ -86,6 +86,10 @@ bool is_ns_call(SEXP expr, SEXP ns){
 
   int NP = 0;
 
+  if (TYPEOF(ns) != STRSXP){
+    Rf_error("`ns` must be a character vector in %s", __func__);
+  }
+
   if (TYPEOF(expr) != LANGSXP){
     return false;
   }
@@ -119,7 +123,8 @@ bool is_ns_call(SEXP expr, SEXP ns){
   return out;
 }
 
-[[cpp11::register]]
+// get the namespace of a function
+
 SEXP cpp_fun_ns(SEXP x, SEXP rho){
   int NP = 0;
   if (!Rf_isFunction(x)){
@@ -151,29 +156,40 @@ SEXP cpp_fun_ns(SEXP x, SEXP rho){
     Rf_unprotect(NP); return Rf_mkChar("");
   }
 }
+// is this call a call to any function supplied to `fn`?
 
 bool is_call2(SEXP expr, SEXP fn){
 
-  if (TYPEOF(fn) != STRSXP || Rf_length(fn) != 1){
-    Rf_error("`fn` must be a character vector of length one in %s", __func__);
+  if (TYPEOF(fn) != STRSXP){
+    Rf_error("`fn` must be a character vector %s", __func__);
   }
 
   int NP = 0;
-  bool out = false;
 
-  if (TYPEOF(fn) != SYMSXP){
-    Rf_protect(fn = Rf_coerceVector(fn, SYMSXP)); ++NP;
-  }
+  SEXP fn_sym;
+  PROTECT_INDEX fn_sym_idx;
+  R_ProtectWithIndex(fn_sym = R_NilValue, &fn_sym_idx); ++NP;
 
-  if (TYPEOF(expr) == LANGSXP && call_is_namespaced(expr)){
-    SEXP call_tree = Rf_protect(as_list_call(expr)); ++NP;
-    SEXP fn_expr_tree = Rf_protect(as_list_call(VECTOR_ELT(call_tree, 0))); ++NP;
-    out = TYPEOF(VECTOR_ELT(fn_expr_tree, 2)) == SYMSXP && VECTOR_ELT(fn_expr_tree, 2) == fn;
-  } else if (TYPEOF(expr) == LANGSXP && TYPEOF(CAR(expr)) == SYMSXP){
-    out = CAR(expr) == fn;
+  for (int i = 0; i < Rf_length(fn); ++i){
+    R_Reprotect(fn_sym = Rf_installChar(STRING_ELT(fn, i)), fn_sym_idx);
+
+    if (TYPEOF(expr) == LANGSXP && call_is_namespaced(expr)){
+      SEXP call_tree = Rf_protect(as_list_call(expr)); ++NP;
+      SEXP fn_expr_tree = Rf_protect(as_list_call(VECTOR_ELT(call_tree, 0))); ++NP;
+    if (TYPEOF(VECTOR_ELT(fn_expr_tree, 2)) == SYMSXP &&
+        VECTOR_ELT(fn_expr_tree, 2) == fn_sym){
+      Rf_unprotect(NP);
+      return true;
+    }
+    } else if (TYPEOF(expr) == LANGSXP && TYPEOF(CAR(expr)) == SYMSXP){
+      if (CAR(expr) == fn_sym){
+        Rf_unprotect(NP);
+        return true;
+      }
+    }
   }
   Rf_unprotect(NP);
-  return out;
+  return false;
 }
 
 // A function similar to rlang::is_call(expr, fn)
@@ -186,11 +202,11 @@ bool is_call2(SEXP expr, SEXP fn){
 
 [[cpp11::register]]
 bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
-    if (TYPEOF(fn) != STRSXP || Rf_length(fn) != 1){
-      Rf_error("`fn` must be a character vector of length one in %s", __func__);
+    if (TYPEOF(fn) != STRSXP){
+      Rf_error("`fn` must be a character vector in %s", __func__);
     }
 
-    if (TYPEOF(ns) != NILSXP && (TYPEOF(fn) != STRSXP || Rf_length(fn) != 1)){
+    if (TYPEOF(ns) != NILSXP && (TYPEOF(ns) != STRSXP || Rf_length(ns) != 1)){
       Rf_error("`ns` must be `NULL` or a character vector of length one in %s", __func__);
     }
 
@@ -199,19 +215,34 @@ bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
     }
 
     int NP = 0;
+    int n_fns = Rf_length(fn);
 
     if (TYPEOF(ns) == NILSXP){
       return is_call2(expr, fn);
     } else {
-      SEXP fn_ns;
+      const char *ns_char = CHAR(STRING_ELT(ns, 0));
+      SEXP fn_ns, fn_sym;
+      PROTECT_INDEX fn_ns_idx, fn_sym_idx;
+      R_ProtectWithIndex(fn_ns = R_NilValue, &fn_ns_idx); ++NP;
+      R_ProtectWithIndex(fn_sym = R_NilValue, &fn_sym_idx); ++NP;
+      bool out = is_call2(expr, fn);
+      if (!out){
+        Rf_unprotect(NP);
+        return out;
+      }
+      out = false; // Reset
       if (call_is_namespaced(expr)){
         SEXP call_tree = Rf_protect(as_list_call(expr)); ++NP;
         SEXP fn_expr_tree = Rf_protect(as_list_call(VECTOR_ELT(call_tree, 0))); ++NP;
-        fn_ns = Rf_protect(rlang::sym_as_string(VECTOR_ELT(fn_expr_tree, 1))); ++NP;
+        R_Reprotect(fn_ns = rlang::sym_as_string(VECTOR_ELT(fn_expr_tree, 1)), fn_ns_idx);
+        out = std::strcmp(CHAR(fn_ns), ns_char) == 0;
       } else {
-        fn_ns = Rf_protect(cpp_fun_ns(fn, rho)); ++NP;
+        for (int i = 0; i < n_fns; ++i){
+          R_Reprotect(fn_sym = Rf_installChar(STRING_ELT(fn, i)), fn_sym_idx);
+          R_Reprotect(fn_ns = cpp_fun_ns(fn_sym, rho), fn_ns_idx);
+          out = out || std::strcmp(CHAR(fn_ns), ns_char) == 0;
+        }
       }
-      bool out = is_call2(expr, fn) && std::strcmp(CHAR(fn_ns), CHAR(STRING_ELT(ns, 0))) == 0;
       Rf_unprotect(NP);
       return out;
     }
@@ -219,7 +250,6 @@ bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
 
 // checks if call is or contains any calls to a namespace
 // it doesn't require the function to actually be called via `::`
-[[cpp11::register]]
 bool cpp_call_contains_ns(SEXP expr, SEXP ns, SEXP rho){
   if (TYPEOF(expr) != LANGSXP){
     return false;
@@ -260,7 +290,6 @@ bool cpp_call_contains_ns(SEXP expr, SEXP ns, SEXP rho){
   return out;
 }
 
-[[cpp11::register]]
 bool cpp_call_contains_fn(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
   if (TYPEOF(expr) != LANGSXP){
     return false;
@@ -330,7 +359,6 @@ bool cpp_call_contains_fn(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
   return out;
 }
 
-[[cpp11::register]]
 bool cpp_any_quo_contains_ns(SEXP quos, SEXP ns){
 
   if (TYPEOF(quos) != VECSXP){
@@ -359,7 +387,6 @@ bool cpp_any_quo_contains_ns(SEXP quos, SEXP ns){
   return out;
 }
 
-[[cpp11::register]]
 SEXP cpp_unnest_expr(SEXP expr){
   int NP = 0;
   if (Rf_inherits(expr, "quosure")){
@@ -382,7 +409,6 @@ SEXP cpp_unnest_expr(SEXP expr){
   return out;
 }
 
-[[cpp11::register]]
 cpp11::writable::strings all_call_names(SEXP expr){
 
   cpp11::list expr_tree = as_list_call(expr);
@@ -427,27 +453,6 @@ SEXP cpp_quo_data_vars(SEXP quos, SEXP data){
   return out;
 }
 
-// unname the names of quos with calls to `dplyr::across()`
-
-// SEXP cpp_quos_adjust_across(SEXP quos){
-//
-//   SEXP names = Rf_protect(Rf_getAttrib(quos, R_NamesSymbol));
-//
-//   if (Rf_isNull(names)){
-//     Rf_unprotect(1);
-//     Rf_error("`quos` must be a named list of quosures in %s", __func__);
-//   }
-//
-//   SEXP across_str = Rf_protect(Rf_mkString("across"));
-//
-//   for (int i = 0; i < Rf_length(quos); ++i){
-//     if (is_fn_call(rlang::quo_get_expr(VECTOR_ELT(quos, i)), across_str)){
-//       SET_STRING_ELT(names, i, R_BlankString);
-//     }
-//   }
-//   Rf_unprotect(2);
-//   return quos;
-// }
 
 [[cpp11::register]]
 SEXP cpp_quos_drop_null(SEXP quos){
@@ -489,6 +494,98 @@ SEXP cpp_quos_drop_null(SEXP quos){
 //   cpp11::list out = cheapr::sset(quos, not_null_locs, false);
 //   return out;
 // }
+
+// bool quo_is_dplyr_mask_call(SEXP quo){
+//   SEXP expr = Rf_protect(rlang::quo_get_expr(quo));
+//   SEXP env =  Rf_protect(rlang::quo_get_env(quo));
+//   SEXP dplyr_mask_fns = Rf_protect(Rf_allocVector(STRSXP, 7));
+//   SET_STRING_ELT(dplyr_mask_fns, 0, Rf_mkChar("n"));
+//   SET_STRING_ELT(dplyr_mask_fns, 1, Rf_mkChar("pick"));
+//   SET_STRING_ELT(dplyr_mask_fns, 2, Rf_mkChar("cur_group_id"));
+//   SET_STRING_ELT(dplyr_mask_fns, 3, Rf_mkChar("cur_group_rows"));
+//   SET_STRING_ELT(dplyr_mask_fns, 4, Rf_mkChar("cur_column"));
+//   SET_STRING_ELT(dplyr_mask_fns, 5, Rf_mkChar("cur_data"));
+//   SET_STRING_ELT(dplyr_mask_fns, 6, Rf_mkChar("cur_data_all"));
+//   SEXP dplyr_str = Rf_protect(Rf_mkString("dplyr"));
+//   bool out = cpp_is_fn_call(expr, dplyr_mask_fns, dplyr_str, env);
+//   Rf_unprotect(4);
+//   return out;
+// }
+
+bool call_contains_dplyr_mask(SEXP expr, SEXP rho){
+  if (TYPEOF(expr) != LANGSXP){
+    return false;
+  }
+
+  int NP = 0;
+
+  SEXP dplyr_mask_fns = Rf_protect(Rf_allocVector(STRSXP, 7)); ++NP;
+  SET_STRING_ELT(dplyr_mask_fns, 0, Rf_mkChar("n"));
+  SET_STRING_ELT(dplyr_mask_fns, 1, Rf_mkChar("pick"));
+  SET_STRING_ELT(dplyr_mask_fns, 2, Rf_mkChar("cur_group_id"));
+  SET_STRING_ELT(dplyr_mask_fns, 3, Rf_mkChar("cur_group_rows"));
+  SET_STRING_ELT(dplyr_mask_fns, 4, Rf_mkChar("cur_column"));
+  SET_STRING_ELT(dplyr_mask_fns, 5, Rf_mkChar("cur_data"));
+  SET_STRING_ELT(dplyr_mask_fns, 6, Rf_mkChar("cur_data_all"));
+  SEXP dplyr_str = Rf_protect(Rf_mkString("dplyr")); ++NP;
+
+  if (cpp_is_fn_call(expr, dplyr_mask_fns, dplyr_str, rho)){
+    Rf_unprotect(NP);
+    return true;
+  }
+
+  bool out = false;
+
+  SEXP tree = Rf_protect(as_list_call(expr)); ++NP;
+  SEXP branch;
+  for (int i = 0; i < Rf_length(tree); ++i){
+    branch = VECTOR_ELT(tree, i);
+
+    // If branch is a call
+    if (TYPEOF(branch) == LANGSXP){
+      if (call_contains_dplyr_mask(branch, rho)){
+        out = true;
+        break;
+      }
+    }
+    if (TYPEOF(branch) == SYMSXP){
+      SEXP branch_name = Rf_protect(rlang::sym_as_character(branch)); ++NP;
+      if (cpp_is_fn_call(branch_name, dplyr_mask_fns, dplyr_str, rho)){
+        out = true;
+        break;
+      }
+    }
+  }
+  Rf_unprotect(NP);
+  return out;
+}
+
+[[cpp11::register]]
+bool cpp_any_quo_contains_dplyr_mask_call(SEXP quos){
+
+  if (TYPEOF(quos) != VECSXP){
+    Rf_error("`quos` must be a list of quosures in %s", __func__);
+  }
+
+  bool out = false;
+
+  SEXP expr, quo_env;
+  PROTECT_INDEX expr_idx, quo_env_idx;
+  R_ProtectWithIndex(expr = R_NilValue, &expr_idx);
+  R_ProtectWithIndex(quo_env = R_NilValue, &quo_env_idx);
+
+  for (int i = 0; i < Rf_length(quos); ++i){
+    R_Reprotect(expr = rlang::quo_get_expr(VECTOR_ELT(quos, i)), expr_idx);
+    R_Reprotect(quo_env = rlang::quo_get_env(VECTOR_ELT(quos, i)), quo_env_idx);
+    if (call_contains_dplyr_mask(expr, quo_env)){
+      out = true;
+      break;
+    }
+  }
+  Rf_unprotect(2);
+  return out;
+}
+
 SEXP get_mask_top_env(SEXP mask){
 
   if (TYPEOF(mask) != ENVSXP){
@@ -514,7 +611,6 @@ SEXP cpp_eval_tidy(SEXP quo, SEXP mask){
 
 // Eval a list of quos
 
-[[cpp11::register]]
 SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
   int NP = 0;
   int n_exprs = Rf_length(quos);
@@ -1025,6 +1121,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
 
   // groups container will hold the repeated out rows of the group keys
   SEXP groups_container = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
+  Rf_setAttrib(groups_container, R_NamesSymbol, quo_names);
 
   SEXP repeated_groups;
   PROTECT_INDEX repeated_groups_idx;
