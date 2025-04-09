@@ -112,10 +112,7 @@ f_group_by <- function(data, ..., .add = FALSE,
     }
     groups <- unique(c(init_group_vars, groups))
   }
-  if (length(groups) > 0L){
-    out <- construct_dplyr_grouped_df(out, groups, order = .order, drop = .drop)
-  }
-  out
+  construct_dplyr_grouped_df(out, groups, order = .order, drop = .drop)
 }
 #' @rdname f_group_by
 #' @export

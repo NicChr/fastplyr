@@ -1,7 +1,10 @@
 test_that("summarise", {
 
+  options(fastplyr.inform = FALSE)
+
   set.seed(82134)
-  airquality <- f_slice_sample(airquality)
+  airquality <- f_slice_sample(airquality, 2e04, TRUE)
+  airquality$Month <- sample.int(2e04)
 
   # Cant have multiple rows per group
   expect_error(
@@ -105,8 +108,11 @@ test_that("summarise", {
   expect_equal(
     airquality %>%
       f_summarise(
-        dplyr::across(dplyr::everything(), list(mean = mean, median = median,
-                                                min = min, max = max),
+        dplyr::across(dplyr::everything(),
+                      list(mean = function(x) mean(x, na.rm = TRUE),
+                           median = function(x) median(x, na.rm = TRUE),
+                           min = function(x) min(x, na.rm = TRUE),
+                           max = function(x) max(x, na.rm = TRUE)),
                       .names = "col_{.col}_fun_{.fn}"),
         N = dplyr::n()
       ),
@@ -138,12 +144,12 @@ test_that("summarise", {
   expect_equal(
     airquality %>%
       f_summarise(
-        dplyr::across(dplyr::everything(), list(mean = mean,
-                                                median = median,
-                                                min = min,
-                                                max = max)),
-        N = dplyr::n()
-      ),
+        dplyr::across(dplyr::everything(),
+                      list(mean = function(x) mean(x, na.rm = TRUE),
+                           median = function(x) median(x, na.rm = TRUE),
+                           min = function(x) min(x, na.rm = TRUE),
+                           max = function(x) max(x, na.rm = TRUE))),
+        N = dplyr::n()),
     target
   )
 
@@ -165,7 +171,11 @@ test_that("summarise", {
     airquality %>%
       f_summarise(
         dplyr::across(dplyr::all_of(c("Wind", "Temp")),
-                      list(mean, first = function(x) x[1], min, last_obs = function(x) x[length(x)], max)),
+                      list(mean = mean,
+                           first = function(x) x[1],
+                           min = min,
+                           last_obs = function(x) x[length(x)],
+                           max = max)),
         N = dplyr::n()
       ),
     target
@@ -190,7 +200,11 @@ test_that("summarise", {
     airquality %>%
       f_summarise(
         dplyr::across(dplyr::all_of(c("Wind", "Temp")),
-                      list(mean, first = function(x) x[1], min, last_obs = function(x) x[length(x)], max)),
+                      list(mean = mean,
+                           first = function(x) x[1],
+                           min = min,
+                           last_obs = function(x) x[length(x)],
+                           max = max)),
         N = dplyr::n(),
         .by = Month,
         .order = FALSE

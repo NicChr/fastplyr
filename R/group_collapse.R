@@ -351,21 +351,32 @@ group_data_collapse <- function(data, size = TRUE, loc = TRUE,
 }
 
 
-df_collapse <- function(data, order = df_group_by_order_default(data), sort = order,
+df_collapse <- function(data, cols = names(data),
+                        order = df_group_by_order_default(data), sort = order,
                         id = FALSE, size = FALSE, loc = TRUE,
                         start = FALSE, end = FALSE,
-                        drop = df_group_by_drop_default(data)){
-  g <- df_to_GRP(cpp_ungroup(data), .cols = names(data),
+                        drop = df_group_by_drop_default(data),
+                        add = TRUE){
+  if (!add){
+    data <- f_ungroup(data)
+  }
+  g <- df_to_GRP(data, .cols = cols,
                  order = order,
                  return.groups = TRUE,
-                 return.order = order || loc)
+                 return.order = FALSE)
   out <- as_tbl(GRP_groups(g))
   if (id){
     out <- df_add_col(out, ".group", df_seq_along(out))
   }
   include_loc <- loc || end
   if (include_loc){
-    GRP_loc <- GRP_loc(g)
+    if (add && identical(group_vars(data), cols) &&
+        order == df_group_by_order_default(data) &&
+        drop == df_group_by_order_default(data)){
+      GRP_loc <- as.list(group_rows(data))
+    } else {
+      GRP_loc <- GRP_loc(g)
+    }
     out <- df_add_col(out, ".loc", GRP_loc)
   } else {
     GRP_loc <- NULL
@@ -555,6 +566,9 @@ GRP_collapse <- function(g,
 construct_dplyr_grouped_df <- function(data, cols = names(data),
                                        order = df_group_by_order_default(data),
                                        drop = df_group_by_drop_default(data)){
+  if (length(cols) == 0){
+    return(f_ungroup(data))
+  }
   group_data <- construct_dplyr_group_data(data, cols, order, drop)
   attr(data, "groups") <- group_data
   class(data) <- c("grouped_df", "tbl_df", "tbl", "data.frame")

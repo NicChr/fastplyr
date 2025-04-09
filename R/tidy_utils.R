@@ -159,7 +159,7 @@ unpack_across <- function(quo, data){
   out_size <- length(out_names)
 
   # Recycle cols/fns
-  cols <- rep_len(cols, out_size)
+  cols <- cheapr::cheapr_rep_each(cols, out_size / length(cols))
   fn_tree <- rep_len(fn_tree, out_size)
 
   out <- cheapr::new_list(out_size)
@@ -215,7 +215,7 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
   optimised <- logical(length(out))
 
   .fastplyr.g <- NULL
-  # .original_out <- out
+  .original_out <- out
 
 
   # Second pass to check for optimised calls
@@ -279,6 +279,28 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
         optimised[i] <- TRUE
         out[[i]] <- quo
       }
+    }
+    if (sum(optimised) && isTRUE(getOption("fastplyr.inform") %||% TRUE)){
+      if (sum(optimised) > 10){
+        squashed_exprs <- lapply(.original_out[optimised][1:10], \(x) deparse2(rlang::quo_get_expr(x), nlines = 1L))
+        squashed_exprs <- c(squashed_exprs, list("...."))
+      } else {
+        squashed_exprs <- lapply(.original_out[optimised], \(x) deparse2(rlang::quo_get_expr(x), nlines = 1L))
+      }
+      squashed_exprs <- paste(unlist(squashed_exprs), collapse = "\n")
+      message(paste(
+        "Optimising the following expressions per-group",
+        "",
+        squashed_exprs,
+        "",
+        "Optimised expressions are independent from each other and typical data-masking rules do not apply",
+        "",
+        "To disable optimisations, specify full function namespace",
+        "e.g. `base::mean(x)` instead of `mean(x)`",
+        "",
+        "Run `options(fastplyr.inform = FALSE)` to turn this msg off.",
+        sep = "\n"
+      ))
     }
     # if (isTRUE(getOption("fastplyr.inform") %||% TRUE)){
     #   rlang::inform(
@@ -835,7 +857,7 @@ f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default
   } else {
     data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
   }
-  if (length(group_vars(data)) == 0 || df_nrow(group_keys(data)) < 1e03){
+  if (length(group_vars(data)) == 0 || df_nrow(group_keys(data)) < 1e04){
     .optimise <- FALSE
   } else {
     .optimise <- TRUE

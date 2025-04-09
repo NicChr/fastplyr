@@ -81,8 +81,10 @@ f_summarise <- function(.data, ..., .by = NULL, .order = df_group_by_order_defau
     data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
   }
   group_keys <- group_keys(data)
-
-  if (length(group_vars(data)) == 0 || df_nrow(group_keys) < 1e03){
+  if (df_nrow(.data) == 0){
+    group_keys <- cheapr::sset_df(group_keys, 0L)
+  }
+  if (length(group_vars(data)) == 0 || df_nrow(group_keys) < 1e04){
     .optimise <- FALSE
   } else {
     .optimise <- TRUE
@@ -107,7 +109,7 @@ f_summarise <- function(.data, ..., .by = NULL, .order = df_group_by_order_defau
 
     result_sizes <- cheapr::list_lengths(results)
     # if (any(result_sizes != min(df_nrow(data), df_nrow(group_keys)))){
-    if (df_nrow(data) > 0 && any(result_sizes != df_nrow(group_keys))){
+    if (any(result_sizes != df_nrow(group_keys))){
       cli::cli_abort(c("All expressions should return results of length 1 per-group",
                        "Use {.run f_reframe()} instead"))
     }
