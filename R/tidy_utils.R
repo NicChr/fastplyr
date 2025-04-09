@@ -143,11 +143,10 @@ unpack_across <- function(quo, data){
   # Evaluate functions
 
   for (i in seq_along(fn_tree)){
-    fn <- eval(fn_tree[[i]], envir = quo_env)
-    if (!is.function(fn)){
-      fn <- rlang::as_function(fn)
+    evaluated_fn <- eval(fn_tree[[i]], envir = quo_env)
+    if (!is.function(evaluated_fn)){
+      fn_tree[[i]] <- rlang::as_function(evaluated_fn)
     }
-    fn_tree[[i]] <- fn
   }
 
   if (".unpack" %in% names(expr)){
