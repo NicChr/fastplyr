@@ -189,7 +189,6 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
     expr <- rlang::quo_get_expr(quo)
     env <- rlang::quo_get_env(quo)
     attr(quo, ".unpack", TRUE) %||% set_add_attr(quo, ".unpack", .unpack_default)
-    attr(quo, ".group_optimise", TRUE) %||% set_add_attr(quo, ".group_optimise", FALSE)
     if (!nzchar(quo_nms[[k]]) && cpp_is_fn_call(expr, "across", ns = "dplyr", env)){
       left <- out[seq_len(k - 1L)]
       unpacked_quos <- unpack_across(quo, .data)
@@ -214,6 +213,7 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
     out <- cpp_quos_drop_null(out)
   }
 
+  optimised <- logical(length(out))
   # Second pass to check for optimised calls
   if (.optimise){
     if (.optimise_expand){
@@ -239,20 +239,22 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
         }
         fn <- rlang::as_string(fn)
         fn <- .collapse_fns[match(fn, .optimised_fns)]
+        # expr <- call2(fn, !!!c(args, list_tidy(!!"g" := quote(.internal.fastplyr.g))), TRA = TRA, .ns = ns)
         expr <- call2(fn, !!!args, g = .g, TRA = TRA, .ns = ns)
         quo <- rlang::new_quosure(expr, env)
         set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
-        set_add_attr(quo, ".group_optimise", TRUE)
+        optimised[i] <- TRUE
         out[[i]] <- quo
       }
     }
   }
-  if (.optimise_expand){
-    set_add_attr(out, ".optimised_result_size", df_nrow(.data))
-  } else {
-    set_add_attr(out, ".optimised_result_size", min(1L, df_nrow(.data)))
-  }
+  # if (.optimise_expand){
+  #   set_add_attr(out, ".optimised_result_size", df_nrow(.data))
+  # } else {
+  #   set_add_attr(out, ".optimised_result_size", min(1L, df_nrow(.data)))
+  # }
   set_add_attr(out, ".fastplyr_quos", TRUE)
+  set_add_attr(out, ".optimised", optimised)
   out
 }
 
@@ -700,16 +702,15 @@ f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default
   } else {
     data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
   }
-  # if (length(group_vars(data)) == 0){
-    # || df_nrow(group_keys(data)) < 1e03){
+  if (length(group_vars(data)) == 0 || df_nrow(group_keys(data)) < 1e03){
     .optimise <- FALSE
     GRP <- NULL
-  # } else {
-  #   .optimise <- TRUE
-  #   GRP <- grouped_df_as_GRP(data, return.groups = FALSE, return.order = FALSE)
-  # }
-  quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE, .named = TRUE,
-                        .unpack_default = TRUE, .g = GRP, .optimise = .optimise)
+  } else {
+    .optimise <- TRUE
+    GRP <- grouped_df_as_GRP(data, return.groups = FALSE, return.order = FALSE)
+  }
+  quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE, .unpack_default = TRUE,
+                        .g = GRP, .optimise = .optimise)
 
   if (length(quos) == 0){
     return(cheapr::reconstruct(group_keys(data), cpp_ungroup(.data)))
