@@ -56,7 +56,7 @@ test_that("summarise", {
   expect_equal(
     airquality %>%
       dplyr::group_by(Month) %>%
-      f_summarise(mean_wind = mean(Wind), .optimise = FALSE),
+      f_summarise(mean_wind = mean(Wind)),
     target
   )
 
@@ -105,7 +105,8 @@ test_that("summarise", {
   expect_equal(
     airquality %>%
       f_summarise(
-        dplyr::across(dplyr::everything(), list(mean, median, min, max),
+        dplyr::across(dplyr::everything(), list(mean = mean, median = median,
+                                                min = min, max = max),
                       .names = "col_{.col}_fun_{.fn}"),
         N = dplyr::n()
       ),
@@ -119,8 +120,7 @@ test_that("summarise", {
                                                 min = function(x) min(x, na.rm = TRUE),
                                                 max = function(x) max(x, na.rm = TRUE)),
                       .names = "col_{.col}_fun_{.fn}"),
-        N = dplyr::n(),
-        .optimise = FALSE
+        N = dplyr::n()
       ),
     target
   )
@@ -138,7 +138,10 @@ test_that("summarise", {
   expect_equal(
     airquality %>%
       f_summarise(
-        dplyr::across(dplyr::everything(), list(mean, median, min, max)),
+        dplyr::across(dplyr::everything(), list(mean = mean,
+                                                median = median,
+                                                min = min,
+                                                max = max)),
         N = dplyr::n()
       ),
     target

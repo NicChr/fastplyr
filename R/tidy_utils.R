@@ -215,6 +215,8 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
   optimised <- logical(length(out))
 
   .fastplyr.g <- NULL
+  # .original_out <- out
+
 
   # Second pass to check for optimised calls
   if (.optimise){
@@ -261,6 +263,7 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
         }
         if (call_is_namespaced(expr)){
           ns <- rlang::as_string(expr[[1]][[2]])
+          if (ns != "collapse") next
           fn <- expr[[1]][[3]]
         } else {
           ns <- "collapse"
@@ -277,6 +280,19 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
         out[[i]] <- quo
       }
     }
+    # if (isTRUE(getOption("fastplyr.inform") %||% TRUE)){
+    #   rlang::inform(
+    #     c(
+    #       "i" = "Optimising the following expressions by-group",
+    #       "",
+    #       unlist(lapply(.original_out[optimised], \(x) deparse2(rlang::quo_get_expr(x), nlines = 1L))),
+    #       ""
+    #     )
+    #   )
+    #   cli::cli_text("Run {.run options(fastplyr.inform = FALSE)} to turn this msg off")
+    # }
+
+
   }
   set_add_attr(out, ".optimised", optimised)
   set_add_attr(out, ".data", .data)
@@ -824,7 +840,6 @@ f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default
   } else {
     .optimise <- TRUE
   }
-  .optimise <- TRUE
   quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE, .unpack_default = TRUE,
                         .optimise = .optimise)
 
@@ -843,7 +858,8 @@ f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default
     } else {
       groups <- list_as_df(groups[[1L]])
     }
-    out <- cheapr::col_c(groups, results, .name_repair = TRUE, .recycle = FALSE)
+    out <- df_add_cols(groups, results)
+    out <- cheapr::sset_col(out, !duplicated(names(out), fromLast = TRUE))
   }
   cheapr::reconstruct(out, cpp_ungroup(.data))
 }

@@ -2,28 +2,11 @@
 % Please edit documentation in R/f_summarise.R
 \name{f_summarise}
 \alias{f_summarise}
-\alias{f_summarize}
 \title{Summarise each group down to one row}
 \usage{
-f_summarise(
-  data,
-  ...,
-  .by = NULL,
-  .order = df_group_by_order_default(data),
-  .optimise = TRUE
-)
-
-f_summarize(
-  data,
-  ...,
-  .by = NULL,
-  .order = df_group_by_order_default(data),
-  .optimise = TRUE
-)
+f_summarise(.data, ..., .by = NULL, .order = df_group_by_order_default(.data))
 }
 \arguments{
-\item{data}{A data frame.}
-
 \item{...}{Name-value pairs of summary functions. Expressions with
 \code{across()} are also accepted.}
 
@@ -33,6 +16,8 @@ Columns are specified using tidy-select.}
 \item{.order}{Should the groups be returned in sorted order?
 If \code{FALSE}, this will return the groups in order of first appearance,
 and in many cases is faster.}
+
+\item{data}{A data frame.}
 
 \item{.optimise}{(Optionally) turn off optimisations for common statistical
 functions by setting to \code{FALSE}. Default is \code{TRUE} which uses optimisations.}
