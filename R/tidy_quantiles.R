@@ -221,7 +221,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     ## We want it sorted by group + quantile
 
     out <- cheapr::sset_df(data2, group_starts)
-    out <- cheapr_rep_each(out, n_probs)
+    out <- cheapr::cheapr_rep_each(out, n_probs)
     out[[".quantile"]] <- rep(quant_categories, df_nrow(out) / n_probs)
     out <- f_select(out, .cols = c(group_vars, ".quantile", dot_vars))
 

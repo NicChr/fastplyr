@@ -46,7 +46,8 @@ f_expand <- function(data, ..., .sort = FALSE,
       )
     }
   } else {
-    frames <- eval_all_tidy(f_group_by(data, .cols = group_vars, .add = TRUE), dots, recycle = FALSE)
+    dots <- fastplyr_quos(!!!dots, .data = f_group_by(data, .cols = group_vars, .add = TRUE))
+    frames <- eval_all_tidy(dots, recycle = FALSE)
     frames <- purrr::map2(
       frames[[1L]], cpp_as_list_of_frames(frames[[2L]]),
       \(x, y) cheapr::col_c(x, y)

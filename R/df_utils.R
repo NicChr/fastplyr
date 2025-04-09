@@ -136,7 +136,7 @@ df_group_by_order_default <- function(x){
 
 df_cross_join <- function(x, y, .repair_names = TRUE){
   f_bind_cols(
-    cheapr_rep_each(x, df_nrow(y)), cheapr_rep(y, df_nrow(x)),
+    cheapr::cheapr_rep_each(x, df_nrow(y)), cheapr::cheapr_rep(y, df_nrow(x)),
     .repair_names = .repair_names, .recycle = FALSE
   )
 }

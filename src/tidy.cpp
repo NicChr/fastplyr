@@ -986,6 +986,21 @@ bool cpp_group_id_sorted(SEXP x){
 SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
   int NP = 0;
   int n_quos = Rf_length(quos);
+
+  if (n_quos == 0){
+    SEXP out = Rf_protect(Rf_allocVector(VECSXP, 2));
+    SET_VECTOR_ELT(out, 0, Rf_allocVector(VECSXP, 0));
+    SET_VECTOR_ELT(out, 1, Rf_allocVector(VECSXP, 0));
+    Rf_namesgets(VECTOR_ELT(out, 0), Rf_allocVector(STRSXP, 0));
+    Rf_namesgets(VECTOR_ELT(out, 1), Rf_allocVector(STRSXP, 0));
+    SEXP out_names = Rf_protect(Rf_allocVector(STRSXP, 2));
+    SET_STRING_ELT(out_names, 0, Rf_mkChar("groups"));
+    SET_STRING_ELT(out_names, 1, Rf_mkChar("results"));
+    Rf_namesgets(out, out_names);
+    Rf_unprotect(2);
+    return out;
+  }
+
   bool has_groups = Rf_inherits(data, "grouped_df");
   SEXP group_data = R_NilValue;
   SEXP groups = Rf_protect(cpp_group_keys(data)); ++NP;
