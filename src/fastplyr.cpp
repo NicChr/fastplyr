@@ -1,5 +1,6 @@
 #include "fastplyr.h"
 #include "cheapr_api.h"
+#include <vector>
 
 // Compare the addresses between 2 similar lists
 
@@ -306,6 +307,53 @@ SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
   Rf_unprotect(1);
   return out;
 }
+
+// Alternative to above that can calculate it using
+// group IDs instead of the order
+
+[[cpp11::register]]
+SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
+  int n_groups = Rf_length(group_sizes);
+  SEXP out = Rf_protect(Rf_allocVector(VECSXP, n_groups));
+  int *p_group_sizes = INTEGER(group_sizes);
+  int *p_group_id = INTEGER(group_id);
+  const SEXP *p_out = VECTOR_PTR_RO(out);
+
+  if (n_groups == 0){
+    Rf_unprotect(1);
+    return out;
+  }
+
+  // Store a vector of pointers
+  // Speeds up later allocation
+  std::vector<int *> group_loc_pointers(n_groups);
+
+  // Initialise locations
+  for (int i = 0; i < n_groups; ++i){
+    SET_VECTOR_ELT(out, i, Rf_allocVector(INTSXP, p_group_sizes[i]));
+    group_loc_pointers[i] = INTEGER(p_out[i]);
+  }
+
+  // Initialise a vector of group location indices
+
+  SEXP loc_indices = Rf_protect(Rf_allocVector(INTSXP, n_groups));
+  int* __restrict__ p_loc_indices = INTEGER(loc_indices);
+  memset(p_loc_indices, 0, n_groups * sizeof(int));
+
+  int n = Rf_length(group_id);
+  int cur_group;
+  int cur_group_loc;
+  int *p_cur_group_pointer;
+  for (int i = 0; i < n; ++i){
+    cur_group = p_group_id[i] - 1;
+    cur_group_loc = p_loc_indices[cur_group]++;
+    p_cur_group_pointer = group_loc_pointers[cur_group];
+    p_cur_group_pointer[cur_group_loc] = i + 1;
+  }
+  Rf_unprotect(2);
+  return out;
+}
+
 [[cpp11::register]]
 SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
   int n = Rf_length(order);
@@ -998,4 +1046,132 @@ SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg){
 //   Rf_setAttrib(out, R_NamesSymbol, out_names);
 //   Rf_unprotect(4);
 //   return out;
+// }
+
+
+// SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
+//   int n_groups = Rf_length(group_sizes);
+//   SEXP out = Rf_protect(Rf_allocVector(VECSXP, n_groups));
+//   int *p_group_sizes = INTEGER(group_sizes);
+//   int *p_group_id = INTEGER(group_id);
+//
+//   if (n_groups == 0){
+//     Rf_unprotect(1);
+//     return out;
+//   }
+//   // Initialise locations
+//   for (int i = 0; i < n_groups; ++i){
+//     SET_VECTOR_ELT(out, i, Rf_allocVector(INTSXP, p_group_sizes[i]));
+//   }
+//
+//   // Initialise a vector of group location indices
+//
+//   SEXP loc_indices = Rf_protect(Rf_allocVector(INTSXP, n_groups));
+//   int* __restrict__ p_loc_indices = INTEGER(loc_indices);
+//   memset(p_loc_indices, 0, n_groups * sizeof(int));
+//
+//   const SEXP *p_out = VECTOR_PTR_RO(out);
+//   int n = Rf_length(group_id);
+//   int cur_group;
+//   int cur_group_loc;
+//   for (int i = 0; i < n; ++i){
+//     cur_group = p_group_id[i] - 1;
+//     cur_group_loc = p_loc_indices[cur_group]++;
+//     INTEGER(p_out[cur_group])[cur_group_loc] = i + 1;
+//   }
+//   Rf_unprotect(2);
+//   return out;
+// }
+// SEXP cpp_group_locs3(SEXP group_id, SEXP group_sizes){
+//   int n_groups = Rf_length(group_sizes);
+//   int n = Rf_length(group_id);
+//   SEXP out = Rf_protect(Rf_allocVector(VECSXP, n_groups));
+//   SEXP lagged_cumulative_group_sizes = Rf_protect(Rf_allocVector(INTSXP, n_groups));
+//   int *p_group_sizes = INTEGER(group_sizes);
+//   int *p_group_id = INTEGER(group_id);
+//   int *p_lagged_cumulative_group_sizes = INTEGER(lagged_cumulative_group_sizes);
+//
+//   if (n_groups == 0){
+//     Rf_unprotect(2);
+//     return out;
+//   }
+//
+//   int total = 0;
+//
+//   SET_VECTOR_ELT(out, 0, Rf_allocVector(INTSXP, p_group_sizes[0]));
+//   p_lagged_cumulative_group_sizes[0] = total;
+//
+//   // Initialise locations
+//   for (int i = 1; i < n_groups; ++i){
+//     SET_VECTOR_ELT(out, i, Rf_allocVector(INTSXP, p_group_sizes[i]));
+//     p_lagged_cumulative_group_sizes[i] = total += p_group_sizes[i - 1];
+//   }
+//
+//   // Initialise a vector of group location indices
+//
+//   SEXP loc_indices = Rf_protect(Rf_allocVector(INTSXP, n_groups));
+//   int *p_loc_indices = INTEGER(loc_indices);
+//   memset(p_loc_indices, 0, n_groups * sizeof(int));
+//
+//   SEXP flat_group_locs = Rf_protect(Rf_allocVector(INTSXP, n));
+//   const SEXP *p_out = VECTOR_PTR_RO(out);
+//   int *p_flat_group_locs = INTEGER(flat_group_locs);
+//
+//   int cur_group;
+//   int cur_group_loc;
+//   for (int i = 0; i < n; ++i){
+//     cur_group = p_group_id[i] - 1;
+//     cur_group_loc = ++p_loc_indices[cur_group];
+//     p_flat_group_locs[p_lagged_cumulative_group_sizes[cur_group] + cur_group_loc - 1] = i + 1;
+//
+//     // Some logic to check that we've filled a specific group and to copy into our out list
+//   }
+//   Rf_unprotect(4);
+//   return flat_group_locs;
+// }
+// SEXP cpp_group_locs4(SEXP group_id, SEXP group_sizes){
+//   int n_groups = Rf_length(group_sizes);
+//   int n = Rf_length(group_id);
+//   SEXP out = Rf_protect(Rf_allocVector(VECSXP, n_groups));
+//   SEXP lagged_cumulative_group_sizes = Rf_protect(Rf_allocVector(INTSXP, n_groups));
+//   int *p_group_sizes = INTEGER(group_sizes);
+//   int *p_group_id = INTEGER(group_id);
+//   int *p_lagged_cumulative_group_sizes = INTEGER(lagged_cumulative_group_sizes);
+//
+//   if (n_groups == 0){
+//     Rf_unprotect(2);
+//     return out;
+//   }
+//
+//   int total = 0;
+//
+//   SET_VECTOR_ELT(out, 0, Rf_allocVector(INTSXP, p_group_sizes[0]));
+//   p_lagged_cumulative_group_sizes[0] = total;
+//
+//   // Initialise locations
+//   for (int i = 1; i < n_groups; ++i){
+//     SET_VECTOR_ELT(out, i, Rf_allocVector(INTSXP, p_group_sizes[i]));
+//     p_lagged_cumulative_group_sizes[i] = total += p_group_sizes[i - 1];
+//   }
+//
+//   // Initialise a vector of group location indices
+//   SEXP loc_indices = Rf_protect(Rf_allocVector(INTSXP, n_groups));
+//   int *p_loc_indices = INTEGER(loc_indices);
+//   memset(p_loc_indices, 0, n_groups * sizeof(int));
+//
+//   SEXP flat_group_locs = Rf_protect(Rf_allocVector(INTSXP, n));
+//   const SEXP *p_out = VECTOR_PTR_RO(out);
+//   int *p_flat_group_locs = INTEGER(flat_group_locs);
+//
+//   int cur_group;
+//   int cur_group_loc;
+//   for (int i = 0; i < n; ++i){
+//     cur_group = p_group_id[i] - 1;
+//     cur_group_loc = ++p_loc_indices[cur_group];
+//     p_flat_group_locs[p_lagged_cumulative_group_sizes[cur_group] + cur_group_loc - 1] = i + 1;
+//
+//     // Some logic to check that we've filled a specific group and to copy into our out list
+//   }
+//   Rf_unprotect(4);
+//   return flat_group_locs;
 // }

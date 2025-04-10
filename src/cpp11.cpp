@@ -69,6 +69,13 @@ extern "C" SEXP _fastplyr_cpp_group_locs(SEXP order, SEXP group_sizes) {
   END_CPP11
 }
 // fastplyr.cpp
+SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes);
+extern "C" SEXP _fastplyr_cpp_group_locs2(SEXP group_id, SEXP group_sizes) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_locs2(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_id), cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_sizes)));
+  END_CPP11
+}
+// fastplyr.cpp
 SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending);
 extern "C" SEXP _fastplyr_cpp_row_id(SEXP order, SEXP group_sizes, SEXP ascending) {
   BEGIN_CPP11
@@ -251,10 +258,10 @@ extern "C" SEXP _fastplyr_cpp_group_id_sorted(SEXP x) {
   END_CPP11
 }
 // tidy.cpp
-SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle);
-extern "C" SEXP _fastplyr_cpp_grouped_eval_tidy(SEXP data, SEXP quos, SEXP recycle) {
+SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups);
+extern "C" SEXP _fastplyr_cpp_grouped_eval_tidy(SEXP data, SEXP quos, SEXP recycle, SEXP add_groups) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cpp_grouped_eval_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<bool>>(recycle)));
+    return cpp11::as_sexp(cpp_grouped_eval_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<bool>>(recycle), cpp11::as_cpp<cpp11::decay_t<bool>>(add_groups)));
   END_CPP11
 }
 // tidy.cpp
@@ -291,11 +298,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_group_id_sorted",                  (DL_FUNC) &_fastplyr_cpp_group_id_sorted,                  1},
     {"_fastplyr_cpp_group_keys",                       (DL_FUNC) &_fastplyr_cpp_group_keys,                       1},
     {"_fastplyr_cpp_group_locs",                       (DL_FUNC) &_fastplyr_cpp_group_locs,                       2},
+    {"_fastplyr_cpp_group_locs2",                      (DL_FUNC) &_fastplyr_cpp_group_locs2,                      2},
     {"_fastplyr_cpp_group_rows",                       (DL_FUNC) &_fastplyr_cpp_group_rows,                       1},
     {"_fastplyr_cpp_group_split",                      (DL_FUNC) &_fastplyr_cpp_group_split,                      3},
     {"_fastplyr_cpp_group_vars",                       (DL_FUNC) &_fastplyr_cpp_group_vars,                       1},
     {"_fastplyr_cpp_grouped_eval_mutate",              (DL_FUNC) &_fastplyr_cpp_grouped_eval_mutate,              2},
-    {"_fastplyr_cpp_grouped_eval_tidy",                (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy,                3},
+    {"_fastplyr_cpp_grouped_eval_tidy",                (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy,                4},
     {"_fastplyr_cpp_grouped_run_id",                   (DL_FUNC) &_fastplyr_cpp_grouped_run_id,                   3},
     {"_fastplyr_cpp_is_exotic",                        (DL_FUNC) &_fastplyr_cpp_is_exotic,                        1},
     {"_fastplyr_cpp_is_fn_call",                       (DL_FUNC) &_fastplyr_cpp_is_fn_call,                       4},

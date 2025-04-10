@@ -70,7 +70,7 @@ fix_quo_names <- function(quos){
   nms <- names(quos)
 
   if (is.null(nms)){
-    nms <- quo_labels(exprs, named = FALSE)
+    nms <- quo_labels(quos, named = FALSE)
   } else {
     for (i in seq_along(quos)){
       if (!nzchar(nms[[i]])){
@@ -219,7 +219,7 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
 
 
   # Second pass to check for optimised calls
-  if (.optimise && getOption("fastplyr.optimise") %||% TRUE){
+  if (.optimise && getOption("fastplyr.optimise", TRUE)){
 
     if (length(group_vars(.data)) != 0){
       .fastplyr.g <- grouped_df_as_GRP(.data, return.groups = TRUE)
@@ -280,7 +280,7 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
         out[[i]] <- quo
       }
     }
-    if (sum(optimised) && isTRUE(getOption("fastplyr.inform") %||% TRUE)){
+    if (sum(optimised) && getOption("fastplyr.inform", TRUE)){
       if (sum(optimised) > 10){
         squashed_exprs <- lapply(.original_out[optimised][1:10], \(x) deparse2(rlang::quo_get_expr(x), nlines = 1L))
         squashed_exprs <- c(squashed_exprs, list("...."))
@@ -322,6 +322,14 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
   set_add_attr(out, ".GRP", .fastplyr.g)
   set_add_attr(out, ".fastplyr_quos", TRUE)
   out
+}
+
+should_optimise <- function(data){
+  if (length(group_vars(data)) == 0 || df_nrow(group_keys(data)) < 1e04){
+    FALSE
+  } else {
+    TRUE
+  }
 }
 
 are_fastplyr_quos <- function(quos){
@@ -406,6 +414,8 @@ mutate_summary <- function(.data, ...,
       data <- construct_dplyr_grouped_df(.data, all_groups, order = .order, drop = .drop)
     }
   }
+  group_keys <- group_keys(data)
+  n_groups <- df_nrow(group_keys)
   GRP <- NULL
   if (length(all_groups) > 0L && .add_collapse_grp){
     GRP <- grouped_df_as_GRP(data, return.groups = TRUE)
@@ -417,19 +427,35 @@ mutate_summary <- function(.data, ...,
     unused_cols <- original_cols
     changed_cols <- character()
   } else {
-    quos <- fastplyr_quos(..., .named = TRUE, .data = data)
+    quos <- fastplyr_quos(..., .named = TRUE, .data = data,
+                          .drop_null = FALSE,
+                          .unpack_default = FALSE,
+                          .optimise = should_optimise(data),
+                          .optimise_expand = TRUE)
 
-    if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-      new_data <- as.list(dplyr::mutate(data, !!!quos, .keep = "none"))[names(quos)]
-    } else {
-      new_data <- as.list(cpp_grouped_eval_mutate(data, quos))
-    }
+    # if (cpp_any_quo_contains_dplyr_mask_call(quos)){
+    #   new_data <- as.list(dplyr::mutate(data, !!!quos, .keep = "none"))[names(quos)]
+    # } else {
+      new_data <- lapply(
+        eval_all_tidy(quos, recycle = FALSE, add_groups = FALSE)[[2L]],
+        cheapr::cheapr_rep_len, df_nrow(.data)
+      )
+      if (n_groups > 1){
+        original_order <- order(unlist(group_rows(data)))
+        optimised <- attr(quos, ".optimised", TRUE)
+        for (i in seq_along(new_data)){
+          if (!optimised[[i]]){
+            new_data[[i]] <- cheapr::sset(new_data[[i]], original_order)
+          }
+        }
+      }
+    # }
 
     # Removing duplicate named results
     new_data <- new_data[!duplicated(names(quos), fromLast = TRUE)]
-    new_data <- cheapr::list_drop_null(new_data)
     data <- cheapr::reconstruct(data, .data)
     out_data <- df_add_cols(data, new_data)
+    new_data <- cheapr::list_drop_null(new_data)
     new_cols <- names(new_data)
     all_cols <- names(out_data)
     common_cols <- fast_intersect(original_cols, new_cols)
@@ -692,10 +718,6 @@ sset_quos <- function(quos, i){
     out, quos, c("names", "class", ".optimised"),
     fast_setdiff(names(attributes(quos)), c("names", "class", ".optimised"))
   )
-  # quo_attrs <- attributes(quos)
-  # out_attrs <- attributes(out)
-  # keep_attrs <- quo_attrs[fast_setdiff(names(quo_attrs), names(out_attrs))]
-  # set_add_attributes(out, keep_attrs, add = TRUE)
 }
 
 eval_optimised_quos <- function(quos){
@@ -706,23 +728,6 @@ eval_optimised_quos <- function(quos){
   if (!all(attr(quos, ".optimised", TRUE))){
     cli::cli_abort("All quosures must be tagged as '.optimised'")
   }
-
-  ### The GRP in quos must match the grouping structure of data
-  ### We perform a lightweight check here
-  # if (!is.null(quo_groups)){
-  #   if (is.null(GRP_groups(quo_groups))){
-  #     cli::cli_abort("fastplyr quos must contain a valid `.GRP` attribute")
-  #   }
-  #   if (is.null(GRP_group_vars(quo_groups))){
-  #     cli::cli_abort("fastplyr quos must contain a valid `.GRP` attribute")
-  #   }
-  #   if (!(GRP_n_groups(quo_groups) == df_nrow(group_keys(data)) &&
-  #     identical(group_vars(data), GRP_group_vars(quo_groups)))){
-  #     cli::cli_abort("fastplyr quos must contain a valid `.GRP` attribute")
-  #   }
-  # } else if (length(group_vars(data)) != 0){
-  #   cli::cli_abort("fastplyr quos must contain a valid `.GRP` attribute")
-  # }
 
   mask <- rlang::as_data_mask(data)
   results <- lapply(quos, \(x) rlang::eval_tidy(rlang::quo_get_expr(x), mask))
@@ -742,7 +747,7 @@ eval_optimised_quos <- function(quos){
   list(groups = groups, results = results)
 }
 
-eval_all_tidy <- function(quos, recycle = FALSE){
+eval_all_tidy <- function(quos, recycle = FALSE, add_groups = TRUE){
   check_fastplyr_quos(quos)
   data <- attr(quos, ".data", TRUE)
   quo_names <- names(quos)
@@ -781,7 +786,7 @@ eval_all_tidy <- function(quos, recycle = FALSE){
   if (cpp_any_quo_contains_dplyr_mask_call(quos)){
     return(dplyr_eval_all_tidy(data, !!!quos))
   }
-  all_results <- cpp_grouped_eval_tidy(data, quos, recycle = recycle)
+  all_results <- cpp_grouped_eval_tidy(data, quos, recycle = recycle, add_groups = add_groups)
   groups <- all_results[[1L]]
   results <- all_results[[2L]]
   n_group_vars <- length(group_vars(data))
@@ -819,7 +824,16 @@ eval_all_tidy <- function(quos, recycle = FALSE){
 ### eval_all_tidy() produces while keeping the expressions
 ### sequentially dependent
 dplyr_eval_all_tidy <- function(data, ...){
-  cli::cli_warn("{.pkg dplyr} mask function detected, results will be independent of each other")
+
+  if (getOption("fastplyr.inform", TRUE)){
+    rlang::warn(
+      c(
+        paste(cli::col_blue("dplyr"), "mask function detected, results will be independent of each other"),
+        "Run `options(fastplyr.inform = FALSE)` to turn this msg off"
+      )
+    )
+  }
+
 
   quos <- rlang::enquos(...)
   expr_names <- names(quos)

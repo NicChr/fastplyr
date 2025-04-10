@@ -479,7 +479,7 @@ GRP_collapse <- function(g,
                          id = FALSE,
                          size = FALSE, loc = TRUE,
                          start = FALSE, end = FALSE,
-                         drop = df_group_by_drop_default(data)){
+                         drop = df_group_by_drop_default(g[["groups"]])){
   check_GRP(g)
   if (is.null(g[["groups"]])){
     cli::cli_abort("Please supply a {.cls GRP} {.arg g} with distinct groups attached")

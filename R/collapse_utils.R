@@ -296,19 +296,23 @@ GRP_order <- function(GRP){
 
 # Alternative to gsplit(NULL, g)
 GRP_loc <- function(GRP, use.g.names = FALSE){
-  if (!is.null(GRP[["order"]])){
-    out <- cpp_group_locs(GRP[["order"]], GRP[["group.sizes"]])
+  group_id <- GRP_group_id(GRP)
+  group_sizes <- GRP_group_sizes(GRP)
+  group_order <- GRP[["order"]]
+  if (!is.null(group_order)){
+    out <- cpp_group_locs(group_order, group_sizes)
     if (use.g.names){
       names(out) <- GRP_names(GRP)
     }
-  } else if (length(GRP_group_id(GRP)) == 0L){
+  } else if (length(group_id) == 0L){
     if (use.g.names){
       out <- add_names(list(), character(0))
     } else {
       out <- list()
     }
   } else {
-    out <- collapse::gsplit(NULL, g = GRP, use.g.names = use.g.names)
+    out <- cpp_group_locs2(group_id, group_sizes)
+    # out <- collapse::gsplit(NULL, g = GRP, use.g.names = use.g.names)
   }
   out
 }

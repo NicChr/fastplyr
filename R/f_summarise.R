@@ -102,20 +102,16 @@ f_summarise <- function(.data, ..., .by = NULL, .order = df_group_by_order_defau
   if (df_nrow(.data) == 0){
     group_keys <- cheapr::sset_df(group_keys, 0L)
   }
-  if (length(group_vars(data)) == 0 || df_nrow(group_keys) < 1e04){
-    .optimise <- FALSE
-  } else {
-    .optimise <- TRUE
-  }
   quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE,
-                        .unpack_default = TRUE, .optimise = .optimise)
+                        .unpack_default = TRUE,
+                        .optimise = should_optimise(data))
 
   if (length(quos) == 0){
     return(cheapr::reconstruct(group_keys, cpp_ungroup(.data)))
   }
-  if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-    out <- dplyr::summarise(data, ...)
-  } else {
+  # if (cpp_any_quo_contains_dplyr_mask_call(quos)){
+  #   out <- dplyr::summarise(data, ...)
+  # } else {
     ## The `recycle` argument won't have a visible effect
     # on the final result, but it's faster to
     # set as TRUE as it means the group keys only get recycled once internally
@@ -133,7 +129,7 @@ f_summarise <- function(.data, ..., .by = NULL, .order = df_group_by_order_defau
     }
     out <- df_add_cols(group_keys, results)
     out <- cheapr::sset_col(out, !duplicated(names(out), fromLast = TRUE))
-  }
+  # }
   cheapr::reconstruct(out, cpp_ungroup(.data))
 }
 #' @rdname f_summarise

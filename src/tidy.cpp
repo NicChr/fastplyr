@@ -983,7 +983,7 @@ bool cpp_group_id_sorted(SEXP x){
 //
 
 [[cpp11::register]]
-SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
+SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
   int NP = 0;
   int n_quos = Rf_length(quos);
 
@@ -1159,16 +1159,18 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
 
 
   // groups container will hold the repeated out rows of the group keys
-  SEXP groups_container = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
-  Rf_setAttrib(groups_container, R_NamesSymbol, quo_names);
+  SEXP groups_container = R_NilValue;
+  if (add_groups){
+    Rf_protect(groups_container = Rf_allocVector(VECSXP, n_quos)); ++NP;
+    Rf_setAttrib(groups_container, R_NamesSymbol, quo_names);
+  }
 
   SEXP repeated_groups;
   PROTECT_INDEX repeated_groups_idx;
+  R_ProtectWithIndex(repeated_groups = R_NilValue, &repeated_groups_idx); ++NP;
 
-  if (recycle && n_quos > 0){
-    R_ProtectWithIndex(repeated_groups = cheapr::rep(groups, p_recycled_sizes_container[0]), &repeated_groups_idx); ++NP;
-  } else {
-    R_ProtectWithIndex(repeated_groups = R_NilValue, &repeated_groups_idx); ++NP;
+  if (add_groups && recycle && n_quos > 0){
+    R_Reprotect(repeated_groups = cheapr::rep(groups, p_recycled_sizes_container[0]), repeated_groups_idx);
   }
   for (int m = 0; m < n_quos; ++m){
     R_Reprotect(inner_container = Rf_allocVector(VECSXP, n_groups), inner_container_idx);
@@ -1176,10 +1178,12 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle){
       SET_VECTOR_ELT(inner_container, j, VECTOR_ELT(p_outer_container[j], m));
     }
     R_Reprotect(result = cheapr::c(inner_container), result_idx);
-    if (!recycle){
-      R_Reprotect(repeated_groups = cheapr::rep(groups, p_recycled_sizes_container[m]), repeated_groups_idx);
+    if (add_groups){
+      if (!recycle){
+        R_Reprotect(repeated_groups = cheapr::rep(groups, p_recycled_sizes_container[m]), repeated_groups_idx);
+      }
+      SET_VECTOR_ELT(groups_container, m, repeated_groups);
     }
-    SET_VECTOR_ELT(groups_container, m, repeated_groups);
     SET_VECTOR_ELT(results, m, result);
   }
   SEXP out = Rf_protect(Rf_allocVector(VECSXP, 2)); ++NP;

@@ -36,6 +36,10 @@ cpp_group_locs <- function(order, group_sizes) {
   .Call(`_fastplyr_cpp_group_locs`, order, group_sizes)
 }
 
+cpp_group_locs2 <- function(group_id, group_sizes) {
+  .Call(`_fastplyr_cpp_group_locs2`, group_id, group_sizes)
+}
+
 cpp_row_id <- function(order, group_sizes, ascending) {
   .Call(`_fastplyr_cpp_row_id`, order, group_sizes, ascending)
 }
@@ -140,8 +144,8 @@ cpp_group_id_sorted <- function(x) {
   .Call(`_fastplyr_cpp_group_id_sorted`, x)
 }
 
-cpp_grouped_eval_tidy <- function(data, quos, recycle) {
-  .Call(`_fastplyr_cpp_grouped_eval_tidy`, data, quos, recycle)
+cpp_grouped_eval_tidy <- function(data, quos, recycle, add_groups) {
+  .Call(`_fastplyr_cpp_grouped_eval_tidy`, data, quos, recycle, add_groups)
 }
 
 cpp_grouped_eval_mutate <- function(data, quos) {
