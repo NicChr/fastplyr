@@ -19,9 +19,26 @@
 #' @returns
 #' An un-grouped data frame of summaries by group.
 #'
-#' @details
-#' `f_summarise` behaves mostly like `dplyr::summarise` except that expressions
-#' supplied to `...` are evaluated independently.
+#' @section Details:
+#'
+#' This operates almost identically to `dplyr::summarise()` with some crucial
+#' differences.
+#' Optimisations for by-group operations kick in for
+#' common statistical functions when the data are both
+#' grouped and the number of groups exceeds 10,000.
+#' A message will be printed which one can disable
+#' by running `options(fastplyr.inform = FALSE)`.
+#' When this happens, the expressions which become optimised no longer
+#' obey data-masking rules pertaining to sequential and dependent expression
+#' execution.
+#' For example,
+#' the pseudo code
+#'  `f_summarise(data, mean = mean(x), mean2 = round(mean), .by = g)`
+#' when optimised will not work because the named col `mean` will not be visible
+#' in later expressions.
+#'
+#' One can disable fastplyr optimisations
+#' globally by running `options(fastplyr.optimise = F)`.
 #'
 #' ### Optimised statistical functions
 #'
@@ -73,6 +90,7 @@
 #'     .by = origin
 #'   )
 #' collapse::set_collapse(na.rm = TRUE)
+#' @rdname f_summarise
 #' @export
 f_summarise <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
   if (rlang::quo_is_null(rlang::enquo(.by))){
@@ -118,6 +136,7 @@ f_summarise <- function(.data, ..., .by = NULL, .order = df_group_by_order_defau
   }
   cheapr::reconstruct(out, cpp_ungroup(.data))
 }
+#' @rdname f_summarise
 #' @export
 f_summarize <- f_summarise
 
