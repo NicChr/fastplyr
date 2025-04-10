@@ -24,6 +24,7 @@ inline int df_nrow(SEXP x){
 
 bool frame_any_exotic(SEXP x);
 int cpp_n_group_vars(SEXP x);
+SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes);
 
 namespace rlang {
 SEXP eval_tidy(SEXP expr, SEXP data, SEXP env);

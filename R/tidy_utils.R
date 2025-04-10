@@ -432,7 +432,7 @@ mutate_summary <- function(.data, ...,
                           .unpack_default = FALSE,
                           .optimise = should_optimise(data),
                           .optimise_expand = TRUE)
-
+    .GRP <- attr(quos, ".GRP", TRUE)
     # if (cpp_any_quo_contains_dplyr_mask_call(quos)){
     #   new_data <- as.list(dplyr::mutate(data, !!!quos, .keep = "none"))[names(quos)]
     # } else {
@@ -441,7 +441,15 @@ mutate_summary <- function(.data, ...,
         cheapr::cheapr_rep_len, df_nrow(.data)
       )
       if (n_groups > 1){
-        original_order <- order(unlist(group_rows(data)))
+        # original_order <- order(unlist(group_rows(data)))
+        if (is.null(.GRP)){
+          group_id <- f_group_indices(data)
+          group_sizes <- cheapr::list_lengths(group_rows(data))
+        } else {
+          group_id <- GRP_group_id(.GRP)
+          group_sizes <- GRP_group_sizes(.GRP)
+        }
+        original_order <- cpp_orig_order(group_id, group_sizes)
         optimised <- attr(quos, ".optimised", TRUE)
         for (i in seq_along(new_data)){
           if (!optimised[[i]]){

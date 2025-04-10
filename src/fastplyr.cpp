@@ -354,6 +354,107 @@ SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
   return out;
 }
 
+// Using a combination of group_id and sorted group_sizes
+// we can quickly calculate an order vector that places
+// sorted group IDs back into original order
+
+[[cpp11::register]]
+SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes){
+  int n = Rf_length(group_id);
+  int n_groups = Rf_length(group_sizes);
+  int *p_group_id = INTEGER(group_id);
+
+  if (n_groups == 0){
+    return Rf_allocVector(INTSXP, 0);
+  }
+
+  // Sorted group start locs
+  SEXP cumulative_sizes = Rf_protect(cpp_sorted_group_starts(group_sizes, 0));
+  int *p_cumulative_sizes = INTEGER(cumulative_sizes);
+
+  SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
+  int* __restrict__ p_out = INTEGER(out);
+
+  for (int i = 0; i < n; ++i){
+    p_out[i] = ++p_cumulative_sizes[p_group_id[i] - 1];
+  }
+  Rf_unprotect(2);
+  return out;
+}
+
+// SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes, SEXP order){
+//   int n = Rf_length(group_id);
+//   int n_groups = Rf_length(group_sizes);
+//   int *p_group_sizes = INTEGER(group_sizes);
+//   int *p_group_id = INTEGER(group_id);
+//
+//   if (n_groups == 0){
+//     return Rf_allocVector(INTSXP, 0);
+//   }
+//
+//   // Sorted group start locs
+//   SEXP cumulative_sizes = Rf_protect(cpp_sorted_group_starts(group_sizes, 0));
+//   int *p_cumulative_sizes = INTEGER(cumulative_sizes);
+//
+//   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
+//   int* __restrict__ p_out = INTEGER(out);
+//
+//   int cur_group;
+//   int cur_group_loc;
+//   for (int i = 0; i < n; ++i){
+//     cur_group = p_group_id[i] - 1;
+//     p_out[i] = ++p_cumulative_sizes[cur_group];
+//   }
+//   Rf_unprotect(2);
+//   return out;
+// }
+
+// The same as above but on a list of group locations
+
+// SEXP cpp_orig_order3(SEXP group_id, SEXP group_sizes, SEXP locs){
+//   int n = Rf_length(group_id);
+//   int n_groups = Rf_length(group_sizes);
+//   int *p_group_sizes = INTEGER(group_sizes);
+//   int *p_group_id = INTEGER(group_id);
+//   const SEXP *p_locs = VECTOR_PTR_RO(locs);
+//
+//   if (n_groups == 0){
+//     return Rf_allocVector(INTSXP, 0);
+//   }
+//
+//   // Store a vector of pointers
+//   // Speeds up later allocation
+//   std::vector<int *> group_loc_pointers(n_groups);
+//
+//   // Sorted group start locs
+//
+//   SEXP cumulative_sizes = Rf_protect(Rf_allocVector(INTSXP, n_groups));
+//   int *p_cumulative_sizes = INTEGER(cumulative_sizes);
+//
+//   if (n_groups > 0){
+//     int init = 0;
+//     p_cumulative_sizes[0] = init;
+//     // cumsum over group_sizes[-length(group_sizes)]
+//     for (int i = 0; i < (n_groups - 1); ++i){
+//       p_cumulative_sizes[i + 1] = (init += p_group_sizes[i]);
+//       group_loc_pointers[i] = INTEGER(p_locs[i]);
+//     }
+//     group_loc_pointers[n_groups - 1] = INTEGER(p_locs[n_groups - 1]);
+//   }
+//
+//   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
+//   int* __restrict__ p_out = INTEGER(out);
+//
+//   int cur_group;
+//   int cur_group_loc;
+//   for (int i = 0; i < n; ++i){
+//     cur_group = p_group_id[i] - 1;
+//     p_out[i] = ++p_cumulative_sizes[cur_group];
+//   }
+//   Rf_unprotect(2);
+//   return out;
+// }
+
 [[cpp11::register]]
 SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
   int n = Rf_length(order);

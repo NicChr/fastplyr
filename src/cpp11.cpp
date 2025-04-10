@@ -76,6 +76,13 @@ extern "C" SEXP _fastplyr_cpp_group_locs2(SEXP group_id, SEXP group_sizes) {
   END_CPP11
 }
 // fastplyr.cpp
+SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes);
+extern "C" SEXP _fastplyr_cpp_orig_order(SEXP group_id, SEXP group_sizes) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_orig_order(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_id), cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_sizes)));
+  END_CPP11
+}
+// fastplyr.cpp
 SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending);
 extern "C" SEXP _fastplyr_cpp_row_id(SEXP order, SEXP group_sizes, SEXP ascending) {
   BEGIN_CPP11
@@ -216,6 +223,13 @@ extern "C" SEXP _fastplyr_cpp_group_rows(SEXP x) {
   END_CPP11
 }
 // tidy.cpp
+SEXP cpp_group_size(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_size(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_size(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// tidy.cpp
 SEXP cpp_ungroup(SEXP data);
 extern "C" SEXP _fastplyr_cpp_ungroup(SEXP data) {
   BEGIN_CPP11
@@ -300,6 +314,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_group_locs",                       (DL_FUNC) &_fastplyr_cpp_group_locs,                       2},
     {"_fastplyr_cpp_group_locs2",                      (DL_FUNC) &_fastplyr_cpp_group_locs2,                      2},
     {"_fastplyr_cpp_group_rows",                       (DL_FUNC) &_fastplyr_cpp_group_rows,                       1},
+    {"_fastplyr_cpp_group_size",                       (DL_FUNC) &_fastplyr_cpp_group_size,                       1},
     {"_fastplyr_cpp_group_split",                      (DL_FUNC) &_fastplyr_cpp_group_split,                      3},
     {"_fastplyr_cpp_group_vars",                       (DL_FUNC) &_fastplyr_cpp_group_vars,                       1},
     {"_fastplyr_cpp_grouped_eval_mutate",              (DL_FUNC) &_fastplyr_cpp_grouped_eval_mutate,              2},
@@ -309,6 +324,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_is_fn_call",                       (DL_FUNC) &_fastplyr_cpp_is_fn_call,                       4},
     {"_fastplyr_cpp_list_subset",                      (DL_FUNC) &_fastplyr_cpp_list_subset,                      4},
     {"_fastplyr_cpp_list_tidy",                        (DL_FUNC) &_fastplyr_cpp_list_tidy,                        1},
+    {"_fastplyr_cpp_orig_order",                       (DL_FUNC) &_fastplyr_cpp_orig_order,                       2},
     {"_fastplyr_cpp_quo_data_vars",                    (DL_FUNC) &_fastplyr_cpp_quo_data_vars,                    2},
     {"_fastplyr_cpp_quos_drop_null",                   (DL_FUNC) &_fastplyr_cpp_quos_drop_null,                   1},
     {"_fastplyr_cpp_row_id",                           (DL_FUNC) &_fastplyr_cpp_row_id,                           3},

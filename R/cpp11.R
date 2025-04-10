@@ -40,6 +40,10 @@ cpp_group_locs2 <- function(group_id, group_sizes) {
   .Call(`_fastplyr_cpp_group_locs2`, group_id, group_sizes)
 }
 
+cpp_orig_order <- function(group_id, group_sizes) {
+  .Call(`_fastplyr_cpp_orig_order`, group_id, group_sizes)
+}
+
 cpp_row_id <- function(order, group_sizes, ascending) {
   .Call(`_fastplyr_cpp_row_id`, order, group_sizes, ascending)
 }
@@ -118,6 +122,10 @@ cpp_group_vars <- function(x) {
 
 cpp_group_rows <- function(x) {
   .Call(`_fastplyr_cpp_group_rows`, x)
+}
+
+cpp_group_size <- function(x) {
+  .Call(`_fastplyr_cpp_group_size`, x)
 }
 
 cpp_ungroup <- function(data) {
