@@ -432,33 +432,7 @@ mutate_summary <- function(.data, ...,
                           .unpack_default = FALSE,
                           .optimise = should_optimise(data),
                           .optimise_expand = TRUE)
-    .GRP <- attr(quos, ".GRP", TRUE)
-    # if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-    #   new_data <- as.list(dplyr::mutate(data, !!!quos, .keep = "none"))[names(quos)]
-    # } else {
-      new_data <- lapply(
-        eval_all_tidy(quos, recycle = FALSE, add_groups = FALSE)[[2L]],
-        cheapr::cheapr_rep_len, df_nrow(.data)
-      )
-      if (n_groups > 1){
-        # original_order <- order(unlist(group_rows(data)))
-        if (is.null(.GRP)){
-          group_id <- f_group_indices(data)
-          group_sizes <- cheapr::list_lengths(group_rows(data))
-        } else {
-          group_id <- GRP_group_id(.GRP)
-          group_sizes <- GRP_group_sizes(.GRP)
-        }
-        original_order <- cpp_orig_order(group_id, group_sizes)
-        optimised <- attr(quos, ".optimised", TRUE)
-        for (i in seq_along(new_data)){
-          if (!optimised[[i]]){
-            new_data[[i]] <- cheapr::sset(new_data[[i]], original_order)
-          }
-        }
-      }
-    # }
-
+    new_data <- eval_mutate(quos)
     # Removing duplicate named results
     new_data <- new_data[!duplicated(names(quos), fromLast = TRUE)]
     data <- cheapr::reconstruct(data, .data)
@@ -728,7 +702,7 @@ sset_quos <- function(quos, i){
   )
 }
 
-eval_optimised_quos <- function(quos){
+eval_optimised_quos <- function(quos, add_groups = TRUE){
 
   quo_names <- names(quos)
   quo_groups <- attr(quos, ".GRP", TRUE)
@@ -740,17 +714,21 @@ eval_optimised_quos <- function(quos){
   mask <- rlang::as_data_mask(data)
   results <- lapply(quos, \(x) rlang::eval_tidy(rlang::quo_get_expr(x), mask))
 
-  if (length(quos) == 0){
-    groups <- list()
-    names(groups) <- character()
-  } else {
-    groups <- cheapr::cheapr_rep_len(
-      list(
-        cheapr::cheapr_rep_len(group_keys(data), cheapr::vector_length(results[[1]]))
+  groups <- NULL
+
+  if (add_groups){
+    if (length(quos) == 0){
+      groups <- list()
+      names(groups) <- character()
+    } else {
+      groups <- cheapr::cheapr_rep_len(
+        list(
+          cheapr::cheapr_rep_len(group_keys(data), cheapr::vector_length(results[[1]]))
         ),
-      length(quos)
-    )
-    names(groups) <- quo_names
+        length(quos)
+      )
+      names(groups) <- quo_names
+    }
   }
   list(groups = groups, results = results)
 }
@@ -766,7 +744,7 @@ eval_all_tidy <- function(quos, recycle = FALSE, add_groups = TRUE){
     regular_quos <- sset_quos(quos, which_regular)
     optimised_quos <- sset_quos(quos, which_optimised)
     regular_results <- eval_all_tidy(regular_quos, recycle = FALSE)
-    optimised_results <- eval_optimised_quos(optimised_quos)
+    optimised_results <- eval_optimised_quos(optimised_quos, add_groups = add_groups)
 
     groups <- cheapr::new_list(length(quos))
     results <- cheapr::new_list(length(quos))
@@ -814,12 +792,6 @@ eval_all_tidy <- function(quos, recycle = FALSE, add_groups = TRUE){
       k <- k + 1L
     }
   }
-  # if (unique_names){
-  #   # Removing duplicate named results
-  #   keep <- cheapr::val_find(duplicated(quo_names, fromLast = TRUE), FALSE)
-  #   groups <- groups[keep]
-  #   results <- results[keep]
-  # }
   list(groups = groups, results = results)
 }
 
@@ -869,6 +841,53 @@ dplyr_eval_all_tidy <- function(data, ...){
   }
   names(groups) <- names(results)
   list(groups = groups, results = results)
+}
+
+eval_mutate <- function(quos){
+  check_fastplyr_quos(quos)
+  data <- attr(quos, ".data", TRUE)
+  quo_names <- names(quos)
+  which_optimised <- cheapr::val_find(attr(quos, ".optimised", TRUE), TRUE)
+
+  if (length(which_optimised) > 0L){
+    which_regular <- cheapr::val_find(attr(quos, ".optimised", FALSE), FALSE)
+    regular_quos <- sset_quos(quos, which_regular)
+    optimised_quos <- sset_quos(quos, which_optimised)
+    optimised_results <- eval_optimised_quos(optimised_quos)
+    regular_results <- eval_mutate(regular_quos)
+    results <- cheapr::new_list(length(quos))
+    results[which_regular] <- regular_results
+    results[which_optimised] <- optimised_results[[2L]]
+    names(results) <- quo_names
+    return(results)
+  }
+
+  if (cpp_any_quo_contains_dplyr_mask_call(quos)){
+    if (getOption("fastplyr.inform", TRUE)){
+      rlang::warn(
+        c(
+          paste(cli::col_blue("dplyr"), "mask function detected, results may be independent of each other"),
+          "Run `options(fastplyr.inform = FALSE)` to turn this msg off"
+        )
+      )
+    }
+    return(as.list(dplyr::mutate(data, !!!quos))[quo_names])
+  }
+  results <- cpp_grouped_eval_mutate(data, quos)
+
+  k <- 1L
+  for (i in seq_along(results)){
+    # Unpack
+    if (isTRUE(attr(quos[[i]], ".unpack", TRUE)) && is_df(results[[k]])){
+      results_to_append <- as.list(results[[k]])
+      results <- append(results, results_to_append, after = k - 1L)
+      k <- k + length(results_to_append)
+      results[[k]] <- NULL
+    } else {
+      k <- k + 1L
+    }
+  }
+  results
 }
 
 

@@ -1215,23 +1215,15 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
   int n_quos = Rf_length(quos);
 
   if (n_quos == 0){
-    SEXP out = Rf_protect(Rf_allocVector(VECSXP, 2));
-    SET_VECTOR_ELT(out, 0, Rf_allocVector(VECSXP, 0));
-    SET_VECTOR_ELT(out, 1, Rf_allocVector(VECSXP, 0));
-    Rf_namesgets(VECTOR_ELT(out, 0), Rf_allocVector(STRSXP, 0));
-    Rf_namesgets(VECTOR_ELT(out, 1), Rf_allocVector(STRSXP, 0));
-    SEXP out_names = Rf_protect(Rf_allocVector(STRSXP, 2));
-    SET_STRING_ELT(out_names, 0, Rf_mkChar("groups"));
-    SET_STRING_ELT(out_names, 1, Rf_mkChar("results"));
-    Rf_namesgets(out, out_names);
-    Rf_unprotect(2);
+    SEXP out = Rf_protect(Rf_allocVector(VECSXP, 0));
+    Rf_namesgets(out, Rf_allocVector(STRSXP, 0));
+    Rf_unprotect(1);
     return out;
   }
 
   bool has_groups = Rf_inherits(data, "grouped_df");
   int n_rows = df_nrow(data);
   SEXP group_data = R_NilValue;
-  SEXP groups = Rf_protect(cpp_group_keys(data)); ++NP;
   SEXP rows = R_NilValue;
   SEXP exprs = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
   SEXP envs = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
@@ -1362,23 +1354,33 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
     SET_VECTOR_ELT(results, m, result);
   }
 
-  // Re-order the results
-  R_Reprotect(results = cheapr::list_as_df(results), result_idx);
+  SEXP group_id = R_NilValue;
+  SEXP group_sizes = R_NilValue;
+  SEXP order = R_NilValue;
+  SEXP is_already_ordered = R_NilValue;
+  SEXP sorted_sym = R_NilValue;
   SEXP grp_sym = Rf_protect(Rf_install(".GRP")); ++NP;
   SEXP grp = Rf_protect(Rf_getAttrib(quos, grp_sym)); ++NP;
 
-  SEXP group_id, group_sizes, order;
-  if (TYPEOF(grp) == NILSXP){
-    Rf_protect(group_id = cpp_group_id(data)); ++NP;
-    Rf_protect(group_sizes = cpp_group_size(data)); ++NP;
+  if (n_groups > 1){
+    // Re-order the results
+    R_Reprotect(results = cheapr::list_as_df(results), result_idx);
+
+    if (TYPEOF(grp) == NILSXP){
+      Rf_protect(group_id = cpp_group_id(data)); ++NP;
+      Rf_protect(group_sizes = cpp_group_size(data)); ++NP;
+    } else {
+      Rf_protect(group_id = VECTOR_ELT(grp, 1)); ++NP;
+      Rf_protect(group_sizes = VECTOR_ELT(grp, 2)); ++NP;
+    }
     Rf_protect(order = cpp_orig_order(group_id, group_sizes)); ++NP;
-  } else {
-    Rf_protect(group_id = VECTOR_ELT(grp, 1)); ++NP;
-    Rf_protect(group_sizes = VECTOR_ELT(grp, 2)); ++NP;
-    Rf_protect(order = cpp_orig_order(group_id, group_sizes)); ++NP;
+    Rf_protect(sorted_sym = Rf_install("sorted")); ++NP;
+    Rf_protect(is_already_ordered = Rf_getAttrib(order, sorted_sym)); ++NP;
+    if (TYPEOF(is_already_ordered) != LGLSXP || !LOGICAL(is_already_ordered)[0]){
+      R_Reprotect(results = cheapr::sset(results, order, true), result_idx);
+    }
+    R_Reprotect(results = Rf_coerceVector(results, VECSXP), result_idx);
   }
-  R_Reprotect(results = cheapr::sset(results, order, true), result_idx);
-  R_Reprotect(results = Rf_coerceVector(results, VECSXP), result_idx);
   Rf_unprotect(NP);
   return results;
 }

@@ -375,10 +375,22 @@ SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes){
   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
   int* __restrict__ p_out = INTEGER(out);
 
+  int ans;
+
+  bool sorted = true;
+  // for (int i = 0; i < n; ++i){
+  //   p_out[i] = ++p_cumulative_sizes[p_group_id[i] - 1];
+  // }
   for (int i = 0; i < n; ++i){
-    p_out[i] = ++p_cumulative_sizes[p_group_id[i] - 1];
+    ans = ++p_cumulative_sizes[p_group_id[i] - 1];
+    sorted = sorted && ans == (i + 1);
+    p_out[i] = ans;
   }
-  Rf_unprotect(2);
+  SEXP sorted_sym = Rf_protect(Rf_install("sorted"));
+  SEXP r_sorted = Rf_protect(Rf_allocVector(LGLSXP, 1));
+  LOGICAL(r_sorted)[0] = sorted;
+  Rf_setAttrib(out, sorted_sym, r_sorted);
+  Rf_unprotect(4);
   return out;
 }
 
