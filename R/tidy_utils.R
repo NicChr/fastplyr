@@ -406,8 +406,13 @@ mutate_summary <- function(.data, ...,
                            .drop = df_group_by_drop_default(.data)){
   original_cols <- names(.data)
   all_groups <- get_groups(.data, .by = {{ .by }})
-  GRP <- df_to_GRP(.data, all_groups, order = .order)
-  data <- construct_dplyr_grouped_df2(GRP, drop = .drop)
+  if (length(all_groups) == 0){
+    GRP <- NULL
+    data <- .data
+  } else {
+    GRP <- df_to_GRP(.data, all_groups, order = .order)
+    data <- construct_dplyr_grouped_df2(GRP, drop = .drop)
+  }
   group_keys <- group_keys(data)
   n_groups <- df_nrow(group_keys)
   if (dots_length(...) == 0L){
@@ -478,8 +483,10 @@ select_summary <- function(.data, ..., .by = NULL, .cols = NULL, .order = df_gro
     cli::cli_abort("Can't rename group vars in this context")
   }
 
-  new_cols <- character()
-  used_cols <- names(selected_cols)
+  # new_cols <- character()
+  # used_cols <- names(selected_cols)
+  new_cols <- names(selected_cols)
+  used_cols <- new_cols
   unused_cols <- fast_setdiff(names(out), used_cols)
 
   # check_cols <- selected_cols[names(selected_cols) %in% names(.data)]
@@ -490,11 +497,17 @@ select_summary <- function(.data, ..., .by = NULL, .cols = NULL, .order = df_gro
   # )]
   changed_cols <- character()
   renamed_cols <- used_cols[used_cols != selected_cols]
-  GRP <- df_to_GRP(out, all_groups, order = .order)
+  # if (length(all_groups) == 0){
+  #   GRP <- NULL
+  # } else {
+  #   GRP <- df_to_GRP(out, all_groups, order = .order)
+  # }
+
+  GRP <- NULL
 
   list(
     data = out,
-    new_cols = character(), # Can't create new cols with selecting
+    new_cols = new_cols,
     used_cols = used_cols, # All selected cols
     unused_cols = unused_cols, # Unselected cols
     changed_cols = changed_cols,
@@ -648,13 +661,29 @@ tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
 
 tidy_group_info2 <- function(.data, ..., .by = NULL, .cols = NULL,
                              .order = df_group_by_order_default(.data),
-                             type = "data-mask"){
+                             .type = "data-mask",
+                             .add_GRP = TRUE){
   check_cols(n_dots = dots_length(...), .cols = .cols)
-  if (is.null(.cols) && type == "data-mask"){
-    mutate_summary(.data, ..., .by = {{ .by }}, .order = .order)
+  if (is.null(.cols) && .type == "data-mask"){
+    out <- mutate_summary(.data, ..., .by = {{ .by }}, .order = .order)
   } else {
-    select_summary(.data, ..., .by = {{ .by }}, .order = .order, .cols = .cols)
+    out <- select_summary(.data, ..., .by = {{ .by }}, .order = .order, .cols = .cols)
   }
+
+  data <- out[["data"]]
+  groups <- out[["all_groups"]]
+  new_cols <- out[["new_cols"]]
+  all_groups <- c(groups, new_cols)
+  GRP <- out[["GRP"]]
+  if (.add_GRP && (is.null(GRP) || !identical(groups, all_groups))){
+    GRP <- df_to_GRP(data, all_groups, order = .order)
+  }
+  list(
+    data = data,
+    all_groups = all_groups,
+    GRP = GRP
+  )
+
 }
 
 unique_count_col <- function(data, col = "n"){

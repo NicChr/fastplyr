@@ -563,7 +563,7 @@ GRP_collapse <- function(g,
   out
 }
 
-construct_dplyr_group_data2 <- function(g, drop = df_group_by_drop_default(g[["X"]])){
+construct_dplyr_group_data2 <- function(g, drop = df_group_by_drop_default(GRP_data(g))){
   group_data <- GRP_collapse(
     g,
     id = FALSE,
@@ -579,7 +579,7 @@ construct_dplyr_group_data2 <- function(g, drop = df_group_by_drop_default(g[["X
   )
   group_data <- list_as_tbl(group_data)
   attr(group_data, ".drop") <- drop
-  attr(group_data, "ordered") <- order
+  attr(group_data, "ordered") <- df_group_by_order_default(GRP_data(g))
   group_data
 }
 
