@@ -21,9 +21,7 @@ f_group_rows <- cpp_group_rows
 f_group_indices <- cpp_group_id
 #' @rdname group_data
 #' @export
-f_group_size <- function(x){
-  cheapr::list_lengths(cpp_group_rows(x))
-}
+f_group_size <- cpp_group_size
 #' @rdname group_data
 #' @export
 f_n_groups <- function(x){

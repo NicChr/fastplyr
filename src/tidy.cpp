@@ -1395,12 +1395,9 @@ SEXP cpp_group_split(SEXP data, SEXP drop, SEXP order){
   SET_STRING_ELT(tbl_class, 2, Rf_mkChar("data.frame"));
 
   SEXP group_data = Rf_protect(cpp_group_data(data)); ++NP;
-  SEXP names = Rf_protect(Rf_getAttrib(group_data, R_NamesSymbol)); ++NP;
-  SEXP seq = Rf_protect(cheapr::seq_len(Rf_length(group_data) - 1)); ++NP;
-  SEXP group_vars = Rf_protect(cheapr::sset(names, seq, true)); ++NP;
-
-  Rf_protect(names = Rf_getAttrib(data, R_NamesSymbol)); ++NP;
-
+  SEXP group_vars = Rf_protect(cpp_group_vars(data)); ++NP;
+  SEXP rows = Rf_protect(cpp_group_rows(data)); ++NP;
+  SEXP names = Rf_protect(Rf_getAttrib(data, R_NamesSymbol)); ++NP;
   SEXP locs, frame;
 
   PROTECT_INDEX locs_idx, frame_idx;
@@ -1410,7 +1407,6 @@ SEXP cpp_group_split(SEXP data, SEXP drop, SEXP order){
   SEXP temp_cols = Rf_protect(cheapr::setdiff(names, group_vars)); ++NP;
   SEXP temp = Rf_protect(cheapr::df_select(data, temp_cols)); ++NP;
 
-  SEXP rows = Rf_protect(VECTOR_ELT(group_data, Rf_length(group_data) - 1)); ++NP;
   const SEXP *p_rows = VECTOR_PTR_RO(rows);
   int n_groups = Rf_length(rows);
   SEXP frames = Rf_protect(Rf_allocVector(VECSXP, n_groups)); ++NP;
