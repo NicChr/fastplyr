@@ -479,7 +479,7 @@ GRP_collapse <- function(g,
                          id = FALSE,
                          size = FALSE, loc = TRUE,
                          start = FALSE, end = FALSE,
-                         drop = df_group_by_drop_default(g[["groups"]])){
+                         drop = df_group_by_drop_default(g[["X"]])){
   check_GRP(g)
   if (is.null(g[["groups"]])){
     cli::cli_abort("Please supply a {.cls GRP} {.arg g} with distinct groups attached")
@@ -562,6 +562,40 @@ GRP_collapse <- function(g,
   }
   out
 }
+
+construct_dplyr_group_data2 <- function(g, drop = df_group_by_drop_default(g[["X"]])){
+  group_data <- GRP_collapse(
+    g,
+    id = FALSE,
+    loc = TRUE,
+    size = FALSE,
+    start = FALSE,
+    end = FALSE,
+    drop = drop
+  )
+  group_data <- cheapr::list_assign(group_data,
+    list(.rows = vctrs_new_list_of(group_data[[".loc"]], integer()),
+         .loc = NULL)
+  )
+  group_data <- list_as_tbl(group_data)
+  attr(group_data, ".drop") <- drop
+  attr(group_data, "ordered") <- order
+  group_data
+}
+
+construct_dplyr_grouped_df2 <- function(g, drop = df_group_by_drop_default(GRP_group_data(g))){
+
+  data <- GRP_data(g)
+  group_vars <- GRP_group_vars(g)
+  if (length(group_vars) == 0){
+    return(f_ungroup(data))
+  }
+  group_data <- construct_dplyr_group_data2(g, drop = drop)
+  attr(data, "groups") <- group_data
+  class(data) <- c("grouped_df", "tbl_df", "tbl", "data.frame")
+  data
+}
+
 
 construct_dplyr_grouped_df <- function(data, cols = names(data),
                                        order = df_group_by_order_default(data),

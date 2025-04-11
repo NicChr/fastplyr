@@ -41,18 +41,17 @@ f_expand <- function(data, ..., .sort = FALSE,
     frames <- cheapr::new_list(length(dot_vars))
     for (i in seq_along(dot_vars)){
       frames[[i]] <- sort_unique(
-        cheapr::sset_col(data2, c(group_vars, dot_vars[i])),
+        `names<-`(cheapr::sset_col(data2, c(group_vars, dot_vars[i])), names(dot_vars)[[i]]),
         sort = .sort
       )
     }
   } else {
-    dots <- fastplyr_quos(!!!dots, .data = f_group_by(data, .cols = group_vars, .add = TRUE))
+    dots <- fastplyr_quos(..., .data = f_group_by(data, .cols = group_vars, .add = TRUE))
     frames <- eval_all_tidy(dots, recycle = FALSE)
     frames <- purrr::map2(
       frames[[1L]], cpp_as_list_of_frames(frames[[2L]]),
-      \(x, y) cheapr::col_c(x, y)
+      \(x, y) sort_unique(cheapr::col_c(x, y), .sort)
     )
-    frames <- lapply(frames, sort_unique, .sort)
   }
   if (length(group_vars) > 0){
     anon_join <- function(x, y){
@@ -133,28 +132,15 @@ f_complete <- function(data, ...,
 #' @export
 crossing <- function(..., .sort = FALSE){
   dots <- list_tidy(..., .named = TRUE, .keep_null = FALSE)
-  for (i in seq_along(dots)){
-    if (!is_df(dots[[i]])){
-      dots[[i]] <- sort_unique(`names<-`(cheapr::fast_df(x = dots[[i]]), names(dots)[i]),
-                               sort = .sort)
-    }
-  }
-  # dots <- lapply(dots, sort_unique, .sort)
+  dots <- lapply(dots, sort_unique, .sort)
   df_as_tbl(do.call(cross_join, dots))
 }
 #' @rdname f_expand
 #' @export
 nesting <- function(..., .sort = FALSE){
-  dots <- list_tidy(..., .named = TRUE, .keep_null = FALSE)
-  for (i in seq_along(dots)){
-    if (!is_df(dots[[i]])){
-      dots[[i]] <- `names<-`(cheapr::fast_df(x = dots[[i]]), names(dots)[i])
-    }
-  }
-  df_as_tbl(sort_unique(do.call(f_bind_cols, dots), sort = .sort))
-  # df_as_tbl(
-  #   sort_unique(
-  #     cpp_df_col_c(list_tidy(..., .named = TRUE, .keep_null = FALSE), TRUE, TRUE), sort = .sort
-  #   )
-  # )
+  df_as_tbl(
+    sort_unique(
+      cpp_df_col_c(list_tidy(..., .named = TRUE, .keep_null = FALSE), TRUE, TRUE), sort = .sort
+    )
+  )
 }

@@ -92,13 +92,11 @@ f_group_by <- function(data, ..., .add = FALSE,
                        .by = NULL, .cols = NULL,
                        .drop = df_group_by_drop_default(data)){
   init_group_vars <- group_vars(data)
-  check_by(data, {{ .by }})
-  group_info <- tidy_group_info(
+  group_info <- tidy_group_info2(
     cpp_ungroup(data), ...,
     .by = {{ .by }},
     .cols = .cols,
-    ungroup = FALSE,
-    rename = TRUE
+    .order = .order
   )
   out <- group_info[["data"]]
   groups <- group_info[["all_groups"]]
@@ -106,13 +104,11 @@ f_group_by <- function(data, ..., .add = FALSE,
     order_unchanged <- .order == df_group_by_order_default(data)
     drop_unchanged <- .drop == df_group_by_drop_default(data)
     no_extra_groups <- length(groups) == 0 || (length(fast_setdiff(groups, init_group_vars)) == 0)
-    groups_unchanged <- all(group_info$address_equal[init_group_vars])
-    if (order_unchanged && drop_unchanged && no_extra_groups && groups_unchanged){
+    if (order_unchanged && drop_unchanged && no_extra_groups){
       return(data)
     }
-    groups <- unique(c(init_group_vars, groups))
   }
-  construct_dplyr_grouped_df(out, groups, order = .order, drop = .drop)
+  construct_dplyr_grouped_df2(group_info[["GRP"]], drop = .drop)
 }
 #' @rdname f_group_by
 #' @export

@@ -542,14 +542,15 @@ bool call_contains_dplyr_mask(SEXP expr, SEXP rho){
 
   int NP = 0;
 
-  SEXP dplyr_mask_fns = Rf_protect(Rf_allocVector(STRSXP, 7)); ++NP;
+  SEXP dplyr_mask_fns = Rf_protect(Rf_allocVector(STRSXP, 8)); ++NP;
   SET_STRING_ELT(dplyr_mask_fns, 0, Rf_mkChar("n"));
   SET_STRING_ELT(dplyr_mask_fns, 1, Rf_mkChar("pick"));
-  SET_STRING_ELT(dplyr_mask_fns, 2, Rf_mkChar("cur_group_id"));
-  SET_STRING_ELT(dplyr_mask_fns, 3, Rf_mkChar("cur_group_rows"));
-  SET_STRING_ELT(dplyr_mask_fns, 4, Rf_mkChar("cur_column"));
-  SET_STRING_ELT(dplyr_mask_fns, 5, Rf_mkChar("cur_data"));
-  SET_STRING_ELT(dplyr_mask_fns, 6, Rf_mkChar("cur_data_all"));
+  SET_STRING_ELT(dplyr_mask_fns, 2, Rf_mkChar("row_number"));
+  SET_STRING_ELT(dplyr_mask_fns, 3, Rf_mkChar("cur_group_id"));
+  SET_STRING_ELT(dplyr_mask_fns, 4, Rf_mkChar("cur_group_rows"));
+  SET_STRING_ELT(dplyr_mask_fns, 5, Rf_mkChar("cur_column"));
+  SET_STRING_ELT(dplyr_mask_fns, 6, Rf_mkChar("cur_data"));
+  SET_STRING_ELT(dplyr_mask_fns, 7, Rf_mkChar("cur_data_all"));
   SEXP dplyr_str = Rf_protect(Rf_mkString("dplyr")); ++NP;
 
   if (cpp_is_fn_call(expr, dplyr_mask_fns, dplyr_str, rho)){

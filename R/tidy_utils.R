@@ -87,7 +87,7 @@ fix_quo_names <- function(quos){
   quos
 }
 
-unpack_across <- function(quo, data){
+unpack_across <- function(quo, data, unpack_default = FALSE){
 
   expr <- rlang::quo_get_expr(quo)
   quo_env <- rlang::quo_get_env(quo)
@@ -152,7 +152,7 @@ unpack_across <- function(quo, data){
   if (".unpack" %in% names(expr)){
     unpack <- eval(across_unpack, envir = quo_env)
   } else {
-    unpack <- FALSE
+    unpack <- unpack_default
   }
 
   out_names <- across_col_names(cols, .names = across_nms, .fns = fn_names)
@@ -178,7 +178,7 @@ unpack_across <- function(quo, data){
 
 fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
                           .unpack_default = FALSE, .optimise = FALSE,
-                          .optimise_expand = FALSE){
+                          .optimise_expand = FALSE, .groups = NULL){
 
   out <- rlang::quos(..., .ignore_empty = "all")
   quo_nms <- attr(out, "names", TRUE)
@@ -190,7 +190,7 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
     attr(quo, ".unpack", TRUE) %||% set_add_attr(quo, ".unpack", .unpack_default)
     if (!nzchar(quo_nms[[k]]) && cpp_is_fn_call(expr, "across", ns = "dplyr", env)){
       left <- out[seq_len(k - 1L)]
-      unpacked_quos <- unpack_across(quo, .data)
+      unpacked_quos <- unpack_across(quo, .data, unpack_default = .unpack_default)
       if (k < length(out)){
         right <- out[seq.int(k + 1L, length(out), 1L)]
       } else {
@@ -199,7 +199,8 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
       out[[k]] <- NULL
       out <- c(left, unpacked_quos, right)
       quo_nms <- names(out)
-      k <- k + length(right)
+      # k <- k + length(right)
+      k <- k + length(unpacked_quos)
     } else if (.named && !nzchar(quo_nms[[k]])){
       quo_nms[[k]] <- deparse2(rlang::quo_get_expr(quo))
       k <- k + 1L
@@ -214,7 +215,7 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
 
   optimised <- logical(length(out))
 
-  .fastplyr.g <- NULL
+  .fastplyr.g <- .groups %||% NULL
   .original_out <- out
 
 
@@ -222,7 +223,7 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
   if (.optimise && getOption("fastplyr.optimise", TRUE)){
 
     if (length(group_vars(.data)) != 0){
-      .fastplyr.g <- grouped_df_as_GRP(.data, return.groups = TRUE)
+      .fastplyr.g <- .fastplyr.g %||% grouped_df_as_GRP(.data, return.groups = TRUE)
     }
 
     if (.optimise_expand){
@@ -402,24 +403,13 @@ mutate_summary <- function(.data, ...,
                            .keep = "all",
                            .by = NULL,
                            .order = df_group_by_order_default(.data),
-                           .drop = df_group_by_drop_default(.data),
-                           .add_collapse_grp = FALSE){
+                           .drop = df_group_by_drop_default(.data)){
   original_cols <- names(.data)
-  data <- .data
-  if (rlang::quo_is_null(rlang::enquo(.by))){
-    all_groups <- group_vars(.data)
-  } else {
-    all_groups <- get_groups(.data, .by = {{ .by }})
-    if (length(all_groups) > 0){
-      data <- construct_dplyr_grouped_df(.data, all_groups, order = .order, drop = .drop)
-    }
-  }
+  all_groups <- get_groups(.data, .by = {{ .by }})
+  GRP <- df_to_GRP(.data, all_groups, order = .order)
+  data <- construct_dplyr_grouped_df2(GRP, drop = .drop)
   group_keys <- group_keys(data)
   n_groups <- df_nrow(group_keys)
-  GRP <- NULL
-  if (length(all_groups) > 0L && .add_collapse_grp){
-    GRP <- grouped_df_as_GRP(data, return.groups = TRUE)
-  }
   if (dots_length(...) == 0L){
     out_data <- .data
     new_cols <- character()
@@ -472,29 +462,46 @@ mutate_summary <- function(.data, ...,
 }
 
 # To replace tidy_group_info_tidyselect in the future
-select_summary <- function(data, ..., .by = NULL, .cols = NULL){
-  group_vars <- get_groups(data, {{ .by }})
-  group_pos <- match(group_vars, names(data))
-  extra_groups <- character()
-  out <- data
-  extra_group_pos <- tidy_select_pos(out, ..., .cols = .cols)
-  out <- f_rename(out, .cols = extra_group_pos)
-  extra_groups <- names(extra_group_pos)
+select_summary <- function(.data, ..., .by = NULL, .cols = NULL, .order = df_group_by_order_default(.data)){
+  all_groups <- get_groups(.data, .by = {{ .by }})
+  selected_cols <- tidy_select_names(.data, ..., .cols = .cols)
+  out <- col_rename(f_ungroup(.data), .cols = selected_cols)
+  if (anyDuplicated(names(out))){
+    cli::cli_abort("Can't rename columns to names that already exist")
+  }
+  # out <- df_add_cols(.data, f_select(f_ungroup(.data), .cols = selected_cols))
   # Recalculate group vars in case they were renamed
-  group_vars <- names(out)[group_pos]
-  address_equal <- rep_len(TRUE, df_ncol(data))
-  address_equal[extra_group_pos] <-
-    names(data)[extra_group_pos] == names(extra_group_pos)
-  names(address_equal) <- names(data)
-  any_groups_changed <- !all(address_equal[group_vars])
-  extra_groups <- fast_setdiff(extra_groups, group_vars)
-  all_groups <- c(group_vars, extra_groups)
-  list("data" = out,
-       "dplyr_groups" = group_vars,
-       "extra_groups" = extra_groups,
-       "all_groups" = all_groups,
-       "groups_changed" = any_groups_changed,
-       "address_equal" = address_equal)
+  group_pos <- match(all_groups, names(.data))
+  new_group_vars <- names(out)[group_pos]
+
+  if (!identical(new_group_vars, all_groups)){
+    cli::cli_abort("Can't rename group vars in this context")
+  }
+
+  new_cols <- character()
+  used_cols <- names(selected_cols)
+  unused_cols <- fast_setdiff(names(out), used_cols)
+
+  # check_cols <- selected_cols[names(selected_cols) %in% names(.data)]
+  # check_col_pos <- match(names(check_cols), names(out))
+  # changed_cols <- check_cols[!cpp_frame_addresses_equal(
+  #   cheapr::sset_col(.data, check_col_pos),
+  #   cheapr::sset_col(out, check_col_pos)
+  # )]
+  changed_cols <- character()
+  renamed_cols <- used_cols[used_cols != selected_cols]
+  GRP <- df_to_GRP(out, all_groups, order = .order)
+
+  list(
+    data = out,
+    new_cols = character(), # Can't create new cols with selecting
+    used_cols = used_cols, # All selected cols
+    unused_cols = unused_cols, # Unselected cols
+    changed_cols = changed_cols,
+    renamed_cols = renamed_cols,
+    all_groups = all_groups,
+    GRP = GRP
+  )
 }
 tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
                                        ungroup = TRUE, rename = TRUE,
@@ -639,22 +646,14 @@ tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
   }
 }
 
-tidy_group_info2 <- function(data, ..., .by = NULL, .cols = NULL,
-                            ungroup = TRUE, rename = TRUE,
-                            dots_type = "data-mask",
-                            unique_groups = TRUE){
+tidy_group_info2 <- function(.data, ..., .by = NULL, .cols = NULL,
+                             .order = df_group_by_order_default(.data),
+                             type = "data-mask"){
   check_cols(n_dots = dots_length(...), .cols = .cols)
-  if (is.null(.cols) && dots_type == "data-mask"){
-    tidy_group_info_datamask(data, ..., .by = {{ .by }},
-                             ungroup = ungroup,
-                             unique_groups = unique_groups)
-
+  if (is.null(.cols) && type == "data-mask"){
+    mutate_summary(.data, ..., .by = {{ .by }}, .order = .order)
   } else {
-    tidy_group_info_tidyselect(data, ..., .by = {{ .by }},
-                               .cols = .cols,
-                               ungroup = ungroup,
-                               rename = rename,
-                               unique_groups = unique_groups)
+    select_summary(.data, ..., .by = {{ .by }}, .order = .order, .cols = .cols)
   }
 }
 

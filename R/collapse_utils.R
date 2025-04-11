@@ -1,7 +1,7 @@
 
 ## GRP() with separate methods for data frames
 GRP2 <- function(X, by = NULL, sort = TRUE,
-                 return.order = sort, return.groups = FALSE,
+                 return.order = sort, return.groups = TRUE,
                  ...){
   if (is_GRP(X))
     return(X)
@@ -9,24 +9,24 @@ GRP2 <- function(X, by = NULL, sort = TRUE,
     if (is.null(by)){
       by <- names(X)
     }
-    out <- df_to_GRP(X, .cols = by, order = sort,
+    df_to_GRP(X, .cols = by, order = sort,
                      return.order = return.order,
                      return.groups = return.groups)
   } else {
-    out <- GRP3(
+    GRP3(
       X, by = by, sort = sort,
       return.order = return.order,
       return.groups = return.groups,
       ...
     )
   }
-  out
+
 }
 
 ## GRP() but always returns group starts
 GRP3 <- function(X, by = NULL, sort = TRUE,
                  return.order = sort,
-                 return.groups = FALSE,
+                 return.groups = TRUE,
                  call = FALSE, ...){
   if (is_GRP(X)){
     return(X)
@@ -63,6 +63,8 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
   if (!is.null(out)){
     out[["group.starts"]] <- GRP_starts(out)
   }
+  out <- cheapr::list_assign(out, list("X" = X))
+  class(out) <- "GRP"
   out
 }
 # Two alternatives to collapse::group
@@ -147,6 +149,10 @@ GRP_groups <- function(GRP){
 # Group variable names
 GRP_group_vars <- function(GRP){
   GRP[["group.vars"]]
+}
+# Data
+GRP_data <- function(GRP){
+  GRP[["X"]]
 }
 check_GRP_has_groups <- function(GRP){
   if (is_GRP(GRP) && is.null(GRP_groups(GRP))){
@@ -296,6 +302,11 @@ GRP_order <- function(GRP){
 
 # Alternative to gsplit(NULL, g)
 GRP_loc <- function(GRP, use.g.names = FALSE){
+
+  locs <- GRP[["locs"]]
+  if (!is.null(locs)){
+    return(locs)
+  }
   group_id <- GRP_group_id(GRP)
   group_sizes <- GRP_group_sizes(GRP)
   group_order <- GRP[["order"]]
@@ -370,9 +381,12 @@ GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
 # Convert data frame to GRP safely
 # Either treats data as 1 big group or
 # Uses dplyr group vars
-grouped_df_as_GRP <- function(data, return.groups = FALSE, return.order = FALSE, ...){
+grouped_df_as_GRP <- function(data,
+                              return.order = FALSE,
+                              return.groups = TRUE,
+                              return.locs = TRUE, ...){
 
-  out <- cheapr::new_list(9L)
+  out <- cheapr::new_list(11L)
   n_rows <- df_nrow(data)
   gdata <- group_data(data)
   gvars <- group_vars(data)
@@ -429,7 +443,11 @@ grouped_df_as_GRP <- function(data, return.groups = FALSE, return.order = FALSE,
                   "group.sizes", "groups",
                   "group.vars",
                   "ordered", "order",
-                  "group.starts", "call")
+                  "group.starts", "call", "X", "locs")
+  out <- cheapr::list_assign(out, list("X" = data))
+  if (return.locs){
+    out <- cheapr::list_assign(out, list("locs" = as.list(grows)))
+  }
   class(out) <- "GRP"
   out
 }
@@ -438,24 +456,30 @@ grouped_df_as_GRP <- function(data, return.groups = FALSE, return.order = FALSE,
 df_to_GRP <- function(data, .cols = character(),
                       order = df_group_by_order_default(data),
                       return.order = FALSE,
-                      return.groups = FALSE){
+                      return.groups = TRUE,
+                      return.locs = TRUE){
   dplyr_groups <- group_vars(data)
   cols <- drop_names(col_select_names(data, .cols = .cols))
   extra_groups <- fast_setdiff(cols, dplyr_groups)
   group_vars <- c(dplyr_groups, extra_groups)
-  data <- cheapr::sset_df(data, j = group_vars)
+  data2 <- cheapr::sset_df(data, j = group_vars)
 
-  if (length(names(data)) == 0L){
-    out <- grouped_df_as_GRP(cpp_ungroup(data), return.groups = return.groups, return.order = return.order)
+  if (length(names(data2)) == 0L){
+    out <- grouped_df_as_GRP(cpp_ungroup(data2),
+                             return.groups = return.groups,
+                             return.order = return.order,
+                             return.locs = return.locs)
   } else if (length(extra_groups) == 0L && order == df_group_by_order_default(data)){
-    out <- grouped_df_as_GRP(data, return.order = return.order, return.groups = return.groups)
+    out <- grouped_df_as_GRP(data2, return.order = return.order,
+                             return.groups = return.groups,
+                             return.locs = return.locs)
   } else {
-    data <- cpp_ungroup(data)
-    data2 <- df_mutate_exotic_to_ids(data, order = order)
+    data2 <- cpp_ungroup(data2)
+    data3 <- df_mutate_exotic_to_ids(data2, order = order)
     out <- GRP3(
-      data2, sort = order,
+      data3, sort = order,
       return.order = return.order,
-      return.groups = return.groups,
+      return.groups = FALSE,
       call = FALSE
     )
 
@@ -469,12 +493,16 @@ df_to_GRP <- function(data, .cols = character(),
 
     out[["group.starts"]] <- GRP_starts(out)
 
-    if (return.groups && !all(cpp_frame_addresses_equal(data, data2))){
-      if (return.groups){
-        out[["groups"]] <- cheapr::sset(data, GRP_starts(out))
-      }
+    if (return.groups){
+      out[["groups"]] <- cheapr::sset(data2, GRP_starts(out))
+      out[["group.vars"]] <- group_vars
     }
   }
+  out <- cheapr::list_assign(out, list("X" = data))
+  if (return.locs && is.null(out[["locs"]])){
+    out <- cheapr::list_assign(out, list("locs" = GRP_loc(out)))
+  }
+  class(out) <- "GRP"
   out
 }
 #' @exportS3Method collapse::GRP
