@@ -6,6 +6,7 @@
 \alias{f_group_keys}
 \alias{f_group_rows}
 \alias{f_group_indices}
+\alias{f_group_vars}
 \alias{f_group_size}
 \alias{f_n_groups}
 \title{Fast group metadata}
@@ -17,6 +18,8 @@ f_group_keys(x)
 f_group_rows(x)
 
 f_group_indices(x)
+
+f_group_vars(x)
 
 f_group_size(x)
 

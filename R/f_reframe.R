@@ -10,14 +10,18 @@
 #' @export
 f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
 
-  if (rlang::quo_is_null(rlang::enquo(.by))){
+  all_groups <- get_groups(.data, .by = {{ .by }})
+  if (length(all_groups) == 0){
+    GRP <- NULL
     data <- .data
   } else {
-    data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
+    GRP <- df_to_GRP(.data, all_groups, order = .order)
+    data <- construct_dplyr_grouped_df2(GRP)
   }
   quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE,
                         .unpack_default = TRUE,
-                        .optimise = should_optimise(data))
+                        .optimise = should_optimise(data),
+                        .groups = GRP)
 
   if (length(quos) == 0){
     return(cheapr::reconstruct(group_keys(data), cpp_ungroup(.data)))

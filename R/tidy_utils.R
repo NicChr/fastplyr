@@ -217,12 +217,12 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
 
   .fastplyr.g <- .groups %||% NULL
   .original_out <- out
-
+  group_vars <- f_group_vars(.data)
 
   # Second pass to check for optimised calls
   if (.optimise && getOption("fastplyr.optimise", TRUE)){
 
-    if (length(group_vars(.data)) != 0){
+    if (length(group_vars) != 0){
       .fastplyr.g <- .fastplyr.g %||% grouped_df_as_GRP(.data, return.groups = TRUE)
     }
 
@@ -426,7 +426,8 @@ mutate_summary <- function(.data, ...,
                           .drop_null = FALSE,
                           .unpack_default = FALSE,
                           .optimise = should_optimise(data),
-                          .optimise_expand = TRUE)
+                          .optimise_expand = TRUE,
+                          .groups = GRP)
     new_data <- eval_mutate(quos)
     # Removing duplicate named results
     new_data <- new_data[!duplicated(names(quos), fromLast = TRUE)]
