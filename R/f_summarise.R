@@ -93,25 +93,20 @@
 #' @rdname f_summarise
 #' @export
 f_summarise <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
-  if (rlang::quo_is_null(rlang::enquo(.by))){
-    data <- .data
-  } else {
-    data <- f_group_by(.data, .by = {{ .by }}, .add = TRUE, .order = .order)
-  }
-  group_keys <- group_keys(data)
+  all_groups <- get_groups(.data, .by = {{ .by }})
+  GRP <- df_to_GRP(.data, all_groups, order = .order)
+  quos <- fastplyr_quos(..., .drop_null = TRUE,
+                        .unpack_default = TRUE,
+                        .optimise = should_optimise(GRP),
+                        .groups = GRP)
+  group_keys <- GRP_groups(GRP)
   if (df_nrow(.data) == 0){
     group_keys <- cheapr::sset_df(group_keys, 0L)
   }
-  quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE,
-                        .unpack_default = TRUE,
-                        .optimise = should_optimise(data))
 
   if (length(quos) == 0){
     return(cheapr::reconstruct(group_keys, cpp_ungroup(.data)))
   }
-  # if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-  #   out <- dplyr::summarise(data, ...)
-  # } else {
     ## The `recycle` argument won't have a visible effect
     # on the final result, but it's faster to
     # set as TRUE as it means the group keys only get recycled once internally
@@ -122,7 +117,6 @@ f_summarise <- function(.data, ..., .by = NULL, .order = df_group_by_order_defau
     results <- results[["results"]]
 
     result_sizes <- cheapr::list_lengths(results)
-    # if (any(result_sizes != min(df_nrow(data), df_nrow(group_keys)))){
     if (any(result_sizes != df_nrow(group_keys))){
       cli::cli_abort(c("All expressions should return results of length 1 per-group",
                        "Use {.run f_reframe()} instead"))

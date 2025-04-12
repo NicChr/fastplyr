@@ -392,7 +392,7 @@ GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
 grouped_df_as_GRP <- function(data,
                               return.order = FALSE,
                               return.groups = TRUE,
-                              return.locs = TRUE, ...){
+                              return.locs = FALSE, ...){
 
   out <- cheapr::new_list(11L)
   n_rows <- df_nrow(data)
@@ -465,7 +465,7 @@ df_to_GRP <- function(data, .cols = character(),
                       order = df_group_by_order_default(data),
                       return.order = FALSE,
                       return.groups = TRUE,
-                      return.locs = TRUE){
+                      return.locs = FALSE){
   dplyr_groups <- group_vars(data)
   cols <- drop_names(col_select_names(data, .cols = .cols))
   extra_groups <- fast_setdiff(cols, dplyr_groups)

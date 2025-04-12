@@ -176,13 +176,14 @@ unpack_across <- function(quo, data, unpack_default = FALSE){
   out
 }
 
-fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
+fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
                           .unpack_default = FALSE, .optimise = FALSE,
-                          .optimise_expand = FALSE, .groups = NULL){
+                          .optimise_expand = FALSE){
 
   out <- rlang::quos(..., .ignore_empty = "all")
   quo_nms <- attr(out, "names", TRUE)
   k <- 1L
+  .data <- GRP_data(.groups)
   for (i in seq_along(out)){
     quo <- out[[k]]
     expr <- rlang::quo_get_expr(quo)
@@ -215,16 +216,16 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
 
   optimised <- logical(length(out))
 
-  .fastplyr.g <- .groups %||% NULL
+  if (GRP_n_groups(.groups) <= 1){
+    .fastplyr.g <- NULL
+  } else {
+    .fastplyr.g <- .groups
+  }
   .original_out <- out
-  group_vars <- f_group_vars(.data)
+  group_vars <- GRP_group_vars(.groups)
 
   # Second pass to check for optimised calls
   if (.optimise && getOption("fastplyr.optimise", TRUE)){
-
-    if (length(group_vars) != 0){
-      .fastplyr.g <- .fastplyr.g %||% grouped_df_as_GRP(.data, return.groups = TRUE)
-    }
 
     if (.optimise_expand){
       TRA <- "replace_fill"
@@ -278,7 +279,7 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
         quo <- rlang::new_quosure(expr, env)
         set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
         optimised[i] <- TRUE
-        out[[i]] <- quo
+        # out[[i]] <- quo
       }
     }
     if (sum(optimised) && getOption("fastplyr.inform", TRUE)){
@@ -305,15 +306,23 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
       ))
     }
   }
+  if (!all(optimised)){
+    ### Calculate group locations here so that
+    ### tidy evaluation can be done
+    ### eval_all_tidy needs a plain or grouped data frame
+    .groups[["locs"]] <- GRP_loc(.groups)
+    # .data <- construct_dplyr_grouped_df2(.groups)
+
+  }
   set_add_attr(out, ".optimised", optimised)
-  set_add_attr(out, ".data", .data)
-  set_add_attr(out, ".GRP", .fastplyr.g)
+  # set_add_attr(out, ".data", .data)
+  set_add_attr(out, ".GRP", .groups)
   set_add_attr(out, ".fastplyr_quos", TRUE)
   out
 }
 
-should_optimise <- function(data){
-  if (length(group_vars(data)) == 0 || df_nrow(group_keys(data)) < 1e04){
+should_optimise <- function(GRP){
+  if (length(GRP_group_vars(GRP)) == 0 || df_nrow(GRP_groups(GRP)) < 1e03){
     FALSE
   } else {
     TRUE
@@ -393,15 +402,14 @@ mutate_summary <- function(.data, ...,
                            .drop = df_group_by_drop_default(.data)){
   original_cols <- names(.data)
   all_groups <- get_groups(.data, .by = {{ .by }})
-  if (length(all_groups) == 0){
-    GRP <- NULL
-    data <- .data
-  } else {
-    GRP <- df_to_GRP(.data, all_groups, order = .order)
-    data <- construct_dplyr_grouped_df2(GRP, drop = .drop)
-  }
-  group_keys <- group_keys(data)
-  n_groups <- df_nrow(group_keys)
+  GRP <- df_to_GRP(.data, all_groups, order = .order)
+  quos <- fastplyr_quos(..., .drop_null = TRUE,
+                        .unpack_default = TRUE,
+                        .optimise = should_optimise(GRP),
+                        .optimise_expand = TRUE,
+                        .groups = GRP)
+  group_keys <- GRP_groups(GRP)
+  n_groups <- GRP_n_groups(GRP)
   if (dots_length(...) == 0L){
     out_data <- .data
     new_cols <- character()
@@ -409,16 +417,10 @@ mutate_summary <- function(.data, ...,
     unused_cols <- original_cols
     changed_cols <- character()
   } else {
-    quos <- fastplyr_quos(..., .named = TRUE, .data = data,
-                          .drop_null = FALSE,
-                          .unpack_default = FALSE,
-                          .optimise = should_optimise(data),
-                          .optimise_expand = TRUE,
-                          .groups = GRP)
     new_data <- eval_mutate(quos)
     # Removing duplicate named results
     new_data <- new_data[!duplicated(names(quos), fromLast = TRUE)]
-    data <- cheapr::reconstruct(data, .data)
+    data <- cheapr::reconstruct(construct_dplyr_grouped_df2(GRP), .data)
     out_data <- df_add_cols(data, new_data)
     new_data <- cheapr::list_drop_null(new_data)
     new_cols <- names(new_data)
@@ -722,12 +724,12 @@ eval_optimised_quos <- function(quos, add_groups = TRUE){
 
   quo_names <- names(quos)
   quo_groups <- attr(quos, ".GRP", TRUE)
-  data <- attr(quos, ".data", TRUE)
+  GRP <- attr(quos, ".GRP", TRUE)
   if (!all(attr(quos, ".optimised", TRUE))){
     cli::cli_abort("All quosures must be tagged as '.optimised'")
   }
 
-  mask <- rlang::as_data_mask(data)
+  mask <- rlang::as_data_mask(GRP_data(GRP))
   results <- lapply(quos, \(x) rlang::eval_tidy(rlang::quo_get_expr(x), mask))
 
   groups <- NULL
@@ -739,7 +741,7 @@ eval_optimised_quos <- function(quos, add_groups = TRUE){
     } else {
       groups <- cheapr::cheapr_rep_len(
         list(
-          cheapr::cheapr_rep_len(group_keys(data), cheapr::vector_length(results[[1]]))
+          cheapr::cheapr_rep_len(GRP_groups(GRP), cheapr::vector_length(results[[1]]))
         ),
         length(quos)
       )
@@ -751,7 +753,8 @@ eval_optimised_quos <- function(quos, add_groups = TRUE){
 
 eval_all_tidy <- function(quos, recycle = FALSE, add_groups = TRUE){
   check_fastplyr_quos(quos)
-  data <- attr(quos, ".data", TRUE)
+  GRP <- attr(quos, ".GRP", TRUE)
+
   quo_names <- names(quos)
   which_optimised <- cheapr::val_find(attr(quos, ".optimised", TRUE), TRUE)
 
@@ -786,12 +789,12 @@ eval_all_tidy <- function(quos, recycle = FALSE, add_groups = TRUE){
   }
 
   if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-    return(dplyr_eval_all_tidy(data, !!!quos))
+    return(dplyr_eval_all_tidy(construct_dplyr_grouped_df2(GRP), !!!quos))
   }
-  all_results <- cpp_grouped_eval_tidy(data, quos, recycle = recycle, add_groups = add_groups)
+  all_results <- cpp_grouped_eval_tidy(construct_dplyr_grouped_df2(GRP), quos, recycle = recycle, add_groups = add_groups)
   groups <- all_results[[1L]]
   results <- all_results[[2L]]
-  n_group_vars <- length(group_vars(data))
+  n_group_vars <- length(GRP_group_vars(GRP))
 
   k <- 1L
   for (i in seq_along(results)){
@@ -861,7 +864,7 @@ dplyr_eval_all_tidy <- function(data, ...){
 
 eval_mutate <- function(quos){
   check_fastplyr_quos(quos)
-  data <- attr(quos, ".data", TRUE)
+  GRP <- attr(quos, ".GRP", TRUE)
   quo_names <- names(quos)
   which_optimised <- cheapr::val_find(attr(quos, ".optimised", TRUE), TRUE)
 
@@ -887,9 +890,9 @@ eval_mutate <- function(quos){
         )
       )
     }
-    return(as.list(dplyr::mutate(data, !!!quos))[quo_names])
+    return(as.list(dplyr::mutate(construct_dplyr_grouped_df2(GRP), !!!quos))[quo_names])
   }
-  results <- cpp_grouped_eval_mutate(data, quos)
+  results <- cpp_grouped_eval_mutate(construct_dplyr_grouped_df2(GRP), quos)
 
   k <- 1L
   for (i in seq_along(results)){

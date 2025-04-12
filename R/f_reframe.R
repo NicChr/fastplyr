@@ -11,28 +11,20 @@
 f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
 
   all_groups <- get_groups(.data, .by = {{ .by }})
-  if (length(all_groups) == 0){
-    GRP <- NULL
-    data <- .data
-  } else {
-    GRP <- df_to_GRP(.data, all_groups, order = .order, return.locs = TRUE)
-    data <- construct_dplyr_grouped_df2(GRP)
-  }
-  quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE,
+  GRP <- df_to_GRP(.data, all_groups, order = .order)
+  quos <- fastplyr_quos(..., .drop_null = TRUE,
                         .unpack_default = TRUE,
-                        .optimise = should_optimise(data),
+                        .optimise = should_optimise(GRP),
                         .groups = GRP)
+  group_keys <- GRP_groups(GRP)
 
   if (length(quos) == 0){
-    return(cheapr::reconstruct(group_keys(data), cpp_ungroup(.data)))
+    return(cheapr::reconstruct(GRP_groups(GRP), cpp_ungroup(.data)))
   }
-  # if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-  #   out <- dplyr::reframe(data, ...)
-  # } else {
     results <- eval_all_tidy(quos, recycle = TRUE)
     groups <- results[["groups"]]
     results <- results[["results"]]
-    n_group_vars <- length(group_vars(data))
+    n_group_vars <- length(GRP_group_vars(GRP))
     if (n_group_vars == 0){
       groups <- cheapr::new_df(.nrows = cheapr::vector_length(results[[1L]]))
     } else {
