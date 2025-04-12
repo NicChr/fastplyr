@@ -649,10 +649,13 @@ tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
   }
 }
 
-tidy_group_info2 <- function(.data, ..., .by = NULL, .cols = NULL,
-                             .order = df_group_by_order_default(.data),
-                             .type = "data-mask",
-                             .add_GRP = TRUE){
+
+# tidy_GRP applies expressions supplied through `...` or selects cols
+# if either .cols is supplied or type isnt "data-mask"
+# After that it calculates the grouping structure of these variables
+tidy_GRP <- function(.data, ..., .by = NULL, .cols = NULL,
+                     .order = df_group_by_order_default(.data),
+                     .type = "data-mask"){
   check_cols(n_dots = dots_length(...), .cols = .cols)
   if (is.null(.cols) && .type == "data-mask"){
     out <- mutate_summary(.data, ..., .by = {{ .by }}, .order = .order)
@@ -665,15 +668,10 @@ tidy_group_info2 <- function(.data, ..., .by = NULL, .cols = NULL,
   new_cols <- out[["new_cols"]]
   all_groups <- c(groups, new_cols)
   GRP <- out[["GRP"]]
-  if (.add_GRP && (is.null(GRP) || !identical(groups, all_groups))){
+  if (is.null(GRP) || !identical(groups, all_groups)){
     GRP <- df_to_GRP(data, all_groups, order = .order)
   }
-  list(
-    data = data,
-    all_groups = all_groups,
-    GRP = GRP
-  )
-
+  GRP
 }
 
 unique_count_col <- function(data, col = "n"){
