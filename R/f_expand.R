@@ -25,10 +25,11 @@ f_expand <- function(data, ..., .sort = FALSE,
                      .by = NULL, .cols = NULL){
   check_cols(dots_length(...), .cols = .cols)
   group_vars <- get_groups(data, {{ .by }})
+  GRP <- df_to_GRP(data, group_vars, order = .sort)
 
   # If the user is simply selecting cols then we can use an optimised method
   if (is.null(.cols)){
-    dots <- fastplyr_quos(..., .data = data, .named = TRUE)
+    dots <- fastplyr_quos(..., .groups = GRP)
     dot_labels <- quo_labels(dots)
     if (all(dot_labels %in% names(data)) && !any(names(dots) %in% names(data))){
       .cols <- dot_labels
@@ -41,12 +42,11 @@ f_expand <- function(data, ..., .sort = FALSE,
     frames <- cheapr::new_list(length(dot_vars))
     for (i in seq_along(dot_vars)){
       frames[[i]] <- sort_unique(
-        `names<-`(cheapr::sset_col(data2, c(group_vars, dot_vars[i])), names(dot_vars)[[i]]),
+        f_select(data2, .cols = c(group_vars, dot_vars[i])),
         sort = .sort
       )
     }
   } else {
-    dots <- fastplyr_quos(..., .data = f_group_by(data, .cols = group_vars, .add = TRUE))
     frames <- eval_all_tidy(dots, recycle = FALSE)
     frames <- purrr::map2(
       frames[[1L]], cpp_as_list_of_frames(frames[[2L]]),

@@ -279,7 +279,7 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
         quo <- rlang::new_quosure(expr, env)
         set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
         optimised[i] <- TRUE
-        # out[[i]] <- quo
+        out[[i]] <- quo
       }
     }
     if (sum(optimised) && getOption("fastplyr.inform", TRUE)){
