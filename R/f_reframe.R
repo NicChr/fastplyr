@@ -15,7 +15,7 @@ f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default
     GRP <- NULL
     data <- .data
   } else {
-    GRP <- df_to_GRP(.data, all_groups, order = .order)
+    GRP <- df_to_GRP(.data, all_groups, order = .order, return.locs = TRUE)
     data <- construct_dplyr_grouped_df2(GRP)
   }
   quos <- fastplyr_quos(..., .data = data, .drop_null = TRUE,

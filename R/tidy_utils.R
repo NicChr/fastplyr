@@ -304,19 +304,6 @@ fastplyr_quos <- function(..., .data, .named = TRUE, .drop_null = FALSE,
         sep = "\n"
       ))
     }
-    # if (isTRUE(getOption("fastplyr.inform") %||% TRUE)){
-    #   rlang::inform(
-    #     c(
-    #       "i" = "Optimising the following expressions by-group",
-    #       "",
-    #       unlist(lapply(.original_out[optimised], \(x) deparse2(rlang::quo_get_expr(x), nlines = 1L))),
-    #       ""
-    #     )
-    #   )
-    #   cli::cli_text("Run {.run options(fastplyr.inform = FALSE)} to turn this msg off")
-    # }
-
-
   }
   set_add_attr(out, ".optimised", optimised)
   set_add_attr(out, ".data", .data)

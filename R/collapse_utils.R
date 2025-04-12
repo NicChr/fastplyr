@@ -1,7 +1,9 @@
 
 ## GRP() with separate methods for data frames
 GRP2 <- function(X, by = NULL, sort = TRUE,
-                 return.order = sort, return.groups = TRUE,
+                 return.order = sort,
+                 return.groups = TRUE,
+                 return.locs = FALSE,
                  ...){
   if (is_GRP(X))
     return(X)
@@ -10,13 +12,15 @@ GRP2 <- function(X, by = NULL, sort = TRUE,
       by <- names(X)
     }
     df_to_GRP(X, .cols = by, order = sort,
-                     return.order = return.order,
-                     return.groups = return.groups)
+              return.order = return.order,
+              return.groups = return.groups,
+              return.locs = return.locs)
   } else {
     GRP3(
       X, by = by, sort = sort,
       return.order = return.order,
       return.groups = return.groups,
+      return.locs = return.locs,
       ...
     )
   }
@@ -27,6 +31,7 @@ GRP2 <- function(X, by = NULL, sort = TRUE,
 GRP3 <- function(X, by = NULL, sort = TRUE,
                  return.order = sort,
                  return.groups = TRUE,
+                 return.locs = FALSE,
                  call = FALSE, ...){
   if (is_GRP(X)){
     return(X)
@@ -64,6 +69,9 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
     out[["group.starts"]] <- GRP_starts(out)
   }
   out <- cheapr::list_assign(out, list("X" = X))
+  if (return.locs){
+    out <- cheapr::list_assign(out, list("locs" = GRP_loc(out)))
+  }
   class(out) <- "GRP"
   out
 }
