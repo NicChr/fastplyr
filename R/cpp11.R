@@ -84,10 +84,6 @@ call_is_namespaced <- function(expr) {
   .Call(`_fastplyr_call_is_namespaced`, expr)
 }
 
-cpp_fun_ns <- function(x, rho) {
-  .Call(`_fastplyr_cpp_fun_ns`, x, rho)
-}
-
 cpp_is_fn_call <- function(expr, fn, ns, rho) {
   .Call(`_fastplyr_cpp_is_fn_call`, expr, fn, ns, rho)
 }

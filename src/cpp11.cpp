@@ -153,13 +153,6 @@ extern "C" SEXP _fastplyr_call_is_namespaced(SEXP expr) {
   END_CPP11
 }
 // tidy.cpp
-SEXP cpp_fun_ns(SEXP x, SEXP rho);
-extern "C" SEXP _fastplyr_cpp_fun_ns(SEXP x, SEXP rho) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_fun_ns(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(rho)));
-  END_CPP11
-}
-// tidy.cpp
 bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho);
 extern "C" SEXP _fastplyr_cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho) {
   BEGIN_CPP11
@@ -306,7 +299,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_fill_grouped",                     (DL_FUNC) &_fastplyr_cpp_fill_grouped,                     4},
     {"_fastplyr_cpp_frame_addresses_equal",            (DL_FUNC) &_fastplyr_cpp_frame_addresses_equal,            2},
     {"_fastplyr_cpp_frame_dims",                       (DL_FUNC) &_fastplyr_cpp_frame_dims,                       3},
-    {"_fastplyr_cpp_fun_ns",                           (DL_FUNC) &_fastplyr_cpp_fun_ns,                           2},
     {"_fastplyr_cpp_group_data",                       (DL_FUNC) &_fastplyr_cpp_group_data,                       1},
     {"_fastplyr_cpp_group_id",                         (DL_FUNC) &_fastplyr_cpp_group_id,                         1},
     {"_fastplyr_cpp_group_id_sorted",                  (DL_FUNC) &_fastplyr_cpp_group_id_sorted,                  1},

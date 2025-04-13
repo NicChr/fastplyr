@@ -311,7 +311,7 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
     ### tidy evaluation can be done
     ### eval_all_tidy needs a plain or grouped data frame
     .groups[["locs"]] <- GRP_loc(.groups)
-    # .data <- construct_dplyr_grouped_df2(.groups)
+    # .data <- construct_fastplyr_grouped_df(.groups)
 
   }
   set_add_attr(out, ".optimised", optimised)
@@ -420,7 +420,7 @@ mutate_summary <- function(.data, ...,
     new_data <- eval_mutate(quos)
     # Removing duplicate named results
     new_data <- new_data[!duplicated(names(quos), fromLast = TRUE)]
-    data <- cheapr::reconstruct(construct_dplyr_grouped_df2(GRP), .data)
+    data <- cheapr::reconstruct(construct_fastplyr_grouped_df(GRP), .data)
     out_data <- df_add_cols(data, new_data)
     new_data <- cheapr::list_drop_null(new_data)
     new_cols <- names(new_data)
@@ -787,9 +787,9 @@ eval_all_tidy <- function(quos, recycle = FALSE, add_groups = TRUE){
   }
 
   if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-    return(dplyr_eval_all_tidy(construct_dplyr_grouped_df2(GRP), !!!quos))
+    return(dplyr_eval_all_tidy(construct_fastplyr_grouped_df(GRP), !!!quos))
   }
-  all_results <- cpp_grouped_eval_tidy(construct_dplyr_grouped_df2(GRP), quos, recycle = recycle, add_groups = add_groups)
+  all_results <- cpp_grouped_eval_tidy(construct_fastplyr_grouped_df(GRP), quos, recycle = recycle, add_groups = add_groups)
   groups <- all_results[[1L]]
   results <- all_results[[2L]]
   n_group_vars <- length(GRP_group_vars(GRP))
@@ -888,9 +888,9 @@ eval_mutate <- function(quos){
         )
       )
     }
-    return(as.list(dplyr::mutate(construct_dplyr_grouped_df2(GRP), !!!quos))[quo_names])
+    return(as.list(dplyr::mutate(construct_fastplyr_grouped_df(GRP), !!!quos))[quo_names])
   }
-  results <- cpp_grouped_eval_mutate(construct_dplyr_grouped_df2(GRP), quos)
+  results <- cpp_grouped_eval_mutate(construct_fastplyr_grouped_df(GRP), quos)
 
   k <- 1L
   for (i in seq_along(results)){

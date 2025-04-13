@@ -579,11 +579,17 @@ construct_dplyr_group_data2 <- function(g, drop = df_group_by_drop_default(GRP_d
   )
   group_data <- list_as_tbl(group_data)
   attr(group_data, ".drop") <- drop
-  attr(group_data, "ordered") <- df_group_by_order_default(GRP_data(g))
   group_data
 }
 
-construct_dplyr_grouped_df2 <- function(g, drop = df_group_by_drop_default(GRP_group_data(g))){
+construct_fastplyr_group_data <- function(g, drop = df_group_by_drop_default(GRP_data(g))){
+
+  out <- construct_dplyr_group_data2(g, drop = drop)
+  attr(out, "ordered") <- df_group_by_order_default(GRP_data(g))
+  out
+}
+
+construct_fastplyr_grouped_df <- function(g, drop = df_group_by_drop_default(GRP_group_data(g))){
 
   data <- GRP_data(g)
   group_vars <- GRP_group_vars(g)
@@ -592,7 +598,9 @@ construct_dplyr_grouped_df2 <- function(g, drop = df_group_by_drop_default(GRP_g
   }
   group_data <- construct_dplyr_group_data2(g, drop = drop)
   attr(data, "groups") <- group_data
+  # attr(data, "GRP") <- g
   class(data) <- c("grouped_df", "tbl_df", "tbl", "data.frame")
+  # class(data) <- c("fastplyr_grouped_df", "grouped_df", "tbl_df", "tbl", "data.frame")
   data
 }
 

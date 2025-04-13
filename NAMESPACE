@@ -3,6 +3,7 @@
 S3method(add_consecutive_id,data.frame)
 S3method(add_group_id,data.frame)
 S3method(add_row_id,data.frame)
+S3method(cheapr::reconstruct,fastplyr_grouped_df)
 S3method(cheapr::reconstruct,grouped_df)
 S3method(collapse::GRP,Interval)
 S3method(collapse::GRP,NULL)

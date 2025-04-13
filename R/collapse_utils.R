@@ -393,7 +393,8 @@ grouped_df_as_GRP <- function(data,
                               return.order = FALSE,
                               return.groups = TRUE,
                               return.locs = FALSE, ...){
-
+  GRP <- attr(data, "GRP", TRUE)
+  if (!is.null(GRP)) return(GRP)
   out <- cheapr::new_list(11L)
   n_rows <- df_nrow(data)
   gdata <- group_data(data)

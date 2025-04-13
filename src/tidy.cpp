@@ -174,11 +174,6 @@ SEXP get_fun_ns(SEXP x, SEXP rho){
   }
 }
 
-[[cpp11::register]]
-SEXP cpp_fun_ns(SEXP x, SEXP rho){
-  return Rf_ScalarString(get_fun_ns(x, rho));
-}
-
 // is this call a call to any function supplied to `fn`?
 
 bool is_call2(SEXP expr, SEXP fn){
@@ -799,12 +794,21 @@ SEXP cpp_ungroup(SEXP data){
   if (Rf_inherits(data, "grouped_df")){
     SEXP out = Rf_protect(Rf_shallow_duplicate(data));
     SEXP groups_sym = Rf_protect(Rf_install("groups"));
+    SEXP grp_sym = Rf_protect(Rf_install("GRP"));
     Rf_setAttrib(out, groups_sym, R_NilValue);
+    Rf_setAttrib(out, grp_sym, R_NilValue);
     SEXP old_class = Rf_getAttrib(out, R_ClassSymbol);
-    SEXP grouped_df_char = Rf_protect(Rf_mkString("grouped_df"));
-    SEXP new_class = Rf_protect(cheapr::val_remove(old_class, grouped_df_char));
+    SEXP grouped_df_char = Rf_protect(Rf_mkChar("grouped_df"));
+    SEXP fp_grouped_df_char = Rf_protect(Rf_mkChar("fastplyr_grouped_df"));
+    SEXP grp_df_char = Rf_protect(Rf_mkChar("GRP_df"));
+    SEXP remove = Rf_protect(Rf_allocVector(STRSXP, 3));
+    SET_STRING_ELT(remove, 0, grouped_df_char);
+    SET_STRING_ELT(remove, 1, fp_grouped_df_char);
+    SET_STRING_ELT(remove, 2, grp_df_char);
+
+    SEXP new_class = Rf_protect(cheapr::setdiff(old_class, remove));
     Rf_setAttrib(out, R_ClassSymbol, new_class);
-    Rf_unprotect(4);
+    Rf_unprotect(8);
     return out;
   }
   return data;

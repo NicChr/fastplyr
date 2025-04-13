@@ -109,7 +109,7 @@ f_group_by <- function(data, ..., .add = FALSE,
     }
     group_info <- df_to_GRP(out, c(init_group_vars, groups), order = .order)
   }
-  construct_dplyr_grouped_df2(group_info, drop = .drop)
+  construct_fastplyr_grouped_df(group_info, drop = .drop)
 }
 #' @rdname f_group_by
 #' @export
