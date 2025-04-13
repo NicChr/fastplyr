@@ -598,9 +598,8 @@ construct_fastplyr_grouped_df <- function(g, drop = df_group_by_drop_default(GRP
   }
   group_data <- construct_dplyr_group_data2(g, drop = drop)
   attr(data, "groups") <- group_data
-  # attr(data, "GRP") <- g
-  class(data) <- c("grouped_df", "tbl_df", "tbl", "data.frame")
-  # class(data) <- c("fastplyr_grouped_df", "grouped_df", "tbl_df", "tbl", "data.frame")
+  attr(data, "GRP") <- g
+  class(data) <- c("fastplyr_grouped_df", "grouped_df", "tbl_df", "tbl", "data.frame")
   data
 }
 

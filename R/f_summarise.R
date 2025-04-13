@@ -24,8 +24,8 @@
 #' This operates almost identically to `dplyr::summarise()` with some crucial
 #' differences.
 #' Optimisations for by-group operations kick in for
-#' common statistical functions when the data are both
-#' grouped and the number of groups exceeds 10,000.
+#' common statistical functions when groups are present and for specific
+#' expressions.
 #' A message will be printed which one can disable
 #' by running `options(fastplyr.inform = FALSE)`.
 #' When this happens, the expressions which become optimised no longer
@@ -51,6 +51,7 @@
 #' List of currently optimised functions and their equivalent
 #' 'collapse' function
 #'
+#' `dplyr::n` -> <custom_expression> \cr
 #' `base::sum` -> `collapse::fsum` \cr
 #' `base::prod` -> `collapse::fprod` \cr
 #' `base::min` -> `collapse::fmin` \cr
@@ -162,9 +163,4 @@ across_col_names <- function (.cols = NULL, .fns = NULL, .names = NULL){
   }
   out
 }
-
-is_anonymous_function <- function(x){
-  is.function(x) && identical(names(attributes(x)), "srcref")
-}
-
 

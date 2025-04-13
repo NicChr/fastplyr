@@ -21,17 +21,16 @@ f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default
   if (length(quos) == 0){
     return(cheapr::reconstruct(GRP_groups(GRP), cpp_ungroup(.data)))
   }
-    results <- eval_all_tidy(quos, recycle = TRUE)
-    groups <- results[["groups"]]
-    results <- results[["results"]]
-    n_group_vars <- length(GRP_group_vars(GRP))
-    if (n_group_vars == 0){
-      groups <- cheapr::new_df(.nrows = cheapr::vector_length(results[[1L]]))
-    } else {
-      groups <- list_as_df(groups[[1L]])
-    }
-    out <- df_add_cols(groups, results)
-    out <- cheapr::sset_col(out, !duplicated(names(out), fromLast = TRUE))
-  # }
+  results <- eval_all_tidy(quos, recycle = TRUE)
+  groups <- results[["groups"]]
+  results <- results[["results"]]
+  n_group_vars <- length(GRP_group_vars(GRP))
+  if (n_group_vars == 0){
+    groups <- cheapr::new_df(.nrows = cheapr::vector_length(results[[1L]]))
+  } else {
+    groups <- list_as_df(groups[[1L]])
+  }
+  out <- df_add_cols(groups, results)
+  out <- cheapr::sset_col(out, !duplicated(names(out), fromLast = TRUE))
   cheapr::reconstruct(out, cpp_ungroup(.data))
 }

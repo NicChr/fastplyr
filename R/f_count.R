@@ -43,190 +43,98 @@
 f_count <- function(data, ..., wt = NULL, sort = FALSE,
                     .order = df_group_by_order_default(data),
                     name = NULL, .by = NULL, .cols = NULL){
-  if (dots_length(...) == 0 && rlang::quo_is_null(rlang::enquo(.by)) && is.null(.cols)){
-    return(
-      count_simple(data, ..., wt = !!rlang::enquo(wt), sort = sort, .order = .order,
-                   name = name, .by = {{ .by }}, .cols = .cols)
-    )
+  weights <- NULL
+  wt_expr <- rlang::enquo(wt)
+  if (!rlang::quo_is_null(wt_expr)){
+    weights <- mutate_summary(data, .fastplyr.wt = !!wt_expr)[["data"]][[".fastplyr.wt"]]
   }
-  group_vars <- group_vars(data)
-  group_info <- tidy_group_info(data, ..., .by = {{ .by }},
-                                .cols = .cols,
-                                ungroup = TRUE,
-                                rename = TRUE)
-  data_transformed <- group_info[["data"]]
-  all_vars <- group_info[["all_groups"]]
-  N <- df_nrow(data_transformed)
-  # Weights
-  if (!rlang::quo_is_null(rlang::enquo(wt))){
-    out_info <- mutate_summary(data_transformed, !!rlang::enquo(wt))
-    wt_var <- out_info[["new_cols"]]
-    data_transformed <- out_info[["data"]]
-  } else {
-    wt_var <- character()
-  }
-  if (length(wt_var) > 0L){
-    wtv <- data_transformed[[wt_var]]
-  }
-  use_only_grouped_df_groups <- !group_info[["groups_changed"]] && (
-    length(all_vars) == 0L ||
-      (.order && length(group_vars) > 0L && length(group_vars) == length(all_vars))
-  )
-  if (use_only_grouped_df_groups){
-    g <- df_to_GRP(data, return.order = FALSE, order = .order, return.groups = TRUE)
-  } else {
-    g <- df_to_GRP(data_transformed, .cols = all_vars, return.order = FALSE,
-                   order = .order, return.groups = TRUE)
-  }
-  out <- GRP_groups(g)
-  if (is.null(out)){
-    out <- f_select(data_transformed, .cols = all_vars)
-    gstarts <- GRP_starts(g)
-    out <- cheapr::sset_row(out, gstarts)
-  }
-  group_sizes <- GRP_group_sizes(g)
-  if (length(all_vars) == 0L){
-    g <- NULL
-  }
-  N <- df_nrow(out)
-  if (is.null(name)){
-    name <- unique_count_col(out)
-  }
-  # Edge-case, not sure how to fix this
-  if (N == 0L && length(all_vars) == 0L){
-    out <- na_init(out, 1L)
-  }
-  if (length(wt_var) == 0){
-    nobs <- group_sizes
-  } else {
-    nobs <- collapse::fsum(as.double(wtv),
-                           g = g,
-                           na.rm = TRUE,
-                           use.g.names = FALSE,
-                           fill = FALSE)
-    # Replace NA with 0
-    nobs[cheapr::na_find(nobs)] <- 0L
-  }
-  out[[name]] <- nobs
-  if (sort){
-    out <- f_arrange(out, .cols = name, .descending = TRUE)
-  }
-  cheapr::reconstruct(out, data)
-}
-# A basic and very fast count() method
-# The above method is faster when there are many groups
-# because creating the list of group locations through
-# group_by() is unnecessarily expensive
-# If the data is already grouped and no variables are supplied
-# through ..., then this is very fast
-count_simple <- function(data, ..., wt = NULL, sort = FALSE,
-                         .order = df_group_by_order_default(data),
-                         name = NULL, .by = NULL, .cols = NULL){
-  out <- f_group_by(data, ..., .add = TRUE,
-                    .order = .order, .cols = .cols,
-                    .by = {{ .by }})
-  if (!rlang::quo_is_null(rlang::enquo(wt))){
-    out_info <- mutate_summary(out, !!rlang::enquo(wt))
-    wt_var <- out_info[["new_cols"]]
-    weights <- out_info[["data"]][[wt_var]]
-  } else {
-    weights <- NULL
-  }
-  if (is.null(name)){
-    name <- unique_count_col(group_vars(out))
-  }
-  out <- df_count(out, weights = weights, name = name)
-  if (sort){
-    out <- f_arrange(out, .cols = name, .descending = TRUE)
-  }
-  cheapr::reconstruct(out, data)
-}
-add_count_simple <- function(data, ..., wt = NULL, sort = FALSE,
-                             .order = df_group_by_order_default(data),
-                             name = NULL, .by = NULL, .cols = NULL){
-  out <- f_group_by(data, ..., .add = TRUE,
-                    .order = .order, .cols = .cols,
-                    .by = {{ .by }})
-  if (!rlang::quo_is_null(rlang::enquo(wt))){
-    out_info <- mutate_summary(out, !!rlang::enquo(wt))
-    wt_var <- out_info[["new_cols"]]
-    weights <- out_info[["data"]][[wt_var]]
-  } else {
-    weights <- NULL
-  }
-  if (is.null(name)){
-    name <- unique_count_col(out)
-  }
-  out <- df_add_count(out, weights = weights, name = name)
-  if (sort){
-    out <- f_arrange(out, .cols = name, .descending = TRUE)
-  }
-  cheapr::reconstruct(out, data)
-}
 
-#' @rdname f_count
-#' @export
+  if (dots_length(...) == 0 &&
+      rlang::quo_is_null(rlang::enquo(.by)) && is.null(.cols) &&
+      .order == df_group_by_order_default(data)){
+
+    counts <- grouped_df_counts(data, weights = weights, expand = FALSE)
+    group_vars <- group_vars(data)
+    out <- group_keys(data)
+
+  } else {
+
+    group_info <- tidy_GRP(
+      data, ...,
+      .by = {{ .by }},
+      .cols = .cols,
+      .order = .order
+    )
+
+    out <- GRP_groups(group_info)
+    group_vars <- GRP_group_vars(group_info)
+    if (is.null(weights)){
+      counts <- GRP_group_sizes(group_info)
+    } else {
+      counts <- collapse::fsum(
+        as.double(weights),
+        g = group_info,
+        na.rm = TRUE,
+        use.g.names = FALSE,
+        fill = FALSE
+      )
+    }
+    out <- cheapr::sset_col(out, group_vars)
+  }
+  count_col <- name %||% unique_count_col(out)
+  out <- df_add_col(out, count_col, cheapr::na_replace(counts, 0L))
+  if (sort){
+    out <- f_arrange(out, .cols = count_col, .descending = TRUE)
+  }
+  if ((length(group_vars(data)) + 1L) == df_ncol(out)){
+    cheapr::reconstruct(out, f_ungroup(data))
+  } else {
+    cheapr::reconstruct(out, data)
+  }
+}
 f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
                         .order = df_group_by_order_default(data),
                         name = NULL, .by = NULL, .cols = NULL){
-  if (dots_length(...) == 0 && rlang::quo_is_null(rlang::enquo(.by)) && is.null(.cols)){
-    return(
-      add_count_simple(data, ..., wt = !!rlang::enquo(wt),
-                       sort = sort, .order = .order,
-                       name = name, .by = {{ .by }}, .cols = .cols)
+  weights <- NULL
+  wt_expr <- rlang::enquo(wt)
+  if (!rlang::quo_is_null(wt_expr)){
+    weights <- mutate_summary(data, .fastplyr.wt = !!wt_expr)[["data"]][[".fastplyr.wt"]]
+  }
+
+  if (dots_length(...) == 0 &&
+      rlang::quo_is_null(rlang::enquo(.by)) && is.null(.cols) &&
+      .order == df_group_by_order_default(data)){
+
+    counts <- grouped_df_counts(data, weights = weights, expand = TRUE)
+    group_vars <- group_vars(data)
+    out <- data
+  } else {
+
+    group_info <- tidy_GRP(
+      data, ...,
+      .by = {{ .by }},
+      .cols = .cols,
+      .order = .order
     )
-  }
-  group_vars <- group_vars(data)
-  group_info <- tidy_group_info(data, ..., .by = {{ .by }},
-                                .cols = .cols,
-                                ungroup = TRUE,
-                                rename = TRUE)
-  out <- group_info[["data"]]
-  all_vars <- group_info[["all_groups"]]
-  if (rlang::quo_is_null(rlang::enquo(wt))){
-    wt_var <- character()
-  } else {
-    ncol1 <- df_ncol(out)
-    out_info <- mutate_summary(out, !!rlang::enquo(wt))
-    out <- out_info[["data"]]
-    ncol2 <- df_ncol(out)
-    has_wt <- (ncol2 == ncol1)
-    wt_var <- out_info[["new_cols"]]
-    if (length(wt_var) > 0L){
-      wtv <- out[[wt_var]]
-      if (!has_wt){
-        out <- df_rm_cols(out, wt_var)
-      }
+    out <- GRP_data(group_info)
+    group_vars <- GRP_group_vars(group_info)
+    if (is.null(weights)){
+      counts <- GRP_group_sizes(group_info)[GRP_group_id(group_info)]
+    } else {
+      counts <- collapse::fsum(
+        as.double(weights),
+        g = group_info,
+        na.rm = TRUE,
+        use.g.names = FALSE,
+        fill = FALSE,
+        TRA = "replace_fill"
+      )
     }
   }
-  use_only_grouped_df_groups <- !group_info[["groups_changed"]] && (
-    length(all_vars) == 0L ||
-      (.order && length(group_vars) > 0L && length(group_vars) == length(all_vars))
-  )
-  if (use_only_grouped_df_groups){
-    g <- df_to_GRP(data, return.order = FALSE, order = .order)
-  } else {
-    g <- df_to_GRP(out, .cols = all_vars, return.order = FALSE, order = .order)
-  }
-  if (is.null(name)){
-    name <- unique_count_col(out)
-  }
-  if (length(wt_var) > 0L){
-    if (length(all_vars) == 0L){
-      g <- NULL
-    }
-    nobs <- collapse::fsum(as.double(wtv),
-                           g = g,
-                           na.rm = TRUE,
-                           TRA = "replace_fill")
-    # Replace NA with 0
-    nobs[cheapr::na_find(nobs)] <- 0L
-  } else {
-    nobs <- GRP_expanded_group_sizes(g)
-  }
-  out <- df_add_cols(out, cols = add_names(list(nobs), name))
+  count_col <- name %||% unique_count_col(data)
+  out <- df_add_col(out, count_col, cheapr::na_replace(counts, 0L))
   if (sort){
-    out <- f_arrange(out, .cols = name, .descending = TRUE)
+    out <- f_arrange(out, .cols = count_col, .descending = TRUE)
   }
   cheapr::reconstruct(out, data)
 }

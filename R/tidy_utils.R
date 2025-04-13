@@ -315,14 +315,13 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
 
   }
   set_add_attr(out, ".optimised", optimised)
-  # set_add_attr(out, ".data", .data)
   set_add_attr(out, ".GRP", .groups)
   set_add_attr(out, ".fastplyr_quos", TRUE)
   out
 }
 
 should_optimise <- function(GRP){
-  if (length(GRP_group_vars(GRP)) == 0 || df_nrow(GRP_groups(GRP)) < 1e03){
+  if (length(GRP_group_vars(GRP)) == 0){
     FALSE
   } else {
     TRUE

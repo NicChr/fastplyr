@@ -2,6 +2,18 @@
 #include "cheapr_api.h"
 #include <vector>
 
+SEXP get_list_element(SEXP list, const char *str){
+  SEXP out = R_NilValue, names = Rf_getAttrib(list, R_NamesSymbol);
+
+  for (int i = 0; i < Rf_length(list); ++i){
+    if (std::strcmp(CHAR(STRING_ELT(names, i)), str) == 0){
+      out = VECTOR_ELT(list, i);
+      break;
+    }
+  }
+  return out;
+}
+
 // Compare the addresses between 2 similar lists
 
 [[cpp11::register]]

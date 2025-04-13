@@ -401,7 +401,7 @@ grouped_df_as_GRP <- function(data,
   gvars <- group_vars(data)
   n_groups <- df_nrow(gdata)
   gkeys <- group_keys(data)
-  group_id <- df_group_id(data)
+  group_id <- f_group_indices(data)
   grows <- group_rows(data)
   gsizes <- cheapr::list_lengths(grows)
   groups_are_ordered <- df_group_by_order_default(data)

@@ -38,8 +38,8 @@ for common statistical functions.
 This operates almost identically to \code{dplyr::summarise()} with some crucial
 differences.
 Optimisations for by-group operations kick in for
-common statistical functions when the data are both
-grouped and the number of groups exceeds 10,000.
+common statistical functions when groups are present and for specific
+expressions.
 A message will be printed which one can disable
 by running \code{options(fastplyr.inform = FALSE)}.
 When this happens, the expressions which become optimised no longer
@@ -63,6 +63,7 @@ For fast quantiles (percentiles) by group, see \link{tidy_quantiles}
 List of currently optimised functions and their equivalent
 'collapse' function
 
+\code{dplyr::n} -> <custom_expression> \cr
 \code{base::sum} -> \code{collapse::fsum} \cr
 \code{base::prod} -> \code{collapse::fprod} \cr
 \code{base::min} -> \code{collapse::fmin} \cr

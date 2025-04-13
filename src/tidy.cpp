@@ -714,6 +714,14 @@ SEXP compact_int_seq_len(int n){
   return out;
 }
 
+
+SEXP get_data_GRP(SEXP x){
+  SEXP grp_sym = Rf_protect(Rf_install("GRP"));
+  SEXP out = Rf_protect(Rf_getAttrib(x, grp_sym));
+  Rf_unprotect(2);
+  return out;
+}
+
 [[cpp11::register]]
 SEXP cpp_group_data(SEXP x){
   if (Rf_inherits(x, "grouped_df")){
@@ -783,11 +791,20 @@ SEXP cpp_group_rows(SEXP x){
 
 [[cpp11::register]]
 SEXP cpp_group_size(SEXP x){
-  SEXP group_rows = Rf_protect(cpp_group_rows(x));
-  SEXP out = Rf_protect(cheapr::lengths(group_rows, false));
+
+  SEXP out = R_NilValue;
+
+  if (Rf_inherits(x, "fastplyr_grouped_df")){
+    SEXP grp = Rf_protect(get_data_GRP(x));
+    Rf_protect(out = get_list_element(grp, "group.sizes"));
+  } else {
+    SEXP group_rows = Rf_protect(cpp_group_rows(x));
+    Rf_protect(out = cheapr::lengths(group_rows, false));
+  }
   Rf_unprotect(2);
   return out;
 }
+
 
 [[cpp11::register]]
 SEXP cpp_ungroup(SEXP data){
@@ -846,6 +863,14 @@ SEXP cpp_group_id(SEXP x){
   if (!Rf_inherits(x, "grouped_df") && !Rf_inherits(x, "data.frame")){
     Rf_error("Can only calculate group indices on data frames in %s", __func__);
   }
+
+  if (Rf_inherits(x, "fastplyr_grouped_df")){
+    SEXP grp = Rf_protect(get_data_GRP(x));
+    SEXP out = Rf_protect(get_list_element(grp, "group.id"));
+    Rf_unprotect(2);
+    return out;
+  }
+
   int n = df_nrow(x);
   SEXP out;
   if (n_group_vars(x) == 0){
@@ -1375,8 +1400,8 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
       Rf_protect(group_id = cpp_group_id(data)); ++NP;
       Rf_protect(group_sizes = cpp_group_size(data)); ++NP;
     } else {
-      Rf_protect(group_id = VECTOR_ELT(grp, 1)); ++NP;
-      Rf_protect(group_sizes = VECTOR_ELT(grp, 2)); ++NP;
+      Rf_protect(group_id = get_list_element(grp, "group.id")); ++NP;
+      Rf_protect(group_sizes = get_list_element(grp, "group.sizes")); ++NP;
     }
     Rf_protect(order = cpp_orig_order(group_id, group_sizes)); ++NP;
     Rf_protect(sorted_sym = Rf_install("sorted")); ++NP;

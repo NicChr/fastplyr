@@ -78,7 +78,7 @@ add_group_id.data.frame <- function(data, ...,
         .order == df_group_by_order_default(data) &&
         .ascending &&
         !as_qg){
-      ids <- df_group_id(data)
+      ids <- f_group_indices(data)
     } else {
       ids <- group_id(
         f_select(group_info[["data"]], .cols = all_groups),

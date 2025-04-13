@@ -30,3 +30,6 @@ f_group_size <- cpp_group_size
 f_n_groups <- function(x){
   df_nrow(cpp_group_keys(x))
 }
+f_group_GRP <- function(x){
+  grouped_df_as_GRP(x)
+}

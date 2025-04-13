@@ -76,38 +76,27 @@ df_paste_names <- function(data,  sep = "_", .cols = names(data)){
                    list(sep = sep)))
 }
 
-# Group IDs (same as dplyr::group_indices)
-df_group_id <- cpp_group_id
-
-# Extremely simple count functions for grouped_df
-df_count <- function(.data, name = "n", weights = NULL){
+grouped_df_counts <- function(data, weights = NULL, expand = FALSE){
   if (!is.null(weights)){
-    if (length(weights) != df_nrow(.data)){
-      cli::cli_abort("Weights must satisfy `length(weights) == nrow(.data)`")
+    if (length(weights) != df_nrow(data)){
+      cli::cli_abort("Weights must satisfy `length(weights) == nrow(data)`")
     }
-    counts <- collapse::fsum(as.double(weights), g = df_group_id(.data),
-                             use.g.names = FALSE, na.rm = TRUE)
-  } else {
-    counts <- cheapr::list_lengths(group_rows(.data))
-  }
-  out <- group_keys(.data)
-  df_add_cols(out, list_tidy(!!name := counts))
-}
-df_add_count <- function(.data, name = "n", weights = NULL){
-  groups <- group_data(.data)
-  group_ids <- df_group_id(.data)
-  group_rows <- group_rows(.data)
 
-  if (!is.null(weights)){
-    if (length(weights) != df_nrow(.data)){
-      cli::cli_abort("Weights must satisfy `length(weights) == nrow(.data)`")
+    group_id <- f_group_indices(data)
+    if (expand){
+      counts <- collapse::fsum(as.double(weights), g = group_id,
+                               TRA = "replace_fill", na.rm = TRUE)
+    } else {
+      counts <- collapse::fsum(as.double(weights), g = group_id,
+                               use.g.names = FALSE, na.rm = TRUE)
     }
-    counts <- collapse::fsum(as.double(weights), g = group_ids,
-                             TRA = "replace_fill", na.rm = TRUE)
   } else {
-    counts <- cheapr::list_lengths(group_rows)[group_ids]
+    counts <- f_group_size(data)
+    if (expand){
+      counts <- counts[f_group_indices(data)]
+    }
   }
-  df_add_cols(.data, list_tidy(!!name := counts))
+  counts
 }
 
 df_group_by_drop_default <- function(x){

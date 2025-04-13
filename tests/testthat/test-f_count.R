@@ -27,7 +27,8 @@ test_that("Compare to dplyr", {
                          iris %>%
                            dplyr::slice(2, 128, 125) %>%
                            dplyr::group_by(Species, .drop = FALSE) %>%
-                           dplyr::count())
+                           dplyr::count() %>%
+                 dplyr::ungroup())
   expect_equal(iris %>%
                            dplyr::slice(2, 128, 125) %>%
                            dplyr::group_by(Species, .drop = TRUE) %>%
@@ -35,10 +36,12 @@ test_that("Compare to dplyr", {
                          iris %>%
                            dplyr::slice(2, 128, 125) %>%
                            dplyr::group_by(Species, .drop = TRUE) %>%
-                           dplyr::count())
+                           dplyr::count() %>%
+                 dplyr::ungroup())
   expect_equal(iris %>%
                                dplyr::group_by(Species) %>%
-                               dplyr::count(across(all_of("Species"))),
+                               dplyr::count(across(all_of("Species"))) %>%
+                 dplyr::ungroup(),
                              iris %>%
                                dplyr::group_by(Species) %>%
                                f_count())
@@ -52,7 +55,8 @@ test_that("Compare to dplyr", {
                                # f_count(across(all_of(c("Species", "Sepal.Length")))))
   expect_equal(iris %>%
                                dplyr::group_by(Species) %>%
-                               dplyr::count(Species),
+                               dplyr::count(Species) %>%
+                 dplyr::ungroup(),
                              iris %>%
                                dplyr::group_by(Species) %>%
                                f_count(Species))
@@ -61,7 +65,8 @@ test_that("Compare to dplyr", {
   expect_equal(iris %>% dplyr::slice(0) %>% dplyr::count(),
                              iris %>% dplyr::slice(0) %>% f_count())
   expect_equal(iris %>% dplyr::group_by(Species) %>%
-                               dplyr::slice(0) %>% dplyr::count(),
+                               dplyr::slice(0) %>% dplyr::count() %>%
+                 dplyr::ungroup(),
                              iris %>% dplyr::group_by(Species) %>%
                                dplyr::slice(0) %>% f_count())
   expect_equal(iris %>%
@@ -71,7 +76,8 @@ test_that("Compare to dplyr", {
   expect_equal(iris %>%
                                dplyr::group_by(Species) %>%
                                dplyr::slice(0) %>%
-                               dplyr::count(Species),
+                               dplyr::count(Species) %>%
+                 dplyr::ungroup(),
                              iris %>%
                                dplyr::group_by(Species) %>%
                                dplyr::slice(0) %>%
@@ -92,20 +98,25 @@ test_that("Compare to dplyr", {
   expect_equal(iris %>%
                                dplyr::group_by(Species) %>%
                                dplyr::count(Sepal.Length) %>%
-                               dplyr::count(n, name = "n"),
+                               dplyr::count(n, name = "n") %>%
+                 dplyr::ungroup(),
                              iris %>%
                                dplyr::group_by(Species) %>%
                                f_count(Sepal.Length) %>%
                                f_count(n, name = "n"))
   expect_equal(iris %>%
                                dplyr::group_by(Species) %>%
-                               dplyr::count(),
+                               dplyr::count() %>%
+                 dplyr::ungroup(),
                              iris %>% dplyr::group_by(Species) %>% f_count())
-  expect_equal(iris %>% dplyr::group_by(across(everything())) %>% dplyr::count(),
+  expect_equal(iris %>% dplyr::group_by(across(everything())) %>% dplyr::count() %>%
+                 dplyr::ungroup(),
                              iris %>% dplyr::group_by(across(everything())) %>% f_count())
-  expect_equal(iris %>% dplyr::group_by(across(everything())) %>% dplyr::count(Species),
+  expect_equal(iris %>% dplyr::group_by(across(everything())) %>% dplyr::count(Species) %>%
+                 dplyr::ungroup(),
                              iris %>% dplyr::group_by(across(everything())) %>% f_count(Species))
-  expect_equal(iris %>% dplyr::group_by(Species) %>% dplyr::count(Species),
+  expect_equal(iris %>% dplyr::group_by(Species) %>% dplyr::count(Species) %>%
+                 dplyr::ungroup(),
                              iris %>% dplyr::group_by(Species) %>% f_count(Species))
   expect_equal(iris %>% dplyr::group_by(Species) %>%
                                dplyr::count(across(all_of(c("Sepal.Length")))),
