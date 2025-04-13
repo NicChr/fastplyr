@@ -21,7 +21,8 @@
 #'
 #' @section Details:
 #'
-#' This operates almost identically to `dplyr::summarise()` with some crucial
+#' fastplyr data-masking functions like `f_mutate` and `f_summarise` operate
+#' very similarly to their dplyr counterparts but with some crucial
 #' differences.
 #' Optimisations for by-group operations kick in for
 #' common statistical functions when groups are present and for specific

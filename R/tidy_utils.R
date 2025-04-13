@@ -289,21 +289,24 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
       } else {
         squashed_exprs <- lapply(.original_out[optimised], \(x) deparse2(rlang::quo_get_expr(x), nlines = 1L))
       }
-      squashed_exprs <- paste(unlist(squashed_exprs), collapse = "\n")
-      message(paste(
-        "Optimising the following expressions per-group",
-        "",
-        squashed_exprs,
-        "",
+      squashed_exprs <- unlist(squashed_exprs)
+
+      cli::cli_inform(
+        c("!" = "Optimising the following expressions per-group",
+          squashed_exprs,
+          "",
+          "Run {.run options(fastplyr.inform = FALSE)} to disable this message",
+          "")
+        )
+
+      cli::cli_inform(c(
         "Optimised expressions are independent from each other and typical data-masking rules may not apply",
         "",
         "To disable optimisations for these expressions specify full function namespaces",
         "e.g. `base::mean(x)` instead of `mean(x)`",
-        "To disable optimisations globally, run `options(fastplyr.optimise = FALSE)`",
         "",
-        "Run `options(fastplyr.inform = FALSE)` to turn this msg off.",
-        sep = "\n"
-      ))
+        "To disable optimisations globally, run {.run options(fastplyr.optimise = FALSE)}"
+      ), .frequency = "once", .frequency_id = ".optimise_inform")
     }
   }
   if (!all(optimised)){
@@ -904,12 +907,5 @@ eval_mutate <- function(quos){
     }
   }
   results
-}
-
-
-f_mutate <- function(.data, ...,  .by = NULL, .order = df_group_by_order_default(.data), .keep = "all"){
-  out <- .data %>%
-    mutate_summary(..., .keep = .keep, .order = .order, .by = {{ .by }})
-  out[["data"]]
 }
 

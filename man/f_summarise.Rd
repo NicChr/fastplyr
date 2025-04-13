@@ -35,7 +35,8 @@ for common statistical functions.
 \section{Details}{
 
 
-This operates almost identically to \code{dplyr::summarise()} with some crucial
+fastplyr data-masking functions like \code{f_mutate} and \code{f_summarise} operate
+very similarly to their dplyr counterparts but with some crucial
 differences.
 Optimisations for by-group operations kick in for
 common statistical functions when groups are present and for specific

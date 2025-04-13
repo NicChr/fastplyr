@@ -8,5 +8,6 @@
 
 library(testthat)
 library(fastplyr)
+options(fastplyr.inform = FALSE)
 
 test_check("fastplyr", reporter = c("check", "location"))
