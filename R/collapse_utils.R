@@ -464,6 +464,7 @@ grouped_df_as_GRP <- function(data,
 # Group starts is always returned
 df_to_GRP <- function(data, .cols = character(),
                       order = df_group_by_order_default(data),
+                      # drop = df_group_by_drop_default(data),
                       return.order = FALSE,
                       return.groups = TRUE,
                       return.locs = FALSE){
@@ -478,7 +479,9 @@ df_to_GRP <- function(data, .cols = character(),
                              return.groups = return.groups,
                              return.order = return.order,
                              return.locs = return.locs)
-  } else if (length(extra_groups) == 0L && order == df_group_by_order_default(data)){
+  } else if (length(extra_groups) == 0L &&
+             order == df_group_by_order_default(data)){
+             # drop == df_group_by_drop_default(data)){
     out <- grouped_df_as_GRP(data2, return.order = return.order,
                              return.groups = return.groups,
                              return.locs = return.locs)
@@ -503,8 +506,12 @@ df_to_GRP <- function(data, .cols = character(),
     out[["group.starts"]] <- GRP_starts(out)
 
     if (return.groups){
-      out[["groups"]] <- cheapr::sset(data2, GRP_starts(out))
+      groups <- cheapr::sset(data2, GRP_starts(out))
       out[["group.vars"]] <- group_vars
+      # if (!drop){
+      #   groups <- expand_unused_levels(groups)
+      # }
+      out[["groups"]] <- groups
     }
   }
   out <- cheapr::list_assign(out, list("X" = data))

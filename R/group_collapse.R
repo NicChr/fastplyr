@@ -556,7 +556,6 @@ GRP_collapse <- function(g,
           out[[".group"]] <- group_id(f_select(out, .cols = group_names),
                                       order = order)
         }
-        out <- f_arrange(out, .cols = group_names)
       }
     }
   }

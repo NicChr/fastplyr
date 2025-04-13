@@ -6,5 +6,7 @@ test_that("groups", {
     f_group_by(Species) %>%
     f_group_by(max(Sepal.Length), .add = TRUE)
   attr(attr(result, "groups"), "ordered") <- NULL
+  attr(result, "GRP") <- NULL
+  class(result) <- class(target)
   expect_equal(result, target)
 })

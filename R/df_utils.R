@@ -153,3 +153,30 @@ cross_join <- function(...){
 df_mutate_exotic_to_ids <- function(x, order = TRUE, as_qg = FALSE){
   cpp_df_transform_exotic(x, order = order, as_qg = as_qg)
 }
+
+expand_unused_levels <- function(data){
+  is_factor <- vapply(data, is.factor, FALSE, USE.NAMES = FALSE)
+  if (any(is_factor)){
+    non_factors <- cheapr::sset_col(data, !is_factor)
+    factors <- cheapr::sset_col(data, is_factor)
+    group_data_size <- prod(
+      vapply(factors, collapse::fnlevels, 0L)
+    )
+    num_missing_categories <- group_data_size -
+      collapse::fnunique(
+        remove_rows_if_any_na(factors)
+      )
+    if (num_missing_categories > 0){
+      full <- list_as_df(
+        add_names(
+          do.call(cross_join, lapply(factors, cheapr::levels_factor)),
+          names(factors)
+        )
+      )
+      missed <- f_anti_join(full, cheapr::sset_col(data, names(full)))
+      missed <- df_add_cols(missed, na_init(non_factors, num_missing_categories))
+      data <- f_bind_rows(data, missed)
+    }
+  }
+  data
+}

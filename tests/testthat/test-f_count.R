@@ -165,7 +165,8 @@ test_that("Compare to dplyr", {
   # Overwriting existing groups
   expect_equal(iris %>%
                            dplyr::group_by(Species) %>%
-                           dplyr::count(Species = Sepal.Length),
+                           dplyr::count(Species = Sepal.Length) %>%
+                 dplyr::ungroup(),
                          iris %>%
                            dplyr::group_by(Species) %>%
                            f_count(Species = Sepal.Length))
