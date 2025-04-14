@@ -46,6 +46,15 @@ as_named <- function(x){
   `names<-`(x, str_coalesce(names(x), as.character(x)))
 }
 
+call_args <- function(x){
+  if (typeof(x) != "language"){
+    cli::cli_abort("{.arg x} must be a call")
+  }
+  out <- as.list(x)[-1L]
+  names(out) <- names(out) %||% character(length(out))
+  out
+}
+
 tidy_as_list_of <- function (...){
   dots <- list_tidy(..., .keep_null = FALSE)
   if (length(dots) == 1 && !is.object(dots[[1L]]) && is.list(dots[[1L]])) {
@@ -358,8 +367,19 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
         set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
         optimised[i] <- TRUE
         out[[i]] <- quo
-      } else if (is_optimised_call(expr, env)){
-        args <- rlang::call_args(expr)
+      } else if (.optimise_expand && cpp_is_fn_call(expr, "lag", "dplyr", env)){
+        if (sum(nzchar(fast_setdiff(names(args), c("x", "n", "default")))) != 0){
+          next
+        }
+        args <- call_args(expr)
+        names(args)[names(args) == "default"] <- "fill"
+        expr <- rlang::call2("grouped_lag", !!!args, g = .fastplyr.g)
+        quo <- rlang::new_quosure(expr, env)
+        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
+        optimised[i] <- TRUE
+        out[[i]] <- quo
+        } else if (is_optimised_call(expr, env)){
+          args <- call_args(expr)
         if (!cheapr::all_na(match(c("g", "TRA"), names(args)))){
           next
         }

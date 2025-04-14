@@ -390,9 +390,9 @@ GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
 # Either treats data as 1 big group or
 # Uses dplyr group vars
 grouped_df_as_GRP <- function(data,
-                              return.order = FALSE,
+                              return.order = TRUE,
                               return.groups = TRUE,
-                              return.locs = FALSE, ...){
+                              return.locs = TRUE, ...){
   GRP <- attr(data, "GRP", TRUE)
   if (!is.null(GRP)) return(GRP)
   out <- cheapr::new_list(11L)
@@ -465,7 +465,7 @@ grouped_df_as_GRP <- function(data,
 df_to_GRP <- function(data, .cols = character(),
                       order = df_group_by_order_default(data),
                       # drop = df_group_by_drop_default(data),
-                      return.order = FALSE,
+                      return.order = TRUE,
                       return.groups = TRUE,
                       return.locs = FALSE){
   dplyr_groups <- group_vars(data)
@@ -674,5 +674,30 @@ GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
   }
   else {
     g_names
+  }
+}
+
+
+group_order_and_counts <- function(g = NULL){
+  o <- radixorderv2(g, starts = FALSE, sort = FALSE, group.sizes = TRUE)
+  if (is_GRP(g)) {
+    sizes <- cheapr::val_rm(GRP_group_sizes(g), 0L)
+  }
+  else {
+    sizes <- attr(o, "group.sizes")
+  }
+  list(order = o, sizes = sizes)
+}
+
+grouped_lag <- function(x, n = 1L, fill = NULL, g = NULL, ...){
+  order_counts <- group_order_and_counts(g)
+  o <- order_counts[["order"]]
+  rl <- order_counts[["sizes"]]
+  if (is.null(o) && is.null(rl) && length(n) == 1L) {
+    cheapr::lag_(x, n, fill = fill, recursive = TRUE)
+  }
+  else {
+    cheapr::lag2_(x, n, order = o, run_lengths = rl, fill = fill,
+                  recursive = TRUE)
   }
 }
