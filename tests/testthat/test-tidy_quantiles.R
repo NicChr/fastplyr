@@ -187,7 +187,7 @@ test_that("Standard tests", {
 
   expect_equal(
     dplyr_quantiles(dplyr::group_by(airquality, Month), "Ozone"),
-    tidy_quantiles(f_group_by(airquality, Month), .cols = "Ozone", pivot = "long")
+    f_ungroup(tidy_quantiles(f_group_by(airquality, Month), .cols = "Ozone", pivot = "long"))
   )
 
   expect_equal(

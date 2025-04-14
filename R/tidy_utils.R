@@ -128,23 +128,24 @@ unpack_across <- function(quo, data, unpack_default = FALSE){
   if (is.atomic(across_vars)){
     cols <- unname(col_select_names(data, across_vars))
   } else if (rlang::is_call(across_vars, ":")){
-    args <- as.list(across_vars[-1L])
+    args <- as.list(across_vars)[-1L]
     if (length(args) == 2 && is.atomic(args[[1L]]) && is.atomic(args[[2L]])){
       cols <- unname(col_select_names(data, eval(across_vars, envir = quo_env)))
     } else {
-      cols <- names(tidyselect::eval_select(across_vars, data))
+      cols <- names(tidyselect::eval_select(across_vars, data, env = quo_env))
     }
   } else if (is.symbol(across_vars) && (rlang::as_string(across_vars) %in% names(data))){
     cols <- rlang::as_string(across_vars)
   } else {
-    cols <- names(tidyselect::eval_select(across_vars, data))
+    cols <- names(tidyselect::eval_select(across_vars, data, env = quo_env))
   }
 
   if (rlang::is_call(across_fns, "list")){
     fn_tree <- as.list(across_fns)[-1L]
     fn_names <- names(fn_tree) %||% character(length(fn_tree))
   } else if (!".fns" %in% names(clean_expr)){
-    fn_tree <- list(identity)
+    # fn_tree <- list(identity)
+    fn_tree <- list(as.symbol("identity"))
   } else {
     fn_tree <- list(across_fns)
   }
@@ -270,7 +271,12 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
 
       if (is_nested_call(expr)) next
 
-      if (cpp_is_fn_call(expr, "n", "dplyr", env)){
+      if (.optimise_expand && cpp_is_fn_call(expr, "identity", "base", env)){
+        quo <- rlang::new_quosure(expr, env)
+        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
+        optimised[i] <- TRUE
+        out[[i]] <- quo
+        } else if (cpp_is_fn_call(expr, "n", "dplyr", env)){
         expr <- rlang::call2(function(){
           if (is.null(.fastplyr.g)){
             out <- df_nrow(.data)

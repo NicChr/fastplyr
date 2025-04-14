@@ -14,7 +14,7 @@ tidy_quantiles(
   .by = NULL,
   .cols = NULL,
   .order = df_group_by_order_default(data),
-  .drop_groups = TRUE
+  .drop_groups = deprecated()
 )
 }
 \arguments{
@@ -41,8 +41,7 @@ If speed is an expensive resource, it is recommended to use this.}
 If \code{FALSE}, this will return the groups in order of first appearance,
 and in many cases is faster.}
 
-\item{.drop_groups}{\code{logical(1)} Should groups be dropped after calculation?
-Default is \code{TRUE}.}
+\item{.drop_groups}{\code{lifecycle::badge("deprecated")}}
 }
 \value{
 A data frame of sample quantiles.

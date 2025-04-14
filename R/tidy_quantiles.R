@@ -11,8 +11,7 @@
 #' @param .cols (Optional) alternative to `...` that accepts
 #' a named character vector or numeric vector.
 #' If speed is an expensive resource, it is recommended to use this.
-#' @param .drop_groups `logical(1)` Should groups be dropped after calculation?
-#' Default is `TRUE`.
+#' @param .drop_groups `lifecycle::badge("deprecated")`
 #' @param .order Should the groups be returned in sorted order?
 #' If `FALSE`, this will return the groups in order of first appearance,
 #' and in many cases is faster.
@@ -48,14 +47,17 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
                            na.rm = TRUE,
                            .by = NULL, .cols = NULL,
                            .order = df_group_by_order_default(data),
-                           .drop_groups = TRUE){
+                           .drop_groups = deprecated()){
   pivot <- rlang::arg_match(pivot)
   wide <- pivot == "wide"
-  group_info <- tidy_group_info(
-    data, ..., .by = {{ .by }}, .cols = .cols, ungroup = TRUE
+  group_info <- tidy_dots_info(
+    data, ..., .by = {{ .by }}, .cols = .cols, .order = .order
   )
-  group_vars <- group_info[["dplyr_groups"]]
-  dot_vars <- group_info[["extra_groups"]]
+  data2 <- group_info[["data"]]
+  group_vars <- group_info[["all_groups"]]
+  dot_vars <- group_info[["new_cols"]]
+  dot_vars <- fast_setdiff(dot_vars, group_vars)
+  groups <- group_info[["GRP"]]
 
   # Constructing quantile info
   quant_probs <- as.double(probs)
@@ -71,8 +73,6 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     levels = collapse::funique(quant_nms), class = "factor"
   )
 
-  data2 <- group_info[["data"]]
-  groups <- df_to_GRP(data2, .cols = group_vars, order = .order)
   n_groups <- GRP_n_groups(groups)
   group_starts <- GRP_starts(groups)
   data2 <- f_select(data2, .cols = c(group_vars, dot_vars))
@@ -230,9 +230,12 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     ## values by reference
 
     if (length(dot_vars) > 0) {
-      out <- dplyr::mutate(
-        out, dplyr::across(dplyr::all_of(dot_vars), as.double)
+      out <- f_mutate(
+        out, across(all_of(dot_vars), as.double)
       )
+      # out <- dplyr::mutate(
+      #   out, dplyr::across(dplyr::all_of(dot_vars), as.double)
+      # )
     }
     quant_starts <- ( n_probs * (seq_len(n_groups) - 1L) ) + 1L
 
@@ -287,7 +290,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     }
   }
 
-  if (.drop_groups){
+  if (wide){
     cheapr::reconstruct(out, cpp_ungroup(data))
   } else {
     cheapr::reconstruct(out, data)
