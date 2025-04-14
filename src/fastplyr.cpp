@@ -604,8 +604,9 @@ SEXP cpp_which_all(SEXP x){
   if (n_cols == 0){
     out = Rf_protect(Rf_allocVector(INTSXP, 0)); ++NP;
   } else if (n_cols == 1){
-    cpp11::function cheapr_which = cpp11::package("cheapr")["which_"];
-    out = Rf_protect(cheapr_which(p_x[0])); ++NP;
+    SEXP r_true = Rf_protect(Rf_allocVector(LGLSXP, 1)); ++NP;
+    LOGICAL(r_true)[0] = TRUE;
+    out = Rf_protect(cheapr::val_find(p_x[0], r_true, false)); ++NP;
   } else {
     SEXP lgl = Rf_protect(Rf_allocVector(LGLSXP, n_rows)); ++NP;
     int *p_lgl = LOGICAL(lgl);

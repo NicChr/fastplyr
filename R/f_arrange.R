@@ -27,29 +27,28 @@
 #' @export
 f_arrange <- function(data, ..., .by = NULL, .by_group = FALSE,
                      .cols = NULL, .descending = FALSE){
-  group_info <- tidy_group_info(
+  group_info <- tidy_dots_info(
     if (.by_group){
       data
     } else {
       cpp_ungroup(data)
     }, ..., .by = {{ .by }},
-    .cols = .cols,
-    ungroup = TRUE,
-    rename = FALSE
+    .cols = .cols
   )
-  dot_vars <- group_info[["extra_groups"]]
-  all_vars <- group_info[["all_groups"]]
-  if (length(all_vars) == 0L){
+  data <- group_info[["data"]]
+  dot_vars <- group_info[["new_cols"]]
+  group_vars <- group_info[["all_groups"]]
+  if (length(dot_vars) == 0L){
     return(data)
   }
   if (.by_group){
-    order_vars <- all_vars
+    order_vars <- c(group_vars, dot_vars)
   } else {
     order_vars <- dot_vars
   }
   out_order <- radixorderv2(
-    f_select(
-      group_info[["data"]], .cols = order_vars
+    cheapr::sset_col(
+      group_info[["data"]], order_vars
     ),
     decreasing = .descending, na.last = TRUE, starts = FALSE,
     group.sizes = FALSE, sort = TRUE
@@ -58,6 +57,6 @@ f_arrange <- function(data, ..., .by = NULL, .by_group = FALSE,
   if (isTRUE(sorted)){
     data
   } else {
-    cheapr::sset(data, out_order)
+    cheapr::sset_df(data, out_order)
   }
 }

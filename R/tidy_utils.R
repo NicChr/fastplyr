@@ -651,6 +651,16 @@ tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
   }
 }
 
+tidy_dots_info <- function(.data, ..., .by = NULL, .cols = NULL,
+                           .order = df_group_by_order_default(.data),
+                           .type = "data-mask"){
+  check_cols(n_dots = dots_length(...), .cols = .cols)
+  if (is.null(.cols) && .type == "data-mask"){
+    mutate_summary(.data, ..., .by = {{ .by }}, .order = .order)
+  } else {
+    select_summary(.data, ..., .by = {{ .by }}, .order = .order, .cols = .cols)
+  }
+}
 
 # tidy_GRP applies expressions supplied through `...` or selects cols
 # if either .cols is supplied or type isnt "data-mask"
@@ -658,18 +668,15 @@ tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
 tidy_GRP <- function(.data, ..., .by = NULL, .cols = NULL,
                      .order = df_group_by_order_default(.data),
                      .type = "data-mask"){
-  check_cols(n_dots = dots_length(...), .cols = .cols)
-  if (is.null(.cols) && .type == "data-mask"){
-    out <- mutate_summary(.data, ..., .by = {{ .by }}, .order = .order)
-  } else {
-    out <- select_summary(.data, ..., .by = {{ .by }}, .order = .order, .cols = .cols)
-  }
 
-  data <- out[["data"]]
-  groups <- out[["all_groups"]]
-  new_cols <- out[["new_cols"]]
+  info <- tidy_dots_info(.data, ..., .by = {{ .by }}, .cols = .cols,
+                         .order = .order, .type = .type)
+
+  data <- info[["data"]]
+  groups <- info[["all_groups"]]
+  new_cols <- info[["new_cols"]]
   all_groups <- c(groups, new_cols)
-  GRP <- out[["GRP"]]
+  GRP <- info[["GRP"]]
   if (is.null(GRP) || !identical(groups, all_groups)){
     GRP <- df_to_GRP(data, all_groups, order = .order)
   }
