@@ -150,7 +150,9 @@ SEXP get_fun_ns(SEXP x, SEXP rho){
   if (TYPEOF(x) != CLOSXP){
     Rf_unprotect(NP); return Rf_mkChar("");
   }
-  SEXP env = Rf_protect(CLOENV(x)); ++NP;
+  SEXP env_call = Rf_protect(Rf_lang2(Rf_install("environment"), x)); ++NP;
+  SEXP env = Rf_protect(Rf_eval(env_call, rho)); ++NP;
+  // SEXP env = Rf_protect(CLOENV(x)); ++NP;
   if (Rf_isNull(x) || Rf_isNull(env)){
     Rf_unprotect(NP); return Rf_mkChar("");
   } else if (env == R_BaseNamespace){
