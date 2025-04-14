@@ -10,6 +10,8 @@ f_summarise(.data, ..., .by = NULL, .order = df_group_by_order_default(.data))
 f_summarize(.data, ..., .by = NULL, .order = df_group_by_order_default(.data))
 }
 \arguments{
+\item{.data}{A data frame.}
+
 \item{...}{Name-value pairs of summary functions. Expressions with
 \code{across()} are also accepted.}
 
@@ -19,11 +21,6 @@ Columns are specified using tidy-select.}
 \item{.order}{Should the groups be returned in sorted order?
 If \code{FALSE}, this will return the groups in order of first appearance,
 and in many cases is faster.}
-
-\item{data}{A data frame.}
-
-\item{.optimise}{(Optionally) turn off optimisations for common statistical
-functions by setting to \code{FALSE}. Default is \code{TRUE} which uses optimisations.}
 }
 \value{
 An un-grouped data frame of summaries by group.
@@ -82,7 +79,8 @@ List of currently optimised functions and their equivalent
 \examples{
 library(fastplyr)
 library(nycflights13)
-
+library(dplyr)
+options(fastplyr.inform = FALSE)
 # Number of flights per month, including first and last day
 flights \%>\%
   f_group_by(year, month) \%>\%
@@ -94,18 +92,15 @@ flights \%>\%
 
 flights \%>\%
   f_summarise(
-    across(where(is.double), mean),
+    across(where(is.numeric), mean),
     .by = tailnum
   )
 
-# To ignore or keep NAs, use collapse::set_collapse(na.rm)
-collapse::set_collapse(na.rm = FALSE)
 flights \%>\%
+  f_group_by(.cols = "tailnum") \%>\%
   f_summarise(
-    across(where(is.double), mean),
-    .by = origin
+    across(where(is.numeric), mean)
   )
-collapse::set_collapse(na.rm = TRUE)
 }
 \seealso{
 \link{tidy_quantiles}

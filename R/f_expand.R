@@ -82,7 +82,7 @@ f_expand <- function(data, ..., .sort = FALSE,
   names(out) <- cheapr::name_repair(names(out))
   # If just empty list
   if (length(out) == 0){
-    out <- f_distinct(data2, .cols = group_vars, .sort = .sort)
+    out <- f_distinct(data2, .cols = group_vars, .order = .sort)
   }
   cheapr::reconstruct(out, data)
 }

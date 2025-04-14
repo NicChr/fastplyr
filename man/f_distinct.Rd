@@ -8,8 +8,8 @@ f_distinct(
   data,
   ...,
   .keep_all = FALSE,
-  .sort = FALSE,
-  .order = .sort,
+  .order = FALSE,
+  .sort = deprecated(),
   .by = NULL,
   .cols = NULL
 )
@@ -22,12 +22,11 @@ f_distinct(
 \item{.keep_all}{If \code{TRUE} then all columns of data frame are kept,
 default is \code{FALSE}.}
 
-\item{.sort}{Should result be sorted? Default is \code{FALSE}.
-When \code{order = FALSE} this option has no effect on the result.}
-
 \item{.order}{Should the groups be calculated as ordered groups?
 Setting to \code{TRUE} may sometimes offer a speed benefit, but usually this
 is not the case. The default is \code{FALSE}.}
+
+\item{.sort}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}  Use \code{.order} instead.}
 
 \item{.by}{(Optional). A selection of columns to group by for this operation.
 Columns are specified using tidy-select.}

@@ -12,16 +12,7 @@ reconstruct.grouped_df <- function(x, template){
 
   groups_are_identical <-
     all(template_groups %in% names(x)) &&
-    (
-      all(cpp_frame_addresses_equal(
-        cheapr::sset_col(x, j = template_groups),
-        cheapr::sset_col(template, j = template_groups)
-      )) ||
-        identical(
-          cheapr::sset_col(x, j = template_groups),
-          cheapr::sset_col(template, j = template_groups)
-        )
-    )
+    datasets_identical(x, template, template_groups)
 
   if (groups_are_identical){
     groups <- attr(template, "groups")
@@ -55,16 +46,7 @@ reconstruct.fastplyr_grouped_df <- function(x, template){
 
   groups_are_identical <-
     all(template_groups %in% names(x)) &&
-    (
-      all(cpp_frame_addresses_equal(
-        cheapr::sset_col(x, j = template_groups),
-        cheapr::sset_col(template, j = template_groups)
-      )) ||
-        identical(
-          cheapr::sset_col(x, j = template_groups),
-          cheapr::sset_col(template, j = template_groups)
-        )
-    )
+    datasets_identical(x, template, template_groups)
 
   if (groups_are_identical){
     groups <- attr(template, "groups")

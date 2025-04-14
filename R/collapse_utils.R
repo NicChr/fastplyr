@@ -471,8 +471,9 @@ df_to_GRP <- function(data, .cols = character(),
   dplyr_groups <- group_vars(data)
   cols <- drop_names(col_select_names(data, .cols = .cols))
   extra_groups <- fast_setdiff(cols, dplyr_groups)
-  group_vars <- c(dplyr_groups, extra_groups)
-  data2 <- cheapr::sset_df(data, j = group_vars)
+  data2 <- cheapr::sset_df(data, j = cols)
+  # group_vars <- c(dplyr_groups, extra_groups)
+  # data2 <- cheapr::sset_df(data, j = group_vars)
 
   if (length(names(data2)) == 0L){
     out <- grouped_df_as_GRP(cpp_ungroup(data2),
@@ -503,13 +504,27 @@ df_to_GRP <- function(data, .cols = character(),
 
     # Always add group starts as it's usually not too expensive
 
-    out[["group.starts"]] <- GRP_starts(out)
+    starts <- GRP_starts(out)
+    out[["group.starts"]] <- starts
 
     if (return.groups){
-      groups <- cheapr::sset(data2, GRP_starts(out))
-      out[["group.vars"]] <- group_vars
+
+      if (order){
+        slice <- !(length(starts) == df_nrow(data2) &&
+                     isTRUE(attr(out[["order"]], "sorted")))
+      } else {
+        slice <- !(length(starts) == df_nrow(data2))
+      }
+
+      if (slice){
+        groups <- cheapr::sset(data2, starts)
+      } else {
+        groups <- data2
+      }
+      out[["group.vars"]] <- cols
       # if (!drop){
       #   groups <- expand_unused_levels(groups)
+      # Extra logic to adjust group sizes and group starts
       # }
       out[["groups"]] <- groups
     }

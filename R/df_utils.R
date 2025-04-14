@@ -180,3 +180,16 @@ expand_unused_levels <- function(data){
   }
   data
 }
+
+datasets_identical <- function(x, y, cols){
+  left <- cheapr::sset_col(x, cols)
+  right <- cheapr::sset_col(y, cols)
+
+  if (df_ncol(left) != df_ncol(right)){
+    FALSE
+  } else {
+    all(cpp_frame_addresses_equal(left, right)) ||
+      identical(left, right)
+  }
+
+}

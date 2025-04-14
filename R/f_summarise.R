@@ -3,7 +3,7 @@
 #' @description Like `dplyr::summarise()` but with some internal optimisations
 #' for common statistical functions.
 #'
-#' @param data A data frame.
+#' @param .data A data frame.
 #' @param ... Name-value pairs of summary functions. Expressions with
 #' `across()` are also accepted.
 #' @param .by (Optional). A selection of columns to group by for this operation.
@@ -11,8 +11,6 @@
 #' @param .order Should the groups be returned in sorted order?
 #' If `FALSE`, this will return the groups in order of first appearance,
 #' and in many cases is faster.
-#' @param .optimise (Optionally) turn off optimisations for common statistical
-#' functions by setting to `FALSE`. Default is `TRUE` which uses optimisations.
 #'
 #' @seealso [tidy_quantiles]
 #'
@@ -68,7 +66,8 @@
 #' @examples
 #' library(fastplyr)
 #' library(nycflights13)
-#'
+#' library(dplyr)
+#' options(fastplyr.inform = FALSE)
 #' # Number of flights per month, including first and last day
 #' flights %>%
 #'   f_group_by(year, month) %>%
@@ -80,18 +79,15 @@
 #'
 #' flights %>%
 #'   f_summarise(
-#'     across(where(is.double), mean),
+#'     across(where(is.numeric), mean),
 #'     .by = tailnum
 #'   )
 #'
-#' # To ignore or keep NAs, use collapse::set_collapse(na.rm)
-#' collapse::set_collapse(na.rm = FALSE)
 #' flights %>%
+#'   f_group_by(.cols = "tailnum") %>%
 #'   f_summarise(
-#'     across(where(is.double), mean),
-#'     .by = origin
+#'     across(where(is.numeric), mean)
 #'   )
-#' collapse::set_collapse(na.rm = TRUE)
 #' @rdname f_summarise
 #' @export
 f_summarise <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){

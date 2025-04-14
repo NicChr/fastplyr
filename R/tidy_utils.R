@@ -460,13 +460,15 @@ mutate_summary <- function(.data, ...,
 
 # To replace tidy_group_info_tidyselect in the future
 select_summary <- function(.data, ..., .by = NULL, .cols = NULL, .order = df_group_by_order_default(.data)){
+
   all_groups <- get_groups(.data, .by = {{ .by }})
+  GRP <- df_to_GRP(.data, all_groups, order = .order)
+
   selected_cols <- tidy_select_names(.data, ..., .cols = .cols)
   out <- col_rename(f_ungroup(.data), .cols = selected_cols)
   if (anyDuplicated(names(out))){
     cli::cli_abort("Can't rename columns to names that already exist")
   }
-  # out <- df_add_cols(.data, f_select(f_ungroup(.data), .cols = selected_cols))
   # Recalculate group vars in case they were renamed
   group_pos <- match(all_groups, names(.data))
   new_group_vars <- names(out)[group_pos]
@@ -474,31 +476,14 @@ select_summary <- function(.data, ..., .by = NULL, .cols = NULL, .order = df_gro
   if (!identical(new_group_vars, all_groups)){
     cli::cli_abort("Can't rename group vars in this context")
   }
-
-  # new_cols <- character()
-  # used_cols <- names(selected_cols)
   new_cols <- names(selected_cols)
   used_cols <- new_cols
   unused_cols <- fast_setdiff(names(out), used_cols)
-
-  # check_cols <- selected_cols[names(selected_cols) %in% names(.data)]
-  # check_col_pos <- match(names(check_cols), names(out))
-  # changed_cols <- check_cols[!cpp_frame_addresses_equal(
-  #   cheapr::sset_col(.data, check_col_pos),
-  #   cheapr::sset_col(out, check_col_pos)
-  # )]
   changed_cols <- character()
   renamed_cols <- used_cols[used_cols != selected_cols]
-  # if (length(all_groups) == 0){
-  #   GRP <- NULL
-  # } else {
-  #   GRP <- df_to_GRP(out, all_groups, order = .order)
-  # }
-
-  GRP <- NULL
 
   list(
-    data = out,
+    data = cheapr::reconstruct(out, .data),
     new_cols = new_cols,
     used_cols = used_cols, # All selected cols
     unused_cols = unused_cols, # Unselected cols
@@ -675,12 +660,15 @@ tidy_GRP <- function(.data, ..., .by = NULL, .cols = NULL,
   data <- info[["data"]]
   groups <- info[["all_groups"]]
   new_cols <- info[["new_cols"]]
-  all_groups <- c(groups, new_cols)
+  all_groups <- c(fast_setdiff(groups, new_cols), new_cols)
   GRP <- info[["GRP"]]
-  if (is.null(GRP) || !identical(groups, all_groups)){
+  if (is.null(GRP) || !identical(groups, all_groups) ||
+      length(fast_intersect(info[["changed_cols"]], all_groups)) > 0L){
     GRP <- df_to_GRP(data, all_groups, order = .order)
   }
+
   GRP
+  # df_to_GRP(data, all_groups, order = .order)
 }
 
 unique_count_col <- function(data, col = "n"){
