@@ -36,8 +36,7 @@ fastplyr data-masking functions like \code{f_mutate} and \code{f_summarise} oper
 very similarly to their dplyr counterparts but with some crucial
 differences.
 Optimisations for by-group operations kick in for
-common statistical functions when groups are present and for specific
-expressions.
+common statistical functions which are detailed below.
 A message will be printed which one can disable
 by running \code{options(fastplyr.inform = FALSE)}.
 When this happens, the expressions which become optimised no longer

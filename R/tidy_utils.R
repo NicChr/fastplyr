@@ -227,6 +227,28 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
   # Second pass to check for optimised calls
   if (.optimise && getOption("fastplyr.optimise", TRUE)){
 
+    inform <- getOption("fastplyr.inform")
+    if (inform %||% TRUE){
+      cli::cli_inform(c(
+        "!" = "The following functions will be optimised package-wide:",
+        paste0("`", paste(.optimised_fns_inform, sep = "``"), "`"),
+        "",
+        "Optimised expressions are independent from each other and typical data-masking rules may not apply",
+        "",
+        "To disable optimisations for specific expressions, specify full function namespaces",
+        "e.g. `base::mean(x)` instead of `mean(x)`",
+        "",
+        "Run {.run options(fastplyr.optimise = FALSE)} to disable optimisations globally",
+        "",
+        "Run {.run options(fastplyr.inform = FALSE)} to disable this message"
+      ),
+      .frequency = "once", .frequency_id = ".optimise_inform")
+    }
+
+    if (is.null(inform)){
+      options(fastplyr.inform = FALSE)
+    }
+
     if (.optimise_expand){
       TRA <- "replace_fill"
     } else {
@@ -282,32 +304,6 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
         out[[i]] <- quo
       }
     }
-    if (sum(optimised) && getOption("fastplyr.inform", TRUE)){
-      if (sum(optimised) > 10){
-        squashed_exprs <- lapply(.original_out[optimised][1:10], \(x) deparse2(rlang::quo_get_expr(x), nlines = 1L))
-        squashed_exprs <- c(squashed_exprs, list("...."))
-      } else {
-        squashed_exprs <- lapply(.original_out[optimised], \(x) deparse2(rlang::quo_get_expr(x), nlines = 1L))
-      }
-      squashed_exprs <- unlist(squashed_exprs)
-
-      cli::cli_inform(
-        c("!" = "Optimising the following expressions per-group",
-          squashed_exprs,
-          "",
-          "Run {.run options(fastplyr.inform = FALSE)} to disable this message",
-          "")
-        )
-
-      cli::cli_inform(c(
-        "Optimised expressions are independent from each other and typical data-masking rules may not apply",
-        "",
-        "To disable optimisations for these expressions specify full function namespaces",
-        "e.g. `base::mean(x)` instead of `mean(x)`",
-        "",
-        "To disable optimisations globally, run {.run options(fastplyr.optimise = FALSE)}"
-      ), .frequency = "once", .frequency_id = ".optimise_inform")
-    }
   }
   if (!all(optimised)){
     ### Calculate group locations here so that
@@ -324,11 +320,12 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
 }
 
 should_optimise <- function(GRP){
-  if (length(GRP_group_vars(GRP)) == 0){
-    FALSE
-  } else {
-    TRUE
-  }
+  TRUE
+  # if (length(GRP_group_vars(GRP)) == 0){
+  #   FALSE
+  # } else {
+  #   TRUE
+  # }
 }
 
 are_fastplyr_quos <- function(quos){
@@ -351,6 +348,10 @@ check_fastplyr_quos <- function(quos){
   "fsd", "fvar", "fndistinct", "fndistinct", "fsum", "fprod", "fmean",
   "fmedian", "fmin", "fmax", "ffirst", "flast", "fsd", "fvar",
   "fndistinct", "fndistinct"
+)
+.optimised_fns_inform <- c(
+  "sum", "prod", "mean", "median", "min", "max", "sd", "var",
+  "dplyr::n", "dplyr::first", "dplyr::last", "dplyr::n_distinct"
 )
 
 is_optimised_call <- function(expr, env = rlang::caller_env()){

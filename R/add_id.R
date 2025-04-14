@@ -38,7 +38,7 @@ add_group_id <- function(data, ...){
 }
 #' @rdname add_id
 #' @export
-add_group_id.data.frame <- function(.data, ...,
+add_group_id.data.frame <- function(data, ...,
                                     .order = df_group_by_order_default(data),
                                     .ascending = TRUE,
                                     .by = NULL, .cols = NULL,
@@ -46,7 +46,7 @@ add_group_id.data.frame <- function(.data, ...,
                                     as_qg = FALSE){
   N <- df_nrow(data)
   check_by(data, .by = {{ .by }})
-  group_info <- tidy_GRP(.data, ..., .by = {{ .by }},
+  group_info <- tidy_GRP(data, ..., .by = {{ .by }},
                          .cols = .cols,
                          .order = .order)
   data <- GRP_data(group_info)
