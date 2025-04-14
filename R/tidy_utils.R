@@ -280,6 +280,84 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
         set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
         optimised[i] <- TRUE
         out[[i]] <- quo
+      } else if (.optimise_expand && cpp_is_fn_call(expr, "row_number", "dplyr", env)){
+        expr <- rlang::call2(function(){
+          if (is.null(.fastplyr.g)){
+            seq_len(df_nrow(.data))
+          } else {
+            cpp_row_id(GRP_order(.fastplyr.g), GRP_group_sizes(.fastplyr.g), TRUE)
+          }
+        })
+        quo <- rlang::new_quosure(expr, env)
+        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
+        optimised[i] <- TRUE
+        out[[i]] <- quo
+      } else if (cpp_is_fn_call(expr, "cur_group_id", "dplyr", env)){
+        expr <- rlang::call2(function(){
+          if (is.null(.fastplyr.g)){
+            if (.optimise_expand){
+              cheapr::cheapr_rep_len(1L, df_nrow(.data))
+            } else {
+              if (df_nrow(.data) == 0L){
+                integer()
+              } else {
+                1L
+              }
+            }
+          } else {
+            if (.optimise_expand){
+              GRP_group_id(.fastplyr.g)
+            } else {
+              GRP_group_id(.fastplyr.g)[GRP_starts(.fastplyr.g)]
+            }
+          }
+        })
+        quo <- rlang::new_quosure(expr, env)
+        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
+        optimised[i] <- TRUE
+        out[[i]] <- quo
+      } else if (cpp_is_fn_call(expr, "cur_group", "dplyr", env)){
+        expr <- rlang::call2(function(){
+          if (is.null(.fastplyr.g)){
+            if (.optimise_expand){
+              new_tbl(.nrows = df_nrow(.data))
+            } else {
+              if (df_nrow(.data) == 0L){
+                new_tbl()
+              } else {
+                f_group_keys(.data)
+              }
+            }
+          } else {
+            if (.optimise_expand){
+              as_tbl(
+                cheapr::sset_row(GRP_groups(.fastplyr.g), GRP_group_id(.fastplyr.g))
+              )
+            } else {
+              GRP_groups(.fastplyr.g)
+            }
+          }
+        })
+        quo <- rlang::new_quosure(expr, env)
+        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
+        optimised[i] <- TRUE
+        out[[i]] <- quo
+      } else if (.optimise_expand && cpp_is_fn_call(expr, "cur_group_rows", "dplyr", env)){
+        expr <- rlang::call2(function(){
+          if (is.null(.fastplyr.g)){
+            seq_len(df_nrow(.data))
+          } else {
+            locs <- GRP_loc(.fastplyr.g)
+            out <- cpp_unlist_group_locs(locs, GRP_group_sizes(.fastplyr.g))
+            order <- cpp_orig_order(GRP_group_id(.fastplyr.g),
+                                    GRP_group_sizes(.fastplyr.g))
+            out[order]
+          }
+        })
+        quo <- rlang::new_quosure(expr, env)
+        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
+        optimised[i] <- TRUE
+        out[[i]] <- quo
       } else if (is_optimised_call(expr, env)){
         args <- rlang::call_args(expr)
         if (!cheapr::all_na(match(c("g", "TRA"), names(args)))){
@@ -821,14 +899,14 @@ eval_all_tidy <- function(quos, recycle = FALSE, add_groups = TRUE){
 ### sequentially dependent
 dplyr_eval_all_tidy <- function(data, ...){
 
-  if (getOption("fastplyr.inform", TRUE)){
-    rlang::warn(
-      c(
-        paste(cli::col_blue("dplyr"), "mask function detected, results will be independent of each other"),
-        "Run `options(fastplyr.inform = FALSE)` to turn this msg off"
-      )
-    )
-  }
+  # if (getOption("fastplyr.inform", TRUE)){
+  #   rlang::warn(
+  #     c(
+  #       paste(cli::col_blue("dplyr"), "mask function detected, results will be independent of each other"),
+  #       "Run `options(fastplyr.inform = FALSE)` to turn this msg off"
+  #     )
+  #   )
+  # }
 
 
   quos <- rlang::enquos(...)
@@ -879,14 +957,14 @@ eval_mutate <- function(quos){
   }
 
   if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-    if (getOption("fastplyr.inform", TRUE)){
-      rlang::warn(
-        c(
-          paste(cli::col_blue("dplyr"), "mask function detected, results may be independent of each other"),
-          "Run `options(fastplyr.inform = FALSE)` to turn this msg off"
-        )
-      )
-    }
+    # if (getOption("fastplyr.inform", TRUE)){
+    #   rlang::warn(
+    #     c(
+    #       paste(cli::col_blue("dplyr"), "mask function detected, results may be independent of each other"),
+    #       "Run `options(fastplyr.inform = FALSE)` to turn this msg off"
+    #     )
+    #   )
+    # }
     return(as.list(dplyr::mutate(construct_fastplyr_grouped_df(GRP), !!!quos))[quo_names])
   }
   results <- cpp_grouped_eval_mutate(construct_fastplyr_grouped_df(GRP), quos)
