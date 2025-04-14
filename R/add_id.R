@@ -38,58 +38,31 @@ add_group_id <- function(data, ...){
 }
 #' @rdname add_id
 #' @export
-add_group_id.data.frame <- function(data, ...,
+add_group_id.data.frame <- function(.data, ...,
                                     .order = df_group_by_order_default(data),
                                     .ascending = TRUE,
                                     .by = NULL, .cols = NULL,
                                     .name = NULL,
                                     as_qg = FALSE){
-  if (is.null(.name)){
-    .name <- unique_col_name(names(data), "group_id")
-  }
   N <- df_nrow(data)
   check_by(data, .by = {{ .by }})
-  group_info <- tidy_group_info(data, ..., .by = {{ .by }},
-                                .cols = .cols,
-                                ungroup = TRUE,
-                                rename = FALSE)
+  group_info <- tidy_GRP(.data, ..., .by = {{ .by }},
+                         .cols = .cols,
+                         .order = .order)
+  data <- GRP_data(group_info)
   all_groups <- group_info[["all_groups"]]
-  extra_groups <- group_info[["extra_groups"]]
-  group_vars <- group_info[["dplyr_groups"]]
-  groups_changed <- group_info[["groups_changed"]]
 
-  # Usual Method for when data does not contain interval
-  if (length(all_groups) == 0L){
-    ids <- rep_len(1L, N)
-    n_groups <- min(N, 1L)
-    group_sizes <- N
-    group_starts <- n_groups
-    if (as_qg){
-      ids <- group_id_to_qg(ids,
-                            n_groups = n_groups,
-                            group_sizes = group_sizes,
-                            group_starts = group_starts,
-                            ordered = .order)
-    }
-  } else {
-    if (length(extra_groups) == 0 &&
-        length(group_vars) == length(group_vars(data)) &&
-        !groups_changed &&
-        .order == df_group_by_order_default(data) &&
-        .ascending &&
-        !as_qg){
-      ids <- f_group_indices(data)
-    } else {
-      ids <- group_id(
-        f_select(group_info[["data"]], .cols = all_groups),
-        order = .order,
-        ascending = .ascending,
-        as_qg = as_qg
-      )
-    }
+  .name <- .name %||% unique_col_name(names(data), "group_id")
+
+  ids <- GRP_group_id(group_info)
+  if (as_qg){
+    ids <- group_id_to_qg(ids,
+                          n_groups = GRP_n_groups(group_info),
+                          group_sizes = GRP_group_sizes(group_info),
+                          group_starts = GRP_starts(group_info),
+                          ordered = .order)
   }
-  col_to_add <- add_names(list(ids), .name)
-  df_add_cols(data, col_to_add)
+  df_add_col(data, .name, ids)
 }
 #' @rdname add_id
 #' @export

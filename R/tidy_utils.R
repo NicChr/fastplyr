@@ -652,7 +652,8 @@ tidy_dots_info <- function(.data, ..., .by = NULL, .cols = NULL,
 # After that it calculates the grouping structure of these variables
 tidy_GRP <- function(.data, ..., .by = NULL, .cols = NULL,
                      .order = df_group_by_order_default(.data),
-                     .type = "data-mask"){
+                     .type = "data-mask",
+                     return_order = FALSE){
 
   info <- tidy_dots_info(.data, ..., .by = {{ .by }}, .cols = .cols,
                          .order = .order, .type = .type)
@@ -664,7 +665,7 @@ tidy_GRP <- function(.data, ..., .by = NULL, .cols = NULL,
   GRP <- info[["GRP"]]
   if (is.null(GRP) || !identical(groups, all_groups) ||
       length(fast_intersect(info[["changed_cols"]], all_groups)) > 0L){
-    GRP <- df_to_GRP(data, all_groups, order = .order)
+    GRP <- df_to_GRP(data, all_groups, order = .order, return.order = return_order)
   }
 
   GRP

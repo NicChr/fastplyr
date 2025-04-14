@@ -96,7 +96,8 @@ f_group_by <- function(data, ..., .add = FALSE,
     cpp_ungroup(data), ...,
     .by = {{ .by }},
     .cols = .cols,
-    .order = .order
+    .order = .order,
+    return_order = .order
   )
   out <- GRP_data(group_info)
   groups <- GRP_group_vars(group_info)
