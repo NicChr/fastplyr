@@ -41,47 +41,27 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
                          .drop_empty = FALSE,
                          .sort = FALSE,
                          .by = NULL, .cols = NULL){
-  n_dots <- dots_length(...)
-  group_info <- tidy_group_info(data, ..., .by = {{ .by }},
-                                .cols = .cols,
-                                ungroup = TRUE,
-                                rename = TRUE)
-  all_groups <- group_info[["all_groups"]]
-  out <- group_info[["data"]]
-  out_nms <- names(out)
-  # If no variables selected then all variables used
-  if (n_dots == 0 && is.null(.cols)){
-    dup_vars <- out_nms
-    out_vars <- dup_vars
-  } else {
-    dup_vars <- all_groups
-    if (.keep_all){
-      out_vars <- out_nms
-    } else {
-      out_vars <- dup_vars
-    }
+  if (dots_length(...) == 0 && is.null(.cols)){
+    .cols <- names(data)
   }
-  if (length(group_info[["extra_groups"]]) == 0L && !group_info[["groups_changed"]]){
-    out <- data
+  group_info <- tidy_GRP(data, ..., .by = {{ .by }}, .cols = .cols,
+                         .order = .sort)
+  dup_vars <- GRP_group_vars(group_info)
+  out <- GRP_data(group_info)
+  if (!.keep_all){
+    out <- f_select(out, .cols = dup_vars)
   }
-  out <- f_select(out, .cols = out_vars)
-
-  # Groups
-  groups <- df_to_GRP(out, .cols = dup_vars,
-                      return.order = .sort,
-                      return.groups = FALSE,
-                      order = .sort)
   if (.add_count){
-    group_sizes <- GRP_expanded_group_sizes(groups)
-    n_var_nm <- unique_count_col(out)
-    out[[n_var_nm]] <- group_sizes
+    group_sizes <- GRP_expanded_group_sizes(group_info)
+    count_col <- unique_count_col(out)
+    out <- df_add_cols(out, list_tidy(!!count_col := group_sizes))
   }
-  which_dup <- GRP_which_duplicated(groups, all = .both_ways)
+  which_dup <- GRP_which_duplicated(group_info, all = .both_ways)
 
   # Neat way to return sorted duplicate rows
 
   if (.sort){
-    which_dup <- which_dup[order(GRP_group_id(groups)[which_dup])]
+    which_dup <- which_dup[order(GRP_group_id(group_info)[which_dup])]
   }
   out <- cheapr::sset(out, which_dup)
 
@@ -93,15 +73,10 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
 
   # Adjust group sizes as they reflect the dup count + 1
 
-  if (.add_count && !.both_ways && df_nrow(out) > 0){
-    cheapr::set_subtract(out[[n_var_nm]], 1L)
-    which_zero <- cheapr::which_val(out[[n_var_nm]], 0L)
-    collapse::setv(
-      out[[n_var_nm]],
-      which_zero,
-      1L,
-      vind1 = TRUE
-    )
+  if (.add_count && !.both_ways){
+    cheapr::set_subtract(out[[count_col]], 1L)
+    which_zero <- cheapr::which_val(out[[count_col]], 0L)
+    cpp_loc_set_replace(out[[count_col]], which_zero, 1L)
   }
   cheapr::reconstruct(out, data)
 }

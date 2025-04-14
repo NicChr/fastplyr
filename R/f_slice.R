@@ -77,9 +77,7 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
     if (length(i) == 0L){
       i <- 0L
     }
-    groups <- data %>%
-      group_collapse(.cols = group_vars, .add = TRUE,
-                     order = .order)
+    groups <- df_collapse(data, group_vars, order = .order, size = TRUE)
     group_locs <- groups[[".loc"]]
     group_sizes <- groups[[".size"]]
     GN <- max(group_sizes)
@@ -187,7 +185,8 @@ f_slice_min <- function(data, order_by, n, prop, .by = NULL,
     cpp_ungroup()
 
   g1 <- out[[grp_nm1]]
-  out_info <- mutate_summary(out, !!rlang::enquo(order_by), .keep = "none", .by = all_of(grp_nm1))
+  out_info <- mutate_summary(out, !!rlang::enquo(order_by), .keep = "none",
+                             .by = all_of(grp_nm1))
   out <- out_info[["data"]]
   order_by_nm <- out_info[["new_cols"]]
   row_nm <- unique_col_name(names(out), "row_id")
@@ -348,11 +347,9 @@ df_slice_prepare <- function(data, n, prop, .by = NULL,
     type <- "prop"
   }
 
-  group_df <- group_collapse(
-    data, .by = {{ .by }},
-    order = sort_groups, sort = sort_groups,
+  group_df <- df_collapse(data, get_groups(data, .by = {{ .by }}),
+    order = sort_groups,
     id = FALSE, loc = TRUE,
-    # loc_order = FALSE,
     size = TRUE, start = FALSE, end = FALSE
   )
   rows <- group_df[[".loc"]]

@@ -23,7 +23,7 @@ reconstruct.grouped_df <- function(x, template){
     } else {
       drop <- df_group_by_drop_default(template)
       GRP <- df_to_GRP(f_ungroup(x), out_groups, order = TRUE)
-      groups <- construct_dplyr_group_data2(GRP, drop = drop)
+      groups <- construct_dplyr_group_data(GRP, drop = drop)
     }
   }
   out <- cheapr::reconstruct(x, cpp_ungroup(template))

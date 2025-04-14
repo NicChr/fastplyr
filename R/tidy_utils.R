@@ -429,7 +429,8 @@ check_fastplyr_quos <- function(quos){
 )
 .optimised_fns_inform <- c(
   "sum", "prod", "mean", "median", "min", "max", "sd", "var",
-  "dplyr::n", "dplyr::first", "dplyr::last", "dplyr::n_distinct"
+  "dplyr::n", "dplyr::first", "dplyr::last", "dplyr::n_distinct",
+  "dplyr::cur_group", "dplyr::cur_group_id", "dplyr::cur_group_rows"
 )
 
 is_optimised_call <- function(expr, env = rlang::caller_env()){
