@@ -55,14 +55,18 @@ call_args <- function(x){
   out
 }
 
-tidy_as_list_of <- function (...){
-  dots <- list_tidy(..., .keep_null = FALSE)
+tidy_as_list_of <- function (..., .keep_null = FALSE){
+  dots <- list_tidy(...)
   if (length(dots) == 1 && !is.object(dots[[1L]]) && is.list(dots[[1L]])) {
-    dots[[1L]]
+      out <- dots[[1L]]
   }
   else {
-    dots
+    out <- dots
   }
+  if (!.keep_null){
+    out <- cheapr::list_drop_null(out)
+  }
+  out
 }
 
 quo_labels <- function(quos, named = TRUE){

@@ -22,7 +22,7 @@
 #' @rdname f_bind
 #' @export
 f_bind_rows <- function(...){
-  frames <- cpp_as_list_of_frames(cheapr::list_drop_null(tidy_as_list_of(...)))
+  frames <- cpp_as_list_of_frames(tidy_as_list_of(...))
   if (length(frames)){
     out <- cpp_c(frames)
     names(out) <- cheapr::name_repair(names(out))
@@ -34,7 +34,7 @@ f_bind_rows <- function(...){
 #' @rdname f_bind
 #' @export
 f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE){
-  frames <- cpp_as_list_of_frames(cheapr::list_drop_null(tidy_as_list_of(...)))
+  frames <- cpp_as_list_of_frames(tidy_as_list_of(...))
   if (length(frames)){
     cpp_df_col_c(frames, .recycle, .repair_names)
   } else {
