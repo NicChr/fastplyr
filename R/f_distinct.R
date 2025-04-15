@@ -47,12 +47,16 @@ f_distinct <- function(data, ..., .keep_all = FALSE,
       slice <- !(N == n_distinct_locs)
     }
     if (slice){
-      out <- cheapr::sset(data, distinct_locs)
+      out <- cheapr::sset_row(data, distinct_locs)
     } else {
       out <- data
     }
   } else {
     out <- GRP_groups(group_info)
   }
-  cheapr::reconstruct(out, data)
+  if (identical(names(out), group_vars(data))){
+    cheapr::reconstruct(out, f_ungroup(data))
+  } else {
+    cheapr::reconstruct(out, data)
+  }
 }
