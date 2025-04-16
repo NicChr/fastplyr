@@ -119,4 +119,4 @@ group_ordered <- function(data){
 }
 #' @rdname f_group_by
 #' @export
-f_ungroup <- df_ungroup
+f_ungroup <- cpp_ungroup

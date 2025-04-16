@@ -619,29 +619,6 @@ group_sizes <- function(x, sort = FALSE, expand = FALSE){
   }
   out
 }
-new_GRP <- function(N.groups = NULL,
-                    group.id = NULL,
-                    group.sizes = NULL,
-                    groups = NULL,
-                    group.vars = NULL,
-                    ordered = NULL,
-                    order = NULL,
-                    group.starts = NULL,
-                    call = NULL){
-  out <- list(
-    N.groups = N.groups,
-    group.id = group.id,
-    group.sizes = group.sizes,
-    groups = groups,
-    group.vars = group.vars,
-    ordered = ordered,
-    order = order,
-    group.starts = group.starts,
-    call = call
-  )
-  class(out) <- "GRP"
-  out
-}
 
 ## Construct a grouped data frame from a GRP object
 
@@ -689,15 +666,104 @@ group_order_and_counts <- function(g = NULL){
   list(order = o, sizes = sizes)
 }
 
-grouped_lag <- function(x, n = 1L, fill = NULL, g = NULL, ...){
+grouped_first <- function(x, na.rm = TRUE, g = NULL, TRA = NULL, use.g.names = FALSE){
+  if (is.null(g)){
+    first <- cheapr::sset(x, min(1L, cheapr::vector_length(x)))
+    if (na.rm && cheapr::vector_length(first) != 0 && cheapr::is_na(first)){
+      not_na_locs <- cheapr::na_find(x, invert = TRUE)
+      first_not_na <- not_na_locs[min(1L, length(not_na_locs))]
+      first <- cheapr::sset(x, first_not_na)
+    }
+    return(first)
+  }
+  if (cpp_is_exotic(x)){
+    .g <- GRP2(x, sort = FALSE, return.order = FALSE, return.groups = FALSE, return.locs = FALSE)
+    group_id <- GRP_group_id(.g)
+    starts <- GRP_starts(.g)
+    if (na.rm){
+     group_id[cheapr::na_find(x)] <- NA_integer_
+    }
+    out <- collapse::ffirst(
+      group_id, na.rm = na.rm, g = g, TRA = TRA, use.g.names = use.g.names
+    )
+    cheapr::sset(cheapr::sset(x, starts), out)
+  } else {
+    collapse::ffirst(x, na.rm = na.rm, g = g, TRA = TRA, use.g.names = use.g.names)
+  }
+}
+
+grouped_last <- function(x, na.rm = TRUE, g = NULL, TRA = NULL, use.g.names = FALSE){
+  if (is.null(g)){
+    last <- cheapr::sset(x, cheapr::vector_length(x))
+    if (na.rm && cheapr::vector_length(last) != 0 && cheapr::is_na(last)){
+      not_na_locs <- cheapr::na_find(x, invert = TRUE)
+      last_not_na <- not_na_locs[length(not_na_locs)]
+      last <- cheapr::sset(x, last_not_na)
+    }
+    return(last)
+  }
+  if (cpp_is_exotic(x)){
+    .g <- GRP2(x, sort = FALSE, return.order = FALSE, return.groups = FALSE, return.locs = FALSE)
+    group_id <- GRP_group_id(.g)
+    starts <- GRP_starts(.g)
+    if (na.rm){
+      group_id[cheapr::na_find(x)] <- NA_integer_
+    }
+    out <- collapse::flast(
+      group_id, na.rm = na.rm, g = g, TRA = TRA, use.g.names = use.g.names
+    )
+    cheapr::sset(cheapr::sset(x, starts), out)
+  } else {
+    collapse::flast(x, na.rm = na.rm, g = g, TRA = TRA, use.g.names = use.g.names)
+  }
+}
+
+# grouped_last <- function(x, na.rm = TRUE, g = NULL, TRA = NULL, use.g.names = FALSE){
+#   if (is.null(g)){
+#     return(cheapr::sset(x, cheapr::vector_length(x)))
+#   }
+#   if (cpp_is_exotic(x)){
+#     .g <- GRP2(x, sort = FALSE, return.order = FALSE, return.groups = FALSE, return.locs = FALSE)
+#     out <- collapse::flast(
+#       GRP_group_id(.g), na.rm = FALSE, g = g, TRA = TRA, use.g.names = use.g.names
+#     )
+#     cheapr::sset(cheapr::sset(x, GRP_starts(.g)), out)
+#   } else {
+#     collapse::flast(x, na.rm = na.rm, g = g, TRA = TRA, use.g.names = use.g.names)
+#   }
+# }
+
+grouped_lag <- function(x, n = 1L, fill = NULL, g = NULL){
   order_counts <- group_order_and_counts(g)
   o <- order_counts[["order"]]
   rl <- order_counts[["sizes"]]
+  exotic <- cpp_is_exotic(x) && !inherits(x, "vctrs_rcrd") && !rlang::is_bare_list(x)
+  y <- x
+  .fill <- fill
+  if (exotic){
+    xg <- GRP2(y, sort = FALSE, return.groups = FALSE, return.order = FALSE)
+    y <- GRP_group_id(xg)
+    if (!is.null(fill)){
+      fill <- GRP_n_groups(xg) + 1L
+    }
+  }
   if (is.null(o) && is.null(rl) && length(n) == 1L) {
-    cheapr::lag_(x, n, fill = fill, recursive = TRUE)
+    out <- cheapr::lag_(y, n, fill = fill, recursive = inherits(x, "vctrs_rcrd"))
   }
   else {
-    cheapr::lag2_(x, n, order = o, run_lengths = rl, fill = fill,
-                  recursive = TRUE)
+    out <- cheapr::lag2_(y, n, order = o, run_lengths = rl,
+                         fill = fill, recursive = inherits(x, "vctrs_rcrd"))
   }
+  if (exotic){
+    uniq <- cheapr::sset(x, GRP_starts(xg))
+    if (!is.null(fill)){
+      uniq <- cheapr::cheapr_c(uniq, .fill)
+    }
+    out <- cheapr::sset(uniq, out)
+  }
+  out
+}
+
+grouped_lead <- function(x, n = 1L, fill = NULL, g = NULL){
+  grouped_lag(x, n = -n, fill = fill, g = g)
 }

@@ -176,6 +176,11 @@ SEXP get_fun_ns(SEXP x, SEXP rho){
   }
 }
 
+[[cpp11::register]]
+SEXP fun_ns(SEXP x, SEXP rho){
+  return Rf_ScalarString(get_fun_ns(x, rho));
+}
+
 // is this call a call to any function supplied to `fn`?
 
 bool is_call2(SEXP expr, SEXP fn){
@@ -1418,7 +1423,7 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
 }
 
 [[cpp11::register]]
-SEXP cpp_group_split(SEXP data, SEXP drop, SEXP order){
+SEXP cpp_nest_split(SEXP data, SEXP drop, SEXP order){
   int NP = 0;
 
   SEXP tbl_class = Rf_protect(Rf_allocVector(STRSXP, 3)); ++NP;
@@ -1494,4 +1499,24 @@ SEXP cpp_group_split(SEXP data, SEXP drop, SEXP order){
   Rf_classgets(out, out_class);
   Rf_unprotect(NP);
   return out;
+}
+
+[[cpp11::register]]
+SEXP cpp_group_split(SEXP data){
+
+  SEXP rows = Rf_protect(cpp_group_rows(data));
+  const SEXP *p_rows = VECTOR_PTR_RO(rows);
+  int n_groups = Rf_length(rows);
+  SEXP frames = Rf_protect(Rf_allocVector(VECSXP, n_groups));
+
+  Rf_protect(data = cpp_ungroup(data));
+
+  // Slice group chunks
+
+  for (int i = 0; i < n_groups; ++i){
+    SET_VECTOR_ELT(frames, i, cheapr::sset(data, p_rows[i], false));
+  }
+
+  Rf_unprotect(3);
+  return frames;
 }

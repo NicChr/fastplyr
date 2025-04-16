@@ -62,10 +62,15 @@ fast statistical functions. This makes execution on many groups very fast.
 
 For fast quantiles (percentiles) by group, see \link{tidy_quantiles}
 
-List of currently optimised functions and their equivalent
-'collapse' function
+List of currently optimised functions
 
 \code{dplyr::n} -> <custom_expression> \cr
+\code{dplyr::row_number} -> <custom_expression> (only for \code{f_mutate}) \cr
+\code{dplyr::cur_group} -> <custom_expression> \cr
+\code{dplyr::cur_group_id} -> <custom_expression> \cr
+\code{dplyr::cur_group_rows} -> <custom_expression> (only for \code{f_mutate}) \cr
+\code{dplyr::lag} -> <custom_expression> (only for \code{f_mutate}) \cr
+\code{dplyr::lead} -> <custom_expression> (only for \code{f_mutate}) \cr
 \code{base::sum} -> \code{collapse::fsum} \cr
 \code{base::prod} -> \code{collapse::fprod} \cr
 \code{base::min} -> \code{collapse::fmin} \cr

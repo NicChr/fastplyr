@@ -1,5 +1,11 @@
 test_that("f_arrange", {
+
+  options(fastplyr.inform = FALSE)
+  suppressWarnings(add_row_id(new_tbl()))
+  suppressWarnings(add_group_id(new_tbl()))
+
   expect_equal(iris, f_arrange(iris))
+
   flights2 <- add_row_id(cheapr::with_local_seed(f_slice_sample(nycflights13::flights), .seed = 9192919))
   iris2 <- add_row_id(cheapr::with_local_seed(f_slice_sample(iris), .seed = 098124))
   base1 <- iris2 %>%

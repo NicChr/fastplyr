@@ -46,10 +46,15 @@
 #' For fast quantiles (percentiles) by group, see [tidy_quantiles]
 #'
 #'
-#' List of currently optimised functions and their equivalent
-#' 'collapse' function
+#' List of currently optimised functions
 #'
 #' `dplyr::n` -> <custom_expression> \cr
+#' `dplyr::row_number` -> <custom_expression> (only for `f_mutate`) \cr
+#' `dplyr::cur_group` -> <custom_expression> \cr
+#' `dplyr::cur_group_id` -> <custom_expression> \cr
+#' `dplyr::cur_group_rows` -> <custom_expression> (only for `f_mutate`) \cr
+#' `dplyr::lag` -> <custom_expression> (only for `f_mutate`) \cr
+#' `dplyr::lead` -> <custom_expression> (only for `f_mutate`) \cr
 #' `base::sum` -> `collapse::fsum` \cr
 #' `base::prod` -> `collapse::fprod` \cr
 #' `base::min` -> `collapse::fmin` \cr

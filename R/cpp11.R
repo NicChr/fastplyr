@@ -84,6 +84,10 @@ call_is_namespaced <- function(expr) {
   .Call(`_fastplyr_call_is_namespaced`, expr)
 }
 
+fun_ns <- function(x, rho) {
+  .Call(`_fastplyr_fun_ns`, x, rho)
+}
+
 cpp_is_fn_call <- function(expr, fn, ns, rho) {
   .Call(`_fastplyr_cpp_is_fn_call`, expr, fn, ns, rho)
 }
@@ -156,6 +160,10 @@ cpp_grouped_eval_mutate <- function(data, quos) {
   .Call(`_fastplyr_cpp_grouped_eval_mutate`, data, quos)
 }
 
-cpp_group_split <- function(data, drop, order) {
-  .Call(`_fastplyr_cpp_group_split`, data, drop, order)
+cpp_nest_split <- function(data, drop, order) {
+  .Call(`_fastplyr_cpp_nest_split`, data, drop, order)
+}
+
+cpp_group_split <- function(data) {
+  .Call(`_fastplyr_cpp_group_split`, data)
 }

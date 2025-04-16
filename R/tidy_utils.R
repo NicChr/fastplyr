@@ -1,4 +1,69 @@
 
+
+# .optimised_fns <- c(
+#   "sum", "prod", "mean", "median", "min", "max", "first", "last",
+#   "sd", "var", "n_distinct", "ndistinct", "fsum", "fprod", "fmean",
+#   "fmedian", "fmin", "fmax", "ffirst", "flast", "fsd", "fvar",
+#   "fndistinct"
+# )
+# .collapse_fns <- c(
+#   "fsum", "fprod", "fmean", "fmedian", "fmin", "fmax", "ffirst", "flast",
+#   "fsd", "fvar", "fndistinct", "fndistinct", "fsum", "fprod", "fmean",
+#   "fmedian", "fmin", "fmax", "ffirst", "flast", "fsd", "fvar",
+#   "fndistinct"
+# )
+.optimised_fn_list <- list(
+
+  input_fns = list(
+    base::sum, base::prod, base::mean, stats::median,
+    base::min, base::max,
+    dplyr::first, dplyr::last,
+    stats::sd, stats::var,
+    dplyr::n_distinct, collapse::fndistinct,
+    collapse::fsum, collapse::fprod, collapse::fmean,
+    collapse::fmedian,
+    collapse::fmin, collapse::fmax,
+    collapse::ffirst, collapse::flast,
+    collapse::fsd, collapse::fvar,
+    collapse::fndistinct
+  ),
+  input_fn_nms = c(
+    "sum", "prod", "mean", "median", "min", "max", "first", "last",
+    "sd", "var", "n_distinct", "ndistinct", "fsum", "fprod", "fmean",
+    "fmedian", "fmin", "fmax", "ffirst", "flast", "fsd", "fvar",
+    "fndistinct"
+  ),
+  target_ns = c(
+    "base", "base", "base", "stats", "base", "base", "dplyr", "dplyr",
+    "stats", "stats", "dplyr", "collapse", "collapse", "collapse", "collapse",
+    "collapse", "collapse", "collapse", "collapse", "collapse", "collapse", "collapse",
+    "collapse"
+  ),
+  target_fns = list(
+    collapse::fsum, collapse::fprod, collapse::fmean, collapse::fmedian,
+    collapse::fmin, collapse::fmax,
+    grouped_first, grouped_last,
+    collapse::fsd, collapse::fvar,
+    collapse::fndistinct, collapse::fndistinct,
+    collapse::fsum, collapse::fprod, collapse::fmean,
+    collapse::fmedian,
+    collapse::fmin, collapse::fmax,
+    grouped_first, grouped_last,
+    collapse::fsd, collapse::fvar,
+    collapse::fndistinct
+  )
+)
+.optimised_fns_inform <- c(
+  "sum", "prod", "mean", "median", "min", "max", "sd", "var",
+  "dplyr::n", "dplyr::first", "dplyr::last", "dplyr::n_distinct",
+  "dplyr::row_number", "dplyr::lag", "dplyr::lead",
+  "dplyr::cur_group", "dplyr::cur_group_id", "dplyr::cur_group_rows"
+)
+
+is_optimised_call <- function(expr, env = rlang::caller_env()){
+  cpp_is_fn_call(expr, .optimised_fn_list[["input_fn_nms"]],  NULL, env)
+}
+
 # Somewhat safer check of the .by arg
 # e.g mutate(group_by(iris, Species), .by = any_of("okay"))
 # Should not produce an error with this check
@@ -243,20 +308,19 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
 
     inform <- getOption("fastplyr.inform")
     if (inform %||% TRUE){
-      cli::cli_inform(c(
-        "!" = "The following functions will be optimised package-wide:",
-        paste0("`", paste(.optimised_fns_inform, sep = "``"), "`"),
-        "",
-        "Optimised expressions are independent from each other and typical data-masking rules may not apply",
-        "",
-        "To disable optimisations for specific expressions, specify full function namespaces",
-        "e.g. `base::mean(x)` instead of `mean(x)`",
-        "",
-        "Run {.run options(fastplyr.optimise = FALSE)} to disable optimisations globally",
-        "",
-        "Run {.run options(fastplyr.inform = FALSE)} to disable this message"
-      ),
-      .frequency = "once", .frequency_id = ".optimise_inform")
+      cli::cli_inform(
+        c(
+          "!" = "The following functions will be optimised package-wide:",
+          paste0("`", paste(.optimised_fns_inform, sep = "``"), "`"),
+          "",
+          "Optimised expressions are independent from each other and typical data-masking rules may not apply",
+          "",
+          "Run {.run options(fastplyr.optimise = FALSE)} to disable optimisations globally",
+          "",
+          "Run {.run options(fastplyr.inform = FALSE)} to disable this message"
+        ),
+        .frequency = "once", .frequency_id = ".optimise_inform"
+      )
     }
 
     if (is.null(inform)){
@@ -276,11 +340,7 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
       if (is_nested_call(expr)) next
 
       if (.optimise_expand && cpp_is_fn_call(expr, "identity", "base", env)){
-        quo <- rlang::new_quosure(expr, env)
-        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
-        optimised[i] <- TRUE
-        out[[i]] <- quo
-        } else if (cpp_is_fn_call(expr, "n", "dplyr", env)){
+      } else if (cpp_is_fn_call(expr, "n", "dplyr", env)){
         expr <- rlang::call2(function(){
           if (is.null(.fastplyr.g)){
             out <- df_nrow(.data)
@@ -295,10 +355,6 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
           }
           out
         })
-        quo <- rlang::new_quosure(expr, env)
-        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
-        optimised[i] <- TRUE
-        out[[i]] <- quo
       } else if (.optimise_expand && cpp_is_fn_call(expr, "row_number", "dplyr", env)){
         expr <- rlang::call2(function(){
           if (is.null(.fastplyr.g)){
@@ -307,10 +363,6 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
             cpp_row_id(GRP_order(.fastplyr.g), GRP_group_sizes(.fastplyr.g), TRUE)
           }
         })
-        quo <- rlang::new_quosure(expr, env)
-        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
-        optimised[i] <- TRUE
-        out[[i]] <- quo
       } else if (cpp_is_fn_call(expr, "cur_group_id", "dplyr", env)){
         expr <- rlang::call2(function(){
           if (is.null(.fastplyr.g)){
@@ -331,10 +383,6 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
             }
           }
         })
-        quo <- rlang::new_quosure(expr, env)
-        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
-        optimised[i] <- TRUE
-        out[[i]] <- quo
       } else if (cpp_is_fn_call(expr, "cur_group", "dplyr", env)){
         expr <- rlang::call2(function(){
           if (is.null(.fastplyr.g)){
@@ -357,10 +405,6 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
             }
           }
         })
-        quo <- rlang::new_quosure(expr, env)
-        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
-        optimised[i] <- TRUE
-        out[[i]] <- quo
       } else if (.optimise_expand && cpp_is_fn_call(expr, "cur_group_rows", "dplyr", env)){
         expr <- rlang::call2(function(){
           if (is.null(.fastplyr.g)){
@@ -373,10 +417,6 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
             out[order]
           }
         })
-        quo <- rlang::new_quosure(expr, env)
-        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
-        optimised[i] <- TRUE
-        out[[i]] <- quo
       } else if (.optimise_expand && cpp_is_fn_call(expr, "lag", "dplyr", env)){
         if (sum(nzchar(fast_setdiff(names(args), c("x", "n", "default")))) != 0){
           next
@@ -384,33 +424,46 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
         args <- call_args(expr)
         names(args)[names(args) == "default"] <- "fill"
         expr <- rlang::call2("grouped_lag", !!!args, g = .fastplyr.g)
-        quo <- rlang::new_quosure(expr, env)
-        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
-        optimised[i] <- TRUE
-        out[[i]] <- quo
-        } else if (is_optimised_call(expr, env)){
-          args <- call_args(expr)
-        if (!cheapr::all_na(match(c("g", "TRA"), names(args)))){
+      } else if (.optimise_expand && cpp_is_fn_call(expr, "lead", "dplyr", env)){
+        if (sum(nzchar(fast_setdiff(names(args), c("x", "n", "default")))) != 0){
+          next
+        }
+        args <- call_args(expr)
+        names(args)[names(args) == "default"] <- "fill"
+        expr <- rlang::call2("grouped_lead", !!!args, g = .fastplyr.g)
+      } else if (is_optimised_call(expr, env)){
+        args <- call_args(expr)
+        unsupported_args <- fast_setdiff(names(args), c("x", "na.rm", "nthreads"))
+        if (sum(nzchar(unsupported_args)) != 0){
+          cli::cli_warn(c("Unsupported args: {paste(
+                          unsupported_args[nzchar(unsupported_args)],
+                          collapse = ', '
+                          )}",
+                          "Reverting to un-optimised method"))
           next
         }
         if (call_is_namespaced(expr)){
-          ns <- rlang::as_string(expr[[1]][[2]])
-          if (ns != "collapse") next
           fn <- expr[[1]][[3]]
+          ns <- rlang::as_string(expr[[1]][[2]])
         } else {
-          ns <- "collapse"
           fn <- expr[[1]]
+          ns <- fun_ns(fn, env)
         }
         fn <- rlang::as_string(fn)
-        fn <- .collapse_fns[match(fn, .optimised_fns)]
-        # expr <- call2(fn, !!!c(args, list_tidy(!!"g" := quote(.internal.fastplyr.g))), TRA = TRA, .ns = ns)
-        args <- args[cheapr::val_find(names(args), "use.g.names", invert = TRUE)]
-        expr <- rlang::call2(fn, !!!args, g = .fastplyr.g, TRA = TRA, use.g.names = FALSE, .ns = ns)
-        quo <- rlang::new_quosure(expr, env)
-        set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
-        optimised[i] <- TRUE
-        out[[i]] <- quo
+        match_loc <- match(fn, .optimised_fn_list[["input_fn_nms"]])
+        target_ns <- .optimised_fn_list[["target_ns"]][[match_loc]]
+        if (target_ns != ns){
+          next
+        }
+        fn <- .optimised_fn_list[["target_fns"]][[match_loc]]
+        expr <- rlang::call2(fn, !!!args, g = .fastplyr.g, TRA = TRA, use.g.names = FALSE)
+      } else {
+        next
       }
+      quo <- rlang::new_quosure(expr, env)
+      set_add_attr(quo, ".unpack", attr(out[[i]], ".unpack", TRUE))
+      optimised[i] <- TRUE
+      out[[i]] <- quo
     }
   }
   if (!all(optimised)){
@@ -443,28 +496,6 @@ check_fastplyr_quos <- function(quos){
   if (!are_fastplyr_quos(quos)){
     cli::cli_abort("{.arg quos} must be built using {.fn fastplyr_quos}")
   }
-}
-
-.optimised_fns <- c(
-  "sum", "prod", "mean", "median", "min", "max", "first", "last",
-  "sd", "var", "n_distinct", "ndistinct", "fsum", "fprod", "fmean",
-  "fmedian", "fmin", "fmax", "ffirst", "flast", "fsd", "fvar",
-  "fndistinct", "fndistinct"
-)
-.collapse_fns <- c(
-  "fsum", "fprod", "fmean", "fmedian", "fmin", "fmax", "ffirst", "flast",
-  "fsd", "fvar", "fndistinct", "fndistinct", "fsum", "fprod", "fmean",
-  "fmedian", "fmin", "fmax", "ffirst", "flast", "fsd", "fvar",
-  "fndistinct", "fndistinct"
-)
-.optimised_fns_inform <- c(
-  "sum", "prod", "mean", "median", "min", "max", "sd", "var",
-  "dplyr::n", "dplyr::first", "dplyr::last", "dplyr::n_distinct",
-  "dplyr::cur_group", "dplyr::cur_group_id", "dplyr::cur_group_rows"
-)
-
-is_optimised_call <- function(expr, env = rlang::caller_env()){
-  cpp_is_fn_call(expr, .optimised_fns,  NULL, env)
 }
 
 # Tidyselect col positions with names
@@ -516,7 +547,7 @@ mutate_summary <- function(.data, ...,
   all_groups <- get_groups(.data, .by = {{ .by }})
   GRP <- df_to_GRP(.data, all_groups, order = .order)
   quos <- fastplyr_quos(..., .drop_null = FALSE,
-                        .unpack_default = TRUE,
+                        .unpack_default = FALSE,
                         .optimise = should_optimise(GRP),
                         .optimise_expand = TRUE,
                         .groups = GRP)
@@ -640,47 +671,6 @@ tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
        "groups_changed" = any_groups_changed,
        "address_equal" = address_equal)
 }
-
-# tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
-#                                        ungroup = TRUE, rename = TRUE,
-#                                        unique_groups = TRUE){
-#   data_names <- names(data)
-#   group_vars <- get_groups(data, {{ .by }}, named = TRUE)
-#   if (ungroup){
-#     out <- cpp_ungroup(data)
-#   } else {
-#     out <- data
-#   }
-#   extra_groups <- tidy_select_names(out, ..., .cols = .cols)
-#   if (!rename){
-#     names(extra_groups) <- drop_names(extra_groups)
-#     names(group_vars) <- drop_names(group_vars)
-#     any_groups_changed <- FALSE
-#   } else {
-#     out <- f_rename(out, .cols = extra_groups)
-#     group_vars <- names(group_vars)
-#     any_groups_changed <- any(names(group_vars) != group_vars)
-#   }
-#
-#   renamed <- names(extra_groups) != extra_groups
-#   address_equal <- rep_len(TRUE, length(data_names))
-#   address_equal[match(extra_groups[renamed], data_names)] <- FALSE
-#   names(address_equal) <- data_names
-#   extra_groups <- drop_names(extra_groups)
-#   group_vars <- fast_intersect(extra_groups, group_vars)
-#   if (unique_groups){
-#     extra_groups <- fast_setdiff(extra_groups, group_vars)
-#     all_groups <- c(group_vars, extra_groups)
-#   } else {
-#     all_groups <- c(group_vars, fast_setdiff(extra_groups, group_vars))
-#   }
-#   list(data = out,
-#        dplyr_groups = group_vars,
-#        extra_groups = extra_groups,
-#        all_groups = all_groups,
-#        groups_changed = any_groups_changed,
-#        address_equal = address_equal)
-# }
 
 tidy_group_info_datamask <- function(data, ..., .by = NULL,
                                      ungroup = TRUE,
@@ -918,9 +908,9 @@ eval_all_tidy <- function(quos, recycle = FALSE){
     # Unpack
     if (isTRUE(attr(quos[[i]], ".unpack", TRUE)) && is_df(results[[k]])){
       results_to_append <- as.list(results[[k]])
-      # if (nzchar(quo_names[[i]])){
-      #   names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
-      # }
+      if (nzchar(quo_names[[i]])){
+        names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
+      }
       results <- append(results, results_to_append, after = k - 1L)
       k <- k + length(results_to_append)
       results[[k]] <- NULL
@@ -1021,6 +1011,9 @@ eval_mutate <- function(quos){
     # Unpack
     if (isTRUE(attr(quos[[i]], ".unpack", TRUE)) && is_df(results[[k]])){
       results_to_append <- as.list(results[[k]])
+      if (nzchar(quo_names[[i]])){
+        names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
+      }
       results <- append(results, results_to_append, after = k - 1L)
       k <- k + length(results_to_append)
       results[[k]] <- NULL

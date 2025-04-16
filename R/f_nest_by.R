@@ -46,5 +46,5 @@ f_nest_by <- function(data, ..., .add = FALSE,
                .add = .add,
                .by = {{ .by }},
                .drop = .drop) %>%
-    cpp_group_split(.drop, .order)
+    cpp_nest_split(.drop, .order)
 }

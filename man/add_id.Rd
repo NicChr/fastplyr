@@ -9,12 +9,12 @@
 \alias{add_consecutive_id.data.frame}
 \title{Add a column of useful IDs (group IDs, row IDs & consecutive IDs)}
 \usage{
-add_group_id(data, ...)
+add_group_id(.data, ...)
 
 \method{add_group_id}{data.frame}(
-  data,
+  .data,
   ...,
-  .order = df_group_by_order_default(data),
+  .order = df_group_by_order_default(.data),
   .ascending = TRUE,
   .by = NULL,
   .cols = NULL,
@@ -22,10 +22,10 @@ add_group_id(data, ...)
   as_qg = FALSE
 )
 
-add_row_id(data, ...)
+add_row_id(.data, ...)
 
 \method{add_row_id}{data.frame}(
-  data,
+  .data,
   ...,
   .ascending = TRUE,
   .by = NULL,
@@ -33,19 +33,19 @@ add_row_id(data, ...)
   .name = NULL
 )
 
-add_consecutive_id(data, ...)
+add_consecutive_id(.data, ...)
 
 \method{add_consecutive_id}{data.frame}(
-  data,
+  .data,
   ...,
-  .order = df_group_by_order_default(data),
+  .order = df_group_by_order_default(.data),
   .by = NULL,
   .cols = NULL,
   .name = NULL
 )
 }
 \arguments{
-\item{data}{A data frame.}
+\item{.data}{A data frame.}
 
 \item{...}{Additional groups using tidy \code{data-masking} rules. \cr
 To specify groups using \code{tidyselect}, simply use the \code{.by} argument.}
