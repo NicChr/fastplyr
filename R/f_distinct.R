@@ -22,7 +22,8 @@
 #'
 #' @export
 f_distinct <- function(data, ..., .keep_all = FALSE,
-                       .order = FALSE, .sort = deprecated(),
+                       .order = FALSE,
+                       .sort = deprecated(),
                        .by = NULL, .cols = NULL){
 
   if (lifecycle::is_present(.sort)) {
@@ -33,8 +34,10 @@ f_distinct <- function(data, ..., .keep_all = FALSE,
   if (dots_length(...) == 0 && is.null(.cols)){
     .cols <- names(data)
   }
-  group_info <- tidy_GRP(data, ..., .by = {{ .by }}, .cols = .cols,
-                         .order = .order)
+  group_info <- tidy_GRP(
+    data, ..., .by = {{ .by }},
+    .cols = .cols, .order = .order
+  )
   data <- GRP_data(group_info)
   if (.keep_all){
     distinct_locs <- GRP_starts(group_info)

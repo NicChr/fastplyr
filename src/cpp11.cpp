@@ -237,10 +237,24 @@ extern "C" SEXP _fastplyr_cpp_ungroup(SEXP data) {
   END_CPP11
 }
 // tidy.cpp
-SEXP cpp_df_group_indices(SEXP rows, int size);
-extern "C" SEXP _fastplyr_cpp_df_group_indices(SEXP rows, SEXP size) {
+SEXP cpp_group_indices(SEXP rows, int size);
+extern "C" SEXP _fastplyr_cpp_group_indices(SEXP rows, SEXP size) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cpp_df_group_indices(cpp11::as_cpp<cpp11::decay_t<SEXP>>(rows), cpp11::as_cpp<cpp11::decay_t<int>>(size)));
+    return cpp11::as_sexp(cpp_group_indices(cpp11::as_cpp<cpp11::decay_t<SEXP>>(rows), cpp11::as_cpp<cpp11::decay_t<int>>(size)));
+  END_CPP11
+}
+// tidy.cpp
+bool cpp_group_by_drop_default(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_by_drop_default(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_by_drop_default(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// tidy.cpp
+bool cpp_group_by_order_default(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_by_order_default(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_by_order_default(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
 // tidy.cpp
@@ -308,14 +322,16 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_any_quo_contains_dplyr_mask_call", (DL_FUNC) &_fastplyr_cpp_any_quo_contains_dplyr_mask_call, 1},
     {"_fastplyr_cpp_as_list_of_frames",                (DL_FUNC) &_fastplyr_cpp_as_list_of_frames,                1},
     {"_fastplyr_cpp_consecutive_id",                   (DL_FUNC) &_fastplyr_cpp_consecutive_id,                   1},
-    {"_fastplyr_cpp_df_group_indices",                 (DL_FUNC) &_fastplyr_cpp_df_group_indices,                 2},
     {"_fastplyr_cpp_df_transform_exotic",              (DL_FUNC) &_fastplyr_cpp_df_transform_exotic,              3},
     {"_fastplyr_cpp_fill_grouped",                     (DL_FUNC) &_fastplyr_cpp_fill_grouped,                     4},
     {"_fastplyr_cpp_frame_addresses_equal",            (DL_FUNC) &_fastplyr_cpp_frame_addresses_equal,            2},
     {"_fastplyr_cpp_frame_dims",                       (DL_FUNC) &_fastplyr_cpp_frame_dims,                       3},
+    {"_fastplyr_cpp_group_by_drop_default",            (DL_FUNC) &_fastplyr_cpp_group_by_drop_default,            1},
+    {"_fastplyr_cpp_group_by_order_default",           (DL_FUNC) &_fastplyr_cpp_group_by_order_default,           1},
     {"_fastplyr_cpp_group_data",                       (DL_FUNC) &_fastplyr_cpp_group_data,                       1},
     {"_fastplyr_cpp_group_id",                         (DL_FUNC) &_fastplyr_cpp_group_id,                         1},
     {"_fastplyr_cpp_group_id_sorted",                  (DL_FUNC) &_fastplyr_cpp_group_id_sorted,                  1},
+    {"_fastplyr_cpp_group_indices",                    (DL_FUNC) &_fastplyr_cpp_group_indices,                    2},
     {"_fastplyr_cpp_group_keys",                       (DL_FUNC) &_fastplyr_cpp_group_keys,                       1},
     {"_fastplyr_cpp_group_locs",                       (DL_FUNC) &_fastplyr_cpp_group_locs,                       2},
     {"_fastplyr_cpp_group_locs2",                      (DL_FUNC) &_fastplyr_cpp_group_locs2,                      2},

@@ -842,7 +842,7 @@ SEXP cpp_ungroup(SEXP data){
 // All credits go to dplyr
 
 [[cpp11::register]]
-SEXP cpp_df_group_indices(SEXP rows, int size) {
+SEXP cpp_group_indices(SEXP rows, int size) {
   SEXP indices = Rf_protect(Rf_allocVector(INTSXP, size));
   int *p_indices = INTEGER(indices);
   int ng = Rf_length(rows);
@@ -858,6 +858,59 @@ SEXP cpp_df_group_indices(SEXP rows, int size) {
   }
   Rf_unprotect(1);
   return indices;
+}
+
+[[cpp11::register]]
+bool cpp_group_by_drop_default(SEXP x){
+  if (Rf_inherits(x, "grouped_df")){
+    SEXP groups = Rf_protect(cpp_group_data(x));
+    SEXP drop_sym = Rf_protect(Rf_install(".drop"));
+    SEXP out = Rf_getAttrib(groups, drop_sym);
+    Rf_unprotect(2);
+    return out;
+  } else {
+    return true;
+  }
+}
+
+[[cpp11::register]]
+bool cpp_group_by_order_default(SEXP x){
+  int NP = 0;
+
+  bool out = true;
+
+  SEXP ordered_sym = Rf_protect(Rf_install("ordered")); ++NP;
+
+  if (Rf_inherits(x, "grouped_df")){
+    SEXP group_data = Rf_protect(cpp_group_data(x)); ++NP;
+    SEXP ordered = Rf_getAttrib(group_data, ordered_sym);
+    if (TYPEOF(ordered) == NILSXP){
+      out = true;
+      Rf_unprotect(NP);
+      return out;
+    } else if (Rf_length(ordered) == 1){
+      out = LOGICAL(ordered)[0];
+      Rf_unprotect(NP);
+      return out;
+    }
+  }
+
+  SEXP fp_order_groups_sym = Rf_protect(Rf_install(".fastplyr.order.groups")); ++NP;
+  SEXP order_groups = Rf_protect(Rf_GetOption1(fp_order_groups_sym)); ++NP;
+
+  if (TYPEOF(order_groups) != NILSXP){
+    if (TYPEOF(order_groups) != LGLSXP || Rf_length(order_groups) != 1){
+      Rf_unprotect(NP);
+      Rf_error("'.fastplyr.order.groups' option must be either `TRUE` or `FALSE`");
+    }
+    out = LOGICAL(order_groups)[0];
+    if (out == NA_LOGICAL){
+      Rf_unprotect(NP);
+      Rf_error("'.fastplyr.order.groups' option must be either `TRUE` or `FALSE`");
+    }
+  }
+  Rf_unprotect(NP);
+  return out;
 }
 
 [[cpp11::register]]
@@ -885,7 +938,7 @@ SEXP cpp_group_id(SEXP x){
     out = Rf_protect(cheapr::rep_len(r_one, n));
   } else {
     SEXP group_rows = Rf_protect(cpp_group_rows(x));
-    out = Rf_protect(cpp_df_group_indices(group_rows, n));
+    out = Rf_protect(cpp_group_indices(group_rows, n));
   }
   Rf_unprotect(2);
   return out;

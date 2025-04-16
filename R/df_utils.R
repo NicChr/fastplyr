@@ -99,29 +99,8 @@ grouped_df_counts <- function(data, weights = NULL, expand = FALSE){
   counts
 }
 
-df_group_by_drop_default <- function(x){
-  if (inherits(x, "grouped_df")){
-    attr(attr(x, "groups", TRUE), ".drop", TRUE)
-  } else {
-    TRUE
-  }
-}
-df_group_by_order_default <- function(x){
-  order_groups <- getOption(".fastplyr.order.groups")
-  if (!is.null(order_groups) &&
-      !(is.logical(order_groups) &&
-        length(order_groups) == 1 &&
-        order_groups %in% c(TRUE, FALSE))){
-    stop("'.fastplyr.order.groups' option must either `TRUE` or `FALSE`")
-  }
-  out <- attr(attr(x, "groups", TRUE), "ordered", TRUE)
-  if (is.null(out) && inherits(x, "grouped_df")){
-    # This implies an implicit ordering through dplyr::group_by()
-    TRUE
-  } else {
-    out %||% (order_groups %||% TRUE)
-  }
-}
+df_group_by_drop_default <- cpp_group_by_drop_default
+df_group_by_order_default <- cpp_group_by_order_default
 
 df_cross_join <- function(x, y, .repair_names = TRUE){
   f_bind_cols(

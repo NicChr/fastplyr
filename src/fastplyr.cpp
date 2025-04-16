@@ -1301,3 +1301,20 @@ SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg){
 //   Rf_unprotect(4);
 //   return flat_group_locs;
 // }
+
+// #include <cpp11.hpp>
+// #include <algorithm>
+// #include <random>
+// #include <vector>
+//
+// SEXP cpp_sample_int(int n, int size){
+//   std::vector<int> population(n);
+//   for (int i = 0; i < n; ++i) population[i] = i + 1;
+//   std::vector<int> sample;
+//   std::sample(population.begin(), population.end(),
+//               std::back_inserter(sample),
+//               size,
+//               std::mt19937{std::random_device{}()}
+//   );
+//   return cpp11::as_sexp(sample);
+// }

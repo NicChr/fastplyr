@@ -132,8 +132,16 @@ cpp_ungroup <- function(data) {
   .Call(`_fastplyr_cpp_ungroup`, data)
 }
 
-cpp_df_group_indices <- function(rows, size) {
-  .Call(`_fastplyr_cpp_df_group_indices`, rows, size)
+cpp_group_indices <- function(rows, size) {
+  .Call(`_fastplyr_cpp_group_indices`, rows, size)
+}
+
+cpp_group_by_drop_default <- function(x) {
+  .Call(`_fastplyr_cpp_group_by_drop_default`, x)
+}
+
+cpp_group_by_order_default <- function(x) {
+  .Call(`_fastplyr_cpp_group_by_order_default`, x)
 }
 
 n_group_vars <- function(x) {

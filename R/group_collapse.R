@@ -228,7 +228,7 @@ construct_dplyr_group_data <- function(g, drop = df_group_by_drop_default(GRP_da
 construct_fastplyr_group_data <- function(g, drop = df_group_by_drop_default(GRP_data(g))){
 
   out <- construct_dplyr_group_data(g, drop = drop)
-  attr(out, "ordered") <- df_group_by_order_default(GRP_data(g))
+  attr(out, "ordered") <- GRP_is_ordered(g)
   out
 }
 
@@ -239,7 +239,7 @@ construct_fastplyr_grouped_df <- function(g, drop = df_group_by_drop_default(GRP
   if (length(group_vars) == 0){
     return(f_ungroup(data))
   }
-  group_data <- construct_dplyr_group_data(g, drop = drop)
+  group_data <- construct_fastplyr_group_data(g, drop = drop)
   attr(data, "groups") <- group_data
   attr(data, "GRP") <- g
   class(data) <- c("fastplyr_grouped_df", "grouped_df", "tbl_df", "tbl", "data.frame")

@@ -296,7 +296,7 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
   n_groups <- length(group_sizes)
   rows <- cheapr::new_list(n_groups)
   if (has_weights){
-    g <- cpp_df_group_indices(slice_info[["rows"]], df_nrow(data))
+    g <- cpp_group_indices(slice_info[["rows"]], df_nrow(data))
     weights <- gsplit2(data[[weights_var]], g = g)
   } else {
     weights <- NULL
@@ -323,6 +323,7 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
   }
   cheapr::sset_df(data, i)
 }
+
 df_slice_prepare <- function(data, n, prop, .by = NULL,
                              sort_groups = df_group_by_order_default(data),
                              bound_n = TRUE, default_n = 1L){
