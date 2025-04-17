@@ -88,7 +88,7 @@
 #' @export
 #'
 f_group_by <- function(data, ..., .add = FALSE,
-                       .order = df_group_by_order_default(data),
+                       .order = group_by_order_default(data),
                        .by = NULL, .cols = NULL,
                        .drop = df_group_by_drop_default(data)){
   init_group_vars <- group_vars(data)
@@ -102,7 +102,7 @@ f_group_by <- function(data, ..., .add = FALSE,
   out <- GRP_data(group_info)
   groups <- GRP_group_vars(group_info)
   if (.add){
-    order_unchanged <- .order == df_group_by_order_default(data)
+    order_unchanged <- .order == group_by_order_default(data)
     drop_unchanged <- .drop == df_group_by_drop_default(data)
     no_extra_groups <- length(groups) == 0 || (length(fast_setdiff(groups, init_group_vars)) == 0)
     if (order_unchanged && drop_unchanged && no_extra_groups){

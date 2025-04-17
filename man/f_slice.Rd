@@ -14,7 +14,7 @@ f_slice(
   i = 0L,
   ...,
   .by = NULL,
-  .order = df_group_by_order_default(data),
+  .order = group_by_order_default(data),
   keep_order = FALSE
 )
 
@@ -23,7 +23,7 @@ f_slice_head(
   n,
   prop,
   .by = NULL,
-  .order = df_group_by_order_default(data),
+  .order = group_by_order_default(data),
   keep_order = FALSE
 )
 
@@ -32,7 +32,7 @@ f_slice_tail(
   n,
   prop,
   .by = NULL,
-  .order = df_group_by_order_default(data),
+  .order = group_by_order_default(data),
   keep_order = FALSE
 )
 
@@ -44,7 +44,7 @@ f_slice_min(
   .by = NULL,
   with_ties = TRUE,
   na_rm = FALSE,
-  .order = df_group_by_order_default(data),
+  .order = group_by_order_default(data),
   keep_order = FALSE
 )
 
@@ -56,7 +56,7 @@ f_slice_max(
   .by = NULL,
   with_ties = TRUE,
   na_rm = FALSE,
-  .order = df_group_by_order_default(data),
+  .order = group_by_order_default(data),
   keep_order = FALSE
 )
 
@@ -66,7 +66,7 @@ f_slice_sample(
   replace = FALSE,
   prop,
   .by = NULL,
-  .order = df_group_by_order_default(data),
+  .order = group_by_order_default(data),
   keep_order = FALSE,
   weights = NULL
 )

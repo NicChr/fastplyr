@@ -4,7 +4,7 @@
 \alias{f_reframe}
 \title{A faster \code{reframe()} with per-group optimisations}
 \usage{
-f_reframe(.data, ..., .by = NULL, .order = df_group_by_order_default(.data))
+f_reframe(.data, ..., .by = NULL, .order = group_by_order_default(.data))
 }
 \arguments{
 \item{.data}{A data frame.}

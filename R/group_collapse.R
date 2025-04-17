@@ -1,5 +1,5 @@
 df_collapse <- function(data, cols = names(data),
-                        order = df_group_by_order_default(data), sort = order,
+                        order = group_by_order_default(data), sort = order,
                         id = FALSE, size = FALSE, loc = TRUE,
                         start = FALSE, end = FALSE,
                         drop = df_group_by_drop_default(data),
@@ -18,8 +18,8 @@ df_collapse <- function(data, cols = names(data),
   include_loc <- loc || end
   if (include_loc){
     if (add && identical(group_vars(data), cols) &&
-        order == df_group_by_order_default(data) &&
-        drop == df_group_by_order_default(data)){
+        order == group_by_order_default(data) &&
+        drop == group_by_order_default(data)){
       GRP_loc <- as.list(group_rows(data))
     } else {
       GRP_loc <- GRP_loc(g)
@@ -101,7 +101,7 @@ df_collapse <- function(data, cols = names(data),
 
 # Construct dplyr style group data from a data frame directly
 # construct_dplyr_group_data <- function(data, cols = names(data),
-#                                        order = df_group_by_order_default(data),
+#                                        order = group_by_order_default(data),
 #                                        drop = df_group_by_drop_default(data)){
 #   group_data <- df_collapse(
 #     cheapr::sset_col(data, cols),

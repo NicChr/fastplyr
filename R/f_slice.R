@@ -57,7 +57,7 @@
 #' @rdname f_slice
 #' @export
 f_slice <- function(data, i = 0L, ..., .by = NULL,
-                    .order = df_group_by_order_default(data),
+                    .order = group_by_order_default(data),
                     keep_order = FALSE){
   rlang::check_dots_empty0(...)
   if (is.logical(i)){
@@ -103,7 +103,7 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
 #' @rdname f_slice
 #' @export
 f_slice_head <- function(data, n, prop, .by = NULL,
-                         .order = df_group_by_order_default(data),
+                         .order = group_by_order_default(data),
                          keep_order = FALSE){
   slice_info <- df_slice_prepare(data, n, prop,
                                  .by = {{ .by }},
@@ -146,7 +146,7 @@ f_slice_head <- function(data, n, prop, .by = NULL,
 #' @rdname f_slice
 #' @export
 f_slice_tail <- function(data, n, prop, .by = NULL,
-                         .order = df_group_by_order_default(data),
+                         .order = group_by_order_default(data),
                          keep_order = FALSE){
   slice_info <- df_slice_prepare(data, n, prop,
                                  .by = {{ .by }},
@@ -176,7 +176,7 @@ f_slice_tail <- function(data, n, prop, .by = NULL,
 #' @export
 f_slice_min <- function(data, order_by, n, prop, .by = NULL,
                        with_ties = TRUE, na_rm = FALSE,
-                       .order = df_group_by_order_default(data),
+                       .order = group_by_order_default(data),
                        keep_order = FALSE){
   group_vars <- get_groups(data, .by = {{ .by }})
   grp_nm1 <- unique_col_name(names(data), "g")
@@ -225,7 +225,7 @@ f_slice_min <- function(data, order_by, n, prop, .by = NULL,
 #' @export
 f_slice_max <- function(data, order_by, n, prop, .by = NULL,
                        with_ties = TRUE, na_rm = FALSE,
-                       .order = df_group_by_order_default(data),
+                       .order = group_by_order_default(data),
                        keep_order = FALSE){
   group_vars <- get_groups(data, .by = {{ .by }})
   grp_nm1 <- unique_col_name(names(data), "g")
@@ -276,7 +276,7 @@ f_slice_max <- function(data, order_by, n, prop, .by = NULL,
 #' @rdname f_slice
 #' @export
 f_slice_sample <- function(data, n, replace = FALSE, prop,
-                           .by = NULL, .order = df_group_by_order_default(data),
+                           .by = NULL, .order = group_by_order_default(data),
                            keep_order = FALSE,
                            weights = NULL){
   groups <- get_groups(data, .by = {{ .by }})
@@ -325,7 +325,7 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
 }
 
 df_slice_prepare <- function(data, n, prop, .by = NULL,
-                             sort_groups = df_group_by_order_default(data),
+                             sort_groups = group_by_order_default(data),
                              bound_n = TRUE, default_n = 1L){
   N <- df_nrow(data)
   missing_n <- missing(n)

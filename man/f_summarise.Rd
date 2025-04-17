@@ -5,9 +5,9 @@
 \alias{f_summarize}
 \title{Summarise each group down to one row}
 \usage{
-f_summarise(.data, ..., .by = NULL, .order = df_group_by_order_default(.data))
+f_summarise(.data, ..., .by = NULL, .order = group_by_order_default(.data))
 
-f_summarize(.data, ..., .by = NULL, .order = df_group_by_order_default(.data))
+f_summarize(.data, ..., .by = NULL, .order = group_by_order_default(.data))
 }
 \arguments{
 \item{.data}{A data frame.}

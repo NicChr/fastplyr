@@ -8,7 +8,7 @@
 #' A data frame of specified results.
 #'
 #' @export
-f_reframe <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
+f_reframe <- function(.data, ..., .by = NULL, .order = group_by_order_default(.data)){
 
   all_groups <- get_groups(.data, .by = {{ .by }})
   GRP <- df_to_GRP(.data, all_groups, order = .order)

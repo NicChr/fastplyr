@@ -46,7 +46,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
                            type = 7, pivot = c("long", "wide"),
                            na.rm = TRUE,
                            .by = NULL, .cols = NULL,
-                           .order = df_group_by_order_default(data),
+                           .order = group_by_order_default(data),
                            .drop_groups = deprecated()){
   pivot <- rlang::arg_match(pivot)
   wide <- pivot == "wide"

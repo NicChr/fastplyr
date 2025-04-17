@@ -34,17 +34,17 @@
 #' @rdname add_id
 #' @export
 add_group_id <- function(.data, ...){
-  cli::cli_warn(
-    c("i" = "{.fn add_group_id} has been superseded by the use of",
-      "{.code f_mutate(data, group_id = cur_group_id()}"),
-    .frequency = "once", .frequency_id = "deprecate_add_group_id"
-  )
+  # cli::cli_warn(
+  #   c("i" = "{.fn add_group_id} has been superseded by the use of",
+  #     "{.code f_mutate(data, group_id = cur_group_id()}"),
+  #   .frequency = "once", .frequency_id = "deprecate_add_group_id"
+  # )
   UseMethod("add_group_id")
 }
 #' @rdname add_id
 #' @export
 add_group_id.data.frame <- function(.data, ...,
-                                    .order = df_group_by_order_default(.data),
+                                    .order = group_by_order_default(.data),
                                     .ascending = TRUE,
                                     .by = NULL, .cols = NULL,
                                     .name = NULL,
@@ -72,11 +72,11 @@ add_group_id.data.frame <- function(.data, ...,
 #' @rdname add_id
 #' @export
 add_row_id <- function(.data, ...){
-  cli::cli_warn(
-    c("i" = "{.fn add_row_id} has been superseded by the use of",
-      "{.code f_mutate(data, row_id = row_number()}"),
-    .frequency = "once", .frequency_id = "deprecate_add_row_id"
-  )
+#   cli::cli_warn(
+#     c("i" = "{.fn add_row_id} has been superseded by the use of",
+#       "{.code f_mutate(data, row_id = row_number()}"),
+#     .frequency = "once", .frequency_id = "deprecate_add_row_id"
+#   )
   UseMethod("add_row_id")
 }
 #' @rdname add_id
@@ -90,9 +90,7 @@ add_row_id.data.frame <- function(.data, ...,
   }
   N <- df_nrow(.data)
   group_info <- tidy_group_info(.data, ..., .by = {{ .by }},
-                                .cols = .cols,
-                                ungroup = TRUE,
-                                rename = FALSE)
+                                .cols = .cols)
   # data <- group_info[["data"]]
   extra_groups <- group_info[["extra_groups"]]
   group_vars <- group_info[["dplyr_groups"]]
@@ -130,7 +128,7 @@ add_consecutive_id <- function(.data, ...){
 #' @rdname add_id
 #' @export
 add_consecutive_id.data.frame <- function(.data, ...,
-                                          .order = df_group_by_order_default(.data),
+                                          .order = group_by_order_default(.data),
                                           .by = NULL, .cols = NULL,
                                           .name = NULL){
   group_info <- tidy_group_info(.data, ..., .by = {{ .by }},

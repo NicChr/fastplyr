@@ -94,7 +94,7 @@
 #'   )
 #' @rdname f_summarise
 #' @export
-f_summarise <- function(.data, ..., .by = NULL, .order = df_group_by_order_default(.data)){
+f_summarise <- function(.data, ..., .by = NULL, .order = group_by_order_default(.data)){
   all_groups <- get_groups(.data, .by = {{ .by }})
   GRP <- df_to_GRP(.data, all_groups, order = .order)
   quos <- fastplyr_quos(..., .drop_null = TRUE,

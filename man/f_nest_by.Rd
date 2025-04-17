@@ -8,7 +8,7 @@ f_nest_by(
   data,
   ...,
   .add = FALSE,
-  .order = df_group_by_order_default(data),
+  .order = group_by_order_default(data),
   .by = NULL,
   .cols = NULL,
   .drop = df_group_by_drop_default(data)

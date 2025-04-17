@@ -14,7 +14,7 @@ add_group_id(.data, ...)
 \method{add_group_id}{data.frame}(
   .data,
   ...,
-  .order = df_group_by_order_default(.data),
+  .order = group_by_order_default(.data),
   .ascending = TRUE,
   .by = NULL,
   .cols = NULL,
@@ -38,7 +38,7 @@ add_consecutive_id(.data, ...)
 \method{add_consecutive_id}{data.frame}(
   .data,
   ...,
-  .order = df_group_by_order_default(.data),
+  .order = group_by_order_default(.data),
   .by = NULL,
   .cols = NULL,
   .name = NULL

@@ -100,7 +100,6 @@ grouped_df_counts <- function(data, weights = NULL, expand = FALSE){
 }
 
 df_group_by_drop_default <- cpp_group_by_drop_default
-df_group_by_order_default <- cpp_group_by_order_default
 
 df_cross_join <- function(x, y, .repair_names = TRUE){
   f_bind_cols(

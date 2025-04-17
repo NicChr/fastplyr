@@ -13,7 +13,7 @@ tidy_quantiles(
   na.rm = TRUE,
   .by = NULL,
   .cols = NULL,
-  .order = df_group_by_order_default(data),
+  .order = group_by_order_default(data),
   .drop_groups = deprecated()
 )
 }

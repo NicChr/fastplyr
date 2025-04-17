@@ -404,7 +404,7 @@ grouped_df_as_GRP <- function(data,
   group_id <- f_group_indices(data)
   grows <- group_rows(data)
   gsizes <- cheapr::list_lengths(grows)
-  groups_are_ordered <- df_group_by_order_default(data)
+  groups_are_ordered <- group_by_order_default(data)
 
   gorder <- NULL
   sorted <- NA
@@ -463,7 +463,7 @@ grouped_df_as_GRP <- function(data,
 # Custom GRP method for data frames
 # Group starts is always returned
 df_to_GRP <- function(data, .cols = character(),
-                      order = df_group_by_order_default(data),
+                      order = group_by_order_default(data),
                       # drop = df_group_by_drop_default(data),
                       return.order = TRUE,
                       return.groups = TRUE,
@@ -481,7 +481,7 @@ df_to_GRP <- function(data, .cols = character(),
                              return.order = return.order,
                              return.locs = return.locs)
   } else if (length(extra_groups) == 0L &&
-             order == df_group_by_order_default(data)){
+             order == group_by_order_default(data)){
              # drop == df_group_by_drop_default(data)){
     out <- grouped_df_as_GRP(data2, return.order = return.order,
                              return.groups = return.groups,
@@ -636,7 +636,7 @@ construct_grouped_df <- function(data, g, group_vars){
   group_locs <- GRP_loc(g)
   groups[[".rows"]] <- vctrs_new_list_of(group_locs, integer())
   attr(groups, ".drop") <- df_group_by_drop_default(data)
-  attr(groups, "ordered") <- df_group_by_order_default(data)
+  attr(groups, "ordered") <- group_by_order_default(data)
   out <- data
   attr(out, "groups") <- groups
   class(out) <- c("grouped_df", "tbl_df", "tbl", "data.frame")

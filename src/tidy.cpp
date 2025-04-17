@@ -875,6 +875,11 @@ bool cpp_group_by_drop_default(SEXP x){
 
 [[cpp11::register]]
 bool cpp_group_by_order_default(SEXP x){
+
+  if (!Rf_inherits(x, "data.frame")){
+    Rf_error("`x` must be a data frame in %s", __func__);
+  }
+
   int NP = 0;
 
   bool out = true;
@@ -1558,18 +1563,34 @@ SEXP cpp_nest_split(SEXP data, SEXP drop, SEXP order){
 SEXP cpp_group_split(SEXP data){
 
   SEXP rows = Rf_protect(cpp_group_rows(data));
+  SEXP tbl_class = Rf_protect(Rf_allocVector(STRSXP, 3));
+  SET_STRING_ELT(tbl_class, 0, Rf_mkChar("tbl_df"));
+  SET_STRING_ELT(tbl_class, 1, Rf_mkChar("tbl"));
+  SET_STRING_ELT(tbl_class, 2, Rf_mkChar("data.frame"));
+
   const SEXP *p_rows = VECTOR_PTR_RO(rows);
   int n_groups = Rf_length(rows);
   SEXP frames = Rf_protect(Rf_allocVector(VECSXP, n_groups));
 
   Rf_protect(data = cpp_ungroup(data));
 
+
+  SEXP frame;
+  PROTECT_INDEX frame_idx;
+  R_ProtectWithIndex(frame = R_NilValue, &frame_idx);
+
   // Slice group chunks
 
   for (int i = 0; i < n_groups; ++i){
-    SET_VECTOR_ELT(frames, i, cheapr::sset(data, p_rows[i], false));
+    R_Reprotect(frame = cheapr::df_slice(data, p_rows[i], false), frame_idx);
+    Rf_classgets(frame, tbl_class);
+    SET_VECTOR_ELT(frames, i, frame);
+
+    // A method that is fast and preserves structure of input data
+    // R_Reprotect(frame = cheapr::df_slice(data, p_rows[i], false), frame_idx);
+    // SET_VECTOR_ELT(frames, i, cheapr::reconstruct(frame, data, false));
   }
 
-  Rf_unprotect(3);
+  Rf_unprotect(5);
   return frames;
 }

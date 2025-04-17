@@ -8,9 +8,9 @@
 #'
 #' @export
 f_group_split <- function(.data, ..., .add = FALSE,
-         .order = df_group_by_order_default(.data),
-         .by = NULL, .cols = NULL,
-         .drop = df_group_by_drop_default(.data)){
+                          .order = group_by_order_default(.data),
+                          .by = NULL, .cols = NULL,
+                          .drop = df_group_by_drop_default(.data)){
 
   .data %>%
     f_group_by(..., .cols = .cols, .order = .order, .add = .add,

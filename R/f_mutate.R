@@ -10,6 +10,6 @@
 #' A data frame with added columns.
 
 #' @export
-f_mutate <- function(.data, ...,  .by = NULL, .order = df_group_by_order_default(.data), .keep = "all"){
+f_mutate <- function(.data, ...,  .by = NULL, .order = group_by_order_default(.data), .keep = "all"){
   mutate_summary(.data, ..., .keep = .keep, .order = .order, .by = {{ .by }})[["data"]]
 }

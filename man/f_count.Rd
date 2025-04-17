@@ -9,7 +9,7 @@ f_count(
   ...,
   wt = NULL,
   sort = FALSE,
-  .order = df_group_by_order_default(data),
+  .order = group_by_order_default(data),
   name = NULL,
   .by = NULL,
   .cols = NULL

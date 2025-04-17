@@ -541,7 +541,7 @@ tidy_select_names <- function(data, ..., .cols = NULL){
 mutate_summary <- function(.data, ...,
                            .keep = "all",
                            .by = NULL,
-                           .order = df_group_by_order_default(.data),
+                           .order = group_by_order_default(.data),
                            .drop = df_group_by_drop_default(.data)){
   original_cols <- names(.data)
   all_groups <- get_groups(.data, .by = {{ .by }})
@@ -600,7 +600,7 @@ mutate_summary <- function(.data, ...,
 }
 
 # To replace tidy_group_info_tidyselect in the future
-select_summary <- function(.data, ..., .by = NULL, .cols = NULL, .order = df_group_by_order_default(.data)){
+select_summary <- function(.data, ..., .by = NULL, .cols = NULL, .order = group_by_order_default(.data)){
 
   all_groups <- get_groups(.data, .by = {{ .by }})
   GRP <- df_to_GRP(.data, all_groups, order = .order)
@@ -737,7 +737,7 @@ tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
 }
 
 tidy_dots_info <- function(.data, ..., .by = NULL, .cols = NULL,
-                           .order = df_group_by_order_default(.data),
+                           .order = group_by_order_default(.data),
                            .type = "data-mask"){
   check_cols(n_dots = dots_length(...), .cols = .cols)
   if (is.null(.cols) && .type == "data-mask"){
@@ -751,7 +751,7 @@ tidy_dots_info <- function(.data, ..., .by = NULL, .cols = NULL,
 # if either .cols is supplied or type isnt "data-mask"
 # After that it calculates the grouping structure of these variables
 tidy_GRP <- function(.data, ..., .by = NULL, .cols = NULL,
-                     .order = df_group_by_order_default(.data),
+                     .order = group_by_order_default(.data),
                      .type = "data-mask",
                      return_order = FALSE){
 
@@ -812,7 +812,8 @@ sset_quos <- function(quos, i){
   set_add_attr(out, ".optimised", attr(quos, ".optimised", TRUE)[i])
   cpp_reconstruct(
     out, quos, c("names", "class", ".optimised"),
-    fast_setdiff(names(attributes(quos)), c("names", "class", ".optimised"))
+    fast_setdiff(names(attributes(quos)), c("names", "class", ".optimised")),
+    FALSE
   )
 }
 

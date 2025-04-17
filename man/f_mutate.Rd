@@ -8,7 +8,7 @@ f_mutate(
   .data,
   ...,
   .by = NULL,
-  .order = df_group_by_order_default(.data),
+  .order = group_by_order_default(.data),
   .keep = "all"
 )
 }

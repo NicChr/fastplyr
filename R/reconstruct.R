@@ -1,6 +1,6 @@
 
 #' @exportS3Method cheapr::reconstruct
-reconstruct.grouped_df <- function(x, template){
+reconstruct.grouped_df <- function(x, template, ...){
 
   plain_tbl <- fast_tbl()
 
@@ -34,7 +34,7 @@ reconstruct.grouped_df <- function(x, template){
 
 
 #' @exportS3Method cheapr::reconstruct
-reconstruct.fastplyr_grouped_df <- function(x, template){
+reconstruct.fastplyr_grouped_df <- function(x, template, ...){
 
   plain_tbl <- fast_tbl()
 
@@ -57,7 +57,7 @@ reconstruct.fastplyr_grouped_df <- function(x, template){
       groups <- NULL
     } else {
       drop <- df_group_by_drop_default(template)
-      order <- df_group_by_order_default(template)
+      order <- group_by_order_default(template)
       ordered <- attr(attr(template, "groups"), "ordered")
       GRP <- df_to_GRP(f_ungroup(x), out_groups, order = order)
       groups <- construct_fastplyr_group_data(GRP, drop = drop)
@@ -68,4 +68,9 @@ reconstruct.fastplyr_grouped_df <- function(x, template){
   attr(out, "GRP") <- GRP
   class(out) <- class(template)
   out
+}
+
+#' @exportS3Method dplyr::dplyr_reconstruct
+dplyr_reconstruct.fastplyr_grouped_df <- function(data, template){
+  cheapr::reconstruct(data, template)
 }

@@ -41,7 +41,7 @@
 #'
 #' @export
 f_count <- function(data, ..., wt = NULL, sort = FALSE,
-                    .order = df_group_by_order_default(data),
+                    .order = group_by_order_default(data),
                     name = NULL, .by = NULL, .cols = NULL){
   weights <- NULL
   wt_expr <- rlang::enquo(wt)
@@ -51,7 +51,7 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
 
   if (dots_length(...) == 0 &&
       rlang::quo_is_null(rlang::enquo(.by)) && is.null(.cols) &&
-      .order == df_group_by_order_default(data)){
+      .order == group_by_order_default(data)){
 
     counts <- grouped_df_counts(data, weights = weights, expand = FALSE)
     group_vars <- group_vars(data)
@@ -93,7 +93,7 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
   }
 }
 f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
-                        .order = df_group_by_order_default(data),
+                        .order = group_by_order_default(data),
                         name = NULL, .by = NULL, .cols = NULL){
   weights <- NULL
   wt_expr <- rlang::enquo(wt)
@@ -103,7 +103,7 @@ f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
 
   if (dots_length(...) == 0 &&
       rlang::quo_is_null(rlang::enquo(.by)) && is.null(.cols) &&
-      .order == df_group_by_order_default(data)){
+      .order == group_by_order_default(data)){
 
     counts <- grouped_df_counts(data, weights = weights, expand = TRUE)
     group_vars <- group_vars(data)
