@@ -1,17 +1,4 @@
 
-
-# .optimised_fns <- c(
-#   "sum", "prod", "mean", "median", "min", "max", "first", "last",
-#   "sd", "var", "n_distinct", "ndistinct", "fsum", "fprod", "fmean",
-#   "fmedian", "fmin", "fmax", "ffirst", "flast", "fsd", "fvar",
-#   "fndistinct"
-# )
-# .collapse_fns <- c(
-#   "fsum", "fprod", "fmean", "fmedian", "fmin", "fmax", "ffirst", "flast",
-#   "fsd", "fvar", "fndistinct", "fndistinct", "fsum", "fprod", "fmean",
-#   "fmedian", "fmin", "fmax", "ffirst", "flast", "fsd", "fvar",
-#   "fndistinct"
-# )
 .optimised_fn_list <- list(
 
   input_fns = list(
@@ -81,7 +68,7 @@ check_cols <- function(n_dots, .cols = NULL){
 # This function returns the groups of a data frame
 get_groups <- function(data, .by = NULL, named = FALSE){
   check_rowwise(data)
-  dplyr_groups <- group_vars(data)
+  dplyr_groups <- f_group_vars(data)
   if (named){
     names(dplyr_groups) <- dplyr_groups
   }
@@ -282,12 +269,9 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
       out[[k]] <- NULL
       out <- c(left, unpacked_quos, right)
       quo_nms <- c(left_nms, names(unpacked_quos), right_nms)
-      # quo_nms <- names(out)
-      # k <- k + length(right)
       k <- k + length(unpacked_quos)
     } else if (.named && !nzchar(quo_nms[[k]])){
       quo_nms[[k]] <- deparse2(rlang::quo_get_expr(quo))
-      # names(out) <- quo_nms
       k <- k + 1L
     } else {
       k <- k + 1L
@@ -697,9 +681,7 @@ tidy_GRP <- function(.data, ..., .by = NULL, .cols = NULL,
       length(fast_intersect(info[["changed_cols"]], all_groups)) > 0L){
     GRP <- df_to_GRP(data, all_groups, order = .order, return.order = return_order)
   }
-
   GRP
-  # df_to_GRP(data, all_groups, order = .order)
 }
 
 unique_count_col <- function(data, col = "n"){
@@ -925,14 +907,6 @@ eval_mutate <- function(quos){
   }
 
   if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-    # if (getOption("fastplyr.inform", TRUE)){
-    #   rlang::warn(
-    #     c(
-    #       paste(cli::col_blue("dplyr"), "mask function detected, results may be independent of each other"),
-    #       "Run `options(fastplyr.inform = FALSE)` to turn this msg off"
-    #     )
-    #   )
-    # }
     return(as.list(dplyr::mutate(construct_fastplyr_grouped_df(GRP), !!!quos))[quo_names])
   }
   results <- cpp_grouped_eval_mutate(construct_fastplyr_grouped_df(GRP), quos)
