@@ -270,19 +270,24 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
     attr(quo, ".unpack", TRUE) %||% set_add_attr(quo, ".unpack", .unpack_default)
     if (!nzchar(quo_nms[[k]]) && cpp_is_fn_call(expr, "across", ns = "dplyr", env)){
       left <- out[seq_len(k - 1L)]
+      left_nms <- quo_nms[seq_len(k - 1L)]
       unpacked_quos <- unpack_across(quo, .data, unpack_default = .unpack_default)
       if (k < length(out)){
         right <- out[seq.int(k + 1L, length(out), 1L)]
+        right_nms <- quo_nms[seq.int(k + 1L, length(quo_nms), 1L)]
       } else {
         right <- list()
+        right_nms <- character()
       }
       out[[k]] <- NULL
       out <- c(left, unpacked_quos, right)
-      quo_nms <- names(out)
+      quo_nms <- c(left_nms, names(unpacked_quos), right_nms)
+      # quo_nms <- names(out)
       # k <- k + length(right)
       k <- k + length(unpacked_quos)
     } else if (.named && !nzchar(quo_nms[[k]])){
       quo_nms[[k]] <- deparse2(rlang::quo_get_expr(quo))
+      # names(out) <- quo_nms
       k <- k + 1L
     } else {
       k <- k + 1L
@@ -672,81 +677,6 @@ tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
        "address_equal" = address_equal)
 }
 
-tidy_group_info_datamask <- function(data, ..., .by = NULL,
-                                     ungroup = TRUE,
-                                     unique_groups = TRUE){
-  group_vars <- get_groups(data, {{ .by }})
-  extra_groups <- character()
-  if (ungroup){
-    out <- cpp_ungroup(data)
-  } else {
-    out <- data
-  }
-  # Data-masking for dots expressions
-  if (dots_length(...) > 0){
-    out_info <- mutate_summary(out, ..., .by = {{ .by }})
-    out <- out_info[["data"]]
-    extra_groups <- out_info[["new_cols"]]
-    GRP <- out_info[["GRP"]]
-  } else {
-    out_info <- NULL
-    GRP <- NULL
-  }
-  if (unique_groups){
-    extra_groups <- fast_setdiff(extra_groups, group_vars)
-    all_groups <- c(group_vars, extra_groups)
-  } else {
-    all_groups <- c(group_vars, fast_setdiff(extra_groups, group_vars))
-  }
-  if (is.null(out_info)){
-    changed_groups <- character()
-    address_equal <- add_names(logical(length(names(data))), names(data))
-  } else {
-    changed_groups <- fast_intersect(names(data), out_info[["changed_cols"]])
-    address_equal <- add_names(is.na(match(names(data), out_info[["changed_cols"]])), names(data))
-  }
-  list(
-    data = out,
-    dplyr_groups = group_vars,
-    extra_groups = extra_groups,
-    all_groups = all_groups,
-    changed_groups = changed_groups,
-    groups_changed = !all(address_equal[group_vars]),
-    address_equal = address_equal,
-    GRP = GRP
-  )
-}
-
-tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
-                            ungroup = TRUE, rename = TRUE,
-                            dots_type = "data-mask",
-                            unique_groups = TRUE){
-  check_cols(n_dots = dots_length(...), .cols = .cols)
-  if (is.null(.cols) && dots_type == "data-mask"){
-    tidy_group_info_datamask(data, ..., .by = {{ .by }},
-                             ungroup = ungroup,
-                             unique_groups = unique_groups)
-
-  } else {
-    tidy_group_info_tidyselect(data, ..., .by = {{ .by }},
-                               .cols = .cols,
-                               ungroup = ungroup,
-                               rename = rename,
-                               unique_groups = unique_groups)
-  }
-}
-
-tidy_dots_info <- function(.data, ..., .by = NULL, .cols = NULL,
-                           .order = group_by_order_default(.data),
-                           .type = "data-mask"){
-  check_cols(n_dots = dots_length(...), .cols = .cols)
-  if (is.null(.cols) && .type == "data-mask"){
-    mutate_summary(.data, ..., .by = {{ .by }}, .order = .order)
-  } else {
-    select_summary(.data, ..., .by = {{ .by }}, .order = .order, .cols = .cols)
-  }
-}
-
 # tidy_GRP applies expressions supplied through `...` or selects cols
 # if either .cols is supplied or type isnt "data-mask"
 # After that it calculates the grouping structure of these variables
@@ -1025,3 +955,77 @@ eval_mutate <- function(quos){
   results
 }
 
+tidy_group_info_datamask <- function(data, ..., .by = NULL,
+                                     ungroup = TRUE,
+                                     unique_groups = TRUE){
+  group_vars <- get_groups(data, {{ .by }})
+  extra_groups <- character()
+  if (ungroup){
+    out <- cpp_ungroup(data)
+  } else {
+    out <- data
+  }
+  # Data-masking for dots expressions
+  if (dots_length(...) > 0){
+    out_info <- mutate_summary(out, ..., .by = {{ .by }})
+    out <- out_info[["data"]]
+    extra_groups <- out_info[["new_cols"]]
+    GRP <- out_info[["GRP"]]
+  } else {
+    out_info <- NULL
+    GRP <- NULL
+  }
+  if (unique_groups){
+    extra_groups <- fast_setdiff(extra_groups, group_vars)
+    all_groups <- c(group_vars, extra_groups)
+  } else {
+    all_groups <- c(group_vars, fast_setdiff(extra_groups, group_vars))
+  }
+  if (is.null(out_info)){
+    changed_groups <- character()
+    address_equal <- add_names(logical(length(names(data))), names(data))
+  } else {
+    changed_groups <- fast_intersect(names(data), out_info[["changed_cols"]])
+    address_equal <- add_names(is.na(match(names(data), out_info[["changed_cols"]])), names(data))
+  }
+  list(
+    data = out,
+    dplyr_groups = group_vars,
+    extra_groups = extra_groups,
+    all_groups = all_groups,
+    changed_groups = changed_groups,
+    groups_changed = !all(address_equal[group_vars]),
+    address_equal = address_equal,
+    GRP = GRP
+  )
+}
+
+tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
+                            ungroup = TRUE, rename = TRUE,
+                            dots_type = "data-mask",
+                            unique_groups = TRUE){
+  check_cols(n_dots = dots_length(...), .cols = .cols)
+  if (is.null(.cols) && dots_type == "data-mask"){
+    tidy_group_info_datamask(data, ..., .by = {{ .by }},
+                             ungroup = ungroup,
+                             unique_groups = unique_groups)
+
+  } else {
+    tidy_group_info_tidyselect(data, ..., .by = {{ .by }},
+                               .cols = .cols,
+                               ungroup = ungroup,
+                               rename = rename,
+                               unique_groups = unique_groups)
+  }
+}
+
+tidy_dots_info <- function(.data, ..., .by = NULL, .cols = NULL,
+                           .order = group_by_order_default(.data),
+                           .type = "data-mask"){
+  check_cols(n_dots = dots_length(...), .cols = .cols)
+  if (is.null(.cols) && .type == "data-mask"){
+    mutate_summary(.data, ..., .by = {{ .by }}, .order = .order)
+  } else {
+    select_summary(.data, ..., .by = {{ .by }}, .order = .order, .cols = .cols)
+  }
+}

@@ -1,5 +1,6 @@
 #include "fastplyr.h"
 #include "cheapr_api.h"
+#include <vector>
 
 // Basically R's get()
 
@@ -1196,18 +1197,22 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
 
   SEXP recycled_sizes_container = Rf_protect(Rf_allocVector(VECSXP, n_quos)); ++NP;
   const SEXP *p_recycled_sizes_container = VECTOR_PTR_RO(recycled_sizes_container);
+  std::vector<int *> recycled_pointers(n_quos);
 
   // Some C trickery here.. We repeat out the rows of the group keys at the end
   // but if we recycle we only need to do this once and we only need one
   // result sizes vector, otherwise we need one for each expression
   if (recycle){
     R_Reprotect(recycled_sizes = Rf_allocVector(INTSXP, n_groups), recycled_sizes_idx);
+    recycled_pointers[0] = INTEGER(recycled_sizes);
     for (int m = 0; m < n_quos; ++m){
       SET_VECTOR_ELT(recycled_sizes_container, m, recycled_sizes);
+      recycled_pointers[m] = recycled_pointers[0];
     }
   } else {
     for (int m = 0; m < n_quos; ++m){
       SET_VECTOR_ELT(recycled_sizes_container, m, Rf_allocVector(INTSXP, n_groups));
+      recycled_pointers[m] = INTEGER(VECTOR_ELT(recycled_sizes_container, m));
     }
   }
 
@@ -1244,7 +1249,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
       SET_VECTOR_ELT(inner_container, m, result);
       result_size = cheapr::vec_length(result);
       recycled_size = recycle ? (result_size == 0 ? 0 : std::max(recycled_size, result_size)) : result_size;
-      INTEGER(p_recycled_sizes_container[m])[i] = recycled_size;
+      recycled_pointers[m][i] = recycled_size;
     }
 
     // recycle expression results to a common length
@@ -1402,7 +1407,7 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
     // Filter on the rows relevant to the current group
 
     if (has_groups){
-      R_Reprotect(chunk_locs = p_rows[i], chunk_locs_idx);
+      chunk_locs = p_rows[i];
       R_Reprotect(chunk = cheapr::df_slice(data_subset, chunk_locs, false), chunk_idx);
       chunk_size = Rf_length(chunk_locs);
     } else {
@@ -1445,8 +1450,7 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
     for (int j = 0; j < n_groups; ++j){
       SET_VECTOR_ELT(inner_container, j, VECTOR_ELT(p_outer_container[j], m));
     }
-    R_Reprotect(result = cheapr::c(inner_container), result_idx);
-    SET_VECTOR_ELT(results, m, result);
+    SET_VECTOR_ELT(results, m, cheapr::c(inner_container));
   }
 
   SEXP group_id = R_NilValue;

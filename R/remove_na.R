@@ -14,9 +14,10 @@
 #' @export
 remove_rows_if_any_na <- function(data, ..., .cols = NULL){
   if (is.null(.cols) && dots_length(...) == 0){
-    .cols <- names(data)
+    na_data <- data
+  } else {
+    na_data <- f_select(data, ..., .cols = .cols)
   }
-  na_data <- f_select(data, ..., .cols = .cols)
   drop <- cheapr::row_any_na(na_data)
   keep <- cheapr::val_find(drop, FALSE)
   if (length(keep) == df_nrow(data)){
@@ -29,9 +30,10 @@ remove_rows_if_any_na <- function(data, ..., .cols = NULL){
 #' @export
 remove_rows_if_all_na <- function(data, ..., .cols = NULL){
   if (is.null(.cols) && dots_length(...) == 0){
-    .cols <- names(data)
+    na_data <- data
+  } else {
+    na_data <- f_select(data, ..., .cols = .cols)
   }
-  na_data <- f_select(data, ..., .cols = .cols)
   drop <- cheapr::row_all_na(na_data)
   keep <- cheapr::val_find(drop, FALSE)
   if (length(keep) == df_nrow(data)){
