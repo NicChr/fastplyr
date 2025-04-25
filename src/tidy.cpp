@@ -614,15 +614,10 @@ bool cpp_any_quo_contains_dplyr_mask_call(SEXP quos){
 }
 
 SEXP get_mask_top_env(SEXP mask){
-
   if (TYPEOF(mask) != ENVSXP){
     Rf_error("Object must be a data mask `environment` in %s", __func__);
   }
-
-  SEXP top_env_sym = Rf_protect(Rf_install(".top_env"));
-  SEXP top_env = Rf_protect(Rf_findVar(top_env_sym, mask));
-  Rf_unprotect(2);
-  return top_env;
+  return Rf_findVar(Rf_install(".top_env"), mask);
 }
 
 // Just a wrapper around rlang::eval_tidy
@@ -641,8 +636,8 @@ SEXP cpp_eval_tidy(SEXP quo, SEXP mask){
 SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
   int NP = 0;
   int n_exprs = Rf_length(quos);
-  SEXP expr_names = Rf_protect(Rf_getAttrib(quos, R_NamesSymbol)); ++NP;
-  if (Rf_isNull(expr_names)){
+  SEXP expr_names = Rf_getAttrib(quos, R_NamesSymbol);
+  if (TYPEOF(expr_names) == NILSXP){
     Rf_protect(expr_names = Rf_allocVector(STRSXP, n_exprs)); ++NP;
   }
   SEXP top_env = Rf_protect(get_mask_top_env(mask));++NP;
@@ -651,12 +646,12 @@ SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
   SEXP out_names = Rf_protect(Rf_allocVector(STRSXP, n_exprs)); ++NP;
 
   for (int i = 0; i < n_exprs; ++i){
-    SEXP quo = Rf_protect(VECTOR_ELT(quos, i)); ++NP;
+    SEXP quo =VECTOR_ELT(quos, i);
     SEXP result = Rf_protect(cpp_eval_tidy(quo, mask)); ++NP;
-    SEXP expr_name = Rf_protect(STRING_ELT(expr_names, i)); ++NP;
+    SEXP expr_name = STRING_ELT(expr_names, i);
 
     if (expr_name != R_BlankString){
-      SEXP sym = Rf_protect(Rf_installChar(expr_name)); ++NP;
+      SEXP sym = Rf_installChar(expr_name);
       Rf_defineVar(sym, result, top_env);
       SET_STRING_ELT(out_names, i, expr_name);
     }
@@ -675,11 +670,11 @@ SEXP new_bare_data_mask(){
   SEXP top_env = Rf_protect(get_mask_top_env(mask));
 
   // Add .data pronoun
-  SEXP data_pronoun_sym = Rf_protect(Rf_install(".data"));
+  SEXP data_pronoun_sym = Rf_install(".data");
   SEXP data_pronoun = Rf_protect(rlang::as_data_pronoun(env));
   Rf_defineVar(data_pronoun_sym, data_pronoun, top_env);
 
-  Rf_unprotect(5);
+  Rf_unprotect(4);
   return mask;
 }
 
@@ -724,10 +719,7 @@ SEXP compact_int_seq_len(int n){
 
 
 SEXP get_data_GRP(SEXP x){
-  SEXP grp_sym = Rf_protect(Rf_install("GRP"));
-  SEXP out = Rf_protect(Rf_getAttrib(x, grp_sym));
-  Rf_unprotect(2);
-  return out;
+  return Rf_getAttrib(x, Rf_install("GRP"));
 }
 
 [[cpp11::register]]
@@ -792,8 +784,8 @@ SEXP cpp_group_rows(SEXP x){
   SEXP group_data = Rf_protect(cpp_group_data(x));
   SEXP loc = Rf_protect(Rf_ScalarInteger(Rf_length(group_data)));
   SEXP rows = Rf_protect(cheapr::df_select(group_data, loc));
-  SEXP out = Rf_protect(VECTOR_ELT(rows, 0));
-  Rf_unprotect(4);
+  SEXP out = VECTOR_ELT(rows, 0);
+  Rf_unprotect(3);
   return out;
 }
 
@@ -818,8 +810,8 @@ SEXP cpp_group_size(SEXP x){
 SEXP cpp_ungroup(SEXP data){
   if (Rf_inherits(data, "grouped_df")){
     SEXP out = Rf_protect(Rf_shallow_duplicate(data));
-    SEXP groups_sym = Rf_protect(Rf_install("groups"));
-    SEXP grp_sym = Rf_protect(Rf_install("GRP"));
+    SEXP groups_sym = Rf_install("groups");
+    SEXP grp_sym = Rf_install("GRP");
     Rf_setAttrib(out, groups_sym, R_NilValue);
     Rf_setAttrib(out, grp_sym, R_NilValue);
     SEXP old_class = Rf_getAttrib(out, R_ClassSymbol);
@@ -832,8 +824,8 @@ SEXP cpp_ungroup(SEXP data){
     SET_STRING_ELT(remove, 2, grp_df_char);
 
     SEXP new_class = Rf_protect(cheapr::setdiff(old_class, remove, false));
-    Rf_setAttrib(out, R_ClassSymbol, new_class);
-    Rf_unprotect(8);
+    Rf_classgets(out, new_class);
+    Rf_unprotect(6);
     return out;
   }
   return data;
@@ -845,14 +837,14 @@ SEXP cpp_ungroup(SEXP data){
 [[cpp11::register]]
 SEXP cpp_group_indices(SEXP rows, int size) {
   SEXP indices = Rf_protect(Rf_allocVector(INTSXP, size));
-  int *p_indices = INTEGER(indices);
+  int* __restrict__ p_indices = INTEGER(indices);
   int ng = Rf_length(rows);
   const SEXP* p_rows = VECTOR_PTR_RO(rows);
 
   for (int i = 0; i < ng; ++i) {
     SEXP rows_i = p_rows[i];
     int n_i = Rf_length(rows_i);
-    int *p_rows_i = INTEGER(rows_i);
+    const int* __restrict__ p_rows_i = INTEGER(rows_i);
     for (int j = 0; j < n_i; j++, ++p_rows_i) {
       p_indices[*p_rows_i - 1] = i + 1;
     }
@@ -967,11 +959,11 @@ SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
     for (int i = 0; i < n; ++i) out_size += Rf_length(p_x[i]);
 
     SEXP out = Rf_protect(Rf_allocVector(INTSXP, out_size));
-    int *p_out = INTEGER(out);
+    int* __restrict__ p_out = INTEGER(out);
 
     for (int i = 0; i < n; k += m, ++i){
-      int *p_int = INTEGER(p_x[i]);
       m = Rf_length(p_x[i]);
+      const int* __restrict__ p_int = INTEGER(p_x[i]);
       memcpy(&p_out[k], &p_int[0], m * sizeof(int));
     }
     Rf_unprotect(1);
@@ -980,15 +972,15 @@ SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
     if (Rf_length(group_sizes) != n){
       Rf_error("`length(x)` must match `length(group_sizes)`");
     }
-    int *p_gs = INTEGER(group_sizes);
+    const int* __restrict__ p_gs = INTEGER(group_sizes);
     // Figure out unlisted length
     for (int i = 0; i < n; ++i) out_size += p_gs[i];
 
     SEXP out = Rf_protect(Rf_allocVector(INTSXP, out_size));
-    int *p_out = INTEGER(out);
+    int* __restrict__ p_out = INTEGER(out);
 
     for (int i = 0; i < n; k += m, ++i){
-      int *p_int = INTEGER(p_x[i]);
+      const int* __restrict__ p_int = INTEGER(p_x[i]);
       m = p_gs[i];
       memcpy(&p_out[k], &p_int[0], m * sizeof(int));
     }
@@ -1003,7 +995,7 @@ SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
 bool cpp_group_id_sorted(SEXP x){
   bool out = true;
   int n = Rf_length(x);
-  int *p_x = INTEGER(x);
+  const int* __restrict__ p_x = INTEGER(x);
   for (int i = 1; i < n; ++i){
     if (p_x[i] < p_x[i - 1]){
       return false;
