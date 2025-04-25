@@ -95,12 +95,7 @@ add_attr <- function(x, which, value, set = FALSE){
   }
 }
 strip_attrs <- function(x, set = FALSE){
-  if (set){
-    set_rm_attributes(x)
-  } else {
-    attributes(x) <- NULL
-    x
-  }
+  cheapr::attrs_rm(x, .set = set)
 }
 add_names <- function(x, value){
   names(x) <- value
@@ -128,14 +123,6 @@ list_subset <- function(x, i, default = NA){
   cpp_list_subset(x, ptype, as.integer(i), default)
 }
 
-# setdiff and intersect but no deduplicating
-fast_setdiff <- function(x, y){
-  x[match(x, y, nomatch = 0L) == 0L]
-}
-fast_intersect <- function(x, y){
-  x[match(x, y, nomatch = 0L) != 0L]
-}
-
 # Very fast unique function
 sort_unique <- function(x, sort = FALSE){
   if (sort){
@@ -160,3 +147,4 @@ sort_unique <- function(x, sort = FALSE){
 
 # rlang infix default NULL value function
 `%||%` <- function(x, y) if (is.null(x)) y else x
+

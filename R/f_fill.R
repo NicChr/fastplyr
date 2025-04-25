@@ -40,7 +40,7 @@ f_fill <- function(data, ..., .by = NULL, .cols = NULL,
   group_vars <- get_groups(data, .by = {{ .by }})
   groups <- f_select(data, .cols = group_vars)
   data_to_fill <- f_select(f_ungroup(data),
-                           .cols = fast_setdiff(fill_cols, group_vars))
+                           .cols = vec_setdiff(fill_cols, group_vars))
 
   if (df_ncol(groups) == 0){
     if (locf){

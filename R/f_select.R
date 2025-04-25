@@ -37,7 +37,7 @@ f_select.grouped_df <- function(data, ..., .cols = NULL){
 
   cols <- tidy_select_names(data, ..., .cols = .cols)
 
-  missed_groups <- fast_setdiff(group_vars, cols)
+  missed_groups <- vec_setdiff(group_vars, cols)
 
   if (length(missed_groups) > 0){
     missed_groups_msg <- paste(missed_groups, collapse = ", ")
@@ -50,7 +50,7 @@ f_select.grouped_df <- function(data, ..., .cols = NULL){
   # out <- col_rename(out, cols)
 
   # If any groups have been renamed then rename the group data
-  selected_group_vars <- fast_intersect(cols, group_vars)
+  selected_group_vars <- vec_intersect(cols, group_vars)
   if (any(names(selected_group_vars) != selected_group_vars)){
     group_data <- col_rename(group_data, selected_group_vars)
     attr(out, "groups") <- group_data
@@ -77,7 +77,7 @@ f_rename.grouped_df <- function(data, ..., .cols = NULL){
   group_data <- group_data(data)
 
   cols <- tidy_select_names(data, ..., .cols = .cols)
-  renamed_group_vars <- fast_intersect(cols, group_vars)
+  renamed_group_vars <- vec_intersect(cols, group_vars)
 
   out <- col_rename(cpp_ungroup(data), cols)
 

@@ -56,7 +56,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   data2 <- group_info[["data"]]
   group_vars <- group_info[["all_groups"]]
   dot_vars <- group_info[["new_cols"]]
-  dot_vars <- fast_setdiff(dot_vars, group_vars)
+  dot_vars <- vec_setdiff(dot_vars, group_vars)
   groups <- group_info[["GRP"]]
 
   # Constructing quantile info

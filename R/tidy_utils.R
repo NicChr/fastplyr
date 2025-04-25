@@ -167,7 +167,7 @@ unpack_across <- function(quo, data, unpack_default = FALSE){
   if (!".cols" %in% names(clean_expr)){
     cli::cli_abort("{.arg .cols} must be supplied in {.fn across}")
   }
-  unused_args <- fast_setdiff(names(clean_expr)[-1], c(".cols", ".fns", ".names", ".unpack"))
+  unused_args <- vec_setdiff(names(clean_expr)[-1], c(".cols", ".fns", ".names", ".unpack"))
 
   if (length(unused_args) > 0){
     cli::cli_abort("{.arg ...} must be unused")
@@ -407,14 +407,14 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
           }
         })
       } else if (.optimise_expand && cpp_is_fn_call(expr, "lag", "dplyr", env)){
-        if (sum(nzchar(fast_setdiff(names(args), c("x", "n", "default")))) != 0){
+        if (sum(nzchar(vec_setdiff(names(args), c("x", "n", "default")))) != 0){
           next
         }
         args <- call_args(expr)
         names(args)[names(args) == "default"] <- "fill"
         expr <- rlang::call2("grouped_lag", !!!args, g = .fastplyr.g)
       } else if (.optimise_expand && cpp_is_fn_call(expr, "lead", "dplyr", env)){
-        if (sum(nzchar(fast_setdiff(names(args), c("x", "n", "default")))) != 0){
+        if (sum(nzchar(vec_setdiff(names(args), c("x", "n", "default")))) != 0){
           next
         }
         args <- call_args(expr)
@@ -422,7 +422,7 @@ fastplyr_quos <- function(..., .groups, .named = TRUE, .drop_null = FALSE,
         expr <- rlang::call2("grouped_lead", !!!args, g = .fastplyr.g)
       } else if (is_optimised_call(expr, env)){
         args <- call_args(expr)
-        unsupported_args <- fast_setdiff(names(args), c("x", "na.rm", "nthreads"))
+        unsupported_args <- vec_setdiff(names(args), c("x", "na.rm", "nthreads"))
         if (sum(nzchar(unsupported_args)) != 0){
           cli::cli_warn(c("Unsupported args: {paste(
                           unsupported_args[nzchar(unsupported_args)],
@@ -557,15 +557,15 @@ mutate_summary <- function(.data, ...,
     new_data <- cheapr::list_drop_null(new_data)
     new_cols <- names(new_data)
     all_cols <- names(out_data)
-    common_cols <- fast_intersect(original_cols, new_cols)
+    common_cols <- vec_intersect(original_cols, new_cols)
     changed <- cpp_frame_addresses_equal(
       cheapr::sset_col(data, common_cols),
       new_data[common_cols]
     )
     changed_cols <- common_cols[cheapr::val_find(changed, FALSE)]
     used_cols <- cpp_quo_data_vars(quos, data)
-    used_cols <- c(used_cols, fast_setdiff(new_cols, used_cols))
-    unused_cols <- fast_setdiff(original_cols, new_cols)
+    used_cols <- c(used_cols, vec_setdiff(new_cols, used_cols))
+    unused_cols <- vec_setdiff(original_cols, new_cols)
 
     keep_cols <- switch(.keep,
                         all = all_cols,
@@ -574,7 +574,7 @@ mutate_summary <- function(.data, ...,
                         unused = unused_cols)
 
     # Add missed group vars and keep original ordering
-    keep_cols <- fast_intersect(all_cols, c(all_groups, keep_cols))
+    keep_cols <- vec_intersect(all_cols, c(all_groups, keep_cols))
     out_data <- cheapr::sset_df(out_data, j = keep_cols)
   }
   list(
@@ -608,7 +608,7 @@ select_summary <- function(.data, ..., .by = NULL, .cols = NULL, .order = group_
   }
   new_cols <- names(selected_cols)
   used_cols <- new_cols
-  unused_cols <- fast_setdiff(names(out), used_cols)
+  unused_cols <- vec_setdiff(names(out), used_cols)
   changed_cols <- character()
   renamed_cols <- used_cols[used_cols != selected_cols]
 
@@ -648,10 +648,10 @@ tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
   names(address_equal) <- names(data)
   any_groups_changed <- !all(address_equal[group_vars])
   if (unique_groups){
-    extra_groups <- fast_setdiff(extra_groups, group_vars)
+    extra_groups <- vec_setdiff(extra_groups, group_vars)
     all_groups <- c(group_vars, extra_groups)
   } else {
-    all_groups <- c(group_vars, fast_setdiff(extra_groups, group_vars))
+    all_groups <- c(group_vars, vec_setdiff(extra_groups, group_vars))
   }
   list("data" = out,
        "dplyr_groups" = group_vars,
@@ -675,10 +675,10 @@ tidy_GRP <- function(.data, ..., .by = NULL, .cols = NULL,
   data <- info[["data"]]
   groups <- info[["all_groups"]]
   new_cols <- info[["new_cols"]]
-  all_groups <- c(fast_setdiff(groups, new_cols), new_cols)
+  all_groups <- c(vec_setdiff(groups, new_cols), new_cols)
   GRP <- info[["GRP"]]
   if (is.null(GRP) || !identical(groups, all_groups) ||
-      length(fast_intersect(info[["changed_cols"]], all_groups)) > 0L){
+      length(vec_intersect(info[["changed_cols"]], all_groups)) > 0L){
     GRP <- df_to_GRP(data, all_groups, order = .order, return.order = return_order)
   }
   GRP
@@ -724,7 +724,7 @@ sset_quos <- function(quos, i){
   set_add_attr(out, ".optimised", attr(quos, ".optimised", TRUE)[i])
   cpp_reconstruct(
     out, quos, c("names", "class", ".optimised"),
-    fast_setdiff(names(attributes(quos)), c("names", "class", ".optimised")),
+    vec_setdiff(names(attributes(quos)), c("names", "class", ".optimised")),
     FALSE
   )
 }
@@ -950,16 +950,16 @@ tidy_group_info_datamask <- function(data, ..., .by = NULL,
     GRP <- NULL
   }
   if (unique_groups){
-    extra_groups <- fast_setdiff(extra_groups, group_vars)
+    extra_groups <- vec_setdiff(extra_groups, group_vars)
     all_groups <- c(group_vars, extra_groups)
   } else {
-    all_groups <- c(group_vars, fast_setdiff(extra_groups, group_vars))
+    all_groups <- c(group_vars, vec_setdiff(extra_groups, group_vars))
   }
   if (is.null(out_info)){
     changed_groups <- character()
     address_equal <- add_names(logical(length(names(data))), names(data))
   } else {
-    changed_groups <- fast_intersect(names(data), out_info[["changed_cols"]])
+    changed_groups <- vec_intersect(names(data), out_info[["changed_cols"]])
     address_equal <- add_names(is.na(match(names(data), out_info[["changed_cols"]])), names(data))
   }
   list(

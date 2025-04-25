@@ -831,7 +831,7 @@ SEXP cpp_ungroup(SEXP data){
     SET_STRING_ELT(remove, 1, fp_grouped_df_char);
     SET_STRING_ELT(remove, 2, grp_df_char);
 
-    SEXP new_class = Rf_protect(cheapr::setdiff(old_class, remove));
+    SEXP new_class = Rf_protect(cheapr::setdiff(old_class, remove, false));
     Rf_setAttrib(out, R_ClassSymbol, new_class);
     Rf_unprotect(8);
     return out;
@@ -1224,7 +1224,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
     // Filter on the rows relevant to the current group
 
     if (has_groups){
-      R_Reprotect(chunk_locs = p_rows[i], chunk_locs_idx);
+      chunk_locs = p_rows[i];
       R_Reprotect(chunk = cheapr::df_slice(data_subset, chunk_locs, false), chunk_idx);
     }
 
@@ -1248,7 +1248,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
       }
       SET_VECTOR_ELT(inner_container, m, result);
       result_size = cheapr::vec_length(result);
-      recycled_size = recycle ? (result_size == 0 ? 0 : std::max(recycled_size, result_size)) : result_size;
+      recycled_size = recycle ? (result_size == 0 ? 0 : recycled_size > result_size ? recycled_size : result_size) : result_size;
       recycled_pointers[m][i] = recycled_size;
     }
 
@@ -1503,7 +1503,7 @@ SEXP cpp_nest_split(SEXP data, SEXP drop, SEXP order){
   R_ProtectWithIndex(locs = R_NilValue, &locs_idx); ++NP;
   R_ProtectWithIndex(frame = R_NilValue, &frame_idx); ++NP;
 
-  SEXP temp_cols = Rf_protect(cheapr::setdiff(names, group_vars)); ++NP;
+  SEXP temp_cols = Rf_protect(cheapr::setdiff(names, group_vars, false)); ++NP;
   SEXP temp = Rf_protect(cheapr::df_select(data, temp_cols)); ++NP;
 
   const SEXP *p_rows = VECTOR_PTR_RO(rows);

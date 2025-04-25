@@ -124,7 +124,7 @@ f_complete <- function(data, ...,
         fill[[i]]
     }
   }
-  out_order <- c(names(data), fast_setdiff(names(out), names(data)))
+  out_order <- c(names(data), vec_setdiff(names(out), names(data)))
   out <- f_select(out, .cols = out_order)
   cheapr::reconstruct(out, data)
 }

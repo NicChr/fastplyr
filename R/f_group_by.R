@@ -104,7 +104,7 @@ f_group_by <- function(data, ..., .add = FALSE,
   if (.add){
     order_unchanged <- .order == group_by_order_default(data)
     drop_unchanged <- .drop == df_group_by_drop_default(data)
-    no_extra_groups <- length(groups) == 0 || (length(fast_setdiff(groups, init_group_vars)) == 0)
+    no_extra_groups <- length(groups) == 0 || (length(vec_setdiff(groups, init_group_vars)) == 0)
     if (order_unchanged && drop_unchanged && no_extra_groups){
       return(data)
     }

@@ -18,7 +18,7 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
   }
 
   if (is.null(by)){
-    by <- fast_intersect(names(x), names(y))
+    by <- vec_intersect(names(x), names(y))
     if (length(by) == 0){
       stop("No common variables, please specify variables to join on")
     }
@@ -41,18 +41,18 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
     join_cols_left[empty] <- join_cols_right[empty]
   }
 
-  common_cols_left <- fast_intersect(names(x), names(y))
-  common_cols_right <- fast_intersect(names(y), names(x))
+  common_cols_left <- vec_intersect(names(x), names(y))
+  common_cols_right <- vec_intersect(names(y), names(x))
 
-  unjoinable_cols <- c(fast_setdiff(join_cols_left, names(x)),
-                       fast_setdiff(join_cols_right, names(y)))
+  unjoinable_cols <- c(vec_setdiff(join_cols_left, names(x)),
+                       vec_setdiff(join_cols_right, names(y)))
 
   if (length(unjoinable_cols) > 0){
     stop(paste0("Unable to join by '", unjoinable_cols[1], "' as it does not exist"))
   }
 
-  non_joined_common_cols_left <- fast_setdiff(common_cols_left, join_cols_left)
-  non_joined_common_cols_right <- fast_setdiff(common_cols_right, join_cols_right)
+  non_joined_common_cols_left <- vec_setdiff(common_cols_left, join_cols_left)
+  non_joined_common_cols_right <- vec_setdiff(common_cols_right, join_cols_right)
 
   # Add suffixes
 
@@ -113,11 +113,11 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
   exotic_cols_left <- names(x)[vapply(x, cpp_is_exotic, FALSE, USE.NAMES = FALSE)]
   exotic_cols_right <- names(y)[vapply(y, cpp_is_exotic, FALSE, USE.NAMES = FALSE)]
 
-  exotic_join_cols_left <- fast_intersect(join_cols_left, exotic_cols_left)
-  exotic_join_cols_right <- fast_intersect(join_cols_right, exotic_cols_right)
+  exotic_join_cols_left <- vec_intersect(join_cols_left, exotic_cols_left)
+  exotic_join_cols_right <- vec_intersect(join_cols_right, exotic_cols_right)
 
-  exotic_non_join_cols_left <- fast_setdiff(exotic_cols_left, exotic_join_cols_left)
-  exotic_non_join_cols_right <- fast_setdiff(exotic_cols_right, exotic_join_cols_right)
+  exotic_non_join_cols_left <- vec_setdiff(exotic_cols_left, exotic_join_cols_left)
+  exotic_non_join_cols_right <- vec_setdiff(exotic_cols_right, exotic_join_cols_right)
 
   left <- f_ungroup(x)
   right <- f_ungroup(y)
@@ -135,7 +135,7 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
 
   # For the non joining variables, we can just convert directly to IDs
 
-  # # exotic_non_joined_cols_left <- fast_setdiff(
+  # # exotic_non_joined_cols_left <- vec_setdiff(
   #   non_joined_cols_left[vapply(f_select(x, .cols = non_joined_cols_left), cpp_is_exotic, FALSE, USE.NAMES = FALSE)]
   # exotic_non_join_cols_right <-
   #   non_joined_cols_right[vapply(f_select(y, .cols = non_joined_cols_right), cpp_is_exotic, FALSE, USE.NAMES = FALSE)]
@@ -154,7 +154,7 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
   # exotic_cols_left <- names(x)[!cpp_frame_addresses_equal(x, left)]
   # exotic_cols_right <- names(y)[!cpp_frame_addresses_equal(y, right)]
 
-  exotic_cols_right <- fast_setdiff(exotic_cols_right, exotic_cols_left)
+  exotic_cols_right <- vec_setdiff(exotic_cols_right, exotic_cols_left)
 
   # Join
 
@@ -230,7 +230,7 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
         which_na <- integer()
       }
     } else {
-      out_nms <- c(names(left), fast_setdiff(names(right), join_cols_right))
+      out_nms <- c(names(left), vec_setdiff(names(right), join_cols_right))
     }
     out <- f_select(out, .cols = out_nms)
   }
@@ -241,7 +241,7 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
     out[[col]] <- cheapr::sset(x[[col]], matches)
   }
   if (!semi_or_anti){
-    for (col in fast_intersect(exotic_cols_right, names(out))){
+    for (col in vec_intersect(exotic_cols_right, names(out))){
       matches <- collapse::fmatch(out[[col]], right[[col]], overid = 2L)
       out[[col]] <- cheapr::sset(y[[col]], matches)
     }

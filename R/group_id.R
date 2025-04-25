@@ -76,7 +76,7 @@ group_id.default <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
 
   if (!as_qg && ascending && cpp_is_simple_atomic_vec(x)){
     out <- collapse::qG(x, sort = order, na.exclude = FALSE)
-    return(set_rm_attributes(out))
+    return(cheapr::attrs_rm(out, .set = TRUE))
   }
 
   g <- GRP2(cpp_ungroup(x),

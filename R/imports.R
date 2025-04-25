@@ -8,7 +8,6 @@ get_from_package <- function(x, package){
 val_rm <- get_from_package("val_rm", "cheapr")
 list_as_df <- get_from_package("list_as_df", "cheapr")
 set_add_attr <- get_from_package("cpp_set_add_attr", "cheapr")
-set_add_attributes <- get_from_package("cpp_set_add_attributes", "cheapr")
 set_rm_attr <- get_from_package("cpp_set_rm_attr", "cheapr")
 set_rm_attributes <- get_from_package("cpp_set_rm_attributes", "cheapr")
 which <- cheapr::which_
@@ -30,6 +29,8 @@ cpp_df_col_c <- get_from_package("cpp_df_col_c", "cheapr")
 cpp_str_coalesce <- get_from_package("cpp_str_coalesce", "cheapr")
 cpp_sset <- get_from_package("cpp_sset", "cheapr")
 cpp_reconstruct <- get_from_package("cpp_reconstruct", "cheapr")
+vec_setdiff <- get_from_package("vec_setdiff", "cheapr")
+vec_intersect <- get_from_package("vec_intersect", "cheapr")
 `%in_%` <- cheapr::`%in_%`
 
 

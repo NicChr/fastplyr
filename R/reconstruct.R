@@ -17,7 +17,7 @@ reconstruct.grouped_df <- function(x, template, ...){
   if (groups_are_identical){
     groups <- attr(template, "groups")
   } else {
-    out_groups <- fast_intersect(template_groups, names(x))
+    out_groups <- vec_intersect(template_groups, names(x))
     if (length(out_groups) == 0L){
       groups <- NULL
     } else {
@@ -52,7 +52,7 @@ reconstruct.fastplyr_grouped_df <- function(x, template, ...){
     groups <- attr(template, "groups")
     GRP <- attr(template, "GRP")
   } else {
-    out_groups <- fast_intersect(template_groups, names(x))
+    out_groups <- vec_intersect(template_groups, names(x))
     if (length(out_groups) == 0L){
       groups <- NULL
     } else {
