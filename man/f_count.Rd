@@ -2,9 +2,21 @@
 % Please edit documentation in R/f_count.R
 \name{f_count}
 \alias{f_count}
+\alias{f_add_count}
 \title{A fast replacement to dplyr::count()}
 \usage{
 f_count(
+  data,
+  ...,
+  wt = NULL,
+  sort = FALSE,
+  .order = group_by_order_default(data),
+  name = NULL,
+  .by = NULL,
+  .cols = NULL
+)
+
+f_add_count(
   data,
   ...,
   wt = NULL,

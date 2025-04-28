@@ -39,6 +39,7 @@
 #' @returns
 #' A `data.frame` of frequency counts by group.
 #'
+#' @rdname f_count
 #' @export
 f_count <- function(data, ..., wt = NULL, sort = FALSE,
                     .order = group_by_order_default(data),
@@ -92,6 +93,8 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
     cheapr::reconstruct(out, data)
   }
 }
+#' @rdname f_count
+#' @export
 f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
                         .order = group_by_order_default(data),
                         name = NULL, .by = NULL, .cols = NULL){
