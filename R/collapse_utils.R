@@ -676,8 +676,8 @@ group_order_and_counts <- function(g = NULL){
 
 grouped_first <- function(x, na.rm = TRUE, g = NULL, TRA = NULL, use.g.names = FALSE){
   if (is.null(g)){
-    first <- cheapr::sset(x, min(1L, cheapr::vector_length(x)))
-    if (na.rm && cheapr::vector_length(first) != 0 && cheapr::is_na(first)){
+    first <- cheapr::sset(x, min(1L, vector_length(x)))
+    if (na.rm && vector_length(first) != 0 && cheapr::is_na(first)){
       not_na_locs <- cheapr::na_find(x, invert = TRUE)
       first_not_na <- not_na_locs[min(1L, length(not_na_locs))]
       first <- cheapr::sset(x, first_not_na)
@@ -702,8 +702,8 @@ grouped_first <- function(x, na.rm = TRUE, g = NULL, TRA = NULL, use.g.names = F
 
 grouped_last <- function(x, na.rm = TRUE, g = NULL, TRA = NULL, use.g.names = FALSE){
   if (is.null(g)){
-    last <- cheapr::sset(x, cheapr::vector_length(x))
-    if (na.rm && cheapr::vector_length(last) != 0 && cheapr::is_na(last)){
+    last <- cheapr::sset(x, vector_length(x))
+    if (na.rm && vector_length(last) != 0 && cheapr::is_na(last)){
       not_na_locs <- cheapr::na_find(x, invert = TRUE)
       last_not_na <- not_na_locs[length(not_na_locs)]
       last <- cheapr::sset(x, last_not_na)

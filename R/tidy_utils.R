@@ -750,7 +750,7 @@ eval_optimised_quos <- function(quos, add_groups = TRUE){
     } else {
       groups <- cheapr::cheapr_rep_len(
         list(
-          cheapr::cheapr_rep_len(GRP_groups(GRP), cheapr::vector_length(results[[1]]))
+          cheapr::cheapr_rep_len(GRP_groups(GRP), vector_length(results[[1]]))
         ),
         length(quos)
       )
@@ -794,7 +794,7 @@ eval_all_tidy <- function(quos, recycle = FALSE){
     if (recycle){
       results <- cpp_recycle(results, NULL)
       groups <- cheapr::cheapr_rep_len(
-        list(cheapr::cheapr_rep_len(groups[[1]], cheapr::vector_length(results[[1]]))),
+        list(cheapr::cheapr_rep_len(groups[[1]], vector_length(results[[1]]))),
         length(results)
       )
     }

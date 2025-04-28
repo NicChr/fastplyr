@@ -26,7 +26,7 @@ f_reframe <- function(.data, ..., .by = NULL, .order = group_by_order_default(.d
   results <- results[["results"]]
   n_group_vars <- length(GRP_group_vars(GRP))
   if (n_group_vars == 0){
-    groups <- cheapr::new_df(.nrows = cheapr::vector_length(results[[1L]]))
+    groups <- cheapr::new_df(.nrows = vector_length(results[[1L]]))
   } else {
     groups <- list_as_df(groups[[1L]])
   }
