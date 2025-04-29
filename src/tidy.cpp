@@ -246,7 +246,7 @@ bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
     if (TYPEOF(ns) == NILSXP){
       return is_call2(expr, fn);
     } else {
-      const char *ns_char = CHAR(STRING_ELT(ns, 0));
+      SEXP ns_char = STRING_ELT(ns, 0);
       SEXP fn_ns, fn_sym;
       PROTECT_INDEX fn_ns_idx, fn_sym_idx;
       R_ProtectWithIndex(fn_ns = R_NilValue, &fn_ns_idx); ++NP;
@@ -261,12 +261,12 @@ bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
         SEXP call_tree = Rf_protect(as_list_call(expr)); ++NP;
         SEXP fn_expr_tree = Rf_protect(as_list_call(VECTOR_ELT(call_tree, 0))); ++NP;
         R_Reprotect(fn_ns = rlang::sym_as_string(VECTOR_ELT(fn_expr_tree, 1)), fn_ns_idx);
-        out = std::strcmp(CHAR(fn_ns), ns_char) == 0;
+        out = fn_ns == ns_char;
       } else {
         for (int i = 0; i < n_fns; ++i){
           R_Reprotect(fn_sym = Rf_installChar(STRING_ELT(fn, i)), fn_sym_idx);
           R_Reprotect(fn_ns = get_fun_ns(fn_sym, rho), fn_ns_idx);
-          out = out || std::strcmp(CHAR(fn_ns), ns_char) == 0;
+          out = out || (fn_ns == ns_char);
         }
       }
       Rf_unprotect(NP);
@@ -306,7 +306,7 @@ bool cpp_call_contains_ns(SEXP expr, SEXP ns, SEXP rho){
     if (TYPEOF(branch) == SYMSXP){
      SEXP branch_name = Rf_protect(rlang::sym_as_character(branch)); ++NP;
      SEXP fun_ns = Rf_protect(get_fun_ns(branch_name, rho)); ++NP;
-     if (std::strcmp(CHAR(fun_ns), CHAR(ns_str)) == 0){
+     if (fun_ns == ns_str){
        out = true;
        break;
      }

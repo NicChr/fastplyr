@@ -63,13 +63,12 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
   }
   if (!is.null(out)){
     out[[8L]] <- GRP_starts(out)
+    out <- c(out, list(X = X, locs = NULL))
+    if (return.locs){
+      out[[11L]] <- GRP_loc(out)
+    }
+    class(out) <- "GRP"
   }
-
-  out <- c(out, list(X = X, locs = NULL))
-  if (return.locs){
-    out[[11L]] <- GRP_loc(out)
-  }
-  class(out) <- "GRP"
   out
 }
 # Two alternatives to collapse::group

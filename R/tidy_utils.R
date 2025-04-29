@@ -623,42 +623,16 @@ select_summary <- function(.data, ..., .by = NULL, .cols = NULL, .order = group_
     GRP = GRP
   )
 }
-tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
-                                       ungroup = TRUE, rename = TRUE,
-                                       unique_groups = TRUE){
-  group_vars <- get_groups(data, {{ .by }})
-  group_pos <- match(group_vars, names(data))
-  extra_groups <- character()
-  if (ungroup){
-    out <- cpp_ungroup(data)
+
+tidy_dots_info <- function(.data, ..., .by = NULL, .cols = NULL,
+                           .order = group_by_order_default(.data),
+                           .type = "data-mask"){
+  check_cols(n_dots = dots_length(...), .cols = .cols)
+  if (is.null(.cols) && .type == "data-mask"){
+    mutate_summary(.data, ..., .by = {{ .by }}, .order = .order)
   } else {
-    out <- data
+    select_summary(.data, ..., .by = {{ .by }}, .order = .order, .cols = .cols)
   }
-  extra_group_pos <- tidy_select_pos(out, ..., .cols = .cols)
-  if (!rename){
-    names(extra_group_pos) <- names(data)[extra_group_pos]
-  }
-  out <- f_rename(out, .cols = extra_group_pos)
-  extra_groups <- names(extra_group_pos)
-  # Recalculate group vars in case they were renamed
-  group_vars <- names(out)[group_pos]
-  address_equal <- rep_len(TRUE, df_ncol(data))
-  address_equal[extra_group_pos] <-
-    names(data)[extra_group_pos] == names(extra_group_pos)
-  names(address_equal) <- names(data)
-  any_groups_changed <- !all(address_equal[group_vars])
-  if (unique_groups){
-    extra_groups <- vec_setdiff(extra_groups, group_vars)
-    all_groups <- c(group_vars, extra_groups)
-  } else {
-    all_groups <- c(group_vars, vec_setdiff(extra_groups, group_vars))
-  }
-  list("data" = out,
-       "dplyr_groups" = group_vars,
-       "extra_groups" = extra_groups,
-       "all_groups" = all_groups,
-       "groups_changed" = any_groups_changed,
-       "address_equal" = address_equal)
 }
 
 # tidy_GRP applies expressions supplied through `...` or selects cols
@@ -929,6 +903,60 @@ eval_mutate <- function(quos){
   results
 }
 
+mutate_summary_ungrouped <- function(.data, ..., .keep = c("all", "used", "unused", "none"),
+          error_call = rlang::caller_env())
+{
+  .keep <- rlang::arg_match(.keep)
+  original_cols <- names(.data)
+  bare_data <- df_ungroup(.data)
+  group_data <- new_tbl(.rows = add_attr(list(seq_len(df_nrow(bare_data))),
+                                         "class", c("vctrs_list_of", "vctrs_vctr", "list")))
+  by <- add_attr(list(type = "ungrouped", names = character(),
+                      data = group_data), "class", "dplyr_by")
+  dplyr_quos <- dplyr_quosures(...)
+  cols <- mutate_cols(bare_data, dplyr_quos, by = by, error_call = error_call)
+  out_data <- dplyr::dplyr_col_modify(bare_data, cols)
+  final_cols <- names(cols)
+  used <- attr(cols, "used")
+  keep_cols <- switch(.keep, all = names(used), none = final_cols,
+                      used = names(used)[which(used)], unused = names(used)[cheapr::which_(used,
+                                                                                           invert = TRUE)])
+  out_data <- f_select(out_data, .cols = keep_cols)
+  out <- list(data = out_data, cols = final_cols)
+  out
+}
+
+mutate_summary_grouped <- function (.data, ..., .keep = c("all", "used", "unused", "none"),
+          .by = NULL, error_call = rlang::caller_env())
+{
+  .keep <- rlang::arg_match(.keep)
+  original_cols <- names(.data)
+  by <- compute_by(by = {
+    {
+      .by
+    }
+  }, data = .data, by_arg = ".by", data_arg = ".data")
+  group_vars <- get_groups(.data, .by = {
+    {
+      .by
+    }
+  })
+  dplyr_quos <- dplyr_quosures(...)
+  cols <- mutate_cols(.data, dplyr_quos, by = by, error_call = error_call)
+  out_data <- dplyr::dplyr_col_modify(.data, cols)
+  final_cols <- names(cols)
+  used <- attr(cols, "used")
+  keep_cols <- switch(.keep, all = names(used), none = final_cols,
+                      used = names(used)[which(used)], unused = names(used)[cheapr::which_(used,
+                                                                                           invert = TRUE)])
+  keep_cols <- c(group_vars, keep_cols[match(keep_cols, group_vars,
+                                             0L) == 0L])
+  keep_cols <- keep_cols[order(match(keep_cols, original_cols))]
+  out_data <- f_select(out_data, .cols = keep_cols)
+  out <- list(data = out_data, cols = final_cols)
+  out
+}
+
 tidy_group_info_datamask <- function(data, ..., .by = NULL,
                                      ungroup = TRUE,
                                      unique_groups = TRUE){
@@ -974,6 +1002,44 @@ tidy_group_info_datamask <- function(data, ..., .by = NULL,
   )
 }
 
+tidy_group_info_tidyselect <- function(data, ..., .by = NULL, .cols = NULL,
+                                       ungroup = TRUE, rename = TRUE,
+                                       unique_groups = TRUE){
+  group_vars <- get_groups(data, {{ .by }})
+  group_pos <- match(group_vars, names(data))
+  extra_groups <- character()
+  if (ungroup){
+    out <- cpp_ungroup(data)
+  } else {
+    out <- data
+  }
+  extra_group_pos <- tidy_select_pos(out, ..., .cols = .cols)
+  if (!rename){
+    names(extra_group_pos) <- names(data)[extra_group_pos]
+  }
+  out <- f_rename(out, .cols = extra_group_pos)
+  extra_groups <- names(extra_group_pos)
+  # Recalculate group vars in case they were renamed
+  group_vars <- names(out)[group_pos]
+  address_equal <- rep_len(TRUE, df_ncol(data))
+  address_equal[extra_group_pos] <-
+    names(data)[extra_group_pos] == names(extra_group_pos)
+  names(address_equal) <- names(data)
+  any_groups_changed <- !all(address_equal[group_vars])
+  if (unique_groups){
+    extra_groups <- vec_setdiff(extra_groups, group_vars)
+    all_groups <- c(group_vars, extra_groups)
+  } else {
+    all_groups <- c(group_vars, vec_setdiff(extra_groups, group_vars))
+  }
+  list("data" = out,
+       "dplyr_groups" = group_vars,
+       "extra_groups" = extra_groups,
+       "all_groups" = all_groups,
+       "groups_changed" = any_groups_changed,
+       "address_equal" = address_equal)
+}
+
 tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
                             ungroup = TRUE, rename = TRUE,
                             dots_type = "data-mask",
@@ -990,16 +1056,5 @@ tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
                                ungroup = ungroup,
                                rename = rename,
                                unique_groups = unique_groups)
-  }
-}
-
-tidy_dots_info <- function(.data, ..., .by = NULL, .cols = NULL,
-                           .order = group_by_order_default(.data),
-                           .type = "data-mask"){
-  check_cols(n_dots = dots_length(...), .cols = .cols)
-  if (is.null(.cols) && .type == "data-mask"){
-    mutate_summary(.data, ..., .by = {{ .by }}, .order = .order)
-  } else {
-    select_summary(.data, ..., .by = {{ .by }}, .order = .order, .cols = .cols)
   }
 }
