@@ -23,7 +23,6 @@ inline int df_nrow(SEXP x){
 }
 
 SEXP get_list_element(SEXP list, const char *str);
-bool frame_any_exotic(SEXP x);
 int cpp_n_group_vars(SEXP x);
 SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes);
 

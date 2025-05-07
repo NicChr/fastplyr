@@ -39,17 +39,18 @@ SEXP cpp_frame_addresses_equal(SEXP x, SEXP y) {
 
 [[cpp11::register]]
 SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
-  Rf_protect(x = Rf_coerceVector(x, VECSXP));
+  int NP = 0;
   const SEXP *p_x = VECTOR_PTR_RO(x);
   int n = Rf_length(x);
-  SEXP nrows = Rf_protect(Rf_allocVector(INTSXP, n));
-  int *p_nrows = INTEGER(nrows);
-  SEXP ncols = Rf_protect(Rf_allocVector(INTSXP, n));
-  int *p_ncols = INTEGER(ncols);
+  SEXP nrows = Rf_protect(Rf_allocVector(INTSXP, n)); ++NP;
+  SEXP ncols = Rf_protect(Rf_allocVector(INTSXP, n)); ++NP;
+  int* __restrict__ p_nrows = INTEGER(nrows);
+  int* __restrict__ p_ncols = INTEGER(ncols);
+
   if (n < 2){
     for (int i = 0; i < n; ++i) {
       if (!Rf_inherits(p_x[i], "data.frame")){
-        Rf_unprotect(3);
+        Rf_unprotect(NP);
         Rf_error("All inputs must be data frames");
       }
       p_nrows[i] = df_nrow(p_x[i]);
@@ -60,7 +61,7 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
     // First data frame
 
     if (!Rf_inherits(p_x[0], "data.frame")){
-      Rf_unprotect(3);
+      Rf_unprotect(NP);
       Rf_error("All inputs must be data frames");
     }
     int n_rows = df_nrow(p_x[0]);
@@ -72,25 +73,25 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
 
     for (int i = 1; i < n; ++i) {
       if (!Rf_inherits(p_x[i], "data.frame")){
-        Rf_unprotect(3);
+        Rf_unprotect(NP);
         Rf_error("All inputs must be data frames");
       }
       p_nrows[i] = df_nrow(p_x[i]);
       p_ncols[i] = Rf_length(p_x[i]);
       if (check_rows_equal && p_nrows[i] != n_rows){
-        Rf_unprotect(3);
+        Rf_unprotect(NP);
         Rf_error("All input data frames must have the same number of rows");
       }
       if (check_cols_equal && p_ncols[i] != n_cols){
-        Rf_unprotect(3);
+        Rf_unprotect(NP);
         Rf_error("All input data frames must have the same number of cols");
       }
     }
   }
-  SEXP out = Rf_protect(Rf_allocVector(VECSXP, 2));
+  SEXP out = Rf_protect(Rf_allocVector(VECSXP, 2)); ++NP;
   SET_VECTOR_ELT(out, 0, nrows);
   SET_VECTOR_ELT(out, 1, ncols);
-  Rf_unprotect(4);
+  Rf_unprotect(NP);
   return out;
 }
 
@@ -98,17 +99,6 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
 bool cpp_is_exotic(SEXP x){
   return !cheapr::is_simple_atomic_vec(x);
 }
-
-bool frame_any_exotic(SEXP x){
-  bool out = false;
-  for (int i = 0; i < Rf_length(x); ++i){
-    if (cpp_is_exotic(VECTOR_ELT(x, i))){
-      out = true; break;
-    }
-  }
-  return out;
-}
-
 
 // Are any list elements data frames?
 
@@ -132,10 +122,13 @@ bool cpp_any_frames(SEXP x){
 bool cpp_any_frames_exotic(SEXP x){
   bool out = false;
   int n_dots = Rf_length(x);
+  const SEXP *p_x = VECTOR_PTR_RO(x);
+  int ncol;
   for (int i = 0; i < n_dots; ++i){
-    int ncol = Rf_length(VECTOR_ELT(x, i));
+    ncol = Rf_length(p_x[i]);
+    const SEXP *df_ptr = VECTOR_PTR_RO(p_x[i]);
     for (int j = 0; j < ncol; ++j){
-      if (cpp_is_exotic(VECTOR_ELT(VECTOR_ELT(x, i), j))){
+      if (cpp_is_exotic(df_ptr[j])){
         out = true;
         break;
       }
@@ -164,7 +157,7 @@ SEXP cpp_as_list_of_frames(SEXP x){
   R_ProtectWithIndex(result = R_NilValue, &index);
 
   for (int i = 0; i < n; ++i) {
-    R_Reprotect(result = p_x[i], index);
+    result = p_x[i];
     if (!Rf_inherits(result, "data.frame")){
       R_Reprotect(result = Rf_allocVector(VECSXP, 1), index);
       SET_VECTOR_ELT(result, 0, p_x[i]);
@@ -187,30 +180,29 @@ SEXP cpp_as_list_of_frames(SEXP x){
 
 [[cpp11::register]]
 SEXP cpp_list_subset(SEXP x, SEXP ptype, SEXP i, SEXP default_value) {
-  Rf_protect(x = Rf_coerceVector(x, VECSXP));
-  Rf_protect(i = Rf_coerceVector(i, INTSXP));
   const SEXP *p_x = VECTOR_PTR_RO(x);
+  Rf_protect(i = Rf_coerceVector(i, INTSXP));
   int n = Rf_length(x);
   int i_n = Rf_length(i);
   int k;
   if (n == 0){
-    Rf_unprotect(2);
+    Rf_unprotect(1);
     return ptype;
   }
   if (Rf_length(ptype) > 0){
-    Rf_unprotect(2);
+    Rf_unprotect(1);
     Rf_error("ptype must be a zero-length vector");
   }
   if (!(i_n == 1 || (n > 0 && i_n == n))){
-    Rf_unprotect(2);
+    Rf_unprotect(1);
     Rf_error("i must be an integer vector of length 1 or of length(x)");
   }
-  int *p_i = INTEGER(i);
+  int* __restrict__ p_i = INTEGER(i);
   switch (TYPEOF(ptype)){
   case LGLSXP: {
     bool replace = Rf_asLogical(default_value);
     SEXP out = Rf_protect(Rf_allocVector(LGLSXP, n));
-    int *p_out = LOGICAL(out);
+    int* __restrict__ p_out = LOGICAL(out);
     for (int j = 0; j < n; ++j) {
       p_out[j] = replace;
       k = (i_n == 1 ? p_i[0] : p_i[j]);
@@ -218,13 +210,13 @@ SEXP cpp_list_subset(SEXP x, SEXP ptype, SEXP i, SEXP default_value) {
         p_out[j] = LOGICAL(p_x[j])[k - 1];
       }
     }
-    Rf_unprotect(3);
+    Rf_unprotect(2);
     return out;
   }
   case INTSXP: {
     int replace = Rf_asInteger(default_value);
     SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
-    int *p_out = INTEGER(out);
+    int* __restrict__ p_out = INTEGER(out);
     for (int j = 0; j < n; ++j) {
       p_out[j] = replace;
       k = (i_n == 1 ? p_i[0] : p_i[j]);
@@ -232,13 +224,13 @@ SEXP cpp_list_subset(SEXP x, SEXP ptype, SEXP i, SEXP default_value) {
         p_out[j] = INTEGER(p_x[j])[k - 1];
       }
     }
-    Rf_unprotect(3);
+    Rf_unprotect(2);
     return out;
   }
   case REALSXP: {
     double replace = Rf_asReal(default_value);
     SEXP out = Rf_protect(Rf_allocVector(REALSXP, n));
-    double *p_out = REAL(out);
+    double* __restrict__ p_out = REAL(out);
     for (int j = 0; j < n; ++j) {
       p_out[j] = replace;
       k = (i_n == 1 ? p_i[0] : p_i[j]);
@@ -246,7 +238,7 @@ SEXP cpp_list_subset(SEXP x, SEXP ptype, SEXP i, SEXP default_value) {
         p_out[j] = REAL(p_x[j])[k - 1];
       }
     }
-    Rf_unprotect(3);
+    Rf_unprotect(2);
     return out;
   }
   case STRSXP: {
@@ -259,11 +251,11 @@ SEXP cpp_list_subset(SEXP x, SEXP ptype, SEXP i, SEXP default_value) {
         SET_STRING_ELT(out, j, STRING_ELT(p_x[j], k - 1));
       }
     }
-    Rf_unprotect(4);
+    Rf_unprotect(3);
     return out;
   }
   default: {
-    Rf_unprotect(2);
+    Rf_unprotect(1);
     Rf_error("cpp_list_subset cannot handle supplied SEXP");
   }
   }
@@ -274,10 +266,10 @@ SEXP cpp_list_subset(SEXP x, SEXP ptype, SEXP i, SEXP default_value) {
 
 [[cpp11::register]]
 SEXP cpp_sorted_group_starts(SEXP group_sizes, int init_loc = 1){
-  int *p_gsizes = INTEGER(group_sizes);
+  const int* __restrict__ p_gsizes = INTEGER(group_sizes);
   int n = Rf_length(group_sizes);
   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
-  int *p_out = INTEGER(out);
+  int* __restrict__ p_out = INTEGER(out);
   if (n > 0){
     int init = init_loc;
     p_out[0] = init;
