@@ -149,13 +149,13 @@ SEXP get_fun_ns(SEXP x, SEXP rho){
     Rf_protect(x = cpp_get(x, rho)); ++NP;
   }
   if (TYPEOF(x) != CLOSXP){
-    Rf_unprotect(NP); return Rf_mkChar("");
+    Rf_unprotect(NP); return R_BlankString;
   }
   SEXP env_call = Rf_protect(Rf_lang2(Rf_install("environment"), x)); ++NP;
   SEXP env = Rf_protect(Rf_eval(env_call, rho)); ++NP;
   // SEXP env = Rf_protect(CLOENV(x)); ++NP;
   if (Rf_isNull(x) || Rf_isNull(env)){
-    Rf_unprotect(NP); return Rf_mkChar("");
+    Rf_unprotect(NP); return R_BlankString;
   } else if (env == R_BaseNamespace){
     Rf_unprotect(NP); return Rf_mkChar("base");
   } else if (R_IsNamespaceEnv(env)) {
@@ -171,9 +171,9 @@ SEXP get_fun_ns(SEXP x, SEXP rho){
       Rf_unprotect(NP);
       return result;
     }
-    Rf_unprotect(NP); return Rf_mkChar("");
+    Rf_unprotect(NP); return R_BlankString;
   } else {
-    Rf_unprotect(NP); return Rf_mkChar("");
+    Rf_unprotect(NP); return R_BlankString;
   }
 }
 
@@ -545,7 +545,7 @@ bool call_contains_dplyr_mask(SEXP expr, SEXP rho){
 
   int NP = 0;
 
-  SEXP dplyr_mask_fns = Rf_protect(Rf_allocVector(STRSXP, 8)); ++NP;
+  SEXP dplyr_mask_fns = Rf_protect(Rf_allocVector(STRSXP, 10)); ++NP;
   SET_STRING_ELT(dplyr_mask_fns, 0, Rf_mkChar("n"));
   SET_STRING_ELT(dplyr_mask_fns, 1, Rf_mkChar("pick"));
   SET_STRING_ELT(dplyr_mask_fns, 2, Rf_mkChar("row_number"));
@@ -554,6 +554,8 @@ bool call_contains_dplyr_mask(SEXP expr, SEXP rho){
   SET_STRING_ELT(dplyr_mask_fns, 5, Rf_mkChar("cur_column"));
   SET_STRING_ELT(dplyr_mask_fns, 6, Rf_mkChar("cur_data"));
   SET_STRING_ELT(dplyr_mask_fns, 7, Rf_mkChar("cur_data_all"));
+  SET_STRING_ELT(dplyr_mask_fns, 8, Rf_mkChar("if_any"));
+  SET_STRING_ELT(dplyr_mask_fns, 9, Rf_mkChar("if_all"));
   SEXP dplyr_str = Rf_protect(Rf_mkString("dplyr")); ++NP;
 
   if (cpp_is_fn_call(expr, dplyr_mask_fns, dplyr_str, rho)){

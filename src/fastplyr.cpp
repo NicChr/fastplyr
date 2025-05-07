@@ -26,7 +26,7 @@ SEXP cpp_frame_addresses_equal(SEXP x, SEXP y) {
     Rf_error("x and y must be of the same length");
   }
   SEXP out = Rf_protect(Rf_allocVector(LGLSXP, n1));
-  int *p_out = LOGICAL(out);
+  int* __restrict__ p_out = LOGICAL(out);
   for (int i = 0; i < n1; ++i) {
     p_out[i] = (cheapr::r_address(p_x[i]) == cheapr::r_address(p_y[i]));
   }
@@ -146,13 +146,12 @@ bool cpp_any_frames_exotic(SEXP x){
 
 [[cpp11::register]]
 SEXP cpp_as_list_of_frames(SEXP x){
-  Rf_protect(x = Rf_coerceVector(x, VECSXP));
   const SEXP *p_x = VECTOR_PTR_RO(x);
 
   int n = Rf_length(x);
 
   SEXP out = Rf_protect(Rf_allocVector(VECSXP, n));
-  SEXP names = Rf_protect(Rf_getAttrib(x, R_NamesSymbol));
+  SEXP names = Rf_getAttrib(x, R_NamesSymbol);
   bool has_names = !Rf_isNull(names);
   SEXP tbl_class = Rf_protect(Rf_allocVector(STRSXP, 3));
   SET_STRING_ELT(tbl_class, 0, Rf_mkChar("tbl_df"));
@@ -180,7 +179,7 @@ SEXP cpp_as_list_of_frames(SEXP x){
   if (has_names){
     Rf_setAttrib(out, R_NamesSymbol, names);
   }
-  Rf_unprotect(5);
+  Rf_unprotect(3);
   return out;
 }
 
@@ -344,12 +343,10 @@ SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
   int n = Rf_length(group_id);
   int cur_group;
   int cur_group_loc;
-  int *p_cur_group_pointer;
   for (int i = 0; i < n; ++i){
     cur_group = p_group_id[i] - 1;
     cur_group_loc = p_loc_indices[cur_group]++;
-    p_cur_group_pointer = group_loc_pointers[cur_group];
-    p_cur_group_pointer[cur_group_loc] = i + 1;
+    group_loc_pointers[cur_group][cur_group_loc] = i + 1;
   }
   Rf_unprotect(2);
   return out;
@@ -395,86 +392,13 @@ SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes){
   return out;
 }
 
-// SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes, SEXP order){
-//   int n = Rf_length(group_id);
-//   int n_groups = Rf_length(group_sizes);
-//   int *p_group_sizes = INTEGER(group_sizes);
-//   int *p_group_id = INTEGER(group_id);
-//
-//   if (n_groups == 0){
-//     return Rf_allocVector(INTSXP, 0);
-//   }
-//
-//   // Sorted group start locs
-//   SEXP cumulative_sizes = Rf_protect(cpp_sorted_group_starts(group_sizes, 0));
-//   int *p_cumulative_sizes = INTEGER(cumulative_sizes);
-//
-//   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
-//   int* __restrict__ p_out = INTEGER(out);
-//
-//   int cur_group;
-//   int cur_group_loc;
-//   for (int i = 0; i < n; ++i){
-//     cur_group = p_group_id[i] - 1;
-//     p_out[i] = ++p_cumulative_sizes[cur_group];
-//   }
-//   Rf_unprotect(2);
-//   return out;
-// }
-
-// The same as above but on a list of group locations
-
-// SEXP cpp_orig_order3(SEXP group_id, SEXP group_sizes, SEXP locs){
-//   int n = Rf_length(group_id);
-//   int n_groups = Rf_length(group_sizes);
-//   int *p_group_sizes = INTEGER(group_sizes);
-//   int *p_group_id = INTEGER(group_id);
-//   const SEXP *p_locs = VECTOR_PTR_RO(locs);
-//
-//   if (n_groups == 0){
-//     return Rf_allocVector(INTSXP, 0);
-//   }
-//
-//   // Store a vector of pointers
-//   // Speeds up later allocation
-//   std::vector<int *> group_loc_pointers(n_groups);
-//
-//   // Sorted group start locs
-//
-//   SEXP cumulative_sizes = Rf_protect(Rf_allocVector(INTSXP, n_groups));
-//   int *p_cumulative_sizes = INTEGER(cumulative_sizes);
-//
-//   if (n_groups > 0){
-//     int init = 0;
-//     p_cumulative_sizes[0] = init;
-//     // cumsum over group_sizes[-length(group_sizes)]
-//     for (int i = 0; i < (n_groups - 1); ++i){
-//       p_cumulative_sizes[i + 1] = (init += p_group_sizes[i]);
-//       group_loc_pointers[i] = INTEGER(p_locs[i]);
-//     }
-//     group_loc_pointers[n_groups - 1] = INTEGER(p_locs[n_groups - 1]);
-//   }
-//
-//   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
-//   int* __restrict__ p_out = INTEGER(out);
-//
-//   int cur_group;
-//   int cur_group_loc;
-//   for (int i = 0; i < n; ++i){
-//     cur_group = p_group_id[i] - 1;
-//     p_out[i] = ++p_cumulative_sizes[cur_group];
-//   }
-//   Rf_unprotect(2);
-//   return out;
-// }
-
 [[cpp11::register]]
 SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
   int n = Rf_length(order);
   SEXP out = Rf_protect(Rf_allocVector(INTSXP, n));
-  int *p_out = INTEGER(out);
-  int *p_o = INTEGER(order);
-  int *p_group_sizes = INTEGER(group_sizes);
+  int* __restrict__ p_out = INTEGER(out);
+  const int* __restrict__ p_o = INTEGER(order);
+  int* __restrict__ p_group_sizes = INTEGER(group_sizes);
   int j = 0;
   int running_group_size;
   if (Rf_length(group_sizes) == 0){
@@ -598,21 +522,29 @@ SEXP cpp_which_all(SEXP x){
     out = Rf_protect(cheapr::val_find(p_x[0], r_true, false)); ++NP;
   } else {
     SEXP lgl = Rf_protect(Rf_allocVector(LGLSXP, n_rows)); ++NP;
-    int *p_lgl = LOGICAL(lgl);
+    int* __restrict__ p_lgl = LOGICAL(lgl);
     memset(p_lgl, 0, n_rows * sizeof(int));
+
+    // Save pointers to logical cols
+
+    std::vector<int*> col_ptrs(n_cols);
+
+    for (int i = 0; i < n_cols; ++i){
+      col_ptrs[i] = LOGICAL(p_x[i]);
+    }
 
     bool is_true = false;
     for (int i = 0; i < n_rows; ++i){
       is_true = true;
       int j = 0;
       while (j < n_cols && is_true){
-        is_true = LOGICAL(p_x[j++])[i] == TRUE;
+        is_true = col_ptrs[j++][i] == TRUE;
       }
       n_true += is_true;
       p_lgl[i] = is_true;
     }
     out = Rf_protect(Rf_allocVector(INTSXP, n_true)); ++NP;
-    int *p_out = INTEGER(out);
+    int* __restrict__ p_out = INTEGER(out);
     int whichi = 0;
     int i = 0;
     while (whichi < n_true){
