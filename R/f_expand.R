@@ -146,7 +146,10 @@ crossing <- function(..., .sort = FALSE){
 nesting <- function(..., .sort = FALSE){
   df_as_tbl(
     sort_unique(
-      cpp_df_col_c(list_tidy(..., .named = TRUE, .keep_null = FALSE), TRUE, TRUE), sort = .sort
+      cheapr::col_c(
+        .args = list_tidy(..., .named = TRUE, .keep_null = FALSE),
+        .recycle = TRUE, .name_repair = TRUE
+      ), sort = .sort
     )
   )
 }

@@ -790,7 +790,7 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
     results[which_optimised] <- optimised_results[[2L]]
 
     if (recycle){
-      results <- cpp_recycle(results, NULL)
+      results <- cheapr::recycle(.args = results)
       groups <- cheapr::cheapr_rep_len(
         list(cheapr::cheapr_rep_len(groups[[1]], vector_length(results[[1]]))),
         length(results)

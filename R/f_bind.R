@@ -24,7 +24,7 @@
 f_bind_rows <- function(...){
   frames <- cpp_as_list_of_frames(tidy_as_list_of(...))
   if (length(frames)){
-    out <- cpp_c(frames)
+    out <- cheapr::cheapr_c(.args = frames)
     names(out) <- cheapr::name_repair(names(out))
     out
   } else {
@@ -36,7 +36,7 @@ f_bind_rows <- function(...){
 f_bind_cols <- function(..., .repair_names = TRUE, .recycle = TRUE){
   frames <- cpp_as_list_of_frames(tidy_as_list_of(...))
   if (length(frames)){
-    cpp_df_col_c(frames, .recycle, .repair_names)
+    cheapr::col_c(.args = frames, .recycle = .recycle, .name_repair = .repair_names)
   } else {
     new_tbl()
   }
