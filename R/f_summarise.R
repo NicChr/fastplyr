@@ -96,12 +96,17 @@
 #' @export
 f_summarise <- function(.data, ..., .by = NULL, .order = group_by_order_default(.data)){
   all_groups <- get_groups(.data, .by = {{ .by }})
-  GRP <- df_to_GRP(.data, all_groups, order = .order)
-  quos <- fastplyr_quos(..., .drop_null = TRUE,
+  if (length(all_groups) == 0L){
+    GRP <- NULL
+    group_keys <- f_group_keys(.data)
+  } else {
+    GRP <- df_to_GRP(.data, all_groups, order = .order)
+    group_keys <- GRP_groups(GRP)
+  }
+  quos <- fastplyr_quos(..., .data = .data, .groups = GRP,
+                        .drop_null = TRUE,
                         .unpack_default = TRUE,
-                        .optimise = should_optimise(GRP),
-                        .groups = GRP)
-  group_keys <- GRP_groups(GRP)
+                        .optimise = should_optimise(GRP))
   if (df_nrow(.data) == 0){
     group_keys <- cheapr::sset_df(group_keys, 0L)
   }
@@ -109,23 +114,23 @@ f_summarise <- function(.data, ..., .by = NULL, .order = group_by_order_default(
   if (length(quos) == 0){
     return(cheapr::reconstruct(group_keys, cpp_ungroup(.data)))
   }
-    ## The `recycle` argument won't have a visible effect
-    # on the final result, but it's faster to
-    # set as TRUE as it means the group keys only get recycled once internally
-    # and recycling between results shouldn't happen as they should all be
-    # of equal length
-    results <- eval_all_tidy(quos, recycle = TRUE)
-    groups <- results[["groups"]]
-    results <- results[["results"]]
+  ## The `recycle` argument won't have a visible effect
+  # on the final result, but it's faster to
+  # set as TRUE as it means the group keys only get recycled once internally
+  # and recycling between results shouldn't happen as they should all be
+  # of equal length
+  results <- eval_all_tidy(.data, quos, recycle = TRUE)
+  groups <- results[["groups"]]
+  results <- results[["results"]]
 
-    result_sizes <- cheapr::list_lengths(results)
-    if (any(result_sizes != df_nrow(group_keys))){
-      cli::cli_abort(c("All expressions should return results of length 1 per-group",
-                       "Use {.run f_reframe()} instead"))
-    }
-    out <- df_add_cols(group_keys, results)
-    out <- cheapr::sset_col(out, !duplicated(names(out), fromLast = TRUE))
-  # }
+  result_sizes <- cheapr::list_lengths(results)
+  if (any(result_sizes != df_nrow(group_keys))){
+    cli::cli_abort(c("All expressions should return results of length 1 per-group",
+                     "Use {.run f_reframe()} instead"))
+  }
+  out <- df_add_cols(group_keys, results)
+  out <- cheapr::sset_col(out, !duplicated(names(out), fromLast = TRUE))
+
   cheapr::reconstruct(out, cpp_ungroup(.data))
 }
 #' @rdname f_summarise

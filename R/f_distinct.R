@@ -34,28 +34,45 @@ f_distinct <- function(data, ..., .keep_all = FALSE,
   if (dots_length(...) == 0 && is.null(.cols)){
     .cols <- names(data)
   }
-  group_info <- tidy_GRP(
+  group_info <- tidy_eval_groups(
     data, ..., .by = {{ .by }},
     .cols = .cols, .order = .order
   )
-  data <- GRP_data(group_info)
+  data <- group_info[[1L]]
+  GRP <- group_info[[2L]]
+
   if (.keep_all){
-    distinct_locs <- GRP_starts(group_info)
+    distinct_locs <- GRP_starts(GRP)
     N <- df_nrow(data)
     n_distinct_locs <- length(distinct_locs)
     if (.order){
       slice <- !(N == n_distinct_locs &&
-                   isTRUE(attr(group_info[["order"]], "sorted")))
+                   isTRUE(attr(GRP[["order"]], "sorted")))
     } else {
       slice <- !(N == n_distinct_locs)
     }
     if (slice){
-      out <- cheapr::sset_row(data, distinct_locs)
+
+      # 1. Choose all cols in the data
+      # not already covered by the user's chosen cols
+      # 2. Filter on unique locations
+      # 3. bind this onto the unique data containing the rest of the columns
+      # 4. Re-order the columns as needed
+      out <- cheapr::sset_col(
+        f_bind_cols(
+          cheapr::sset_row(
+            cheapr::sset_col(data, vec_setdiff(names(data), GRP_group_vars(GRP))),
+            distinct_locs
+          ),
+          GRP_groups(GRP)
+        ),
+        names(data)
+      )
     } else {
       out <- data
     }
   } else {
-    out <- GRP_groups(group_info)
+    out <- GRP_groups(GRP)
   }
   if (identical(names(out), group_vars(data))){
     cheapr::reconstruct(out, f_ungroup(data))

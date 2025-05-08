@@ -60,21 +60,23 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
 
   } else {
 
-    group_info <- tidy_GRP(
+    group_info <- tidy_eval_groups(
       data, ...,
       .by = {{ .by }},
       .cols = .cols,
       .order = .order
     )
 
-    out <- GRP_groups(group_info)
-    group_vars <- GRP_group_vars(group_info)
+    GRP <- group_info[[2L]]
+
+    out <- GRP_groups(GRP)
+    group_vars <- GRP_group_vars(GRP)
     if (is.null(weights)){
-      counts <- GRP_group_sizes(group_info)
+      counts <- GRP_group_sizes(GRP)
     } else {
       counts <- collapse::fsum(
         as.double(weights),
-        g = group_info,
+        g = GRP,
         na.rm = TRUE,
         use.g.names = FALSE,
         fill = FALSE
@@ -113,20 +115,23 @@ f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
     out <- data
   } else {
 
-    group_info <- tidy_GRP(
+    group_info <- tidy_eval_groups(
       data, ...,
       .by = {{ .by }},
       .cols = .cols,
       .order = .order
     )
-    out <- GRP_data(group_info)
-    group_vars <- GRP_group_vars(group_info)
+
+    out <- group_info[[1L]]
+    GRP <- group_info[[2L]]
+
+    group_vars <- GRP_group_vars(GRP)
     if (is.null(weights)){
-      counts <- GRP_group_sizes(group_info)[GRP_group_id(group_info)]
+      counts <- GRP_group_sizes(GRP)[GRP_group_id(GRP)]
     } else {
       counts <- collapse::fsum(
         as.double(weights),
-        g = group_info,
+        g = GRP,
         na.rm = TRUE,
         use.g.names = FALSE,
         fill = FALSE,

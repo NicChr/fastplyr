@@ -36,7 +36,7 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
     if (!is.null(by)) {
       X <- cheapr::sset_df(X, j = by)
     }
-    out <- cheapr::new_list(11L)
+    out <- cheapr::new_list(10L)
     # groups <- group2(X)
     groups <- group3(X, starts = TRUE, group.sizes = TRUE)
     out[[1L]] <- attr(groups, "N.groups")
@@ -52,7 +52,7 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
     out[[2L]] <- groups
     names(out) <- c("N.groups", "group.id",
                     "group.sizes", "groups", "group.vars", "ordered",
-                    "order", "group.starts", "call", "X", "locs")
+                    "order", "group.starts", "call", "locs")
     class(out) <- "GRP"
   }
   else {
@@ -63,9 +63,9 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
   }
   if (!is.null(out)){
     out[[8L]] <- GRP_starts(out)
-    out <- c(out, list(X = X, locs = NULL))
+    out <- c(out, list(locs = NULL))
     if (return.locs){
-      out[[11L]] <- GRP_loc(out)
+      out[[10L]] <- GRP_loc(out)
     }
     class(out) <- "GRP"
   }
@@ -153,10 +153,6 @@ GRP_groups <- function(GRP){
 # Group variable names
 GRP_group_vars <- function(GRP){
   GRP[["group.vars"]]
-}
-# Data
-GRP_data <- function(GRP){
-  GRP[["X"]]
 }
 check_GRP_has_groups <- function(GRP){
   if (is_GRP(GRP) && is.null(GRP_groups(GRP))){
@@ -391,7 +387,7 @@ grouped_df_as_GRP <- function(data,
                               return.locs = TRUE, ...){
   GRP <- attr(data, "GRP", TRUE)
   if (!is.null(GRP)) return(GRP)
-  out <- cheapr::new_list(11L)
+  out <- cheapr::new_list(10L)
   n_rows <- df_nrow(data)
   gdata <- group_data(data)
   gvars <- group_vars(data)
@@ -448,9 +444,9 @@ grouped_df_as_GRP <- function(data,
                   "group.sizes", "groups",
                   "group.vars",
                   "ordered", "order",
-                  "group.starts", "call", "X", "locs")
-  out[[10L]] <- data
-  out[[11L]] <- as.list(grows)
+                  "group.starts", "call",
+                  "locs")
+  out[[10L]] <- as.list(grows)
   class(out) <- "GRP"
   out
 }
@@ -521,8 +517,7 @@ df_to_GRP <- function(data, .cols = character(),
       out[["groups"]] <- groups
     }
   }
-  out <- cheapr::list_assign(out, list("X" = data))
-  if (return.locs && is.null(out[["locs"]])){
+  if (return.locs){
     out <- cheapr::list_assign(out, list("locs" = GRP_loc(out)))
   }
   class(out) <- "GRP"
@@ -549,11 +544,10 @@ GRP.list <- function(X, return.groups = TRUE, ...){
 }
 #' @exportS3Method collapse::GRP
 GRP.vctrs_rcrd <- function(X, return.groups = TRUE, ...){
-  out <- GRP2(list_as_df(X), return.groups = FALSE, ...)
+  out <- GRP2(cheapr::list_as_df(X), return.groups = FALSE, ...)
   if (return.groups){
     out[["groups"]] <- list(x = cheapr::sset(X, GRP_starts(out)))
   }
-  out[[11L]] <- NULL
   out[[10L]] <- NULL
   out
 }

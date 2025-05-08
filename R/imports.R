@@ -6,7 +6,6 @@ get_from_package <- function(x, package){
 # cheapr ------------------------------------------------------------------
 
 val_rm <- get_from_package("val_rm", "cheapr")
-list_as_df <- get_from_package("list_as_df", "cheapr")
 set_add_attr <- get_from_package("cpp_set_add_attr", "cheapr")
 set_rm_attr <- get_from_package("cpp_set_rm_attr", "cheapr")
 set_rm_attributes <- get_from_package("cpp_set_rm_attributes", "cheapr")
@@ -15,8 +14,6 @@ which_not_in <- get_from_package("which_not_in", "cheapr")
 which_in <- get_from_package("which_in", "cheapr")
 cpp_int64_to_numeric <- get_from_package("cpp_int64_to_numeric", "cheapr")
 cpp_loc_set_replace <- get_from_package("cpp_loc_set_replace", "cheapr")
-named_list <- get_from_package("named_list", "cheapr")
-as_list_of <- get_from_package("as_list_of", "cheapr")
 cpp_is_simple_atomic_vec <- get_from_package("cpp_is_simple_atomic_vec", "cheapr")
 cpp_recycle <- get_from_package("cpp_recycle", "cheapr")
 cpp_c <- get_from_package("cpp_c", "cheapr")

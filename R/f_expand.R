@@ -25,11 +25,16 @@ f_expand <- function(data, ..., .sort = FALSE,
                      .by = NULL, .cols = NULL){
   check_cols(dots_length(...), .cols = .cols)
   group_vars <- get_groups(data, {{ .by }})
-  GRP <- df_to_GRP(data, group_vars, order = .sort)
+
+  if (length(group_vars) == 0L){
+    GRP <- NULL
+  } else {
+    GRP <- df_to_GRP(data, group_vars, order = .sort)
+  }
 
   # If the user is simply selecting cols then we can use an optimised method
   if (is.null(.cols)){
-    dots <- fastplyr_quos(..., .groups = GRP)
+    dots <- fastplyr_quos(..., .data = data, .groups = GRP)
     dot_labels <- quo_labels(dots)
     if (all(dot_labels %in% names(data)) && !any(names(dots) %in% names(data))){
       .cols <- dot_labels
@@ -47,7 +52,8 @@ f_expand <- function(data, ..., .sort = FALSE,
       )
     }
   } else {
-    frames <- eval_all_tidy(dots, recycle = FALSE)
+    data2 <- data
+    frames <- eval_all_tidy(data2, dots, recycle = FALSE)
     frames <- purrr::map2(
       frames[[1L]], cpp_as_list_of_frames(frames[[2L]]),
       \(x, y) sort_unique(cheapr::col_c(x, y), .sort)
@@ -81,7 +87,7 @@ f_expand <- function(data, ..., .sort = FALSE,
   }
   names(out) <- cheapr::name_repair(names(out))
   # If just empty list
-  if (length(out) == 0){
+  if (length(frames) == 0){
     out <- f_distinct(data2, .cols = group_vars, .order = .sort)
   }
   cheapr::reconstruct(out, data)

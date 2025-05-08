@@ -42,7 +42,7 @@ df_as_tbl <- function(x){
 # Cannot contain duplicate names
 # or different length list elements
 list_as_tbl <- function(x){
-  df_as_tbl(list_as_df(x))
+  df_as_tbl(cheapr::list_as_df(x))
 }
 
 # df manipulation helpers -------------------------------------------------
@@ -145,7 +145,7 @@ expand_unused_levels <- function(data){
         remove_rows_if_any_na(factors)
       )
     if (num_missing_categories > 0){
-      full <- list_as_df(
+      full <- cheapr::list_as_df(
         add_names(
           do.call(cross_join, lapply(factors, cheapr::levels_factor)),
           names(factors)

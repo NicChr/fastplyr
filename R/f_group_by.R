@@ -92,15 +92,16 @@ f_group_by <- function(data, ..., .add = FALSE,
                        .by = NULL, .cols = NULL,
                        .drop = df_group_by_drop_default(data)){
   init_group_vars <- group_vars(data)
-  group_info <- tidy_GRP(
+  group_info <- tidy_eval_groups(
     cpp_ungroup(data), ...,
     .by = {{ .by }},
     .cols = .cols,
     .order = .order,
     return_order = .order
   )
-  out <- GRP_data(group_info)
-  groups <- GRP_group_vars(group_info)
+  out <- group_info[[1L]]
+  GRP <- group_info[[2L]]
+  groups <- GRP_group_vars(GRP)
   if (.add){
     order_unchanged <- .order == group_by_order_default(data)
     drop_unchanged <- .drop == df_group_by_drop_default(data)
@@ -108,9 +109,9 @@ f_group_by <- function(data, ..., .add = FALSE,
     if (order_unchanged && drop_unchanged && no_extra_groups){
       return(data)
     }
-    group_info <- df_to_GRP(out, c(init_group_vars, groups), order = .order)
+    GRP <- df_to_GRP(out, c(init_group_vars, groups), order = .order)
   }
-  construct_fastplyr_grouped_df(group_info, drop = .drop)
+  construct_fastplyr_grouped_df(out, GRP, drop = .drop)
 }
 #' @rdname f_group_by
 #' @export

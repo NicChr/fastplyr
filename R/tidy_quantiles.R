@@ -72,8 +72,17 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     levels = collapse::funique(quant_nms), class = "factor"
   )
 
-  n_groups <- GRP_n_groups(groups)
-  group_starts <- GRP_starts(groups)
+  if (is.null(groups)){
+    n_groups <- 1L
+    group_starts <- min(1L, df_nrow(data2))
+    group_ids <- integer(df_nrow(data2))
+  } else {
+    n_groups <- GRP_n_groups(groups)
+    group_starts <- GRP_starts(groups)
+    group_ids <- GRP_group_id(groups)
+  }
+
+
   data2 <- f_select(data2, .cols = c(group_vars, dot_vars))
 
   ## Handle edge-cases
@@ -116,15 +125,6 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     return(cheapr::reconstruct(out, data))
   }
 
-  ### Do this because if groups is a GRP then collapse::fnth allocates
-  ### more memory than needed in the special case of <= 1 groups
-
-  if (n_groups <= 1){
-    collapse_groups <- NULL
-  } else {
-    collapse_groups <- groups
-  }
-
   ## Make sure double vectors are atomic doubles
 
   for (.col in dot_vars) {
@@ -148,7 +148,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
           )
         )
     }
-    out <- list_as_df(out)
+    out <- cheapr::list_as_df(out)
     if (wide){
       out <- df_add_col(out, ".temp.fastplyr.group.id", 0L)
       out <- collapse::pivot(
@@ -177,7 +177,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
       # This makes repetitive calls much faster
       o <- radixorderv2(
         cheapr::new_df(
-          g1 = GRP_group_id(groups),
+          g1 = group_ids,
           g2 = data2[[.col]]
         )
       )
@@ -186,21 +186,21 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
           sample_quantiles <-
             as.double(
               collapse::fmin(
-                data2[[.col]], g = collapse_groups, na.rm = na.rm, use.g.names = FALSE
+                data2[[.col]], g = groups, na.rm = na.rm, use.g.names = FALSE
               )
             )
         } else if (p == 1) {
           sample_quantiles <-
             as.double(
               collapse::fmax(
-                data2[[.col]], g = collapse_groups, na.rm = na.rm, use.g.names = FALSE
+                data2[[.col]], g = groups, na.rm = na.rm, use.g.names = FALSE
               )
             )
         } else if (p > 0 && p < 1) {
           sample_quantiles <-
             as.double(
               collapse::fnth(
-                data2[[.col]], n = p, g = collapse_groups, na.rm = na.rm,
+                data2[[.col]], n = p, g = groups, na.rm = na.rm,
                 use.g.names = FALSE, ties = quant_ties,
                 o = o, check.o = FALSE
               )
@@ -210,7 +210,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
         k <- k + 1L
       }
     }
-    out <- list_as_df(out)
+    out <- cheapr::list_as_df(out)
   } else {
 
     # Grouped method for pivot == "long"
@@ -242,7 +242,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
       # This makes repetitive calls much faster
       o <- radixorderv2(
         cheapr::new_df(
-          g1 = GRP_group_id(groups),
+          g1 = group_ids,
           g2 = data2[[.col]]
         )
       )
@@ -258,7 +258,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
             out[[.col]], p_seq,
             as.double(
               collapse::fmin(
-                data2[[.col]], g = collapse_groups, na.rm = na.rm,
+                data2[[.col]], g = groups, na.rm = na.rm,
                 use.g.names = FALSE
               )
             )
@@ -268,7 +268,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
             out[[.col]], p_seq,
             as.double(
               collapse::fmax(
-                data2[[.col]], g = collapse_groups, na.rm = na.rm,
+                data2[[.col]], g = groups, na.rm = na.rm,
                 use.g.names = FALSE
               )
             )
@@ -278,7 +278,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
             out[[.col]], p_seq,
             as.double(
               collapse::fnth(
-                data2[[.col]], n = p, g = collapse_groups, na.rm = na.rm,
+                data2[[.col]], n = p, g = groups, na.rm = na.rm,
                 use.g.names = FALSE, ties = quant_ties,
                 o = o, check.o = FALSE
               )

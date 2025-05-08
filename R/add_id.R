@@ -51,20 +51,21 @@ add_group_id.data.frame <- function(.data, ...,
                                     as_qg = FALSE){
   N <- df_nrow(.data)
   check_by(.data, .by = {{ .by }})
-  group_info <- tidy_GRP(.data, ..., .by = {{ .by }},
-                         .cols = .cols,
-                         .order = .order)
-  data <- GRP_data(group_info)
-  all_groups <- group_info[["all_groups"]]
+  group_info <- tidy_eval_groups(.data, ..., .by = {{ .by }},
+                                 .cols = .cols,
+                                 .order = .order)
+  data <- group_info[[1L]]
+  GRP <- group_info[[2L]]
+  all_groups <- GRP_group_vars(GRP)
 
   .name <- .name %||% unique_col_name(names(data), "group_id")
 
-  ids <- GRP_group_id(group_info)
+  ids <- GRP_group_id(GRP)
   if (as_qg){
     ids <- group_id_to_qg(ids,
-                          n_groups = GRP_n_groups(group_info),
-                          group_sizes = GRP_group_sizes(group_info),
-                          group_starts = GRP_starts(group_info),
+                          n_groups = GRP_n_groups(GRP),
+                          group_sizes = GRP_group_sizes(GRP),
+                          group_starts = GRP_starts(GRP),
                           ordered = .order)
   }
   df_add_col(.data, .name, ids)

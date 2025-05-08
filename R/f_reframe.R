@@ -11,24 +11,29 @@
 f_reframe <- function(.data, ..., .by = NULL, .order = group_by_order_default(.data)){
 
   all_groups <- get_groups(.data, .by = {{ .by }})
-  GRP <- df_to_GRP(.data, all_groups, order = .order)
-  quos <- fastplyr_quos(..., .drop_null = TRUE,
+  if (length(all_groups) == 0L){
+    GRP <- NULL
+    group_keys <- f_group_keys(.data)
+  } else {
+    GRP <- df_to_GRP(.data, all_groups, order = .order)
+    group_keys <- GRP_groups(GRP)
+  }
+  quos <- fastplyr_quos(..., .data = .data, .drop_null = TRUE,
                         .unpack_default = TRUE,
                         .optimise = should_optimise(GRP),
                         .groups = GRP)
-  group_keys <- GRP_groups(GRP)
 
   if (length(quos) == 0){
     return(cheapr::reconstruct(GRP_groups(GRP), cpp_ungroup(.data)))
   }
-  results <- eval_all_tidy(quos, recycle = TRUE)
+  results <- eval_all_tidy(.data, quos, recycle = TRUE)
   groups <- results[["groups"]]
   results <- results[["results"]]
   n_group_vars <- length(GRP_group_vars(GRP))
   if (n_group_vars == 0){
     groups <- cheapr::new_df(.nrows = vector_length(results[[1L]]))
   } else {
-    groups <- list_as_df(groups[[1L]])
+    groups <- cheapr::list_as_df(groups[[1L]])
   }
   out <- df_add_cols(groups, results)
   out <- cheapr::sset_col(out, !duplicated(names(out), fromLast = TRUE))

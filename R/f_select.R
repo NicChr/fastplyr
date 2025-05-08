@@ -30,7 +30,6 @@ f_select.data.frame <- function(data, ..., .cols = NULL){
   out
 }
 #' @export
-#' @export
 f_select.grouped_df <- function(data, ..., .cols = NULL){
   group_vars <- group_vars(data)
   group_data <- group_data(data)
@@ -60,6 +59,37 @@ f_select.grouped_df <- function(data, ..., .cols = NULL){
   class(out) <- c("grouped_df", class(out))
   out
 }
+# f_select.fastplyr_grouped_df <- function(data, ..., .cols = NULL){
+#   group_vars <- group_vars(data)
+#   group_data <- group_data(data)
+#   GRP <- attr(data, "GRP")
+#
+#   cols <- tidy_select_names(data, ..., .cols = .cols)
+#
+#   missed_groups <- vec_setdiff(group_vars, cols)
+#
+#   if (length(missed_groups) > 0){
+#     missed_groups_msg <- paste(missed_groups, collapse = ", ")
+#     cli::cli_inform(c("i" = "Adding missed group variables:", "{missed_groups_msg}"))
+#     cols <- c(`names<-`(missed_groups, missed_groups), cols)
+#   }
+#
+#   out <- cheapr::sset_col(data, cols)
+#   names(out) <- names(cols)
+#   # out <- col_rename(out, cols)
+#
+#   # If any groups have been renamed then rename the group data
+#   selected_group_vars <- vec_intersect(cols, group_vars)
+#   if (any(names(selected_group_vars) != selected_group_vars)){
+#     group_data <- col_rename(group_data, selected_group_vars)
+#     attr(out, "groups") <- group_data
+#   }
+#   out <- cheapr::reconstruct(out, cpp_ungroup(data))
+#   attr(out, "groups") <- group_data
+#   attr(out, "GRP") <- GRP
+#   class(out) <- c("fastplyr_grouped_df", "grouped_df", class(out))
+#   out
+# }
 #' @rdname f_select
 #' @export
 f_rename <- function(data, ..., .cols = NULL){

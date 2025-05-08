@@ -179,7 +179,7 @@ group_id.GRP <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
 #' @export
 group_id.vctrs_rcrd <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
   group_id(
-    list_as_df(x),
+    cheapr::list_as_df(x),
     order = order,
     ascending = ascending,
     as_qg = as_qg

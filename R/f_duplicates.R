@@ -44,24 +44,27 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
   if (dots_length(...) == 0 && is.null(.cols)){
     .cols <- names(data)
   }
-  group_info <- tidy_GRP(data, ..., .by = {{ .by }}, .cols = .cols,
+  group_info <- tidy_eval_groups(data, ..., .by = {{ .by }}, .cols = .cols,
                          .order = .sort)
-  dup_vars <- GRP_group_vars(group_info)
-  out <- GRP_data(group_info)
+  out <- group_info[[1L]]
+  GRP <- group_info[[2L]]
+
+  dup_vars <- GRP_group_vars(GRP)
+
   if (!.keep_all){
     out <- f_select(out, .cols = dup_vars)
   }
   if (.add_count){
-    group_sizes <- GRP_expanded_group_sizes(group_info)
+    group_sizes <- GRP_expanded_group_sizes(GRP)
     count_col <- unique_count_col(out)
     out <- df_add_cols(out, list_tidy(!!count_col := group_sizes))
   }
-  which_dup <- GRP_which_duplicated(group_info, all = .both_ways)
+  which_dup <- GRP_which_duplicated(GRP, all = .both_ways)
 
   # Neat way to return sorted duplicate rows
 
   if (.sort){
-    which_dup <- which_dup[order(GRP_group_id(group_info)[which_dup])]
+    which_dup <- which_dup[order(GRP_group_id(GRP)[which_dup])]
   }
   out <- cheapr::sset(out, which_dup)
 

@@ -62,7 +62,7 @@ df_collapse <- function(data, cols = names(data),
           remove_rows_if_any_na(factors)
         )
       if (num_missing_categories > 0){
-        full <- list_as_df(
+        full <- cheapr::list_as_df(
           add_names(
             do.call(cross_join, lapply(factors, cheapr::levels_factor)),
             names(factors)
@@ -123,7 +123,7 @@ GRP_collapse <- function(g,
                          id = FALSE,
                          size = FALSE, loc = TRUE,
                          start = FALSE, end = FALSE,
-                         drop = df_group_by_drop_default(g[["X"]])){
+                         drop){
   check_GRP(g)
   if (is.null(g[["groups"]])){
     cli::cli_abort("Please supply a {.cls GRP} {.arg g} with distinct groups attached")
@@ -169,7 +169,7 @@ GRP_collapse <- function(g,
           remove_rows_if_any_na(factors)
         )
       if (num_missing_categories > 0){
-        full <- list_as_df(
+        full <- cheapr::list_as_df(
           add_names(
             do.call(cross_join, lapply(factors, cheapr::levels_factor)),
             names(factors)
@@ -206,7 +206,7 @@ GRP_collapse <- function(g,
   out
 }
 
-construct_dplyr_group_data <- function(g, drop = df_group_by_drop_default(GRP_data(g))){
+construct_dplyr_group_data <- function(g, drop){
   group_data <- GRP_collapse(
     g,
     id = FALSE,
@@ -225,16 +225,15 @@ construct_dplyr_group_data <- function(g, drop = df_group_by_drop_default(GRP_da
   group_data
 }
 
-construct_fastplyr_group_data <- function(g, drop = df_group_by_drop_default(GRP_data(g))){
+construct_fastplyr_group_data <- function(g, drop){
 
   out <- construct_dplyr_group_data(g, drop = drop)
   attr(out, "ordered") <- GRP_is_ordered(g)
   out
 }
 
-construct_fastplyr_grouped_df <- function(g, drop = df_group_by_drop_default(GRP_group_data(g))){
+construct_fastplyr_grouped_df <- function(data, g, drop = df_group_by_drop_default(data)){
 
-  data <- GRP_data(g)
   group_vars <- GRP_group_vars(g)
   if (length(group_vars) == 0){
     return(f_ungroup(data))
