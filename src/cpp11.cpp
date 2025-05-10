@@ -313,6 +313,13 @@ extern "C" SEXP _fastplyr_cpp_group_split(SEXP data) {
     return cpp11::as_sexp(cpp_group_split(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
   END_CPP11
 }
+// tidy.cpp
+SEXP grouped_df_group_metadata(SEXP data);
+extern "C" SEXP _fastplyr_grouped_df_group_metadata(SEXP data) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(grouped_df_group_metadata(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
+  END_CPP11
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
@@ -358,6 +365,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_unlist_group_locs",                (DL_FUNC) &_fastplyr_cpp_unlist_group_locs,                2},
     {"_fastplyr_cpp_which_all",                        (DL_FUNC) &_fastplyr_cpp_which_all,                        1},
     {"_fastplyr_fun_ns",                               (DL_FUNC) &_fastplyr_fun_ns,                               2},
+    {"_fastplyr_grouped_df_group_metadata",            (DL_FUNC) &_fastplyr_grouped_df_group_metadata,            1},
     {"_fastplyr_is_nested_call",                       (DL_FUNC) &_fastplyr_is_nested_call,                       1},
     {"_fastplyr_n_group_vars",                         (DL_FUNC) &_fastplyr_n_group_vars,                         1},
     {NULL, NULL, 0}

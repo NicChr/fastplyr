@@ -294,7 +294,7 @@ SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
   for (unsigned int i = 0; i < n_groups; ++i, k += group_size){
     group_size = p_gs[i];
     SET_VECTOR_ELT(out, i, Rf_allocVector(INTSXP, group_size));
-    memcpy(INTEGER(p_out[i]), &p_o[k], sizeof(int) * group_size);
+    memcpy(&INTEGER(p_out[i])[0], &p_o[k], sizeof(int) * group_size);
   }
   Rf_unprotect(1);
   return out;

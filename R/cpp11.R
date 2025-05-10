@@ -175,3 +175,7 @@ cpp_nest_split <- function(data, drop, order) {
 cpp_group_split <- function(data) {
   .Call(`_fastplyr_cpp_group_split`, data)
 }
+
+grouped_df_group_metadata <- function(data) {
+  .Call(`_fastplyr_grouped_df_group_metadata`, data)
+}

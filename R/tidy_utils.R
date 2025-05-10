@@ -480,10 +480,13 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
       }
     }
   }
-  set_add_attr(out, ".optimised", optimised)
-  set_add_attr(out, ".GRP", .groups)
-  set_add_attr(out, ".fastplyr_quos", TRUE)
-  out
+  cheapr::attrs_add(
+    out,
+    .optimised = optimised,
+    .GRP = .groups,
+    .fastplyr_quos = TRUE,
+    .set = TRUE
+  )
 }
 
 should_optimise <- function(GRP){

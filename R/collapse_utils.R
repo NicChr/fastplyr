@@ -393,9 +393,10 @@ grouped_df_as_GRP <- function(data,
   gvars <- group_vars(data)
   n_groups <- df_nrow(gdata)
   gkeys <- group_keys(data)
-  group_id <- f_group_indices(data)
+  group_metadata <- grouped_df_group_metadata(data)
+  group_id <- group_metadata[["group_id"]]
   grows <- group_rows(data)
-  gsizes <- cheapr::list_lengths(grows)
+  gsizes <- group_metadata[["group_sizes"]]
   groups_are_ordered <- group_by_order_default(data)
 
   gorder <- NULL
@@ -404,7 +405,7 @@ grouped_df_as_GRP <- function(data,
   if (length(gvars) == 0){
     gstarts <- min(1L, n_rows)
   } else {
-    gstarts <- GRP_loc_starts(grows)
+    gstarts <- group_metadata[["group_starts"]]
   }
 
   if (return.order && groups_are_ordered){
@@ -415,16 +416,30 @@ grouped_df_as_GRP <- function(data,
                                  maxgrpn = gsizes,
                                  sorted = TRUE)
     } else {
-      sorted <- cpp_group_id_sorted(group_id)
-      if (isTRUE(sorted)){
-        gorder <- seq_along(group_id)
-        attributes(gorder) <- list(starts = gstarts,
-                                   maxgrpn = gsizes[length(gsizes)],
-                                   sorted = TRUE)
-      } else {
-        # gorder <- cpp_unlist_group_locs(grows, gsizes)
-        gorder <- collapse::radixorderv(group_id, starts = TRUE)
-      }
+      gorder <- group_metadata[["group_order"]]
+      sorted_group_starts <- group_metadata[["sorted_group_starts"]]
+      sorted <- group_metadata[["sorted"]]
+      max_group_size <- group_metadata[["max_group_size"]]
+      cheapr::attrs_add(
+        gorder,
+        starts = sorted_group_starts,
+        maxgrpn = max_group_size,
+        sorted = sorted,
+        .set = TRUE
+      )
+      # sorted <- cpp_group_id_sorted(group_id)
+      # if (isTRUE(sorted)){
+      #   gorder <- seq_along(group_id)
+      #   attributes(gorder) <- list(starts = gstarts,
+      #                              maxgrpn = gsizes[length(gsizes)],
+      #                              sorted = TRUE)
+      # } else {
+      #   ## TO-DO ADD STARTS VECTOR HERE
+      #   gorder <- cpp_unlist_group_locs(grows, gsizes)
+      #   cheapr::attrs_add(gorder, starts = cpp_sorted_group_starts(gsizes, 1L),
+      #                     .set = TRUE)
+      #   # gorder <- collapse::radixorderv(group_id, starts = TRUE)
+      # }
     }
   }
   gordered <- c("ordered" = groups_are_ordered, "sorted" = sorted)
