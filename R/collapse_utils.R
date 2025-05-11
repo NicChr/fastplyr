@@ -383,63 +383,8 @@ GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
 # Convert data frame to GRP safely
 # Either treats data as 1 big group or
 # Uses dplyr group vars
-grouped_df_as_GRP <- function(data,
-                              return.order = TRUE,
-                              return.groups = TRUE,
-                              return.locs = TRUE, ...){
-  GRP <- attr(data, "GRP", TRUE)
-  if (!is.null(GRP)) return(GRP)
-  out <- cheapr::new_list(10L)
-  n_rows <- df_nrow(data)
-  gdata <- group_data(data)
-  gvars <- group_vars(data)
-  n_groups <- df_nrow(gdata)
-  gkeys <- group_keys(data)
-  group_metadata <- grouped_df_group_metadata(data)
-  group_id <- group_metadata[["group_id"]]
-  grows <- group_rows(data)
-  gsizes <- group_metadata[["group_sizes"]]
-  gstarts <- group_metadata[["group_starts"]]
-  groups_are_ordered <- group_by_order_default(data)
-
-  gorder <- NULL
-  sorted <- NA
-
-  if (return.order && groups_are_ordered){
-    gorder <- group_metadata[["group_order"]]
-    sorted_group_starts <- group_metadata[["sorted_group_starts"]]
-    sorted <- group_metadata[["sorted"]]
-    max_group_size <- group_metadata[["max_group_size"]]
-    cheapr::attrs_add(
-      gorder,
-      starts = sorted_group_starts,
-      maxgrpn = max_group_size,
-      sorted = sorted,
-      .set = TRUE
-    )
-  }
-  gordered <- c("ordered" = groups_are_ordered, "sorted" = sorted)
-  out[[1L]] <- n_groups
-  out[[2L]] <- group_id
-  out[[3L]] <- gsizes
-  if (return.groups){
-    out[[4L]] <- gkeys
-    out[[5L]] <- gvars
-  }
-  out[[6L]] <- gordered
-  if (!is.null(gorder)){
-    out[[7L]] <- gorder
-  }
-  out[[8L]] <- gstarts
-  names(out) <- c("N.groups", "group.id",
-                  "group.sizes", "groups",
-                  "group.vars",
-                  "ordered", "order",
-                  "group.starts", "call",
-                  "locs")
-  out[[10L]] <- as.list(grows)
-  class(out) <- "GRP"
-  out
+grouped_df_as_GRP <- function(data, return.order = TRUE, ...){
+  cpp_grouped_df_as_grp(data)
 }
 # Custom GRP method for data frames
 # Group starts is always returned

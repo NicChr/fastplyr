@@ -777,7 +777,7 @@ SEXP cpp_group_vars(SEXP x){
     Rf_unprotect(1);
     return out;
   } else {
-   return Rf_allocVector(STRSXP, 0);
+    return Rf_allocVector(STRSXP, 0);
   }
   // return Rf_inherits(x, "grouped_df") ? Rf_getAttrib(cpp_group_keys(x), R_NamesSymbol) : Rf_allocVector(STRSXP, 0);
 }
@@ -785,10 +785,8 @@ SEXP cpp_group_vars(SEXP x){
 [[cpp11::register]]
 SEXP cpp_group_rows(SEXP x){
   SEXP group_data = Rf_protect(cpp_group_data(x));
-  SEXP loc = Rf_protect(Rf_ScalarInteger(Rf_length(group_data)));
-  SEXP rows = Rf_protect(cheapr::df_select(group_data, loc));
-  SEXP out = VECTOR_ELT(rows, 0);
-  Rf_unprotect(3);
+  SEXP out = VECTOR_ELT(group_data, Rf_length(group_data) - 1);
+  Rf_unprotect(1);
   return out;
 }
 
@@ -1603,18 +1601,151 @@ SEXP cpp_group_split(SEXP data){
 // - Max group size
 // - Order of sorted groups
 
+// SEXP grouped_df_group_metadata(SEXP data){
+//   int NP = 0;
+//   int nrows = df_nrow(data);
+//   SEXP group_rows = Rf_protect(cpp_group_rows(data)); ++NP;
+//   int ngroups = Rf_length(group_rows);
+//
+//   SEXP group_id = Rf_protect(Rf_allocVector(INTSXP, nrows)); ++NP;
+//   SEXP group_order = Rf_protect(Rf_allocVector(INTSXP, nrows)); ++NP;
+//   SEXP group_starts = Rf_protect(Rf_allocVector(INTSXP, nrows == 0 ? 0 : ngroups)); ++NP;
+//   SEXP group_sizes = Rf_protect(Rf_allocVector(INTSXP, nrows == 0 ? 0 : ngroups)); ++NP;
+//   SEXP sorted_group_starts = Rf_protect(Rf_allocVector(INTSXP, nrows == 0 ? 0 : ngroups)); ++NP;
+//
+//   int* __restrict__ p_group_id = INTEGER(group_id);
+//   int* __restrict__ p_group_order = INTEGER(group_order);
+//   int* __restrict__ p_group_starts = INTEGER(group_starts);
+//   int* __restrict__ p_group_sizes = INTEGER(group_sizes);
+//   int* __restrict__ p_sorted_group_starts = INTEGER(sorted_group_starts);
+//   const SEXP* p_group_rows = VECTOR_PTR_RO(group_rows);
+//   bool groups_sorted = true;
+//   int max_group_size = 0;
+//
+//   int group_size;
+//
+//   SEXP rows_i = R_NilValue;
+//
+//   int k = 0; // Keep track of which row we are in
+//
+//   if (nrows > 0){
+//
+//     rows_i = p_group_rows[0];
+//     group_size = Rf_length(rows_i);
+//     const int* __restrict__ p_rows_i = INTEGER(rows_i);
+//
+//     p_group_starts[0] = p_rows_i[0];
+//     p_group_sizes[0] = group_size;
+//     p_sorted_group_starts[0] = 1;
+//     max_group_size = max_group_size < group_size ? group_size : max_group_size;
+//
+//     memcpy(&p_group_order[k], &p_rows_i[0], group_size * sizeof(int));
+//
+//     for (int j = 0; j < group_size; ++j, ++k){
+//       p_group_id[p_rows_i[j] - 1] = 1;
+//     }
+//
+//     for (int i = 1; i < ngroups; ++i){
+//       rows_i = p_group_rows[i];
+//       group_size = Rf_length(rows_i);
+//       const int* __restrict__ p_rows_i = INTEGER(rows_i);
+//
+//       p_group_starts[i] = p_rows_i[0];
+//       p_sorted_group_starts[i] = k + 1;
+//       p_group_sizes[i] = group_size;
+//       max_group_size = max_group_size < group_size ? group_size : max_group_size;
+//
+//       memcpy(&p_group_order[k], &p_rows_i[0], group_size * sizeof(int));
+//
+//       for (int j = 0; j < group_size; ++j, ++k){
+//         p_group_id[p_rows_i[j] - 1] = i + 1;
+//         groups_sorted = groups_sorted && p_group_order[k] > p_group_order[k - 1];
+//       }
+//     }
+//   }
+//   SEXP out = Rf_protect(Rf_allocVector(VECSXP, 7)); ++NP;
+//   SEXP out_names = Rf_protect(Rf_allocVector(STRSXP, 7)); ++NP;
+//   SET_STRING_ELT(out_names, 0, Rf_mkCharCE("group_id", CE_UTF8));
+//   SET_STRING_ELT(out_names, 1, Rf_mkCharCE("group_sizes", CE_UTF8));
+//   SET_STRING_ELT(out_names, 2, Rf_mkCharCE("group_starts", CE_UTF8));
+//   SET_STRING_ELT(out_names, 3, Rf_mkCharCE("group_order", CE_UTF8));
+//   SET_STRING_ELT(out_names, 4, Rf_mkCharCE("sorted_group_starts", CE_UTF8));
+//   SET_STRING_ELT(out_names, 5, Rf_mkCharCE("sorted", CE_UTF8));
+//   SET_STRING_ELT(out_names, 6, Rf_mkCharCE("max_group_size", CE_UTF8));
+//   Rf_namesgets(out, out_names);
+//   SEXP sorted = Rf_protect(Rf_allocVector(LGLSXP, 1)); ++NP;
+//   LOGICAL(sorted)[0] = groups_sorted;
+//   SET_VECTOR_ELT(out, 0, group_id);
+//   SET_VECTOR_ELT(out, 1, group_sizes);
+//   SET_VECTOR_ELT(out, 2, group_starts);
+//   SET_VECTOR_ELT(out, 3, group_order);
+//   SET_VECTOR_ELT(out, 4, sorted_group_starts);
+//   SET_VECTOR_ELT(out, 5, sorted);
+//   SET_VECTOR_ELT(out, 6, Rf_ScalarInteger(max_group_size));
+//   Rf_unprotect(NP);
+//   return out;
+// }
+
+// A fast method for converting a 'grouped_df' into a 'GRP'
+
 [[cpp11::register]]
-SEXP grouped_df_group_metadata(SEXP data){
+SEXP cpp_grouped_df_as_grp(SEXP data){
   int NP = 0;
   int nrows = df_nrow(data);
-  SEXP group_rows = Rf_protect(cpp_group_rows(data)); ++NP;
+
+  SEXP grp = Rf_getAttrib(data, Rf_install("GRP"));
+  if (TYPEOF(grp) != NILSXP){
+    return grp;
+  }
+
+  // Initialise needed components
+
+  SEXP out = Rf_protect(Rf_allocVector(VECSXP, 10)); ++NP;
+  SEXP out_names = Rf_protect(Rf_allocVector(STRSXP, 10)); ++NP;
+  SET_STRING_ELT(out_names, 0, Rf_mkCharCE("N.groups", CE_UTF8));
+  SET_STRING_ELT(out_names, 1, Rf_mkCharCE("group.id", CE_UTF8));
+  SET_STRING_ELT(out_names, 2, Rf_mkCharCE("group.sizes", CE_UTF8));
+  SET_STRING_ELT(out_names, 3, Rf_mkCharCE("groups", CE_UTF8));
+  SET_STRING_ELT(out_names, 4, Rf_mkCharCE("group.vars", CE_UTF8));
+  SET_STRING_ELT(out_names, 5, Rf_mkCharCE("ordered", CE_UTF8));
+  SET_STRING_ELT(out_names, 6, Rf_mkCharCE("order", CE_UTF8));
+  SET_STRING_ELT(out_names, 7, Rf_mkCharCE("group.starts", CE_UTF8));
+  SET_STRING_ELT(out_names, 8, Rf_mkCharCE("call", CE_UTF8));
+  SET_STRING_ELT(out_names, 9, Rf_mkCharCE("locs", CE_UTF8));
+  Rf_namesgets(out, out_names);
+
+  SEXP group_data = Rf_protect(cpp_group_data(data)); ++NP;
+  int n_group_vars = Rf_length(group_data) - 1;
+  SEXP group_rows = VECTOR_ELT(group_data, n_group_vars);
   int ngroups = Rf_length(group_rows);
 
+  bool groups_are_ordered = cpp_group_by_order_default(data);
+
+  SEXP grp_class = Rf_protect(Rf_ScalarString(Rf_mkCharCE("GRP", CE_UTF8))); ++NP;
+  SEXP n_groups = Rf_protect(Rf_ScalarInteger(ngroups)); ++NP;
   SEXP group_id = Rf_protect(Rf_allocVector(INTSXP, nrows)); ++NP;
   SEXP group_order = Rf_protect(Rf_allocVector(INTSXP, nrows)); ++NP;
   SEXP group_starts = Rf_protect(Rf_allocVector(INTSXP, nrows == 0 ? 0 : ngroups)); ++NP;
   SEXP group_sizes = Rf_protect(Rf_allocVector(INTSXP, nrows == 0 ? 0 : ngroups)); ++NP;
   SEXP sorted_group_starts = Rf_protect(Rf_allocVector(INTSXP, nrows == 0 ? 0 : ngroups)); ++NP;
+  SEXP sorted = Rf_protect(Rf_allocVector(LGLSXP, 1)); ++NP;
+  SEXP r_max_group_size = Rf_protect(Rf_allocVector(INTSXP, 1)); ++NP;
+  SEXP groups = Rf_protect(cpp_group_keys(data)); ++NP;
+  SEXP group_vars = Rf_protect(cpp_group_vars(data)); ++NP;
+  SEXP ordered = Rf_protect(Rf_allocVector(LGLSXP, 2)); ++NP;
+  SEXP ordered_nms = Rf_protect(Rf_allocVector(STRSXP, 2)); ++NP;
+
+  SEXP group_locs = Rf_protect(Rf_shallow_duplicate(group_rows)); ++NP;
+  group_locs = cheapr::set_rm_attrs(group_locs);
+
+  LOGICAL(ordered)[0] = groups_are_ordered;
+  LOGICAL(ordered)[1] = groups_are_ordered ? true : NA_LOGICAL;
+
+  SET_STRING_ELT(ordered_nms, 0, Rf_mkCharCE("ordered", CE_UTF8));
+  SET_STRING_ELT(ordered_nms, 1, Rf_mkCharCE("sorted", CE_UTF8));
+  Rf_namesgets(ordered, ordered_nms);
+
+  // Pointers
 
   int* __restrict__ p_group_id = INTEGER(group_id);
   int* __restrict__ p_group_order = INTEGER(group_order);
@@ -1622,6 +1753,52 @@ SEXP grouped_df_group_metadata(SEXP data){
   int* __restrict__ p_group_sizes = INTEGER(group_sizes);
   int* __restrict__ p_sorted_group_starts = INTEGER(sorted_group_starts);
   const SEXP* p_group_rows = VECTOR_PTR_RO(group_rows);
+
+  // If no groups then the results are trivial
+
+  if (ngroups <= 1){
+    LOGICAL(sorted)[0] = true;
+    INTEGER(r_max_group_size)[0] = nrows;
+    if (nrows != 0){
+      p_group_starts[0] = 1;
+      p_group_sizes[0] = nrows;
+      p_sorted_group_starts[0] = 1;
+    }
+    for (int i = 0; i < nrows; ++i){
+      p_group_id[i] = 1;
+      p_group_order[i] = i + 1;
+    }
+
+    Rf_setAttrib(
+      group_order,
+      Rf_installChar(Rf_mkCharCE("starts", CE_UTF8)),
+      sorted_group_starts
+    );
+    Rf_setAttrib(
+      group_order,
+      Rf_installChar(Rf_mkCharCE("maxgrpn", CE_UTF8)),
+      r_max_group_size
+    );
+    Rf_setAttrib(
+      group_order,
+      Rf_installChar(Rf_mkCharCE("sorted", CE_UTF8)),
+      sorted
+    );
+
+    SET_VECTOR_ELT(out, 0, n_groups);
+    SET_VECTOR_ELT(out, 1, group_id);
+    SET_VECTOR_ELT(out, 2, group_sizes);
+    SET_VECTOR_ELT(out, 3, groups);
+    SET_VECTOR_ELT(out, 4, group_vars);
+    SET_VECTOR_ELT(out, 5, ordered);
+    SET_VECTOR_ELT(out, 6, group_order);
+    SET_VECTOR_ELT(out, 7, group_starts);
+    SET_VECTOR_ELT(out, 9, group_locs);
+    Rf_classgets(out, grp_class);
+    Rf_unprotect(NP);
+    return out;
+  }
+
   bool groups_sorted = true;
   int max_group_size = 0;
 
@@ -1666,25 +1843,33 @@ SEXP grouped_df_group_metadata(SEXP data){
       }
     }
   }
-  SEXP out = Rf_protect(Rf_allocVector(VECSXP, 7)); ++NP;
-  SEXP out_names = Rf_protect(Rf_allocVector(STRSXP, 7)); ++NP;
-  SET_STRING_ELT(out_names, 0, Rf_mkCharCE("group_id", CE_UTF8));
-  SET_STRING_ELT(out_names, 1, Rf_mkCharCE("group_sizes", CE_UTF8));
-  SET_STRING_ELT(out_names, 2, Rf_mkCharCE("group_starts", CE_UTF8));
-  SET_STRING_ELT(out_names, 3, Rf_mkCharCE("group_order", CE_UTF8));
-  SET_STRING_ELT(out_names, 4, Rf_mkCharCE("sorted_group_starts", CE_UTF8));
-  SET_STRING_ELT(out_names, 5, Rf_mkCharCE("sorted", CE_UTF8));
-  SET_STRING_ELT(out_names, 6, Rf_mkCharCE("max_group_size", CE_UTF8));
-  Rf_namesgets(out, out_names);
-  SEXP sorted = Rf_protect(Rf_allocVector(LGLSXP, 1)); ++NP;
   LOGICAL(sorted)[0] = groups_sorted;
-  SET_VECTOR_ELT(out, 0, group_id);
-  SET_VECTOR_ELT(out, 1, group_sizes);
-  SET_VECTOR_ELT(out, 2, group_starts);
-  SET_VECTOR_ELT(out, 3, group_order);
-  SET_VECTOR_ELT(out, 4, sorted_group_starts);
-  SET_VECTOR_ELT(out, 5, sorted);
-  SET_VECTOR_ELT(out, 6, Rf_ScalarInteger(max_group_size));
+  INTEGER(r_max_group_size)[0] = max_group_size;
+  Rf_setAttrib(
+    group_order,
+    Rf_installChar(Rf_mkCharCE("starts", CE_UTF8)),
+    sorted_group_starts
+  );
+  Rf_setAttrib(
+    group_order,
+    Rf_installChar(Rf_mkCharCE("maxgrpn", CE_UTF8)),
+    r_max_group_size
+  );
+  Rf_setAttrib(
+    group_order,
+    Rf_installChar(Rf_mkCharCE("sorted", CE_UTF8)),
+    sorted
+  );
+  SET_VECTOR_ELT(out, 0, n_groups);
+  SET_VECTOR_ELT(out, 1, group_id);
+  SET_VECTOR_ELT(out, 2, group_sizes);
+  SET_VECTOR_ELT(out, 3, groups);
+  SET_VECTOR_ELT(out, 4, group_vars);
+  SET_VECTOR_ELT(out, 5, ordered);
+  SET_VECTOR_ELT(out, 6, group_order);
+  SET_VECTOR_ELT(out, 7, group_starts);
+  SET_VECTOR_ELT(out, 9, group_locs);
+  Rf_classgets(out, grp_class);
   Rf_unprotect(NP);
   return out;
 }

@@ -10,7 +10,7 @@ df_collapse <- function(data, cols = names(data),
   g <- df_to_GRP(data, .cols = cols,
                  order = order,
                  return.groups = TRUE,
-                 return.order = FALSE)
+                 return.order = order)
   out <- as_tbl(GRP_groups(g))
   if (id){
     out <- df_add_col(out, ".group", df_seq_along(out))

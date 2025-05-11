@@ -314,10 +314,10 @@ extern "C" SEXP _fastplyr_cpp_group_split(SEXP data) {
   END_CPP11
 }
 // tidy.cpp
-SEXP grouped_df_group_metadata(SEXP data);
-extern "C" SEXP _fastplyr_grouped_df_group_metadata(SEXP data) {
+SEXP cpp_grouped_df_as_grp(SEXP data);
+extern "C" SEXP _fastplyr_cpp_grouped_df_as_grp(SEXP data) {
   BEGIN_CPP11
-    return cpp11::as_sexp(grouped_df_group_metadata(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
+    return cpp11::as_sexp(cpp_grouped_df_as_grp(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
   END_CPP11
 }
 
@@ -346,6 +346,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_group_size",                       (DL_FUNC) &_fastplyr_cpp_group_size,                       1},
     {"_fastplyr_cpp_group_split",                      (DL_FUNC) &_fastplyr_cpp_group_split,                      1},
     {"_fastplyr_cpp_group_vars",                       (DL_FUNC) &_fastplyr_cpp_group_vars,                       1},
+    {"_fastplyr_cpp_grouped_df_as_grp",                (DL_FUNC) &_fastplyr_cpp_grouped_df_as_grp,                1},
     {"_fastplyr_cpp_grouped_eval_mutate",              (DL_FUNC) &_fastplyr_cpp_grouped_eval_mutate,              2},
     {"_fastplyr_cpp_grouped_eval_tidy",                (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy,                4},
     {"_fastplyr_cpp_grouped_run_id",                   (DL_FUNC) &_fastplyr_cpp_grouped_run_id,                   3},
@@ -365,7 +366,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_unlist_group_locs",                (DL_FUNC) &_fastplyr_cpp_unlist_group_locs,                2},
     {"_fastplyr_cpp_which_all",                        (DL_FUNC) &_fastplyr_cpp_which_all,                        1},
     {"_fastplyr_fun_ns",                               (DL_FUNC) &_fastplyr_fun_ns,                               2},
-    {"_fastplyr_grouped_df_group_metadata",            (DL_FUNC) &_fastplyr_grouped_df_group_metadata,            1},
     {"_fastplyr_is_nested_call",                       (DL_FUNC) &_fastplyr_is_nested_call,                       1},
     {"_fastplyr_n_group_vars",                         (DL_FUNC) &_fastplyr_n_group_vars,                         1},
     {NULL, NULL, 0}

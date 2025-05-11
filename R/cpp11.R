@@ -176,6 +176,6 @@ cpp_group_split <- function(data) {
   .Call(`_fastplyr_cpp_group_split`, data)
 }
 
-grouped_df_group_metadata <- function(data) {
-  .Call(`_fastplyr_grouped_df_group_metadata`, data)
+cpp_grouped_df_as_grp <- function(data) {
+  .Call(`_fastplyr_cpp_grouped_df_as_grp`, data)
 }
