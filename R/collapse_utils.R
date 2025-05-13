@@ -63,7 +63,7 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
   }
   if (!is.null(out)){
     out[[8L]] <- GRP_starts(out)
-    out <- c(out, list(locs = NULL))
+    out <- c(unclass(out), list(locs = NULL))
     if (return.locs){
       out[[10L]] <- GRP_loc(out)
     }
@@ -412,9 +412,8 @@ df_to_GRP <- function(data, .cols = character(),
                              return.locs = return.locs)
   } else {
     data2 <- cpp_ungroup(data2)
-    data3 <- df_mutate_exotic_to_ids(data2, order = order)
     out <- GRP3(
-      data3, sort = order,
+      df_mutate_exotic_to_ids(data2, order = order), sort = order,
       return.order = return.order,
       return.groups = FALSE,
       call = FALSE
@@ -591,18 +590,6 @@ GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
   }
 }
 
-
-group_order_and_counts <- function(g = NULL){
-  o <- radixorderv2(g, starts = FALSE, sort = FALSE, group.sizes = TRUE)
-  if (is_GRP(g)) {
-    sizes <- cheapr::val_rm(GRP_group_sizes(g), 0L)
-  }
-  else {
-    sizes <- attr(o, "group.sizes")
-  }
-  list(order = o, sizes = sizes)
-}
-
 grouped_first <- function(x, na.rm = TRUE, g = NULL, TRA = NULL, use.g.names = FALSE){
   if (is.null(g)){
     first <- cheapr::sset(x, min(1L, vector_length(x)))
@@ -656,10 +643,10 @@ grouped_last <- function(x, na.rm = TRUE, g = NULL, TRA = NULL, use.g.names = FA
 }
 
 grouped_lag <- function(x, n = 1L, fill = NULL, g = NULL){
-  order_counts <- group_order_and_counts(g)
-  o <- order_counts[["order"]]
-  rl <- order_counts[["sizes"]]
-  exotic <- cpp_is_exotic(x) && !inherits(x, "vctrs_rcrd") && !rlang::is_bare_list(x)
+  o <- GRP_order(g)
+  rl <- GRP_group_sizes(g)
+  is_recursive <- inherits(x, c("data.frame", "vctrs_rcrd", "POSIXlt"))
+  exotic <- cpp_is_exotic(x) && !is_recursive && !rlang::is_bare_list(x)
   y <- x
   .fill <- fill
   if (exotic){
@@ -670,11 +657,11 @@ grouped_lag <- function(x, n = 1L, fill = NULL, g = NULL){
     }
   }
   if (is.null(o) && is.null(rl) && length(n) == 1L) {
-    out <- cheapr::lag_(y, n, fill = fill, recursive = inherits(x, "vctrs_rcrd"))
+    out <- cheapr::lag_(y, n, fill = fill, recursive = is_recursive)
   }
   else {
     out <- cheapr::lag2_(y, n, order = o, run_lengths = rl,
-                         fill = fill, recursive = inherits(x, "vctrs_rcrd"))
+                         fill = fill, recursive = is_recursive)
   }
   if (exotic){
     uniq <- cheapr::sset(x, GRP_starts(xg))
