@@ -21,7 +21,7 @@
     "fndistinct"
   ),
   target_ns = c(
-    "base", "base", "base", "stats", "base", "base", "dplyr", "dplyr",
+    "", "", "base", "stats", "", "", "dplyr", "dplyr",
     "stats", "stats", "dplyr", "collapse", "collapse", "collapse", "collapse",
     "collapse", "collapse", "collapse", "collapse", "collapse", "collapse", "collapse",
     "collapse"

@@ -374,7 +374,8 @@ mark(
   fastplyr_bind_cols = f_bind_cols(grouped_flights, grouped_flights),
   dplyr_bind_cols = suppressMessages(
     bind_cols(grouped_flights, grouped_flights)
-    )
+    ),
+  check = FALSE
 )
 
 mark(
@@ -467,6 +468,7 @@ tidy_tbl <- as_tidytable(tbl)
 
 # Setting an internal option to set all grouping to use the non-sorted type
 options(.fastplyr.order.groups = FALSE)
+tidytable::setDTthreads(1) # Single-threaded for fair comparison
 
 mark(
   fastplyr_slice = tbl |> 
@@ -517,7 +519,7 @@ Benchmarking more statistical functions
 ```{r}
 mark(
   fastplyr_sumarise2 = tbl |> 
-  f_summarise(n = n(), mean = mean(x), min = min(x), max = max(x), .by = g),
+  f_summarise(n = dplyr::n(), mean = mean(x), min = min(x), max = max(x), .by = g),
   tidytable_sumarise2 = tidy_tbl |> 
   summarise(n = n(), mean = mean(x), min = min(x), max = max(x), 
             .by = g, .sort = FALSE),
