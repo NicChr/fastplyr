@@ -199,6 +199,16 @@ unpack_across <- function(quo, data, unpack_default = FALSE){
   if (rlang::is_call(across_fns, "list")){
     fn_tree <- as.list(across_fns)[-1L]
     fn_names <- names(fn_tree) %||% character(length(fn_tree))
+
+    # This line is to not break timeplyr unit tests
+    if (!all(nzchar(fn_names))){
+      fn_names <- cpp_str_coalesce(
+        list(
+          fn_names,
+          vapply(fn_tree, deparse2, "", USE.NAMES = FALSE)
+        )
+      )
+    }
   } else if (!".fns" %in% names(clean_expr)){
     # fn_tree <- list(identity)
     fn_tree <- list(as.symbol("identity"))
@@ -237,7 +247,6 @@ unpack_across <- function(quo, data, unpack_default = FALSE){
     new_quo <- rlang::new_quosure(rlang::call2(fn, as.symbol(col)), quo_env)
     set_add_attr(new_quo, ".unpack", unpack)
     out[[i]] <- new_quo
-
   }
   out
 }
