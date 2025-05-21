@@ -351,7 +351,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
       } else if (.optimise_expand && cpp_is_fn_call(expr, "identity", "base", env)){
 
       } else if (cpp_is_fn_call(expr, "n", "dplyr", env)){
-        expr <- rlang::call2(function(){
+        expr <- rlang::call2(\(){
           if (is.null(.fastplyr.g)){
             out <- df_nrow(.data)
             if (.optimise_expand){
@@ -366,7 +366,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
           out
         })
       } else if (.optimise_expand && cpp_is_fn_call(expr, "row_number", "dplyr", env)){
-        expr <- rlang::call2(function(){
+        expr <- rlang::call2(\(){
           if (is.null(.fastplyr.g)){
             seq_len(df_nrow(.data))
           } else {
@@ -374,7 +374,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
           }
         })
       } else if (cpp_is_fn_call(expr, "cur_group_id", "dplyr", env)){
-        expr <- rlang::call2(function(){
+        expr <- rlang::call2(\(){
           if (is.null(.fastplyr.g)){
             if (.optimise_expand){
               cheapr::cheapr_rep_len(1L, df_nrow(.data))
@@ -394,7 +394,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
           }
         })
       } else if (cpp_is_fn_call(expr, "cur_group", "dplyr", env)){
-        expr <- rlang::call2(function(){
+        expr <- rlang::call2(\(){
           if (is.null(.fastplyr.g)){
             if (.optimise_expand){
               new_tbl(.nrows = df_nrow(.data))
@@ -416,7 +416,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
           }
         })
       } else if (.optimise_expand && cpp_is_fn_call(expr, "cur_group_rows", "dplyr", env)){
-        expr <- rlang::call2(function(){
+        expr <- rlang::call2(\(){
           if (is.null(.fastplyr.g)){
             seq_len(df_nrow(.data))
           } else {

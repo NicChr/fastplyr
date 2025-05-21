@@ -57,18 +57,18 @@ groups <- 1 * 2^(0:10)
 # Normal distributed samples by group using the group value as the mean
 # and sqrt(groups) as the sd
 
-samples <- tibble(groups) \%>\%
-  reframe(x = rnorm(100, mean = groups, sd = sqrt(groups)), .by = groups) \%>\%
+samples <- tibble(groups) |>
+  reframe(x = rnorm(100, mean = groups, sd = sqrt(groups)), .by = groups) |>
   f_group_by(groups)
 
 # Fast means and quantiles by group
 
-quantiles <- samples \%>\%
+quantiles <- samples |>
   tidy_quantiles(x, pivot = "wide")
 
-means <- samples \%>\%
+means <- samples |>
   f_summarise(mean = mean(x))
 
-means \%>\%
+means |>
   f_left_join(quantiles)
 }

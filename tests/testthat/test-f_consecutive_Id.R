@@ -5,7 +5,7 @@ test_that("consecutive id", {
                             imaginary = rnorm(10^4)),
                 d = sample.int(5, 10^4, TRUE) - 2L)
 
-  df <- rapply(df, function(x) cheapr::na_insert(x, prop = 1/4), how = "replace")
+  df <- rapply(df, \(x) cheapr::na_insert(x, prop = 1/4), how = "replace")
 
   expect_identical(
     dplyr::consecutive_id(df$a),

@@ -57,7 +57,7 @@ Find duplicate rows
 \details{
 This function works like \code{dplyr::distinct()} in its handling of
 arguments and data-masking but returns duplicate rows.
-In certain situations in can be much faster than \code{data \%>\% group_by() \%>\% filter(n() > 1)}
+In certain situations in can be much faster than \code{data |> group_by()|> filter(n() > 1)}
 when there are many groups.
 }
 \seealso{

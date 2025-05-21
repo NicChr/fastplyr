@@ -154,24 +154,24 @@ test_that("Edge cases", {
 
 test_that("unsorted probs", {
   expect_equal(
-    iris %>%
+    iris |>
       tidy_quantiles(Sepal.Length, probs = seq(1, 0, -0.01)),
-    iris %>%
+    iris |>
       dplyr_quantiles("Sepal.Length", probs = seq(1, 0, -0.01))
   )
   expect_equal(
-    iris %>%
+    iris |>
       tidy_quantiles(Sepal.Length, probs = seq(1, 0, -0.01),
                      .by = Species, .order = FALSE),
-    iris %>%
+    iris |>
       dplyr_quantiles("Sepal.Length", probs = seq(1, 0, -0.01),
                      .by = Species)
   )
 })
 
 test_that("Standard tests", {
-  numeric_vars <- airquality %>%
-    f_select(-Month) %>%
+  numeric_vars <- airquality |>
+    f_select(-Month) |>
     names()
 
   expect_equal(
@@ -179,7 +179,7 @@ test_that("Standard tests", {
     tidy_quantiles(airquality, .cols = "Ozone", pivot = "long")
   )
   expect_equal(
-    dplyr_quantiles(airquality, "Ozone") %>%
+    dplyr_quantiles(airquality, "Ozone") |>
       tidyr::pivot_wider(names_from = ".quantile",
                          values_from = "Ozone"),
     tidy_quantiles(as_tbl(airquality), .cols = "Ozone", pivot = "wide")
@@ -191,7 +191,7 @@ test_that("Standard tests", {
   )
 
   expect_equal(
-    dplyr_quantiles(dplyr::group_by(airquality, Month), "Ozone") %>%
+    dplyr_quantiles(dplyr::group_by(airquality, Month), "Ozone") |>
       tidyr::pivot_wider(names_from = ".quantile",
                          values_from = "Ozone"),
     tidy_quantiles(f_group_by(airquality, Month), .cols = "Ozone", pivot = "wide")
@@ -199,14 +199,14 @@ test_that("Standard tests", {
 
 
   expect_equal(
-    dplyr_quantiles(dplyr::group_by(airquality, Month), "Ozone") %>%
+    dplyr_quantiles(dplyr::group_by(airquality, Month), "Ozone") |>
       dplyr::group_by(Month),
     tidy_quantiles(dplyr::group_by(airquality, Month), .cols = "Ozone", pivot = "long",
                    .drop_groups = FALSE)
   )
 
   expect_equal(
-    dplyr_quantiles(airquality, "Ozone") %>%
+    dplyr_quantiles(airquality, "Ozone") |>
       tidyr::pivot_wider(names_from = ".quantile",
                          values_from = "Ozone"),
     tidy_quantiles(as_tbl(airquality), .cols = "Ozone", pivot = "wide")
@@ -219,7 +219,7 @@ test_that("Standard tests", {
   )
 
   expect_equal(
-    dplyr_quantiles(dplyr::group_by(airquality, Month), numeric_vars) %>%
+    dplyr_quantiles(dplyr::group_by(airquality, Month), numeric_vars) |>
       tidyr::pivot_wider(names_from = ".quantile",
                          values_from = 3:7),
     tidy_quantiles(as_tbl(airquality), .cols = numeric_vars,
@@ -232,7 +232,7 @@ test_that("Standard tests", {
   )
 
   expect_equal(
-    dplyr_quantiles(trees, names(trees)) %>%
+    dplyr_quantiles(trees, names(trees)) |>
       tidyr::pivot_wider(names_from = 1, values_from = -1),
     tidy_quantiles(as_tbl(trees), .cols = names(trees), pivot = "wide")
   )
@@ -245,7 +245,7 @@ test_that("Standard tests", {
   )
   expect_equal(
     dplyr_quantiles(as_tbl(EuStockMarkets), colnames(EuStockMarkets),
-                    probs = seq(0, 1, 0.01)) %>%
+                    probs = seq(0, 1, 0.01)) |>
       tidyr::pivot_wider(names_from = 1, values_from = -1),
     tidy_quantiles(as_tbl(EuStockMarkets), .cols = colnames(EuStockMarkets),
                    probs = seq(0, 1, 0.01), pivot = "wide")

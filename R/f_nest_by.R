@@ -14,8 +14,8 @@
 #'
 #' # Stratified linear-model example
 #'
-#' models <- iris %>%
-#'   f_nest_by(Species) %>%
+#' models <- iris |>
+#'   f_nest_by(Species) |>
 #'   mutate(model = list(lm(Sepal.Length ~ Petal.Width + Petal.Length, data = first(data))),
 #'          summary = list(summary(first(model))),
 #'          r_sq = first(summary)$r.squared)
@@ -28,8 +28,8 @@
 #'
 #' # `f_nest_by()` is faster when many groups are involved
 #'
-#' models <- iris %>%
-#'   nest_by(Species) %>%
+#' models <- iris |>
+#'   nest_by(Species) |>
 #'   mutate(model = list(lm(Sepal.Length ~ Petal.Width + Petal.Length, data = data)),
 #'          summary = list(summary(model)),
 #'          r_sq = summary$r.squared)
@@ -41,10 +41,10 @@ f_nest_by <- function(data, ..., .add = FALSE,
                       .order = group_by_order_default(data),
                       .by = NULL, .cols = NULL,
                       .drop = df_group_by_drop_default(data)){
-  data %>%
+  data|>
     f_group_by(..., .cols = .cols, .order = .order,
                .add = .add,
                .by = {{ .by }},
-               .drop = .drop) %>%
+               .drop = .drop) |>
     cpp_nest_split(.drop, .order)
 }

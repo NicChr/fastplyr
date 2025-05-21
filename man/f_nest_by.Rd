@@ -47,8 +47,8 @@ library(fastplyr)
 
 # Stratified linear-model example
 
-models <- iris \%>\%
-  f_nest_by(Species) \%>\%
+models <- iris |>
+  f_nest_by(Species) |>
   mutate(model = list(lm(Sepal.Length ~ Petal.Width + Petal.Length, data = first(data))),
          summary = list(summary(first(model))),
          r_sq = first(summary)$r.squared)
@@ -61,8 +61,8 @@ models$summary
 
 # `f_nest_by()` is faster when many groups are involved
 
-models <- iris \%>\%
-  nest_by(Species) \%>\%
+models <- iris |>
+  nest_by(Species) |>
   mutate(model = list(lm(Sepal.Length ~ Petal.Width + Petal.Length, data = data)),
          summary = list(summary(model)),
          r_sq = summary$r.squared)

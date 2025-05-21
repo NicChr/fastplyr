@@ -29,7 +29,7 @@
 #' @details
 #' This function works like `dplyr::distinct()` in its handling of
 #' arguments and data-masking but returns duplicate rows.
-#' In certain situations in can be much faster than `data %>% group_by() %>% filter(n() > 1)`
+#' In certain situations in can be much faster than `data |> group_by()|> filter(n() > 1)`
 #' when there are many groups.
 #'
 #' @seealso [f_count] [f_distinct]

@@ -180,8 +180,8 @@ f_slice_min <- function(data, order_by, n, prop, .by = NULL,
                        keep_order = FALSE){
   group_vars <- get_groups(data, .by = {{ .by }})
   grp_nm1 <- unique_col_name(names(data), "g")
-  out <- data %>%
-    add_group_id(.name = grp_nm1, .cols = group_vars, .order = .order) %>%
+  out <- data |>
+    add_group_id(.name = grp_nm1, .cols = group_vars, .order = .order) |>
     cpp_ungroup()
 
   g1 <- out[[grp_nm1]]
@@ -230,8 +230,8 @@ f_slice_max <- function(data, order_by, n, prop, .by = NULL,
   group_vars <- get_groups(data, .by = {{ .by }})
   grp_nm1 <- unique_col_name(names(data), "g")
 
-  out <- data %>%
-    add_group_id(.name = grp_nm1, .cols = group_vars, .order = .order) %>%
+  out <- data |>
+    add_group_id(.name = grp_nm1, .cols = group_vars, .order = .order) |>
     cpp_ungroup()
 
   g1 <- out[[grp_nm1]]

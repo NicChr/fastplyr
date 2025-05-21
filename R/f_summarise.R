@@ -73,22 +73,22 @@
 #' library(dplyr)
 #' options(fastplyr.inform = FALSE)
 #' # Number of flights per month, including first and last day
-#' flights %>%
-#'   f_group_by(year, month) %>%
+#' flights |>
+#'   f_group_by(year, month) |>
 #'   f_summarise(first_day = first(day),
 #'               last_day = last(day),
 #'               num_flights = n())
 #'
 #' ## Fast mean summary using `across()`
 #'
-#' flights %>%
+#' flights |>
 #'   f_summarise(
 #'     across(where(is.numeric), mean),
 #'     .by = tailnum
 #'   )
 #'
-#' flights %>%
-#'   f_group_by(.cols = "tailnum") %>%
+#' flights |>
+#'   f_group_by(.cols = "tailnum") |>
 #'   f_summarise(
 #'     across(where(is.numeric), mean)
 #'   )
