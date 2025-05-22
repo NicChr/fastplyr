@@ -255,7 +255,7 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
       out[[col]] <- cheapr::sset(y[[col]], matches)
     }
   }
-  cheapr::reconstruct(out, x)
+  cheapr::rebuild(out, x)
 }
 
 #' Fast SQL joins

@@ -81,5 +81,5 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
     which_zero <- cheapr::which_val(out[[count_col]], 0L)
     cpp_loc_set_replace(out[[count_col]], which_zero, 1L)
   }
-  cheapr::reconstruct(out, data)
+  cheapr::rebuild(out, data)
 }

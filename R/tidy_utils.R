@@ -644,7 +644,7 @@ select_summary <- function(.data, ..., .by = NULL, .cols = NULL, .order = group_
   renamed_cols <- used_cols[used_cols != selected_cols]
 
   list(
-    data = cheapr::reconstruct(out, .data),
+    data = cheapr::rebuild(out, .data),
     new_cols = new_cols,
     used_cols = used_cols, # All selected cols
     unused_cols = unused_cols, # Unselected cols
@@ -730,7 +730,7 @@ check_rowwise <- function(data){
 sset_quos <- function(quos, i){
   out <- quos[i]
   set_add_attr(out, ".optimised", attr(quos, ".optimised", TRUE)[i])
-  cpp_reconstruct(
+  cpp_rebuild(
     out, quos, c("names", "class", ".optimised"),
     vec_setdiff(names(attributes(quos)), c("names", "class", ".optimised")),
     FALSE

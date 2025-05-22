@@ -90,9 +90,9 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
     out <- f_arrange(out, .cols = count_col, .descending = TRUE)
   }
   if ((length(group_vars(data)) + 1L) == df_ncol(out)){
-    cheapr::reconstruct(out, f_ungroup(data))
+    cheapr::rebuild(out, f_ungroup(data))
   } else {
-    cheapr::reconstruct(out, data)
+    cheapr::rebuild(out, data)
   }
 }
 #' @rdname f_count
@@ -144,5 +144,5 @@ f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
   if (sort){
     out <- f_arrange(out, .cols = count_col, .descending = TRUE)
   }
-  cheapr::reconstruct(out, data)
+  cheapr::rebuild(out, data)
 }

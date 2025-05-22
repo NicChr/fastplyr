@@ -1,6 +1,6 @@
 
-#' @exportS3Method cheapr::reconstruct
-reconstruct.grouped_df <- function(x, template, ...){
+#' @exportS3Method cheapr::rebuild
+rebuild.grouped_df <- function(x, template, ...){
 
   plain_tbl <- fast_tbl()
 
@@ -29,15 +29,15 @@ reconstruct.grouped_df <- function(x, template, ...){
       out_class <- class(template)
     }
   }
-  out <- cheapr::reconstruct(x, cpp_ungroup(template))
+  out <- cheapr::rebuild(x, cpp_ungroup(template))
   attr(out, "groups") <- groups
   class(out) <- out_class
   out
 }
 
 
-#' @exportS3Method cheapr::reconstruct
-reconstruct.fastplyr_grouped_df <- function(x, template, ...){
+#' @exportS3Method cheapr::rebuild
+rebuild.fastplyr_grouped_df <- function(x, template, ...){
 
   plain_tbl <- fast_tbl()
 
@@ -70,7 +70,7 @@ reconstruct.fastplyr_grouped_df <- function(x, template, ...){
       out_class <- class(template)
     }
   }
-  out <- cheapr::reconstruct(x, cpp_ungroup(template))
+  out <- cheapr::rebuild(x, cpp_ungroup(template))
   attr(out, "groups") <- groups
   attr(out, "GRP") <- GRP
   class(out) <- out_class
@@ -79,5 +79,5 @@ reconstruct.fastplyr_grouped_df <- function(x, template, ...){
 
 #' @exportS3Method dplyr::dplyr_reconstruct
 dplyr_reconstruct.fastplyr_grouped_df <- function(data, template){
-  cheapr::reconstruct(data, template)
+  cheapr::rebuild(data, template)
 }

@@ -96,7 +96,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
     names(empty_quant_df) <- quant_nms
     empty_quant_df <- as.data.frame(empty_quant_df)
     out <- f_bind_cols(cheapr::sset_col(data2, group_vars), empty_quant_df)
-    return(cheapr::reconstruct(out, data))
+    return(cheapr::rebuild(out, data))
   }
   if (df_nrow(data) == 0L || n_probs == 0L){
     if (wide){
@@ -122,7 +122,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
         cheapr::sset_col(data2, dot_vars)
       )
     }
-    return(cheapr::reconstruct(out, data))
+    return(cheapr::rebuild(out, data))
   }
 
   ## Make sure double vectors are atomic doubles
@@ -290,8 +290,8 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
   }
 
   if (wide){
-    cheapr::reconstruct(out, cpp_ungroup(data))
+    cheapr::rebuild(out, cpp_ungroup(data))
   } else {
-    cheapr::reconstruct(out, data)
+    cheapr::rebuild(out, data)
   }
 }

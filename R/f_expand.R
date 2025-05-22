@@ -87,7 +87,7 @@ f_expand <- function(data, ..., .sort = FALSE,
   if (length(frames) == 0){
     out <- f_distinct(data2, .cols = group_vars, .order = .sort)
   }
-  cheapr::reconstruct(out, data)
+  cheapr::rebuild(out, data)
 }
 #' @rdname f_expand
 #' @export
@@ -129,7 +129,7 @@ f_complete <- function(data, ...,
   }
   out_order <- c(names(data), vec_setdiff(names(out), names(data)))
   out <- f_select(out, .cols = out_order)
-  cheapr::reconstruct(out, data)
+  cheapr::rebuild(out, data)
 }
 #' @rdname f_expand
 #' @export

@@ -75,8 +75,8 @@ f_distinct <- function(data, ..., .keep_all = FALSE,
     out <- GRP_groups(GRP)
   }
   if (identical(names(out), group_vars(data))){
-    cheapr::reconstruct(out, f_ungroup(data))
+    cheapr::rebuild(out, f_ungroup(data))
   } else {
-    cheapr::reconstruct(out, data)
+    cheapr::rebuild(out, data)
   }
 }

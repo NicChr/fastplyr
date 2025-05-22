@@ -112,7 +112,7 @@ f_summarise <- function(.data, ..., .by = NULL, .order = group_by_order_default(
   }
 
   if (length(quos) == 0){
-    return(cheapr::reconstruct(group_keys, cpp_ungroup(.data)))
+    return(cheapr::rebuild(group_keys, cpp_ungroup(.data)))
   }
   ## The `recycle` argument won't have a visible effect
   # on the final result, but it's faster to
@@ -131,7 +131,7 @@ f_summarise <- function(.data, ..., .by = NULL, .order = group_by_order_default(
   out <- df_add_cols(group_keys, results)
   out <- cheapr::sset_col(out, !duplicated(names(out), fromLast = TRUE))
 
-  cheapr::reconstruct(out, cpp_ungroup(.data))
+  cheapr::rebuild(out, cpp_ungroup(.data))
 }
 #' @rdname f_summarise
 #' @export

@@ -24,7 +24,7 @@ f_reframe <- function(.data, ..., .by = NULL, .order = group_by_order_default(.d
                         .groups = GRP)
 
   if (length(quos) == 0){
-    return(cheapr::reconstruct(GRP_groups(GRP), cpp_ungroup(.data)))
+    return(cheapr::rebuild(GRP_groups(GRP), cpp_ungroup(.data)))
   }
   results <- eval_all_tidy(.data, quos, recycle = TRUE)
   groups <- results[["groups"]]
@@ -37,5 +37,5 @@ f_reframe <- function(.data, ..., .by = NULL, .order = group_by_order_default(.d
   }
   out <- df_add_cols(groups, results)
   out <- cheapr::sset_col(out, !duplicated(names(out), fromLast = TRUE))
-  cheapr::reconstruct(out, cpp_ungroup(.data))
+  cheapr::rebuild(out, cpp_ungroup(.data))
 }

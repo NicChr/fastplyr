@@ -1585,7 +1585,7 @@ SEXP cpp_group_split(SEXP data){
 
     // A method that is fast and preserves structure of input data
     // R_Reprotect(frame = cheapr::df_slice(data, p_rows[i], false), frame_idx);
-    // SET_VECTOR_ELT(frames, i, cheapr::reconstruct(frame, data, false));
+    // SET_VECTOR_ELT(frames, i, cheapr::rebuild(frame, data, false));
   }
 
   Rf_unprotect(5);

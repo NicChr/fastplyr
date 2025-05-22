@@ -54,7 +54,7 @@ f_select.grouped_df <- function(data, ..., .cols = NULL){
     group_data <- col_rename(group_data, selected_group_vars)
     attr(out, "groups") <- group_data
   }
-  out <- cheapr::reconstruct(out, cpp_ungroup(data))
+  out <- cheapr::rebuild(out, cpp_ungroup(data))
   attr(out, "groups") <- group_data
   class(out) <- c("grouped_df", class(out))
   out
@@ -84,7 +84,7 @@ f_select.grouped_df <- function(data, ..., .cols = NULL){
 #     group_data <- col_rename(group_data, selected_group_vars)
 #     attr(out, "groups") <- group_data
 #   }
-#   out <- cheapr::reconstruct(out, cpp_ungroup(data))
+#   out <- cheapr::rebuild(out, cpp_ungroup(data))
 #   attr(out, "groups") <- group_data
 #   attr(out, "GRP") <- GRP
 #   class(out) <- c("fastplyr_grouped_df", "grouped_df", class(out))
@@ -99,7 +99,7 @@ f_rename <- function(data, ..., .cols = NULL){
 f_rename.data.frame <- function(data, ..., .cols = NULL){
   pos <- tidy_select_pos(data, ..., .cols = .cols)
   out <- col_rename(data, .cols = pos)
-  cheapr::reconstruct(out, data)
+  cheapr::rebuild(out, data)
 }
 #' @export
 f_rename.grouped_df <- function(data, ..., .cols = NULL){
@@ -115,7 +115,7 @@ f_rename.grouped_df <- function(data, ..., .cols = NULL){
     group_data <- col_rename(group_data, renamed_group_vars)
     attr(out, "groups") <- group_data
   }
-  out <- cheapr::reconstruct(out, cpp_ungroup(data))
+  out <- cheapr::rebuild(out, cpp_ungroup(data))
   attr(out, "groups") <- group_data
   class(out) <- c("grouped_df", class(out))
   out
