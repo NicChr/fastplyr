@@ -95,7 +95,7 @@ get_groups <- function(data, .by = NULL, named = FALSE){
 
 # Turn character vector into named character vector
 as_named <- function(x){
-  `names<-`(x, str_coalesce(names(x), as.character(x)))
+  `names<-`(x, cheapr::str_coalesce(names(x), as.character(x)))
 }
 
 call_args <- function(x){
@@ -143,7 +143,7 @@ fix_quo_names <- function(quos){
         if (is.symbol(expr)){
           nms[i] <- rlang::as_string(expr)
         } else {
-          nms[i] <- deparse2(rlang::quo_get_expr(quos[[i]]))
+          nms[i] <- deparse2(expr)
         }
       }
     }
@@ -202,11 +202,9 @@ unpack_across <- function(quo, data, unpack_default = FALSE){
 
     # This line is to not break timeplyr unit tests
     if (!all(nzchar(fn_names))){
-      fn_names <- cpp_str_coalesce(
-        list(
-          fn_names,
-          vapply(fn_tree, deparse2, "", USE.NAMES = FALSE)
-        )
+      fn_names <- cheapr::str_coalesce(
+        fn_names,
+        vapply(fn_tree, deparse2, "", USE.NAMES = FALSE)
       )
     }
   } else if (!".fns" %in% names(clean_expr)){

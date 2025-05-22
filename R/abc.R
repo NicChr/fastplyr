@@ -8,9 +8,6 @@ check_length <- function(x, size){
   }
 }
 
-# Coalesce empty strings instead of NA
-str_coalesce <- function(...) cpp_str_coalesce(cheapr::list_drop_null(list(...)))
-
 drop_names <- function(x) `names<-`(x, NULL)
 
 # Fast way of getting named col positions
@@ -30,7 +27,7 @@ col_select_pos <- function(data, .cols = character()){
   }
   out_names <- names(out)
   if (!is.null(names(.cols))){
-    out_names <- str_coalesce(names(.cols), out_names)
+    out_names <- cheapr::str_coalesce(names(.cols), out_names)
   }
   `names<-`(match(out, data_names), out_names)
 }
@@ -38,13 +35,13 @@ col_select_pos <- function(data, .cols = character()){
 # col_select_pos2 <- function(data, .cols = character()){
 #   selected_data <- cheapr::sset_col(data, .cols %||% 0L)
 #   out <- match(names(selected_data), names(data))
-#   names(out) <- str_coalesce(names(.cols), names(selected_data))
+#   names(out) <- cheapr::str_coalesce(names(.cols), names(selected_data))
 #   out
 # }
 # col_select_names <- function(data, .cols = character()){
 #   selected_data <- cheapr::sset_col(data, .cols %||% 0L)
 #   out <- names(selected_data)
-#   names(out) <- str_coalesce(names(.cols), out)
+#   names(out) <- cheapr::str_coalesce(names(.cols), out)
 #   out
 # }
 
@@ -64,7 +61,7 @@ col_select_names <- function(data, .cols = character()){
   }
   out_names <- names(out)
   if (!is.null(names(.cols))){
-    out_names <- str_coalesce(names(.cols), out_names)
+    out_names <- cheapr::str_coalesce(names(.cols), out_names)
   }
   `names<-`(out, out_names)
 }

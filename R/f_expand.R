@@ -77,10 +77,7 @@ f_expand <- function(data, ..., .sort = FALSE,
     if (prod(cpp_frame_dims(frames, FALSE, FALSE)[[1L]]) > .Machine$integer.max){
       stop("expansion results in >= 2^31 rows, please supply less data")
     }
-    df_cj <- function(x, y){
-      df_cross_join(x, y, .repair_names = FALSE)
-    }
-    out <- Reduce(df_cj, frames)
+    out <- Reduce(cross_join2, frames)
 
     # Alternative
     # out <- do.call(cross_join, frames)

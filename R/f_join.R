@@ -345,7 +345,7 @@ f_cross_join <- function(x, y, suffix = c(".x", ".y"), ...){
   check_suffix(suffix)
   names(x) <- unique_suffix_cols(names(x), names(x), suffix[1L])
   names(y) <- unique_suffix_cols(names(y), names(y), suffix[2L])
-  df_cross_join(x, y, .repair_names = FALSE)
+  cross_join2(x, y, .repair_names = FALSE)
 }
 #' @rdname join
 #' @export

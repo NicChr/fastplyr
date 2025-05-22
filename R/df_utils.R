@@ -101,17 +101,12 @@ grouped_df_counts <- function(data, weights = NULL, expand = FALSE){
 
 df_group_by_drop_default <- cpp_group_by_drop_default
 
-df_cross_join <- function(x, y, .repair_names = TRUE){
-  f_bind_cols(
-    cheapr::cheapr_rep_each(x, df_nrow(y)), cheapr::cheapr_rep(y, df_nrow(x)),
-    .repair_names = .repair_names, .recycle = FALSE
+cross_join2 <- function(x, y, .repair_names = FALSE){
+  cheapr::col_c(
+    cheapr::cheapr_rep_each(x, cheapr::vector_length(y)),
+    cheapr::cheapr_rep(y, cheapr::vector_length(x)),
+    .name_repair = .repair_names, .recycle = FALSE
   )
-}
-
-cross_join2 <- function(x, y){
-  if (!is_df(x)) x <- new_tbl(x = x)
-  if (!is_df(y)) y <- new_tbl(y = y)
-  df_cross_join(x, y, .repair_names = FALSE)
 }
 
 cross_join <- function(...){
@@ -119,8 +114,8 @@ cross_join <- function(...){
   out <- Reduce(cross_join2, unname(dots))
   if (!is_df(out)){
     out <- new_tbl(x = out)
-    names(out) <- names(dots)
   }
+  names(out) <- cheapr::str_coalesce(names(out), names(dots))
   names(out) <- cheapr::name_repair(names(out))
   out
 }
