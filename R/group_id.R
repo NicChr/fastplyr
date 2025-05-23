@@ -198,6 +198,15 @@ group_id.integer64 <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE)
     ascending = ascending,
     as_qg = as_qg
   )
+}
+#' @export
+group_id.time_interval <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
+  group_id(
+    unclass(x),
+    order = order,
+    ascending = ascending,
+    as_qg = as_qg
+  )
 
 }
 #' @rdname group_id

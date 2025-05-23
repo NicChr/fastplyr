@@ -24,7 +24,14 @@
 #' @rdname new_tbl
 #' @export
 new_tbl <- function (..., .nrows = NULL, .recycle = TRUE, .name_repair = TRUE){
-  df_as_tbl(cpp_new_df(list_tidy(..., .named = TRUE), .nrows, .recycle, .name_repair))
+  df_as_tbl(
+    cheapr::new_df(
+      .args = list_tidy(..., .named = TRUE),
+      .nrows = .nrows,
+      .recycle = .recycle,
+      .name_repair = .name_repair
+    )
+  )
 }
 #' @rdname new_tbl
 #' @export

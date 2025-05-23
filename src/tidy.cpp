@@ -831,6 +831,31 @@ SEXP cpp_ungroup(SEXP data){
   }
   return data;
 }
+// SEXP cpp_ungroup(SEXP data){
+//   if (Rf_inherits(data, "grouped_df")){
+//     SEXP out = Rf_protect(Rf_shallow_duplicate(data));
+//     SEXP groups_sym = Rf_install("groups");
+//     SEXP grp_sym = Rf_install("GRP");
+//     Rf_setAttrib(out, groups_sym, R_NilValue);
+//     Rf_setAttrib(out, grp_sym, R_NilValue);
+//     SEXP old_class = Rf_getAttrib(out, R_ClassSymbol);
+//     SEXP grouped_df_char = Rf_protect(Rf_mkChar("grouped_df"));
+//     SEXP fp_grouped_df_char = Rf_protect(Rf_mkChar("fastplyr_grouped_df"));
+//     SEXP grp_df_char = Rf_protect(Rf_mkChar("GRP_df"));
+//     SEXP tp_char = Rf_protect(Rf_mkChar("time_tbl_df"));
+//     SEXP remove = Rf_protect(Rf_allocVector(STRSXP, 4));
+//     SET_STRING_ELT(remove, 0, grouped_df_char);
+//     SET_STRING_ELT(remove, 1, fp_grouped_df_char);
+//     SET_STRING_ELT(remove, 2, grp_df_char);
+//     SET_STRING_ELT(remove, 3, tp_char);
+//
+//     SEXP new_class = Rf_protect(cheapr::setdiff(old_class, remove, false));
+//     Rf_classgets(out, new_class);
+//     Rf_unprotect(7);
+//     return out;
+//   }
+//   return data;
+// }
 
 // Taken from dplyr::group_indices,
 // All credits go to dplyr

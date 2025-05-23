@@ -136,7 +136,7 @@ sort_unique <- function(x, sort = FALSE){
     subset <- length(starts) != NROW(x)
   }
   if (subset){
-    cpp_sset(x, starts, TRUE)
+    cheapr::sset(x, starts)
   } else {
     x
   }

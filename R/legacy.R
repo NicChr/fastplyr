@@ -7,11 +7,18 @@ reconstruct <- function(template, data, copy_extra_attributes = TRUE){
 }
 #' @export
 reconstruct.default <- function(template, data, copy_extra_attributes = TRUE){
-  out <- cheapr::rebuild(data, template)
-  if (copy_extra_attributes){
-    out <- cheapr::attrs_add(out, .args = attributes(template))
-  }
-  out
+  cheapr::rebuild(data, template)
+  # out <- cheapr::rebuild(data, template)
+  # if (copy_extra_attributes){
+  #   attrs <- attributes(template)
+  #   nms <- names(attrs)
+  #   nms <- setdiff(nms, c("names", "dim", "dimnames", "row.names", "comment", "class", "tsp", "groups", "GRP"))
+  #   if (length(nms) > 0){
+  #     # `mostattributes<-`(out, c(attributes(out), attrs[nms]))
+  #     attributes(out) <- c(attributes(out), attrs[nms])
+  #   }
+  # }
+  # out
 }
 
 df_rep <- cheapr::cheapr_rep
