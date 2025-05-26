@@ -140,8 +140,15 @@ f_summarize <- f_summarise
 across_col_names <- function (.cols = NULL, .fns = NULL, .names = NULL){
   fns_null <- is.null(.fns)
   nms_null <- is.null(.names)
+
+  if (fns_null && !nms_null){
+    .fns <- ""
+    fns_null <- FALSE
+  }
+
   n_fns <- length(.fns)
   n_cols <- length(.cols)
+
 
   if (fns_null && nms_null){
     out <- as.character(.cols)
@@ -151,7 +158,7 @@ across_col_names <- function (.cols = NULL, .fns = NULL, .names = NULL){
     out <- .fns
     out <- cheapr::name_repair(out, empty_sep = paste0(.cols, "_"), dup_sep = "_")
   } else {
-    .fns <- cheapr::name_repair(.fns, empty_sep = "", dup_sep = "")
+    .fns <- cheapr::name_repair(.fns %||% "", empty_sep = "", dup_sep = "")
     out <- character(n_cols * n_fns)
     init <- 0L
     if (nms_null) {
