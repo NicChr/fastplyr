@@ -6,7 +6,7 @@
 
 SEXP cpp_get(SEXP sym, SEXP rho){
 
-  int NP = 0;
+  int32_t NP = 0;
   if (TYPEOF(sym) != SYMSXP){
     Rf_protect(sym = Rf_coerceVector(sym, SYMSXP)); ++NP;
   }
@@ -66,7 +66,7 @@ bool is_nested_call(SEXP expr) {
 [[cpp11::register]]
 bool call_is_namespaced(SEXP expr){
 
-  int NP = 0;
+  int32_t NP = 0;
 
   if (TYPEOF(expr) != LANGSXP){
     Rf_error("`expr` must be a `call` in %s", __func__);
@@ -102,7 +102,7 @@ bool call_is_namespaced(SEXP expr){
 // Basic version of rlang::is_call(expr, ns = ns)
 bool is_ns_call(SEXP expr, SEXP ns){
 
-  int NP = 0;
+  int32_t NP = 0;
 
   if (TYPEOF(ns) != STRSXP){
     Rf_error("`ns` must be a character vector in %s", __func__);
@@ -144,7 +144,7 @@ bool is_ns_call(SEXP expr, SEXP ns){
 // get the namespace of a function
 
 SEXP get_fun_ns(SEXP x, SEXP rho){
-  int NP = 0;
+  int32_t NP = 0;
   if (!Rf_isFunction(x)){
     Rf_protect(x = cpp_get(x, rho)); ++NP;
   }
@@ -190,7 +190,7 @@ bool is_call2(SEXP expr, SEXP fn){
     Rf_error("`fn` must be a character vector %s", __func__);
   }
 
-  int NP = 0;
+  int32_t NP = 0;
 
   SEXP fn_sym;
   PROTECT_INDEX fn_sym_idx;
@@ -240,7 +240,7 @@ bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
       return false;
     }
 
-    int NP = 0;
+    int32_t NP = 0;
     int n_fns = Rf_length(fn);
 
     if (TYPEOF(ns) == NILSXP){
@@ -280,7 +280,7 @@ bool cpp_call_contains_ns(SEXP expr, SEXP ns, SEXP rho){
   if (TYPEOF(expr) != LANGSXP){
     return false;
   }
-  int NP = 0;
+  int32_t NP = 0;
   if (is_ns_call(expr, ns)){
     return true;
   }
@@ -320,7 +320,7 @@ bool cpp_call_contains_fn(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
   if (TYPEOF(expr) != LANGSXP){
     return false;
   }
-  int NP = 0;
+  int32_t NP = 0;
   if (cpp_is_fn_call(expr, fn, ns, rho)){
     return true;
   }
@@ -414,7 +414,7 @@ bool cpp_any_quo_contains_ns(SEXP quos, SEXP ns){
 }
 
 SEXP cpp_unnest_expr(SEXP expr){
-  int NP = 0;
+  int32_t NP = 0;
   if (Rf_inherits(expr, "quosure")){
     Rf_protect(expr = rlang::quo_get_expr(expr)); ++NP;
   }
@@ -533,7 +533,7 @@ bool call_contains_dplyr_mask(SEXP expr, SEXP rho){
     return false;
   }
 
-  int NP = 0;
+  int32_t NP = 0;
 
   SEXP dplyr_mask_fns = Rf_protect(Rf_allocVector(STRSXP, 11)); ++NP;
   SET_STRING_ELT(dplyr_mask_fns, 0, Rf_mkChar("n"));
@@ -627,7 +627,7 @@ SEXP cpp_eval_tidy(SEXP quo, SEXP mask){
 // Eval a list of quos
 
 SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
-  int NP = 0;
+  int32_t NP = 0;
   int n_exprs = Rf_length(quos);
   SEXP expr_names = Rf_protect(Rf_getAttrib(quos, R_NamesSymbol)); ++NP;
   if (TYPEOF(expr_names) == NILSXP){
@@ -801,7 +801,7 @@ SEXP cpp_group_size(SEXP x){
 
 [[cpp11::register]]
 SEXP cpp_ungroup(SEXP data){
-  int NP = 0;
+  int32_t NP = 0;
   if (Rf_inherits(data, "grouped_df")){
     SEXP out = Rf_protect(Rf_shallow_duplicate(data)); ++NP;
     SEXP groups_sym = Rf_install("groups");
@@ -893,7 +893,7 @@ bool cpp_group_by_order_default(SEXP x){
     Rf_error("`x` must be a data frame in %s", __func__);
   }
 
-  int NP = 0;
+  int32_t NP = 0;
 
   bool out = true;
 
@@ -1025,7 +1025,7 @@ bool cpp_group_id_sorted(SEXP x){
 }
 
 // SEXP cpp_df_as_collapse_grp(SEXP x, bool return_order){
-//   int NP = 0;
+//   int32_t NP = 0;
 //
 //   SEXP out = Rf_protect(Rf_allocVector(VECSXP, 9)); ++NP;
 //   SEXP out_names = Rf_protect(Rf_allocVector(STRSXP, 9)); ++NP;
@@ -1100,7 +1100,7 @@ bool cpp_group_id_sorted(SEXP x){
 
 [[cpp11::register]]
 SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
-  int NP = 0;
+  int32_t NP = 0;
   int n_quos = Rf_length(quos);
 
   if (n_quos == 0){
@@ -1323,7 +1323,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
 
 [[cpp11::register]]
 SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
-  int NP = 0;
+  int32_t NP = 0;
   int n_quos = Rf_length(quos);
 
   if (n_quos == 0){
@@ -1503,7 +1503,7 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
 
 [[cpp11::register]]
 SEXP cpp_nest_split(SEXP data, SEXP drop, SEXP order){
-  int NP = 0;
+  int32_t NP = 0;
 
   SEXP tbl_class = Rf_protect(Rf_allocVector(STRSXP, 3)); ++NP;
   SET_STRING_ELT(tbl_class, 0, Rf_mkChar("tbl_df"));
@@ -1620,7 +1620,7 @@ SEXP cpp_group_split(SEXP data){
 
 [[cpp11::register]]
 SEXP cpp_grouped_df_as_grp(SEXP data){
-  int NP = 0;
+  int32_t NP = 0;
   int nrows = df_nrow(data);
 
   SEXP grp = Rf_protect(Rf_getAttrib(data, Rf_install("GRP"))); ++NP;

@@ -39,7 +39,7 @@ SEXP cpp_frame_addresses_equal(SEXP x, SEXP y) {
 
 [[cpp11::register]]
 SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
-  int NP = 0;
+  int32_t NP = 0;
   const SEXP *p_x = VECTOR_PTR_RO(x);
   int n = Rf_length(x);
   SEXP nrows = Rf_protect(Rf_allocVector(INTSXP, n)); ++NP;
@@ -499,7 +499,7 @@ SEXP cpp_which_all(SEXP x){
     Rf_error("x must be a data frame");
   }
   const SEXP *p_x = VECTOR_PTR_RO(x);
-  int NP = 0;
+  int32_t NP = 0;
   int n_true = 0;
   int n_cols = Rf_length(x);
   int n_rows = df_nrow(x);
@@ -562,7 +562,7 @@ SEXP cpp_int_slice(SEXP x, SEXP indices, bool check){
   int *pi = INTEGER(indices);
   int xn = Rf_length(x);
   int n = Rf_length(indices);
-  int NP = 0;
+  int32_t NP = 0;
   int zero_count = 0;
   int pos_count = 0;
   int oob_count = 0;
@@ -693,7 +693,7 @@ SEXP cpp_run_id(SEXP x){
 }
 
 SEXP cpp_df_run_id(cpp11::writable::list x){
-  int NP = 0;
+  int32_t NP = 0;
   int n_cols = Rf_length(x);
   int n_rows = df_nrow(x);
 
@@ -878,7 +878,7 @@ SEXP cpp_fill_grouped(SEXP x, SEXP order, SEXP group_sizes, double fill_limit) {
   int *p_o = INTEGER(order);
   int *p_group_sizes = INTEGER(group_sizes);
   int n_groups = Rf_length(group_sizes);
-  int NP = 0;
+  int32_t NP = 0;
   int oi;
   int group_size, nfill;
   int total_group_size = 0;
