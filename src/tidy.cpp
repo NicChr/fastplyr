@@ -1479,9 +1479,14 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
   SEXP grp_sym = Rf_protect(Rf_install(".GRP")); ++NP;
   SEXP grp = Rf_protect(Rf_getAttrib(quos, grp_sym)); ++NP;
 
+  // Initialise
+  SEXP results_without_null;
+  PROTECT_INDEX results_without_null_idx;
+  R_ProtectWithIndex(results_without_null = R_NilValue, &results_without_null_idx); ++NP;
+
   if (n_groups > 1){
     // Re-order the results
-    R_Reprotect(results = cheapr::list_as_df(results), result_idx);
+    R_Reprotect(results_without_null = cheapr::list_as_df(results), results_without_null_idx);
 
     if (TYPEOF(grp) == NILSXP){
       Rf_protect(group_id = cpp_group_id(data)); ++NP;
@@ -1494,9 +1499,9 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
     Rf_protect(sorted_sym = Rf_install("sorted")); ++NP;
     Rf_protect(is_already_ordered = Rf_getAttrib(order, sorted_sym)); ++NP;
     if (TYPEOF(is_already_ordered) != LGLSXP || !LOGICAL(is_already_ordered)[0]){
-      R_Reprotect(results = cheapr::sset(results, order, true), result_idx);
+      R_Reprotect(results_without_null = cheapr::sset(results_without_null, order, true), results_without_null_idx);
     }
-    R_Reprotect(results = Rf_coerceVector(results, VECSXP), result_idx);
+    Rf_protect(results = cheapr::list_assign(results, results_without_null)); ++NP;
   }
   Rf_unprotect(NP);
   return results;
