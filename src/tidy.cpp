@@ -503,23 +503,13 @@ SEXP cpp_quos_drop_null(SEXP quos){
   SEXP not_null_locs = Rf_protect(cheapr::val_find(not_null, r_true, false));
   SEXP out = Rf_protect(cheapr::sset_vec(quos, not_null_locs, false));
   Rf_copyMostAttrib(quos, out);
-  Rf_setAttrib(out, R_NamesSymbol, cheapr::sset_vec(Rf_getAttrib(quos, R_NamesSymbol), not_null_locs, false));
-  Rf_classgets(out, Rf_getAttrib(quos, R_ClassSymbol));
-  Rf_unprotect(4);
+  SEXP names = Rf_protect(Rf_getAttrib(quos, R_NamesSymbol));
+  Rf_setAttrib(out, R_NamesSymbol, cheapr::sset_vec(names, not_null_locs, false));
+  SEXP cls = Rf_protect(Rf_getAttrib(quos, R_ClassSymbol));
+  Rf_classgets(out, cls);
+  Rf_unprotect(6);
   return out;
 }
-// cpp11::list cpp_quos_drop_null2(cpp11::list quos){
-//
-//   cpp11::writable::integers not_null_locs;
-//
-//   for (int i = 0; i < quos.size(); ++i){
-//     if (TYPEOF(rlang::quo_get_expr(quos[i])) != NILSXP){
-//       not_null_locs.push_back(i + 1);
-//     }
-//   }
-//   cpp11::list out = cheapr::sset(quos, not_null_locs, false);
-//   return out;
-// }
 
 // bool quo_is_dplyr_mask_call(SEXP quo){
 //   SEXP expr = Rf_protect(rlang::quo_get_expr(quo));
@@ -639,7 +629,7 @@ SEXP cpp_eval_tidy(SEXP quo, SEXP mask){
 SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
   int NP = 0;
   int n_exprs = Rf_length(quos);
-  SEXP expr_names = Rf_getAttrib(quos, R_NamesSymbol);
+  SEXP expr_names = Rf_protect(Rf_getAttrib(quos, R_NamesSymbol)); ++NP;
   if (TYPEOF(expr_names) == NILSXP){
     Rf_protect(expr_names = Rf_allocVector(STRSXP, n_exprs)); ++NP;
   }
@@ -648,10 +638,12 @@ SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
   SEXP out = Rf_protect(Rf_allocVector(VECSXP, n_exprs)); ++NP;
   SEXP out_names = Rf_protect(Rf_allocVector(STRSXP, n_exprs)); ++NP;
 
+  const SEXP *p_quos = VECTOR_PTR_RO(quos);
+  const SEXP *p_expr_names = STRING_PTR_RO(expr_names);
+
   for (int i = 0; i < n_exprs; ++i){
-    SEXP quo =VECTOR_ELT(quos, i);
-    SEXP result = Rf_protect(cpp_eval_tidy(quo, mask)); ++NP;
-    SEXP expr_name = STRING_ELT(expr_names, i);
+    SEXP result = Rf_protect(cpp_eval_tidy(p_quos[i], mask)); ++NP;
+    SEXP expr_name = p_expr_names[i];
 
     if (expr_name != R_BlankString){
       SEXP sym = Rf_installChar(expr_name);
@@ -809,26 +801,28 @@ SEXP cpp_group_size(SEXP x){
 
 [[cpp11::register]]
 SEXP cpp_ungroup(SEXP data){
+  int NP = 0;
   if (Rf_inherits(data, "grouped_df")){
-    SEXP out = Rf_protect(Rf_shallow_duplicate(data));
+    SEXP out = Rf_protect(Rf_shallow_duplicate(data)); ++NP;
     SEXP groups_sym = Rf_install("groups");
     SEXP grp_sym = Rf_install("GRP");
     Rf_setAttrib(out, groups_sym, R_NilValue);
     Rf_setAttrib(out, grp_sym, R_NilValue);
-    SEXP old_class = Rf_getAttrib(out, R_ClassSymbol);
-    SEXP grouped_df_char = Rf_protect(Rf_mkChar("grouped_df"));
-    SEXP fp_grouped_df_char = Rf_protect(Rf_mkChar("fastplyr_grouped_df"));
-    SEXP grp_df_char = Rf_protect(Rf_mkChar("GRP_df"));
-    SEXP remove = Rf_protect(Rf_allocVector(STRSXP, 3));
+    SEXP old_class = Rf_protect(Rf_getAttrib(out, R_ClassSymbol)); ++NP;
+    SEXP grouped_df_char = Rf_protect(Rf_mkChar("grouped_df")); ++NP;
+    SEXP fp_grouped_df_char = Rf_protect(Rf_mkChar("fastplyr_grouped_df")); ++NP;
+    SEXP grp_df_char = Rf_protect(Rf_mkChar("GRP_df")); ++NP;
+    SEXP remove = Rf_protect(Rf_allocVector(STRSXP, 3)); ++NP;
     SET_STRING_ELT(remove, 0, grouped_df_char);
     SET_STRING_ELT(remove, 1, fp_grouped_df_char);
     SET_STRING_ELT(remove, 2, grp_df_char);
 
-    SEXP new_class = Rf_protect(cheapr::setdiff(old_class, remove, false));
+    SEXP new_class = Rf_protect(cheapr::setdiff(old_class, remove, false)); ++NP;
     Rf_classgets(out, new_class);
-    Rf_unprotect(6);
+    Rf_unprotect(NP);
     return out;
   }
+  Rf_unprotect(NP);
   return data;
 }
 // SEXP cpp_ungroup(SEXP data){
@@ -907,7 +901,7 @@ bool cpp_group_by_order_default(SEXP x){
 
   if (Rf_inherits(x, "grouped_df")){
     SEXP group_data = Rf_protect(cpp_group_data(x)); ++NP;
-    SEXP ordered = Rf_getAttrib(group_data, ordered_sym);
+    SEXP ordered = Rf_protect(Rf_getAttrib(group_data, ordered_sym)); ++NP;
     if (TYPEOF(ordered) == NILSXP){
       out = true;
       Rf_unprotect(NP);
@@ -1629,8 +1623,9 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
   int NP = 0;
   int nrows = df_nrow(data);
 
-  SEXP grp = Rf_getAttrib(data, Rf_install("GRP"));
+  SEXP grp = Rf_protect(Rf_getAttrib(data, Rf_install("GRP"))); ++NP;
   if (TYPEOF(grp) != NILSXP){
+    Rf_unprotect(NP);
     return grp;
   }
 

@@ -144,7 +144,7 @@ SEXP cpp_as_list_of_frames(SEXP x){
   int n = Rf_length(x);
 
   SEXP out = Rf_protect(Rf_allocVector(VECSXP, n));
-  SEXP names = Rf_getAttrib(x, R_NamesSymbol);
+  SEXP names = Rf_protect(Rf_getAttrib(x, R_NamesSymbol));
   bool has_names = !Rf_isNull(names);
   SEXP tbl_class = Rf_protect(Rf_allocVector(STRSXP, 3));
   SET_STRING_ELT(tbl_class, 0, Rf_mkChar("tbl_df"));
@@ -172,7 +172,7 @@ SEXP cpp_as_list_of_frames(SEXP x){
   if (has_names){
     Rf_setAttrib(out, R_NamesSymbol, names);
   }
-  Rf_unprotect(3);
+  Rf_unprotect(4);
   return out;
 }
 
