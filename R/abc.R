@@ -145,3 +145,6 @@ sort_unique <- function(x, sort = FALSE){
 # rlang infix default NULL value function
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
+all_blank <- function(x){
+  collapse::allv(x, "")
+}

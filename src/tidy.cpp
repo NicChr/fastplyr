@@ -232,7 +232,7 @@ bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
       Rf_error("`fn` must be a character vector in %s", __func__);
     }
 
-    if (TYPEOF(ns) != NILSXP && (TYPEOF(ns) != STRSXP || Rf_length(ns) != 1)){
+    if (!Rf_isNull(ns) && (TYPEOF(ns) != STRSXP || Rf_length(ns) != 1)){
       Rf_error("`ns` must be `NULL` or a character vector of length one in %s", __func__);
     }
 
@@ -243,7 +243,7 @@ bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
     int32_t NP = 0;
     int n_fns = Rf_length(fn);
 
-    if (TYPEOF(ns) == NILSXP){
+    if (Rf_isNull(ns)){
       return is_call2(expr, fn);
     } else {
       SEXP ns_char = STRING_ELT(ns, 0);

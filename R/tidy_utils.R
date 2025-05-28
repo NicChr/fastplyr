@@ -426,14 +426,14 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
           }
         })
       } else if (.optimise_expand && cpp_is_fn_call(expr, "lag", "dplyr", env)){
-        if (sum(nzchar(vec_setdiff(names(args), c("x", "n", "default")))) != 0){
+        if (!all_blank(vec_setdiff(names(args), c("x", "n", "default", "order_by")))){
           next
         }
         args <- call_args(expr)
         names(args)[names(args) == "default"] <- "fill"
         expr <- rlang::call2("grouped_lag", !!!args, g = .fastplyr.g)
       } else if (.optimise_expand && cpp_is_fn_call(expr, "lead", "dplyr", env)){
-        if (sum(nzchar(vec_setdiff(names(args), c("x", "n", "default")))) != 0){
+        if (!all_blank(vec_setdiff(names(args), c("x", "n", "default", "order_by")))){
           next
         }
         args <- call_args(expr)
@@ -442,7 +442,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
       } else if (is_optimised_call(expr, env)){
         args <- call_args(expr)
         unsupported_args <- vec_setdiff(names(args), c("x", "na.rm", "nthreads"))
-        if (sum(nzchar(unsupported_args)) != 0){
+        if (!all_blank(unsupported_args)){
           cli::cli_warn(c("Unsupported args: {paste(
                           unsupported_args[nzchar(unsupported_args)],
                           collapse = ', '

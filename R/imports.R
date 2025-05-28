@@ -8,12 +8,6 @@ get_from_package <- function(x, package){
 set_add_attr <- function(x, which, value){
   cheapr::attrs_add(x, .args = `names<-`(list(value), which), .set = TRUE)
 }
-set_rm_attr <- function(x, which){
-  cheapr::attrs_add(x, .args = `names<-`(list(NULL), which), .set = TRUE)
-}
-set_rm_attributes <- function(x){
-  cheapr::attrs_rm(x, .set = TRUE)
-}
 which <- cheapr::which_
 which_not_in <- function(x, table){
   cheapr::na_find(

@@ -642,8 +642,17 @@ grouped_last <- function(x, na.rm = TRUE, g = NULL, TRA = NULL, use.g.names = FA
   }
 }
 
-grouped_lag <- function(x, n = 1L, fill = NULL, g = NULL){
+grouped_lag <- function(x, n = 1L, fill = NULL, g = NULL, order_by = NULL){
+
+  if (!is.null(g) && !is.null(order_by)){
+    cli::cli_abort(
+      "Please supply either groups through {.arg g} or
+      an ordering vector through {.arg order_by}, not both"
+      )
+  }
+  g <- GRP2(g)
   o <- GRP_order(g)
+  o <- o %||% radixorderv2(order_by)
   rl <- GRP_group_sizes(g)
   is_recursive <- inherits(x, c("data.frame", "vctrs_rcrd", "POSIXlt"))
   exotic <- cpp_is_exotic(x) && !is_recursive && !rlang::is_bare_list(x)
@@ -656,12 +665,15 @@ grouped_lag <- function(x, n = 1L, fill = NULL, g = NULL){
       fill <- GRP_n_groups(xg) + 1L
     }
   }
-  if (is.null(o) && is.null(rl) && length(n) == 1L) {
+  if (is.null(o) && is.null(rl) && length(n) == 1L && is.null(order_by)) {
     out <- cheapr::lag_(y, n, fill = fill, recursive = is_recursive)
   }
   else {
-    out <- cheapr::lag2_(y, n, order = o, run_lengths = rl,
-                         fill = fill, recursive = is_recursive)
+    out <- cheapr::lag2_(
+      y, n, order = o,
+      run_lengths = rl,
+      fill = fill, recursive = is_recursive
+    )
   }
   if (exotic){
     uniq <- cheapr::sset(x, GRP_starts(xg))
@@ -673,6 +685,6 @@ grouped_lag <- function(x, n = 1L, fill = NULL, g = NULL){
   out
 }
 
-grouped_lead <- function(x, n = 1L, fill = NULL, g = NULL){
-  grouped_lag(x, n = -n, fill = fill, g = g)
+grouped_lead <- function(x, n = 1L, fill = NULL, g = NULL, order_by = NULL){
+  grouped_lag(x, n = -n, fill = fill, g = g, order_by = order_by)
 }
