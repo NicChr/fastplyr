@@ -20,7 +20,7 @@
     "fmedian", "fmin", "fmax", "ffirst", "flast", "fsd", "fvar",
     "fndistinct"
   ),
-  target_ns = c(
+  input_ns = c(
     "", "", "base", "stats", "", "", "dplyr", "dplyr",
     "stats", "stats", "dplyr", "collapse", "collapse", "collapse", "collapse",
     "collapse", "collapse", "collapse", "collapse", "collapse", "collapse", "collapse",
@@ -459,8 +459,8 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
         }
         fn <- rlang::as_string(fn)
         match_loc <- match(fn, .optimised_fn_list[["input_fn_nms"]])
-        target_ns <- .optimised_fn_list[["target_ns"]][[match_loc]]
-        if (target_ns != ns){
+        input_ns <- .optimised_fn_list[["input_ns"]][[match_loc]]
+        if (input_ns != ns){
           next
         }
         fn <- .optimised_fn_list[["target_fns"]][[match_loc]]
