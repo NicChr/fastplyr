@@ -119,7 +119,7 @@ add_row_id.data.frame <- function(.data, ...,
     }
   }
   col_to_add <- add_names(list(row_ids), .name)
-  df_add_cols(.data, col_to_add)
+  cheapr::df_modify(.data, col_to_add)
 }
 #' @rdname add_id
 #' @export
@@ -158,5 +158,5 @@ add_consecutive_id.data.frame <- function(.data, ...,
     .name <- unique_col_name(names(.data), "consecutive_id")
   }
   col_to_add <- add_names(list(ids), .name)
-  df_add_cols(.data, col_to_add)
+  cheapr::df_modify(.data, col_to_add)
 }

@@ -35,7 +35,7 @@ f_reframe <- function(.data, ..., .by = NULL, .order = group_by_order_default(.d
   } else {
     groups <- cheapr::list_as_df(groups[[1L]])
   }
-  out <- df_add_cols(groups, results)
+  out <- cheapr::df_modify(groups, results)
   out <- cheapr::sset_col(out, !duplicated(names(out), fromLast = TRUE))
   cheapr::rebuild(out, cpp_ungroup(.data))
 }

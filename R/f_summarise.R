@@ -128,7 +128,7 @@ f_summarise <- function(.data, ..., .by = NULL, .order = group_by_order_default(
     cli::cli_abort(c("All expressions should return results of length 1 per-group",
                      "Use {.run f_reframe()} instead"))
   }
-  out <- df_add_cols(group_keys, results)
+  out <- cheapr::df_modify(group_keys, results)
   out <- cheapr::sset_col(out, !duplicated(names(out), fromLast = TRUE))
 
   cheapr::rebuild(out, cpp_ungroup(.data))

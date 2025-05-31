@@ -50,11 +50,11 @@ list_as_tbl <- function(x){
 # This is not only faster than dplyr col modify for large data frames
 # but also works with data.tables because of reconstruct.data.table
 df_rm_cols <- function(data, cols){
-  df_add_cols(data, `names<-`(cheapr::new_list(length(cols)), col_select_names(data, cols)))
+  cheapr::df_modify(data, `names<-`(cheapr::new_list(length(cols)), col_select_names(data, cols)))
 }
 
 df_add_col <- function(data, col, value){
-  df_add_cols(data, `names<-`(list(value), col))
+  cheapr::df_modify(data, `names<-`(list(value), col))
 }
 
 # Seq along df rows/cols
@@ -147,7 +147,7 @@ expand_unused_levels <- function(data){
         )
       )
       missed <- f_anti_join(full, cheapr::sset_col(data, names(full)))
-      missed <- df_add_cols(missed, na_init(non_factors, num_missing_categories))
+      missed <- cheapr::df_modify(missed, na_init(non_factors, num_missing_categories))
       data <- f_bind_rows(data, missed)
     }
   }

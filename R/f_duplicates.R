@@ -57,7 +57,7 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
   if (.add_count){
     group_sizes <- GRP_expanded_group_sizes(GRP)
     count_col <- unique_count_col(out)
-    out <- df_add_cols(out, list_tidy(!!count_col := group_sizes))
+    out <- cheapr::df_modify(out, list_tidy(!!count_col := group_sizes))
   }
   which_dup <- GRP_which_duplicated(GRP, all = .both_ways)
 

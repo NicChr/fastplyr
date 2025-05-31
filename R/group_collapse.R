@@ -130,26 +130,26 @@ GRP_collapse <- function(g,
   }
   out <- as_tbl(GRP_groups(g))
   if (id){
-    out <- df_add_cols(out, list(.group = df_seq_along(out)))
+    out <- cheapr::df_modify(out, list(.group = df_seq_along(out)))
   }
   include_loc <- loc || end
   if (include_loc){
     GRP_loc <- GRP_loc(g)
-    out <- df_add_cols(out, list(.loc = GRP_loc))
+    out <- cheapr::df_modify(out, list(.loc = GRP_loc))
   } else {
     GRP_loc <- NULL
   }
   if (start){
-    out <- df_add_cols(out, list(.start = GRP_starts(g)))
+    out <- cheapr::df_modify(out, list(.start = GRP_starts(g)))
   }
   if (end){
-    out <- df_add_cols(out, list(.end = GRP_ends(g, loc = GRP_loc)))
+    out <- cheapr::df_modify(out, list(.end = GRP_ends(g, loc = GRP_loc)))
   }
   if (!loc && include_loc){
-    out <- df_add_cols(out, list(.loc = NULL))
+    out <- cheapr::df_modify(out, list(.loc = NULL))
   }
   if (size){
-    out <- df_add_cols(out, list(.size = GRP_group_sizes(g)))
+    out <- cheapr::df_modify(out, list(.size = GRP_group_sizes(g)))
   }
   # Method for when not dropping unused factor levels
   # At the moment a bit convoluted

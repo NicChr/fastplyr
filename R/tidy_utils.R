@@ -580,7 +580,7 @@ mutate_summary <- function(.data, ...,
     new_data <- eval_mutate(.data, quos)
     # Removing duplicate named results
     new_data <- new_data[!duplicated(names(quos), fromLast = TRUE)]
-    out_data <- df_add_cols(.data, new_data)
+    out_data <- cheapr::df_modify(.data, new_data)
     new_data <- cheapr::list_drop_null(new_data)
     new_cols <- names(new_data)
     all_cols <- names(out_data)

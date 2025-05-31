@@ -79,5 +79,5 @@ f_fill <- function(data, ..., .by = NULL, .cols = NULL,
 
   new_fill_names <- across_col_names(fill_cols, .fns = "", .names = .new_names)
   names(data_to_fill) <- new_fill_names
-  df_add_cols(data, data_to_fill)
+  cheapr::df_modify(data, data_to_fill)
 }
