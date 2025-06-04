@@ -70,7 +70,7 @@ test_that("Compared to tidyr", {
     testdf |>
       dplyr::group_by(origin) |>
       tidyr::expand(carrier, -5:5) |>
-      df_ungroup()
+      f_ungroup()
   )
   expect_equal(
     testdf |>

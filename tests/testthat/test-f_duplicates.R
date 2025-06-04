@@ -16,11 +16,12 @@ test_that("f_duplicates", {
                                                  .drop_empty = TRUE)), 0L)
   expect_identical(f_duplicates(iris, Sepal.Length, Species,
                                             .keep_all = TRUE,
-                                            .both_ways = TRUE),
+                                            .both_ways = TRUE,
+                                .order = FALSE),
                              iris |>
                                dplyr::group_by(Sepal.Length, Species) |>
                                dplyr::filter(dplyr::n() > 1) |>
-                               df_ungroup() |>
+                               f_ungroup() |>
                                as.data.frame())
   expect_identical(nrow(f_duplicates(test_df, .both_ways = FALSE)), 1L)
   expect_identical(test_df |>

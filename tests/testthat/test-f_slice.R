@@ -426,7 +426,7 @@ test_that("f_slice_max", {
   expect_equal(flights2 |>
                  f_group_by(origin, dest, .order = FALSE) |>
                  f_slice_max(arr_time, na_rm = FALSE) |>
-                 df_ungroup(),
+                 f_ungroup(),
                flights2 |>
                  dplyr::slice_max(arr_time, by = c(origin, dest)))
   expect_equal(flights2 |>

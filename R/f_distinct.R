@@ -9,8 +9,7 @@
 #' default is `FALSE`.
 #' @param .sort `r lifecycle::badge("deprecated")`  Use `.order` instead.
 #' @param .order Should the groups be calculated as ordered groups?
-#' Setting to `TRUE` may sometimes offer a speed benefit, but usually this
-#' is not the case. The default is `FALSE`.
+#' Setting to `TRUE` here implies that the groups are returned sorted.
 #' @param .by (Optional). A selection of columns to group by for this operation.
 #' Columns are specified using tidy-select.
 #' @param .cols (Optional) alternative to `...` that accepts
@@ -27,7 +26,7 @@ f_distinct <- function(data, ..., .keep_all = FALSE,
                        .by = NULL, .cols = NULL){
 
   if (lifecycle::is_present(.sort)) {
-    lifecycle::deprecate_warn("1.0.0", "f_distinct(.sort = )", "f_distinct(.order = )")
+    lifecycle::deprecate_warn("0.9.0", "f_distinct(.sort = )", "f_distinct(.order = )")
     .order <- .sort
   }
 

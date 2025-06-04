@@ -13,10 +13,9 @@
 #' The naming convention of this column follows `dplyr::add_count()`.
 #' @param .drop_empty If `TRUE` then empty rows with all `NA` values are removed.
 #' The default is `FALSE`.
-#' @param .sort Should result be sorted?
-#' If `FALSE` (the default), then rows are returned in the exact same order as
-#' they appear in the data.
-#' If `TRUE` then the duplicate rows are sorted.
+#' @param .sort `r lifecycle::badge("deprecated")`  Use `.order` instead.
+#' @param .order Should the groups be calculated as ordered groups?
+#' Setting to `TRUE` here implies that the groups are returned sorted.
 #' @param .by (Optional). A selection of columns to group by for this operation.
 #' Columns are specified using tidy-select.
 #' @param .cols (Optional) alternative to `...` that accepts
@@ -34,25 +33,32 @@
 #'
 #' @seealso [f_count] [f_distinct]
 #'
-#' @rdname duplicate_rows
+#' @rdname f_duplicates
 #' @export
 f_duplicates <- function(data, ..., .keep_all = FALSE,
                          .both_ways = FALSE, .add_count = FALSE,
                          .drop_empty = FALSE,
-                         .sort = FALSE,
+                         .order = FALSE,
+                         .sort = deprecated(),
                          .by = NULL, .cols = NULL){
+  if (lifecycle::is_present(.sort)) {
+    lifecycle::deprecate_warn("0.9.0", "f_duplicates(.sort = )", "f_duplicates(.order = )")
+    .order <- .sort
+  }
   if (dots_length(...) == 0 && is.null(.cols)){
     .cols <- names(data)
   }
-  group_info <- tidy_eval_groups(data, ..., .by = {{ .by }}, .cols = .cols,
-                         .order = .sort)
+  group_info <- tidy_eval_groups(
+    data, ..., .by = {{ .by }}, .cols = .cols,
+    .order = .order
+  )
   out <- group_info[[1L]]
   GRP <- group_info[[2L]]
 
   dup_vars <- GRP_group_vars(GRP)
 
   if (!.keep_all){
-    out <- f_select(out, .cols = dup_vars)
+    out <- cheapr::sset_col(out, dup_vars)
   }
   if (.add_count){
     group_sizes <- GRP_expanded_group_sizes(GRP)
@@ -63,15 +69,15 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
 
   # Neat way to return sorted duplicate rows
 
-  if (.sort){
+  if (.order){
     which_dup <- which_dup[order(GRP_group_id(GRP)[which_dup])]
   }
-  out <- cheapr::sset(out, which_dup)
+  out <- cheapr::sset_row(out, which_dup)
 
   # Remove empty rows (rows with all NA values)
 
   if (.drop_empty){
-    out <- remove_rows_if_all_na(f_select(out, .cols = dup_vars))
+    out <- remove_rows_if_all_na(cheapr::sset_col(out, dup_vars))
   }
 
   # Adjust group sizes as they reflect the dup count + 1

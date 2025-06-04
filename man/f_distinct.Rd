@@ -23,8 +23,7 @@ f_distinct(
 default is \code{FALSE}.}
 
 \item{.order}{Should the groups be calculated as ordered groups?
-Setting to \code{TRUE} may sometimes offer a speed benefit, but usually this
-is not the case. The default is \code{FALSE}.}
+Setting to \code{TRUE} here implies that the groups are returned sorted.}
 
 \item{.sort}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}  Use \code{.order} instead.}
 
