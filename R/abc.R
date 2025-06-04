@@ -148,3 +148,25 @@ sort_unique <- function(x, sort = FALSE){
 all_blank <- function(x){
   collapse::allv(x, "")
 }
+
+# Generic vector rename function
+vec_rename <- function(.x, ...){
+
+  if (dots_length(...) != 0) {
+    # key_value_list <- lapply(rlang::quos(...), rlang::as_label)
+    key_value_list <- lapply(as.list(substitute(alist(...)))[-1L], as.character)
+    x_names <- names(.x)
+    if (collapse::fnunique(cheapr::list_lengths(key_value_list)) > 1) {
+      cli::cli_abort("Please supply named values to {. arg ...}")
+    }
+    keys <- names(key_value_list)
+    values <- unlist(unname(key_value_list))
+
+    if (is.null(keys) || any(!nzchar(keys))) {
+      cli::cli_abort("Please supply named values to {.arg ...}")
+    }
+    x_names[match(values, x_names)] <- keys
+    names(.x) <- x_names
+  }
+  .x
+}

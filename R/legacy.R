@@ -25,6 +25,7 @@ df_rep <- cheapr::cheapr_rep
 df_rep_each <- cheapr::cheapr_rep_each
 df_init <- na_init
 df_row_slice <- cheapr::sset
+df_add_cols <- cheapr::df_modify
 
 fast_setdiff <- function(x, y){
   x[match(x, y, 0L) == 0L]

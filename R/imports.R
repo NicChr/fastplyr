@@ -33,10 +33,3 @@ vec_setdiff <- get_from_package("vec_setdiff", "cheapr")
 vec_intersect <- get_from_package("vec_intersect", "cheapr")
 `%in_%` <- cheapr::`%in_%`
 
-
-# dplyr -------------------------------------------------------------------
-
-mutate_cols <- get_from_package("mutate_cols", "dplyr")
-dplyr_quosures <- get_from_package("dplyr_quosures", "dplyr")
-compute_by <- get_from_package("compute_by", "dplyr")
-

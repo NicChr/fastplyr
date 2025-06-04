@@ -944,57 +944,20 @@ eval_mutate <- function(data, quos){
 }
 
 mutate_summary_ungrouped <- function(.data, ..., .keep = c("all", "used", "unused", "none"),
-          error_call = rlang::caller_env())
-{
-  .keep <- rlang::arg_match(.keep)
-  original_cols <- names(.data)
-  bare_data <- df_ungroup(.data)
-  group_data <- new_tbl(.rows = add_attr(list(seq_len(df_nrow(bare_data))),
-                                         "class", c("vctrs_list_of", "vctrs_vctr", "list")))
-  by <- add_attr(list(type = "ungrouped", names = character(),
-                      data = group_data), "class", "dplyr_by")
-  dplyr_quos <- dplyr_quosures(...)
-  cols <- mutate_cols(bare_data, dplyr_quos, by = by, error_call = error_call)
-  out_data <- dplyr::dplyr_col_modify(bare_data, cols)
-  final_cols <- names(cols)
-  used <- attr(cols, "used")
-  keep_cols <- switch(.keep, all = names(used), none = final_cols,
-                      used = names(used)[which(used)], unused = names(used)[cheapr::which_(used,
-                                                                                           invert = TRUE)])
-  out_data <- f_select(out_data, .cols = keep_cols)
-  out <- list(data = out_data, cols = final_cols)
-  out
+          error_call = rlang::caller_env()){
+  .data |>
+    f_ungroup() |>
+    mutate_summary(..., .keep = rlang::arg_match(.keep)) |>
+    vec_rename(cols = "new_cols") |>
+    cheapr::sset(c("data", "cols"))
 }
 
 mutate_summary_grouped <- function (.data, ..., .keep = c("all", "used", "unused", "none"),
-          .by = NULL, error_call = rlang::caller_env())
-{
-  .keep <- rlang::arg_match(.keep)
-  original_cols <- names(.data)
-  by <- compute_by(by = {
-    {
-      .by
-    }
-  }, data = .data, by_arg = ".by", data_arg = ".data")
-  group_vars <- get_groups(.data, .by = {
-    {
-      .by
-    }
-  })
-  dplyr_quos <- dplyr_quosures(...)
-  cols <- mutate_cols(.data, dplyr_quos, by = by, error_call = error_call)
-  out_data <- dplyr::dplyr_col_modify(.data, cols)
-  final_cols <- names(cols)
-  used <- attr(cols, "used")
-  keep_cols <- switch(.keep, all = names(used), none = final_cols,
-                      used = names(used)[which(used)], unused = names(used)[cheapr::which_(used,
-                                                                                           invert = TRUE)])
-  keep_cols <- c(group_vars, keep_cols[match(keep_cols, group_vars,
-                                             0L) == 0L])
-  keep_cols <- keep_cols[order(match(keep_cols, original_cols))]
-  out_data <- f_select(out_data, .cols = keep_cols)
-  out <- list(data = out_data, cols = final_cols)
-  out
+          .by = NULL, error_call = rlang::caller_env()){
+  .data |>
+    mutate_summary(..., .keep = rlang::arg_match(.keep), .by = {{ .by }}) |>
+    vec_rename(cols = "new_cols") |>
+    cheapr::sset(c("data", "cols"))
 }
 
 tidy_group_info_datamask <- function(data, ..., .by = NULL,
