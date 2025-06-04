@@ -1,4 +1,4 @@
-# fastplyr (development version)
+# fastplyr 0.9.0
 
 ### New features
 
@@ -12,6 +12,11 @@ optimised functions, see `?f_summarise`.
 
 - Fast group metadata helper functions `f_group_data`, `f_group_indices`, 
 `f_group_keys`, `f_group_rows`, `f_group_size` and `f_n_groups`.
+
+### Bug fixes
+
+- Joins involving columns of non-standard vectors would sometimes fail to join
+correctly in rare circumstances. This has now been fixed.
 
 # fastplyr 0.5.1
 
