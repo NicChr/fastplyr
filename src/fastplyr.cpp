@@ -3,7 +3,8 @@
 #include <vector>
 
 SEXP get_list_element(SEXP list, const char *str){
-  SEXP out = R_NilValue, names = Rf_getAttrib(list, R_NamesSymbol);
+  SEXP out = R_NilValue;
+  SEXP names = Rf_protect(Rf_getAttrib(list, R_NamesSymbol));
 
   for (int i = 0; i < Rf_length(list); ++i){
     if (std::strcmp(CHAR(STRING_ELT(names, i)), str) == 0){
@@ -11,6 +12,7 @@ SEXP get_list_element(SEXP list, const char *str){
       break;
     }
   }
+  Rf_unprotect(1);
   return out;
 }
 
