@@ -474,8 +474,9 @@ SEXP cpp_quo_data_vars(SEXP quos, SEXP data){
     SET_VECTOR_ELT(list_container, 1, quo_vars);
     R_Reprotect(out = cheapr::c(list_container), out_idx);
   }
-  Rf_protect(out = cheapr::intersect(Rf_getAttrib(data, R_NamesSymbol), out, false));
-  Rf_unprotect(4);
+  SEXP names = Rf_protect(Rf_getAttrib(data, R_NamesSymbol));
+  Rf_protect(out = cheapr::intersect(names, out, false));
+  Rf_unprotect(5);
   return out;
 }
 
@@ -1623,7 +1624,26 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
   int32_t NP = 0;
   int nrows = df_nrow(data);
 
-  SEXP grp = Rf_protect(Rf_getAttrib(data, Rf_install("GRP"))); ++NP;
+  // Initialise needed symbols
+  SEXP grp_char = Rf_protect(Rf_mkCharCE("GRP", CE_UTF8)); ++NP;
+
+  SEXP n_groups_char = Rf_protect(Rf_mkCharCE("N.groups", CE_UTF8)); ++NP;
+  SEXP group_id_char = Rf_protect(Rf_mkCharCE("group.id", CE_UTF8)); ++NP;
+  SEXP group_sizes_char = Rf_protect(Rf_mkCharCE("group.sizes", CE_UTF8)); ++NP;
+  SEXP groups_char = Rf_protect(Rf_mkCharCE("groups", CE_UTF8)); ++NP;
+  SEXP group_vars_char = Rf_protect(Rf_mkCharCE("group.vars", CE_UTF8)); ++NP;
+  SEXP order_char = Rf_protect(Rf_mkCharCE("order", CE_UTF8)); ++NP;
+  SEXP group_starts_char = Rf_protect(Rf_mkCharCE("group.starts", CE_UTF8)); ++NP;
+  SEXP call_char = Rf_protect(Rf_mkCharCE("call", CE_UTF8)); ++NP;
+  SEXP locs_char = Rf_protect(Rf_mkCharCE("locs", CE_UTF8)); ++NP;
+
+  SEXP starts_char = Rf_protect(Rf_mkCharCE("starts", CE_UTF8)); ++NP;
+  SEXP maxgrpn_char = Rf_protect(Rf_mkCharCE("maxgrpn", CE_UTF8)); ++NP;
+  SEXP ordered_char = Rf_protect(Rf_mkCharCE("ordered", CE_UTF8)); ++NP;
+  SEXP sorted_char = Rf_protect(Rf_mkCharCE("sorted", CE_UTF8)); ++NP;
+
+
+  SEXP grp = Rf_protect(Rf_getAttrib(data, Rf_installChar(grp_char))); ++NP;
   if (TYPEOF(grp) != NILSXP){
     Rf_unprotect(NP);
     return grp;
@@ -1633,16 +1653,16 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
 
   SEXP out = Rf_protect(Rf_allocVector(VECSXP, 10)); ++NP;
   SEXP out_names = Rf_protect(Rf_allocVector(STRSXP, 10)); ++NP;
-  SET_STRING_ELT(out_names, 0, Rf_mkCharCE("N.groups", CE_UTF8));
-  SET_STRING_ELT(out_names, 1, Rf_mkCharCE("group.id", CE_UTF8));
-  SET_STRING_ELT(out_names, 2, Rf_mkCharCE("group.sizes", CE_UTF8));
-  SET_STRING_ELT(out_names, 3, Rf_mkCharCE("groups", CE_UTF8));
-  SET_STRING_ELT(out_names, 4, Rf_mkCharCE("group.vars", CE_UTF8));
-  SET_STRING_ELT(out_names, 5, Rf_mkCharCE("ordered", CE_UTF8));
-  SET_STRING_ELT(out_names, 6, Rf_mkCharCE("order", CE_UTF8));
-  SET_STRING_ELT(out_names, 7, Rf_mkCharCE("group.starts", CE_UTF8));
-  SET_STRING_ELT(out_names, 8, Rf_mkCharCE("call", CE_UTF8));
-  SET_STRING_ELT(out_names, 9, Rf_mkCharCE("locs", CE_UTF8));
+  SET_STRING_ELT(out_names, 0, n_groups_char);
+  SET_STRING_ELT(out_names, 1, group_id_char);
+  SET_STRING_ELT(out_names, 2, group_sizes_char);
+  SET_STRING_ELT(out_names, 3, groups_char);
+  SET_STRING_ELT(out_names, 4, group_vars_char);
+  SET_STRING_ELT(out_names, 5, ordered_char);
+  SET_STRING_ELT(out_names, 6, order_char);
+  SET_STRING_ELT(out_names, 7, group_starts_char);
+  SET_STRING_ELT(out_names, 8, call_char);
+  SET_STRING_ELT(out_names, 9, locs_char);
   Rf_namesgets(out, out_names);
 
   SEXP group_data = Rf_protect(cpp_group_data(data)); ++NP;
@@ -1652,7 +1672,7 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
 
   bool groups_are_ordered = cpp_group_by_order_default(data);
 
-  SEXP grp_class = Rf_protect(Rf_ScalarString(Rf_mkCharCE("GRP", CE_UTF8))); ++NP;
+  SEXP grp_class = Rf_protect(Rf_ScalarString(grp_char)); ++NP;
   SEXP n_groups = Rf_protect(Rf_ScalarInteger(ngroups)); ++NP;
   SEXP group_id = Rf_protect(Rf_allocVector(INTSXP, nrows)); ++NP;
   SEXP group_order = Rf_protect(Rf_allocVector(INTSXP, nrows)); ++NP;
@@ -1671,9 +1691,8 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
 
   LOGICAL(ordered)[0] = groups_are_ordered;
   LOGICAL(ordered)[1] = groups_are_ordered ? true : NA_LOGICAL;
-
-  SET_STRING_ELT(ordered_nms, 0, Rf_mkCharCE("ordered", CE_UTF8));
-  SET_STRING_ELT(ordered_nms, 1, Rf_mkCharCE("sorted", CE_UTF8));
+  SET_STRING_ELT(ordered_nms, 0, ordered_char);
+  SET_STRING_ELT(ordered_nms, 1, sorted_char);
   Rf_namesgets(ordered, ordered_nms);
 
   // Pointers
@@ -1700,21 +1719,9 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
       p_group_order[i] = i + 1;
     }
 
-    Rf_setAttrib(
-      group_order,
-      Rf_installChar(Rf_mkCharCE("starts", CE_UTF8)),
-      sorted_group_starts
-    );
-    Rf_setAttrib(
-      group_order,
-      Rf_installChar(Rf_mkCharCE("maxgrpn", CE_UTF8)),
-      r_max_group_size
-    );
-    Rf_setAttrib(
-      group_order,
-      Rf_installChar(Rf_mkCharCE("sorted", CE_UTF8)),
-      sorted
-    );
+    Rf_setAttrib(group_order, Rf_installChar(starts_char), sorted_group_starts);
+    Rf_setAttrib(group_order, Rf_installChar(maxgrpn_char), r_max_group_size);
+    Rf_setAttrib(group_order, Rf_installChar(sorted_char), sorted);
 
     SET_VECTOR_ELT(out, 0, n_groups);
     SET_VECTOR_ELT(out, 1, group_id);
@@ -1776,21 +1783,10 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
   }
   LOGICAL(sorted)[0] = groups_sorted;
   INTEGER(r_max_group_size)[0] = max_group_size;
-  Rf_setAttrib(
-    group_order,
-    Rf_installChar(Rf_mkCharCE("starts", CE_UTF8)),
-    sorted_group_starts
-  );
-  Rf_setAttrib(
-    group_order,
-    Rf_installChar(Rf_mkCharCE("maxgrpn", CE_UTF8)),
-    r_max_group_size
-  );
-  Rf_setAttrib(
-    group_order,
-    Rf_installChar(Rf_mkCharCE("sorted", CE_UTF8)),
-    sorted
-  );
+
+  Rf_setAttrib(group_order, Rf_installChar(starts_char), sorted_group_starts);
+  Rf_setAttrib(group_order, Rf_installChar(maxgrpn_char), r_max_group_size);
+  Rf_setAttrib(group_order, Rf_installChar(sorted_char), sorted);
   SET_VECTOR_ELT(out, 0, n_groups);
   SET_VECTOR_ELT(out, 1, group_id);
   SET_VECTOR_ELT(out, 2, group_sizes);
