@@ -24,7 +24,7 @@ set.seed(949958487)
 [![Codecov test coverage](https://codecov.io/gh/NicChr/fastplyr/graph/badge.svg)](https://app.codecov.io/gh/NicChr/fastplyr)
 <!-- badges: end -->
 
-fastplyr aims to provide a [tidyverse](https://www.tidyverse.org/learn) frontend using a [collapse](https://sebkrantz.github.io/collapse/articles/collapse_intro.html) backend. This means from a user's point of view the functions behave like the tidyverse equivalents and thus require little to no changes to existing code to convert.
+fastplyr aims to provide a [tidyverse](https://www.tidyverse.org/learn) frontend using a [collapse](https://sebkrantz.github.io/collapse/articles/collapse_intro.html) backend. This means from a user's point of view the functions behave like the tidyverse equivalents and thus require little to no changes to existing code to convert. 
 
 fastplyr is designed to handle operations that involve larger numbers of groups and generally larger data. 
 
@@ -83,14 +83,14 @@ flights |>
   f_distinct(origin, dest)
 ```
 
-`f_distinct` has an additional `sort` argument which is much faster than sorting afterwards.
+`f_distinct` has an additional `.order` argument which is much faster than sorting afterwards.
 
 ```{r}
 mark(
   fastplyr_distinct_sort = flights |> 
-  f_distinct(origin, dest, tailnum, .sort = TRUE),
+  f_distinct(across(where(is.numeric)), .order = TRUE),
   dplyr_distinct_sort = flights |> 
-    distinct(origin, dest, tailnum) |> 
+    distinct(across(where(is.numeric))) |> 
     arrange_all()
 )
 ```
