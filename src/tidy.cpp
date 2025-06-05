@@ -1753,7 +1753,7 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
   bool groups_sorted = true;
   int max_group_size = 0;
 
-  int group_size;
+  int group_size = 0;
 
   SEXP rows_i = R_NilValue;
 
@@ -1763,14 +1763,16 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
 
     rows_i = p_group_rows[0];
     group_size = Rf_length(rows_i);
-    const int* __restrict__ p_rows_i = INTEGER(rows_i);
+    const int* __restrict__ p_rows_i = INTEGER_RO(rows_i);
 
     p_group_starts[0] = p_rows_i[0];
     p_group_sizes[0] = group_size;
     p_sorted_group_starts[0] = 1;
     max_group_size = max_group_size < group_size ? group_size : max_group_size;
 
-    memcpy(&p_group_order[k], &p_rows_i[0], group_size * sizeof(int));
+    if (group_size != 0){
+      memcpy(&p_group_order[k], &p_rows_i[0], static_cast<unsigned int>(group_size) * sizeof(int));
+    }
 
     for (int j = 0; j < group_size; ++j, ++k){
       p_group_id[p_rows_i[j] - 1] = 1;
@@ -1779,14 +1781,16 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
     for (int i = 1; i < ngroups; ++i){
       rows_i = p_group_rows[i];
       group_size = Rf_length(rows_i);
-      const int* __restrict__ p_rows_i = INTEGER(rows_i);
+      const int* __restrict__ p_rows_i = INTEGER_RO(rows_i);
 
       p_group_starts[i] = p_rows_i[0];
       p_sorted_group_starts[i] = k + 1;
       p_group_sizes[i] = group_size;
       max_group_size = max_group_size < group_size ? group_size : max_group_size;
 
-      memcpy(&p_group_order[k], &p_rows_i[0], group_size * sizeof(int));
+      if (group_size != 0){
+        memcpy(&p_group_order[k], &p_rows_i[0], group_size * sizeof(int));
+      }
 
       for (int j = 0; j < group_size; ++j, ++k){
         p_group_id[p_rows_i[j] - 1] = i + 1;

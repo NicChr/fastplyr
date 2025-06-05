@@ -287,8 +287,8 @@ SEXP cpp_sorted_group_starts(SEXP group_sizes, int init_loc = 1){
 [[cpp11::register]]
 SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
   unsigned int n_groups = Rf_length(group_sizes);
-  const int* __restrict__ p_o = INTEGER(order);
-  const int* __restrict__ p_gs = INTEGER(group_sizes);
+  const int* __restrict__ p_o = INTEGER_RO(order);
+  const int* __restrict__ p_gs = INTEGER_RO(group_sizes);
   SEXP out = Rf_protect(Rf_allocVector(VECSXP, n_groups));
   const SEXP *p_out = VECTOR_PTR_RO(out);
   unsigned int k = 0;
@@ -296,7 +296,9 @@ SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
   for (unsigned int i = 0; i < n_groups; ++i, k += group_size){
     group_size = p_gs[i];
     SET_VECTOR_ELT(out, i, Rf_allocVector(INTSXP, group_size));
-    memcpy(&INTEGER(p_out[i])[0], &p_o[k], sizeof(int) * group_size);
+    if (group_size != 0){
+      memcpy(&INTEGER(p_out[i])[0], &p_o[k], group_size * sizeof(int));
+    }
   }
   Rf_unprotect(1);
   return out;
@@ -309,8 +311,8 @@ SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
 SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
   int n_groups = Rf_length(group_sizes);
   SEXP out = Rf_protect(Rf_allocVector(VECSXP, n_groups));
-  const int* __restrict__ p_group_sizes = INTEGER(group_sizes);
-  const int* __restrict__ p_group_id = INTEGER(group_id);
+  const int* __restrict__ p_group_sizes = INTEGER_RO(group_sizes);
+  const int* __restrict__ p_group_id = INTEGER_RO(group_id);
   const SEXP *p_out = VECTOR_PTR_RO(out);
 
   if (n_groups == 0){
