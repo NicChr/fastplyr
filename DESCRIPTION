@@ -16,7 +16,6 @@ Imports:
     collapse (>= 2.0.0),
     dplyr (>= 1.1.0),
     lifecycle,
-    magrittr,
     purrr,
     rlang,
     stringr,

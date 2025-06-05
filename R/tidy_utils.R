@@ -854,16 +854,6 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
 ### sequentially dependent
 dplyr_eval_all_tidy <- function(data, ...){
 
-  # if (getOption("fastplyr.inform", TRUE)){
-  #   rlang::warn(
-  #     c(
-  #       paste(cli::col_blue("dplyr"), "mask function detected, results will be independent of each other"),
-  #       "Run `options(fastplyr.inform = FALSE)` to turn this msg off"
-  #     )
-  #   )
-  # }
-
-
   quos <- rlang::enquos(...)
   expr_names <- names(quos)
   group_vars <- group_vars(data)
@@ -1061,3 +1051,66 @@ tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
                                unique_groups = unique_groups)
   }
 }
+
+# tidy_overview <- function(x, ...){
+#   ovrvw <- overview(x, ...)
+#   for (i in seq_along(ovrvw)){
+#     item <- ovrvw[[i]]
+#     if (is_df(item)){
+#       ovrvw[[i]] <- as_tbl(item)
+#     }
+#   }
+#   class(ovrvw) <- c("tidy_overview", class(ovrvw))
+#   ovrvw
+# }
+# print.tidy_overview <- function (x, max = NULL, ...) {
+#   temp <- unclass(x)
+#   for (i in seq_along(temp)) {
+#     if (inherits(temp[[i]], "data.frame")) {
+#       temp[[i]][["class"]] <- NULL
+#     }
+#   }
+#   cat(paste("obs:", temp$obs, "\ncols:", temp$cols), "\n")
+#   if (nrow(temp$logical)) {
+#     cat("\n----- Logical -----\n")
+#     print(temp$logical)
+#   }
+#   if (nrow(temp$numeric)) {
+#     cat("\n----- Numeric -----\n")
+#     print(temp$numeric)
+#   }
+#   if (nrow(temp$date)) {
+#     cat("\n----- Dates -----\n")
+#     print(temp$date)
+#   }
+#   if (nrow(temp$datetime)) {
+#     datetime_chr_min <- character(nrow(temp$datetime))
+#     datetime_chr_max <- character(nrow(temp$datetime))
+#     mins <- temp[["datetime"]][["min"]]
+#     maxs <- temp[["datetime"]][["max"]]
+#     tzones <- temp[["datetime"]][["tzone"]]
+#     for (i in seq_len(nrow(temp$datetime))) {
+#       datetime_chr_min[i] <- format(mins[i], tz = tzones[i])
+#       datetime_chr_max[i] <- format(maxs[i], tz = tzones[i])
+#     }
+#     temp$datetime$min <- datetime_chr_min
+#     temp$datetime$max <- datetime_chr_max
+#     cat("\n----- Date-Times -----\n")
+#     print(temp$datetime)
+#   }
+#   if (nrow(temp$time_series)) {
+#     cat("\n----- Time-Series -----\n")
+#     temp$time_series$growth_rate <- paste0(pretty_num((x$time_series$growth_rate -
+#                                                          1) * 100), "%")
+#     print(temp$time_series)
+#   }
+#   if (nrow(temp$categorical)) {
+#     cat("\n----- Categorical -----\n")
+#     print(temp$categorical)
+#   }
+#   if (nrow(temp$other)) {
+#     cat("\n----- Other -----\n")
+#     print(temp$other)
+#   }
+#   invisible(x)
+# }

@@ -57,7 +57,7 @@ f_enframe <- function(x, name = "name", value = "value"){
 f_deframe <- function(x){
   ncol <- length(names(x))
   if (!(inherits(x, "data.frame") && ncol %in% (1:2))) {
-    stop("`x` must be a 1 or 2 col data frame")
+    cli::cli_abort("{.arg x} must be a 1 or 2 col {.cls data.frame}")
   }
   out <- .subset2(x, ncol)
   if (ncol == 2) {

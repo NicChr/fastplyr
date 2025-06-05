@@ -75,7 +75,7 @@ f_expand <- function(data, ..., .sort = FALSE,
            fixed = TRUE)
   } else {
     if (prod(cpp_frame_dims(frames, FALSE, FALSE)[[1L]]) > .Machine$integer.max){
-      stop("expansion results in >= 2^31 rows, please supply less data")
+      cli::cli_abort("expansion results in >= 2^31 rows, please supply less data")
     }
     out <- Reduce(cross_join2, frames)
 
@@ -119,7 +119,7 @@ f_complete <- function(data, ...,
     fill_nms <- names(fill)
     for (i in seq_along(fill)){
       if (length(fill[[i]]) != 1){
-        stop("fill values must be of length 1")
+        cli::cli_abort("fill values must be of length 1")
       }
       out[[fill_nms[[i]]]][cheapr::which_na(out[[fill_nms[[i]]]])] <-
         fill[[i]]

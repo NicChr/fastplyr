@@ -18,32 +18,15 @@ col_select_pos <- function(data, .cols = character()){
   out <- data_names[.cols]
 
   if (anyNA(out)){
-    first_na_col <- .cols[cheapr::which_na(out)[1L]]
+    first_na_col <- .cols[cheapr::na_find(out)[1L]]
     if (is.numeric(first_na_col)){
       cli::cli_abort("Location {first_na_col} doesn't exist")
     } else {
       cli::cli_abort("Column {first_na_col} doesn't exist")
     }
   }
-  out_names <- names(out)
-  if (!is.null(names(.cols))){
-    out_names <- cheapr::str_coalesce(names(.cols), out_names)
-  }
-  `names<-`(match(out, data_names), out_names)
+  `names<-`(match(out, data_names), cheapr::str_coalesce(names(.cols), names(out)))
 }
-
-# col_select_pos2 <- function(data, .cols = character()){
-#   selected_data <- cheapr::sset_col(data, .cols %||% 0L)
-#   out <- match(names(selected_data), names(data))
-#   names(out) <- cheapr::str_coalesce(names(.cols), names(selected_data))
-#   out
-# }
-# col_select_names <- function(data, .cols = character()){
-#   selected_data <- cheapr::sset_col(data, .cols %||% 0L)
-#   out <- names(selected_data)
-#   names(out) <- cheapr::str_coalesce(names(.cols), out)
-#   out
-# }
 
 col_select_names <- function(data, .cols = character()){
   .cols <- .cols %||% integer()
@@ -52,18 +35,14 @@ col_select_names <- function(data, .cols = character()){
   out <- data_names[.cols]
 
   if (anyNA(out)){
-    first_na_col <- .cols[cheapr::which_na(out)[1L]]
+    first_na_col <- .cols[cheapr::na_find(out)[1L]]
     if (is.numeric(first_na_col)){
       cli::cli_abort("Location {first_na_col} doesn't exist")
     } else {
       cli::cli_abort("Column {first_na_col} doesn't exist")
     }
   }
-  out_names <- names(out)
-  if (!is.null(names(.cols))){
-    out_names <- cheapr::str_coalesce(names(.cols), out_names)
-  }
-  `names<-`(out, out_names)
+  `names<-`(out, cheapr::str_coalesce(names(.cols), names(out)))
 }
 
 # (Internal) Fast col rename
@@ -102,7 +81,7 @@ add_names <- function(x, value){
 interval_separate <- function(x){
   start <- attr(x, "start")
   end <- start + strip_attrs(x)
-  cheapr::fast_df(start = start, end = end)
+  cheapr::new_df(start = start, end = end)
 }
 is_sorted <- function(x){
   isTRUE(!is.unsorted(x))

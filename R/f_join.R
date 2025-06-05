@@ -1,6 +1,6 @@
 check_suffix <- function(x){
   if (!is.character(x) || length(x) != 2){
-    stop("suffix must be a character vector of length 2")
+    cli::cli_abort("{.arg suffix} must be a {.cls character} vector of length 2")
   }
 }
 
@@ -12,7 +12,7 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
     dplyr_by <- unclass(by)
 
     if (dplyr_by$condition != "=="){
-      stop("Currently the only join condition supported is '=='")
+      cli::cli_abort("Currently the only join condition supported is '=='")
     }
     by <- add_names(dplyr_by[["y"]], dplyr_by[["x"]])
   }
@@ -20,12 +20,12 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
   if (is.null(by)){
     by <- vec_intersect(names(x), names(y))
     if (length(by) == 0){
-      stop("No common variables, please specify variables to join on")
+      cli::cli_abort("No common variables, please specify variables to join on")
     }
   }
 
   if (length(by) == 0 && df_ncol(x) > 0 && df_ncol(y) > 0){
-    stop("Please specify variables to join on")
+    cli::cli_abort("Please specify variables to join on")
   }
 
   semi_or_anti <- join_type %in% c("semi", "anti")
