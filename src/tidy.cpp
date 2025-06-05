@@ -972,20 +972,27 @@ SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
     return x;
   }
   int n = Rf_length(x);
-  int m, k = 0, out_size = 0;
+  int m = 0, k = 0, out_size = 0;
   const SEXP *p_x = VECTOR_PTR_RO(x);
 
   if (Rf_isNull(group_sizes)){
+
+    std::vector<const int*> loc_ptrs(n);
+
     // Figure out unlisted length
-    for (int i = 0; i < n; ++i) out_size += Rf_length(p_x[i]);
+    for (int i = 0; i < n; ++i){
+      out_size += Rf_length(p_x[i]);
+      loc_ptrs[i] = INTEGER_RO(p_x[i]);
+    }
 
     SEXP out = Rf_protect(Rf_allocVector(INTSXP, out_size));
     int* __restrict__ p_out = INTEGER(out);
 
     for (int i = 0; i < n; k += m, ++i){
       m = Rf_length(p_x[i]);
-      const int* __restrict__ p_int = INTEGER(p_x[i]);
-      memcpy(&p_out[k], &p_int[0], m * sizeof(int));
+      if (m != 0){
+        memcpy(&p_out[k], &loc_ptrs[i][0], m * sizeof(int));
+      }
     }
     Rf_unprotect(1);
     return out;
@@ -993,17 +1000,23 @@ SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
     if (Rf_length(group_sizes) != n){
       Rf_error("`length(x)` must match `length(group_sizes)`");
     }
-    const int* __restrict__ p_gs = INTEGER(group_sizes);
+    const int* __restrict__ p_gs = INTEGER_RO(group_sizes);
+    std::vector<const int*> loc_ptrs(n);
+
     // Figure out unlisted length
-    for (int i = 0; i < n; ++i) out_size += p_gs[i];
+    for (int i = 0; i < n; ++i){
+      out_size += p_gs[i];
+      loc_ptrs[i] = INTEGER_RO(p_x[i]);
+    }
 
     SEXP out = Rf_protect(Rf_allocVector(INTSXP, out_size));
     int* __restrict__ p_out = INTEGER(out);
 
     for (int i = 0; i < n; k += m, ++i){
-      const int* __restrict__ p_int = INTEGER(p_x[i]);
       m = p_gs[i];
-      memcpy(&p_out[k], &p_int[0], m * sizeof(int));
+      if (m != 0){
+        memcpy(&p_out[k], &loc_ptrs[i][0], m * sizeof(int));
+      }
     }
     Rf_unprotect(1);
     return out;
