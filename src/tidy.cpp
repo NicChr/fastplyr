@@ -1700,7 +1700,7 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
   SEXP ordered_nms = Rf_protect(Rf_allocVector(STRSXP, 2)); ++NP;
 
   SEXP group_locs = Rf_protect(Rf_shallow_duplicate(group_rows)); ++NP;
-  group_locs = cheapr::set_rm_attrs(group_locs);
+  Rf_protect(group_locs = cheapr::set_rm_attrs(group_locs)); ++NP;
 
   LOGICAL(ordered)[0] = groups_are_ordered;
   LOGICAL(ordered)[1] = groups_are_ordered ? true : NA_LOGICAL;
