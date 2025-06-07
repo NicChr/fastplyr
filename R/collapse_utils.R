@@ -63,7 +63,9 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
   }
   if (!is.null(out)){
     out[[8L]] <- GRP_starts(out)
-    out <- c(unclass(out), list(locs = NULL))
+    if (!"locs" %in% names(out)){
+      out <- c(unclass(out), list(locs = NULL))
+    }
     if (return.locs){
       out[[10L]] <- GRP_loc(out)
     }
