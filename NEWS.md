@@ -1,5 +1,14 @@
 # fastplyr (development version)
 
+### Upcoming changes (note to myself)
+
+- Fix column accessor calls like `.data$`
+- Functional to allow users to mark functions as not-group-aware
+- Mark simple common functions like `==` as not-group-aware
+- Recursively check call tree for both optimised and not-group-aware calls
+if all calls satisfy either or both conditions, then they can be run 
+on entire dataset
+
 # fastplyr 0.9.0
 
 ### New features

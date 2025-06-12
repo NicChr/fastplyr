@@ -31,6 +31,13 @@ SEXP cpp_get(SEXP sym, SEXP rho){
   return val;
 }
 
+SEXP get_mask_top_env(SEXP mask){
+  if (TYPEOF(mask) != ENVSXP){
+    Rf_error("Object must be a data mask `environment` in %s", __func__);
+  }
+  return Rf_findVar(Rf_install(".top_env"), mask);
+}
+
 // Convert call to list of symbols
 SEXP as_list_call(SEXP expr) {
   if (TYPEOF(expr) != LANGSXP) {
@@ -435,7 +442,7 @@ SEXP cpp_unnest_expr(SEXP expr){
   return out;
 }
 
-cpp11::writable::strings all_call_names(SEXP expr){
+cpp11::writable::strings all_call_names(cpp11::sexp expr){
 
   cpp11::list expr_tree = as_list_call(expr);
 
@@ -605,13 +612,6 @@ bool cpp_any_quo_contains_dplyr_mask_call(SEXP quos){
   }
   Rf_unprotect(2);
   return out;
-}
-
-SEXP get_mask_top_env(SEXP mask){
-  if (TYPEOF(mask) != ENVSXP){
-    Rf_error("Object must be a data mask `environment` in %s", __func__);
-  }
-  return Rf_findVar(Rf_install(".top_env"), mask);
 }
 
 // Just a wrapper around rlang::eval_tidy
