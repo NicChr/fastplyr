@@ -364,30 +364,6 @@ bool cpp_call_contains_fn(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
       break;
     }
   }
-  // for (int i = 0; i < Rf_length(tree); ++i){
-  //   branch = VECTOR_ELT(tree, i);
-  //
-  //   // If branch is a call
-  //   if (TYPEOF(branch) == LANGSXP){
-  //     if (cpp_call_contains_fn(branch, fn, ns, rho)){
-  //       out = true;
-  //       break;
-  //     }
-  //   }
-  //   if (TYPEOF(branch) == SYMSXP){
-  //     if (TYPEOF(ns) == NILSXP){
-  //       if (branch == fn_sym){
-  //         out = true; break;
-  //       }
-  //     } else {
-  //       SEXP branch_name = Rf_protect(rlang::sym_as_character(branch)); ++NP;
-  //       SEXP fn_ns = Rf_protect(get_fun_ns(branch_name, rho)); ++NP;
-  //       if (branch == fn_sym && std::strcmp(CHAR(fn_ns), CHAR(ns_str)) == 0){
-  //         out = true; break;
-  //       }
-  //     }
-  //   }
-  // }
   Rf_unprotect(NP);
   return out;
 }
@@ -417,28 +393,6 @@ bool cpp_any_quo_contains_ns(SEXP quos, SEXP ns){
     }
   }
   Rf_unprotect(2);
-  return out;
-}
-
-SEXP cpp_unnest_expr(SEXP expr){
-  int32_t NP = 0;
-  if (Rf_inherits(expr, "quosure")){
-    Rf_protect(expr = rlang::quo_get_expr(expr)); ++NP;
-  }
-
-  if (TYPEOF(expr) != LANGSXP){
-    Rf_unprotect(NP);
-    return expr;
-  }
-
-  SEXP out = Rf_protect(as_list_call(expr)); ++NP;
-
-  for (int i = 0; i < Rf_length(out); ++i){
-    if (TYPEOF(VECTOR_ELT(out, i)) == LANGSXP){
-      SET_VECTOR_ELT(out, i, cpp_unnest_expr(VECTOR_ELT(out, i)));
-    }
-  }
-  Rf_unprotect(NP);
   return out;
 }
 
@@ -518,23 +472,6 @@ SEXP cpp_quos_drop_null(SEXP quos){
   Rf_unprotect(6);
   return out;
 }
-
-// bool quo_is_dplyr_mask_call(SEXP quo){
-//   SEXP expr = Rf_protect(rlang::quo_get_expr(quo));
-//   SEXP env =  Rf_protect(rlang::quo_get_env(quo));
-//   SEXP dplyr_mask_fns = Rf_protect(Rf_allocVector(STRSXP, 7));
-//   SET_STRING_ELT(dplyr_mask_fns, 0, Rf_mkChar("n"));
-//   SET_STRING_ELT(dplyr_mask_fns, 1, Rf_mkChar("pick"));
-//   SET_STRING_ELT(dplyr_mask_fns, 2, Rf_mkChar("cur_group_id"));
-//   SET_STRING_ELT(dplyr_mask_fns, 3, Rf_mkChar("cur_group_rows"));
-//   SET_STRING_ELT(dplyr_mask_fns, 4, Rf_mkChar("cur_column"));
-//   SET_STRING_ELT(dplyr_mask_fns, 5, Rf_mkChar("cur_data"));
-//   SET_STRING_ELT(dplyr_mask_fns, 6, Rf_mkChar("cur_data_all"));
-//   SEXP dplyr_str = Rf_protect(Rf_mkString("dplyr"));
-//   bool out = cpp_is_fn_call(expr, dplyr_mask_fns, dplyr_str, env);
-//   Rf_unprotect(4);
-//   return out;
-// }
 
 bool call_contains_dplyr_mask(SEXP expr, SEXP rho){
   if (TYPEOF(expr) != LANGSXP){
@@ -826,31 +763,6 @@ SEXP cpp_ungroup(SEXP data){
   Rf_unprotect(NP);
   return data;
 }
-// SEXP cpp_ungroup(SEXP data){
-//   if (Rf_inherits(data, "grouped_df")){
-//     SEXP out = Rf_protect(Rf_shallow_duplicate(data));
-//     SEXP groups_sym = Rf_install("groups");
-//     SEXP grp_sym = Rf_install("GRP");
-//     Rf_setAttrib(out, groups_sym, R_NilValue);
-//     Rf_setAttrib(out, grp_sym, R_NilValue);
-//     SEXP old_class = Rf_getAttrib(out, R_ClassSymbol);
-//     SEXP grouped_df_char = Rf_protect(Rf_mkChar("grouped_df"));
-//     SEXP fp_grouped_df_char = Rf_protect(Rf_mkChar("fastplyr_grouped_df"));
-//     SEXP grp_df_char = Rf_protect(Rf_mkChar("GRP_df"));
-//     SEXP tp_char = Rf_protect(Rf_mkChar("time_tbl_df"));
-//     SEXP remove = Rf_protect(Rf_allocVector(STRSXP, 4));
-//     SET_STRING_ELT(remove, 0, grouped_df_char);
-//     SET_STRING_ELT(remove, 1, fp_grouped_df_char);
-//     SET_STRING_ELT(remove, 2, grp_df_char);
-//     SET_STRING_ELT(remove, 3, tp_char);
-//
-//     SEXP new_class = Rf_protect(cheapr::setdiff(old_class, remove, false));
-//     Rf_classgets(out, new_class);
-//     Rf_unprotect(7);
-//     return out;
-//   }
-//   return data;
-// }
 
 // Taken from dplyr::group_indices,
 // All credits go to dplyr
@@ -1029,7 +941,7 @@ SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
 bool cpp_group_id_sorted(SEXP x){
   bool out = true;
   int n = Rf_length(x);
-  const int* __restrict__ p_x = INTEGER(x);
+  const int* __restrict__ p_x = INTEGER_RO(x);
   for (int i = 1; i < n; ++i){
     if (p_x[i] < p_x[i - 1]){
       return false;
@@ -1037,80 +949,6 @@ bool cpp_group_id_sorted(SEXP x){
   }
   return out;
 }
-
-// SEXP cpp_df_as_collapse_grp(SEXP x, bool return_order){
-//   int32_t NP = 0;
-//
-//   SEXP out = Rf_protect(Rf_allocVector(VECSXP, 9)); ++NP;
-//   SEXP out_names = Rf_protect(Rf_allocVector(STRSXP, 9)); ++NP;
-//   SET_STRING_ELT(out_names, 0, Rf_mkChar("N.groups"));
-//   SET_STRING_ELT(out_names, 1, Rf_mkChar("group.id"));
-//   SET_STRING_ELT(out_names, 2, Rf_mkChar("group.sizes"));
-//   SET_STRING_ELT(out_names, 3, Rf_mkChar("groups"));
-//   SET_STRING_ELT(out_names, 4, Rf_mkChar("group.vars"));
-//   SET_STRING_ELT(out_names, 5, Rf_mkChar("ordered"));
-//   SET_STRING_ELT(out_names, 6, Rf_mkChar("order"));
-//   SET_STRING_ELT(out_names, 7, Rf_mkChar("group.starts"));
-//   SET_STRING_ELT(out_names, 8, Rf_mkChar("call"));
-//   Rf_namesgets(out, out_names);
-//
-//   int n_rows = df_nrow(x);
-//
-//   SEXP group_data = Rf_protect(cpp_group_data(x)); ++NP;
-//   SEXP group_vars = Rf_protect(cpp_group_vars(x)); ++NP;
-//   int n_groups = df_nrow(group_data);
-//   SEXP group_keys = Rf_protect(cpp_group_keys(x)); ++NP;
-//   SEXP group_id = Rf_protect(cpp_group_id(x)); ++NP;
-//   SEXP group_rows = Rf_protect(cpp_group_rows(x)); ++NP;
-//   SEXP group_sizes = Rf_protect(cheapr::lengths(group_rows, false)); ++NP;
-//   int ngvars = n_group_vars(x);
-//
-//   SEXP group_order = R_NilValue;
-//   SEXP sorted = Rf_protect(Rf_allocVector(LGLSXP, 1)); ++NP;
-//   LOGICAL(sorted)[0] = NA_LOGICAL;
-//
-//   if (return_order){
-//     if (ngvars == 0){
-//       Rf_protect(group_order = VECTOR_ELT(group_rows, 0)); ++NP;
-//       LOGICAL(sorted)[0] = TRUE;
-//     } else {
-//       Rf_protect(group_order = cpp_unlist_group_locs(group_rows, group_sizes)); ++NP;
-//     }
-//   }
-//   SEXP group_ordered = Rf_protect(Rf_allocVector(LGLSXP, 2)); ++NP;
-//   LOGICAL(group_ordered)[0] = TRUE;
-//   LOGICAL(group_ordered)[1] = LOGICAL(sorted)[0];
-//   SEXP group_ordered_names = Rf_protect(Rf_allocVector(STRSXP, 2)); ++NP;
-//   SET_STRING_ELT(group_ordered_names, 0, Rf_mkChar("ordered"));
-//   SET_STRING_ELT(group_ordered_names, 1, Rf_mkChar("sorted"));
-//   Rf_namesgets(group_ordered, group_ordered_names);
-//   SEXP group_starts;
-//
-//     if (ngvars == 0){
-//       Rf_protect(group_starts = Rf_ScalarInteger(std::min(1, n_rows))); ++NP;
-//     } else {
-//       SEXP r_one = Rf_protect(Rf_ScalarInteger(1)); ++NP;
-//       Rf_protect(group_starts = cpp11::package("fastplyr")["list_subset"](group_rows, r_one)); ++NP;
-//     }
-//     SET_VECTOR_ELT(out, 0, Rf_ScalarInteger(n_groups));
-//     SET_VECTOR_ELT(out, 1, group_id);
-//     SET_VECTOR_ELT(out, 2, group_sizes);
-//     if (ngvars != 0){
-//       SET_VECTOR_ELT(out, 3, group_keys);
-//       SET_VECTOR_ELT(out, 4, group_vars);
-//     }
-//     SET_VECTOR_ELT(out, 7, group_starts);
-//     if (TYPEOF(group_order) != NILSXP){
-//       SET_VECTOR_ELT(out, 6, group_order);
-//     }
-//     SET_VECTOR_ELT(out, 5, group_ordered);
-//     Rf_classgets(out, Rf_mkString("GRP"));
-//     Rf_unprotect(NP);
-//     return out;
-// }
-// the recycle arg recyles results on a by-group basis
-// useful for `reframe()`
-//
 
 [[cpp11::register]]
 SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
