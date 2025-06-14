@@ -649,7 +649,7 @@ SEXP cpp_run_id(SEXP x){
   }
   case REALSXP: {
     if (Rf_inherits(x, "integer64")){
-    long long *p_x = INTEGER64_PTR(x);
+    int64_t *p_x = INTEGER64_PTR(x);
     FP_RUN_ID;
   } else {
     // The above statement works almost always for
@@ -754,7 +754,7 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
         }
       case REALSXP: {
         if (Rf_inherits(x, "integer64")){
-        long long *p_xj = INTEGER64_PTR(p_x[j]);
+        int64_t *p_xj = INTEGER64_PTR(p_x[j]);
         diff = (p_xj[i] != p_xj[i - 1]);
         p_out[i] = (k += diff);
       } else {
@@ -932,10 +932,10 @@ SEXP cpp_fill_grouped(SEXP x, SEXP order, SEXP group_sizes, double fill_limit) {
       Rf_unprotect(NP);
       Rf_error("x and order must both be the same length");
     }
-    long long int last_obs;
+    int64_t last_obs;
     out = Rf_protect(Rf_duplicate(x)); ++NP;
-    long long int *p_x = INTEGER64_PTR(x);
-    long long int *p_out = INTEGER64_PTR(out);
+    int64_t *p_x = INTEGER64_PTR(x);
+    int64_t *p_out = INTEGER64_PTR(out);
     for (int i = 0; i < n_groups; ++i){
       nfill = 0; // Reset fill limit
       FASTPLYR_GROUP_RESET

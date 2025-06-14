@@ -13,7 +13,7 @@
 #endif
 
 #ifndef INTEGER64_PTR
-#define INTEGER64_PTR(x) ((long long*) REAL(x))
+#define INTEGER64_PTR(x) ((int64_t*) REAL(x))
 #endif
 
 inline cpp11::function fp_group_id = cpp11::package("fastplyr")["group_id"];
