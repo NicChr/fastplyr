@@ -527,23 +527,24 @@ SEXP cpp_which_all(SEXP x){
     out = SHIELD(cheapr::val_find(p_x[0], r_true, false)); ++NP;
   } else {
     SEXP lgl = SHIELD(new_vec(LGLSXP, n_rows)); ++NP;
-    int* __restrict__ p_lgl = LOGICAL(lgl);
+    int* __restrict__ p_lgl = INTEGER(lgl);
     safe_memset(p_lgl, 0, n_rows * sizeof(int));
 
     // Save pointers to logical cols
 
-    std::vector<int*> col_ptrs(n_cols);
+    std::vector<const int*> col_ptrs(n_cols);
 
     for (int i = 0; i < n_cols; ++i){
-      col_ptrs[i] = LOGICAL(p_x[i]);
+      col_ptrs[i] = INTEGER_RO(p_x[i]);
     }
 
     bool is_true = false;
+    int j;
     for (int i = 0; i < n_rows; ++i){
       is_true = true;
-      int j = 0;
+      j = 0;
       while (j < n_cols && is_true){
-        is_true = col_ptrs[j++][i] == TRUE;
+        is_true = col_ptrs[j++][i] == 1;
       }
       n_true += is_true;
       p_lgl[i] = is_true;
@@ -565,56 +566,27 @@ SEXP cpp_which_all(SEXP x){
 // Slice integers (only in-bounds data is returned)
 // indices must NOT INCLUDE NA values
 
-SEXP cpp_int_slice(SEXP x, SEXP indices, bool check){
-  if (!Rf_isInteger(x)){
-    Rf_error("x must be an integer vector");
-  }
-  if (!Rf_isInteger(indices)){
-    Rf_error("indices must be an integer vector");
-  }
-  int *pi = INTEGER(indices);
+SEXP cpp_int_slice(SEXP x, SEXP indices, const int *pi, int indn){
   int xn = Rf_length(x);
-  int n = Rf_length(indices);
   int32_t NP = 0;
-  int zero_count = 0;
-  int pos_count = 0;
-  int oob_count = 0;
-  int neg_count = 0;
   int k = 0;
-  int out_size;
-  if (check){
-    for (int j = 0; j < n; ++j){
-      zero_count += (pi[j] == 0);
-      pos_count += (pi[j] > 0);
-      oob_count += (std::abs(pi[j]) > xn);
-    }
-    neg_count = n - pos_count - zero_count;
-    if ( pos_count > 0 && neg_count > 0){
-      Rf_error("Cannot mix positive and negative indices");
+  SEXP out = SHIELD(new_vec(INTSXP, indn)); ++NP;
+  const int *p_x = INTEGER_RO(x);
+  int* __restrict__ p_out = INTEGER(out);
+  int j;
+  for (int i = 0; i < indn; ++i){
+    j = pi[i];
+    if (j < 0){
+      SEXP new_indices = SHIELD(cheapr::exclude_locs(indices, xn)); ++NP;
+      SEXP out2 = SHIELD(cheapr::sset_vec(x, new_indices, false)); ++NP;
+      YIELD(NP);
+      return out2;
+    } else if (j != 0 && j <= xn){
+      p_out[k++] = p_x[j - 1];
     }
   }
-  out_size = n - oob_count - zero_count;
-  bool no_check = !check || (zero_count == 0 && oob_count == 0 && pos_count == n ) || neg_count > 0;
-
-  SEXP temp = SHIELD(neg_count > 0 ? cheapr::exclude_locs(indices, xn) : indices); ++NP;
-  int *pi2 = INTEGER(temp);
-  if (neg_count > 0){
-    n = Rf_length(temp);
-    out_size = n;
-  }
-  SEXP out = SHIELD(new_vec(INTSXP, out_size)); ++NP;
-  int *p_x = INTEGER(x);
-  int *p_out = INTEGER(out);
-  if (no_check){
-    for (int i = 0; i < n; ++i) p_out[k++] = p_x[pi2[i] - 1];
-  } else {
-    unsigned int rng = xn - 1;
-    int xi = 0;
-    for (int i = 0; i < n; ++i){
-      xi = pi2[i];
-      if ( ( (unsigned)(xi - 1) ) <= rng) p_out[k++] = p_x[xi - 1];
-      // if (xi > 0 && xi <= xn) p_out[k++] = p_x[xi - 1];
-    }
+  if (k != indn){
+    SHIELD(out = Rf_lengthgets(out, k)); ++NP;
   }
   YIELD(NP);
   return out;
@@ -628,8 +600,11 @@ SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
 
   SEXP out = SHIELD(new_vec(VECSXP, n_groups));
 
+  const int *p_locs = INTEGER_RO(locs);
+  int loc_size = Rf_length(locs);
+
   for (int i = 0; i < n_groups; ++i){
-    SET_VECTOR_ELT(out, i, cpp_int_slice(p_groups[i], locs, true));
+    SET_VECTOR_ELT(out, i, cpp_int_slice(p_groups[i], locs, p_locs, loc_size));
   }
   YIELD(1);
   return out;
