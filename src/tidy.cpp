@@ -902,9 +902,7 @@ SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
 
     for (int i = 0; i < n; k += m, ++i){
       m = Rf_length(p_x[i]);
-      if (m != 0){
-        memcpy(&p_out[k], &loc_ptrs[i][0], m * sizeof(int));
-      }
+      safe_memcpy(&p_out[k], &loc_ptrs[i][0], m * sizeof(int));
     }
     YIELD(1);
     return out;
@@ -926,9 +924,7 @@ SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
 
     for (int i = 0; i < n; k += m, ++i){
       m = p_gs[i];
-      if (m != 0){
-        memcpy(&p_out[k], &loc_ptrs[i][0], m * sizeof(int));
-      }
+      safe_memcpy(&p_out[k], &loc_ptrs[i][0], m * sizeof(int));
     }
     YIELD(1);
     return out;
@@ -1608,9 +1604,7 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
     p_sorted_group_starts[0] = 1;
     max_group_size = max_group_size < group_size ? group_size : max_group_size;
 
-    if (group_size > 0){
-      memcpy(&p_group_order[k], &p_rows_i[0], group_size * sizeof(int));
-    }
+    safe_memcpy(&p_group_order[k], &p_rows_i[0], group_size * sizeof(int));
 
     for (int j = 0; j < group_size; ++j, ++k){
       p_group_id[p_rows_i[j] - 1] = 1;
@@ -1626,9 +1620,7 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
       p_group_sizes[i] = group_size;
       max_group_size = max_group_size < group_size ? group_size : max_group_size;
 
-      if (group_size != 0){
-        memcpy(&p_group_order[k], &p_rows_i[0], group_size * sizeof(int));
-      }
+      safe_memcpy(&p_group_order[k], &p_rows_i[0], group_size * sizeof(int));
 
       for (int j = 0; j < group_size; ++j, ++k){
         p_group_id[p_rows_i[j] - 1] = i + 1;

@@ -334,7 +334,7 @@ SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
 
   SEXP loc_indices = SHIELD(new_vec(INTSXP, n_groups));
   int* __restrict__ p_loc_indices = INTEGER(loc_indices);
-  memset(p_loc_indices, 0, n_groups * sizeof(int));
+  safe_memset(p_loc_indices, 0, n_groups * sizeof(int));
 
   int n = Rf_length(group_id);
   int cur_group;
@@ -433,7 +433,7 @@ SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
 
 // Alternative that goes col-wise
 
-// SEXP cpp_which_all_alt(SEXP x){
+// SEXP cpp_which_all(SEXP x){
 //   if (!Rf_inherits(x, "data.frame")){
 //     Rf_error("x must be a data frame");
 //   }
@@ -441,31 +441,40 @@ SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
 //   int NP = 0, n_true = 0;
 //
 //   int n_cols = Rf_length(x);
-//   int n_rows = Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
+//   int n_rows = df_nrow(x);
 //
-//   SEXP out; // Initialise result (must be assigned a valid SEXP or R crashes)
+//   // Store pointers for fast access
+//   std::vector<const int*> col_ptrs(n_cols);
+//
+//   for (int i = 0; i < n_cols; ++i) {
+//     col_ptrs[i] = INTEGER_RO(p_x[i]);
+//   }
+//
+//   SEXP out = R_NilValue;
 //
 //   if (n_cols == 0){
 //     out = SHIELD(new_vec(INTSXP, 0)); ++NP;
 //   } else if (n_cols == 1){
-//     cpp11::function cheapr_which = cpp11::package("cheapr")["which_"];
-//     out = SHIELD(cheapr_which(p_x[0])); ++NP;
+//     SEXP r_true = SHIELD(new_vec(LGLSXP, 1)); ++NP;
+//     LOGICAL(r_true)[0] = 1;
+//     out = SHIELD(cheapr::val_find(p_x[0], r_true, false)); ++NP;
 //   } else {
 //     SEXP lgl = SHIELD(new_vec(LGLSXP, n_rows)); ++NP;
-//     int *p_lgl = LOGICAL(lgl);
+//     int* __restrict__ p_lgl = INTEGER(lgl);
 //
 //     // Copy values of x[[1]] into our vector
 //
-//     SEXP first_lgl = SHIELD(p_x[0]); ++NP;
-//     int *p_first = LOGICAL(first_lgl);
-//     memmove(p_lgl, &p_first[0], sizeof(int) * n_rows);
+//     const int *p_first = col_ptrs[0];
+//     safe_memmove(p_lgl, &p_first[0], sizeof(int) * n_rows);
+//
+//     const int *p_temp;
 //
 //     // Starting from 2nd col to 2nd last col
 //
 //     for (int i = 1; i < (n_cols - 1); ++i) {
-//       int *p_temp = LOGICAL(p_x[i]);
+//       p_temp = col_ptrs[i];
 //       for (int j = 0; j < n_rows; ++j){
-//         p_lgl[j] = p_lgl[j] == TRUE && p_temp[j] == TRUE;
+//         p_lgl[j] = p_lgl[j] == 1 && p_temp[j] == 1;
 //       }
 //     }
 //
@@ -473,21 +482,21 @@ SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
 //     // This is where we count how many true values
 //     // are returned in the final vector
 //
-//     int *p_temp = LOGICAL(p_x[n_cols - 1]);
+//     p_temp = col_ptrs[n_cols - 1];
 //     for (int j = 0; j < n_rows; ++j){
-//       p_lgl[j] = (p_lgl[j] == TRUE) && (p_temp[j] == TRUE);
+//       p_lgl[j] = (p_lgl[j] == 1) && (p_temp[j] == 1);
 //       n_true += p_lgl[j];
 //     }
 //
 //     // WHICH algo
 //
 //     out = SHIELD(new_vec(INTSXP, n_true)); ++NP;
-//     int *p_out = INTEGER(out);
+//     int* __restrict__ p_out = INTEGER(out);
 //     int whichi = 0;
 //     int i = 0;
 //     while (whichi < n_true){
 //       p_out[whichi] = i + 1;
-//       whichi += (p_lgl[i++] == TRUE);
+//       whichi += (p_lgl[i++] == 1);
 //     }
 //   }
 //   YIELD(NP);
@@ -519,7 +528,7 @@ SEXP cpp_which_all(SEXP x){
   } else {
     SEXP lgl = SHIELD(new_vec(LGLSXP, n_rows)); ++NP;
     int* __restrict__ p_lgl = LOGICAL(lgl);
-    memset(p_lgl, 0, n_rows * sizeof(int));
+    safe_memset(p_lgl, 0, n_rows * sizeof(int));
 
     // Save pointers to logical cols
 
