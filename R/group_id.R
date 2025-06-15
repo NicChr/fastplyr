@@ -99,15 +99,12 @@ group_id.default <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
 
 #' @export
 group_id.factor <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){
-  out <- unclass(x)
-  if (order && ascending && !as_qg){
-    out <- strip_attrs(out)
-    out[cheapr::which_na(out)] <- length(levels(x)) + 1L
+
+  if (!order || !ascending){
+    group_id(unclass(x), order = order, ascending = ascending, as_qg = as_qg)
   } else {
-    out <- group_id(out, order = order,
-                    ascending = ascending, as_qg = as_qg)
+    cheapr::attrs_rm(collapse::qG(x, sort = TRUE, na.exclude = FALSE), .set = TRUE)
   }
-  out
 }
 #' @export
 group_id.list <- function(x, order = TRUE, ascending = TRUE, as_qg = FALSE){

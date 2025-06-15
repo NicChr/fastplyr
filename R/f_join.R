@@ -4,6 +4,11 @@ check_suffix <- function(x){
   }
 }
 
+# Label factors as exotic as combining them requires special handling
+is_exotic <- function(x){
+  cpp_is_exotic(x) || is.factor(x)
+}
+
 f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
 
   check_suffix(suffix)
@@ -110,8 +115,8 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
   # specifically on the joined variables
 
 
-  exotic_cols_left <- names(x)[vapply(x, cpp_is_exotic, FALSE, USE.NAMES = FALSE)]
-  exotic_cols_right <- names(y)[vapply(y, cpp_is_exotic, FALSE, USE.NAMES = FALSE)]
+  exotic_cols_left <- names(x)[vapply(x, is_exotic, FALSE, USE.NAMES = FALSE)]
+  exotic_cols_right <- names(y)[vapply(y, is_exotic, FALSE, USE.NAMES = FALSE)]
 
   exotic_join_cols <- join_by[join_cols_right %in% exotic_cols_right | join_cols_left %in% exotic_cols_left]
   exotic_join_cols_left <- names(exotic_join_cols)
@@ -133,7 +138,7 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
       left[[exotic_join_cols_left[i]]], right[[exotic_join_cols_right[i]]]
     )
     exotic_data[[i]] <- exotic_combined
-    group_ids <- group_id(exotic_combined, order = FALSE)
+    group_ids <- group_id(exotic_combined, order = is.factor(exotic_combined))
     exotic_group_ids[[i]] <- group_ids
     left[[exotic_join_cols_left[i]]] <- cheapr::sset(group_ids, df_seq_along(left))
     right[[exotic_join_cols_right[i]]] <- cheapr::sset(group_ids, (df_nrow(left) + 1L):length(group_ids))
@@ -142,10 +147,10 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
   # For the non joining variables, we can just convert directly to IDs
 
   for (col in exotic_non_join_cols_left){
-    left[[col]] <- group_id(left[[col]], order = FALSE)
+    left[[col]] <- group_id(left[[col]], order = is.factor(left[[col]]))
   }
   for (col in exotic_non_join_cols_right){
-    right[[col]] <- group_id(right[[col]], order = FALSE)
+    right[[col]] <- group_id(right[[col]], order = is.factor(right[[col]]))
   }
 
   # If any addresses have been changed then yes there are vars
@@ -244,7 +249,10 @@ f_join <- function(x, y, by, suffix, multiple, keep, join_type, ...){
     matches <- collapse::fmatch(out[[col]], exotic_group_ids[[col]], overid = 2L)
     out[[col]] <- cheapr::sset(exotic_data[[col]], matches)
   }
-  for (col in vec_intersect(exotic_join_cols_right, names(out))){
+  for (col in vec_setdiff(
+    vec_intersect(exotic_join_cols_right, names(out)),
+    exotic_join_cols_left
+  )){
     adjacent_left_col <- exotic_join_cols_left[match(col, exotic_join_cols_right)]
     matches <- collapse::fmatch(out[[col]], exotic_group_ids[[adjacent_left_col]], overid = 2L)
     out[[col]] <- cheapr::sset(exotic_data[[adjacent_left_col]], matches)
