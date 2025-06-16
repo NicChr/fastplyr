@@ -769,20 +769,45 @@ SEXP cpp_ungroup(SEXP data){
 
 [[cpp11::register]]
 SEXP cpp_group_indices(SEXP rows, int size) {
+
   SEXP indices = SHIELD(new_vec(INTSXP, size));
   int* __restrict__ p_indices = INTEGER(indices);
   int ng = Rf_length(rows);
   const SEXP* p_rows = VECTOR_PTR_RO(rows);
 
-  for (int i = 0; i < ng; ++i) {
-    SEXP rows_i = p_rows[i];
-    int n_i = Rf_length(rows_i);
-    const int* __restrict__ p_rows_i = INTEGER(rows_i);
-    for (int j = 0; j < n_i; j++, ++p_rows_i) {
-      p_indices[*p_rows_i - 1] = i + 1;
+  // Get external ptr of int ptrs
+  SEXP int_ptrs = SHIELD(Rf_getAttrib(rows, Rf_install(".integer_ptrs")));
+
+  if (int_ptrs == R_NilValue){
+
+    for (int i = 0; i < ng; ++i) {
+      SEXP rows_i = p_rows[i];
+      int n_i = Rf_length(rows_i);
+      const int* __restrict__ p_rows_i = INTEGER(rows_i);
+      for (int j = 0; j < n_i; j++, ++p_rows_i) {
+        p_indices[*p_rows_i - 1] = i + 1;
+      }
+    }
+  } else {
+    void *ptrs_vec_addr = R_ExternalPtrAddr(int_ptrs);
+
+    if (ptrs_vec_addr == NULL){
+      YIELD(1);
+      Rf_error("Internal error, external pointer points to `NULL`");
+    }
+
+    auto* int_ptrs_vec = static_cast<std::vector<int*>*>(ptrs_vec_addr);
+
+    for (int i = 0; i < ng; ++i) {
+      SEXP rows_i = p_rows[i];
+      int n_i = Rf_length(rows_i);
+      int* p_rows_i = (*int_ptrs_vec)[i];
+      for (int j = 0; j < n_i; j++, ++p_rows_i) {
+        p_indices[*p_rows_i - 1] = i + 1;
+      }
     }
   }
-  YIELD(1);
+  YIELD(2);
   return indices;
 }
 

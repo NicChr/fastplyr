@@ -1114,3 +1114,10 @@ tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
 #   }
 #   invisible(x)
 # }
+
+as_fastplyr_list_of_ints <- function(x){
+  vctrs::new_vctr(
+    x, .integer_ptrs = attr(x, ".integer_ptrs", TRUE),
+    class = "fastplyr_list_of_ints"
+  )
+}
