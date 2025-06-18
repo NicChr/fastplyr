@@ -48,10 +48,10 @@ extern "C" SEXP _fastplyr_cpp_as_list_of_frames(SEXP x) {
   END_CPP11
 }
 // fastplyr.cpp
-SEXP cpp_list_subset(SEXP x, SEXP ptype, SEXP i, SEXP default_value);
-extern "C" SEXP _fastplyr_cpp_list_subset(SEXP x, SEXP ptype, SEXP i, SEXP default_value) {
+SEXP cpp_pluck_list_of_integers(SEXP x, SEXP i, SEXP default_value);
+extern "C" SEXP _fastplyr_cpp_pluck_list_of_integers(SEXP x, SEXP i, SEXP default_value) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cpp_list_subset(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(ptype), cpp11::as_cpp<cpp11::decay_t<SEXP>>(i), cpp11::as_cpp<cpp11::decay_t<SEXP>>(default_value)));
+    return cpp11::as_sexp(cpp_pluck_list_of_integers(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(i), cpp11::as_cpp<cpp11::decay_t<SEXP>>(default_value)));
   END_CPP11
 }
 // fastplyr.cpp
@@ -352,10 +352,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_grouped_run_id",                   (DL_FUNC) &_fastplyr_cpp_grouped_run_id,                   3},
     {"_fastplyr_cpp_is_exotic",                        (DL_FUNC) &_fastplyr_cpp_is_exotic,                        1},
     {"_fastplyr_cpp_is_fn_call",                       (DL_FUNC) &_fastplyr_cpp_is_fn_call,                       4},
-    {"_fastplyr_cpp_list_subset",                      (DL_FUNC) &_fastplyr_cpp_list_subset,                      4},
     {"_fastplyr_cpp_list_tidy",                        (DL_FUNC) &_fastplyr_cpp_list_tidy,                        1},
     {"_fastplyr_cpp_nest_split",                       (DL_FUNC) &_fastplyr_cpp_nest_split,                       3},
     {"_fastplyr_cpp_orig_order",                       (DL_FUNC) &_fastplyr_cpp_orig_order,                       2},
+    {"_fastplyr_cpp_pluck_list_of_integers",           (DL_FUNC) &_fastplyr_cpp_pluck_list_of_integers,           3},
     {"_fastplyr_cpp_quo_data_vars",                    (DL_FUNC) &_fastplyr_cpp_quo_data_vars,                    2},
     {"_fastplyr_cpp_quos_drop_null",                   (DL_FUNC) &_fastplyr_cpp_quos_drop_null,                   1},
     {"_fastplyr_cpp_row_id",                           (DL_FUNC) &_fastplyr_cpp_row_id,                           3},

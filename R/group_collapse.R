@@ -217,8 +217,7 @@ construct_dplyr_group_data <- function(g, drop){
     drop = drop
   )
   group_data <- cheapr::list_assign(group_data,
-    list(.rows = vctrs_new_list_of(group_data[[".loc"]], integer()),
-         .loc = NULL)
+    list(.rows = as_list_of_ints(group_data[[".loc"]]), .loc = NULL)
   )
   group_data <- list_as_tbl(group_data)
   attr(group_data, ".drop") <- drop

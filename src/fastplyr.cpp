@@ -1,6 +1,5 @@
 #include "fastplyr.h"
 #include "cheapr_api.h"
-#include <vector>
 
 SEXP get_list_element(SEXP list, const char *str){
   SEXP out = R_NilValue;
@@ -179,135 +178,52 @@ SEXP cpp_as_list_of_frames(SEXP x){
 }
 
 // Fast extract 1 element from each list element
-
 [[cpp11::register]]
-SEXP cpp_list_subset(SEXP x, SEXP ptype, SEXP i, SEXP default_value) {
+SEXP cpp_pluck_list_of_integers(SEXP x, SEXP i, SEXP default_value){
+  int32_t NP = 0;
   const SEXP *p_x = VECTOR_PTR_RO(x);
-  SHIELD(i = Rf_coerceVector(i, INTSXP));
   int n = Rf_length(x);
   int i_n = Rf_length(i);
   int k;
   if (n == 0){
-    YIELD(1);
-    return ptype;
-  }
-  if (Rf_length(ptype) > 0){
-    YIELD(1);
-    Rf_error("ptype must be a zero-length vector");
+    YIELD(NP);
+    return new_vec(INTSXP, 0);
   }
   if (!(i_n == 1 || (n > 0 && i_n == n))){
-    YIELD(1);
+    YIELD(NP);
     Rf_error("i must be an integer vector of length 1 or of length(x)");
   }
-  int* __restrict__ p_i = INTEGER(i);
-  switch (TYPEOF(ptype)){
-  case LGLSXP: {
-    bool replace = Rf_asLogical(default_value);
-    SEXP out = SHIELD(new_vec(LGLSXP, n));
-    int* __restrict__ p_out = LOGICAL(out);
+  const int* __restrict__ p_i = INTEGER_RO(i);
+  int replace = Rf_asInteger(default_value);
+  SEXP out = SHIELD(new_vec(INTSXP, n)); ++NP;
+  int* __restrict__ p_out = INTEGER(out);
+
+  // SEXP r_int_ptrs = SHIELD(get_int_ptrs(x)); ++NP;
+
+  // if (Rf_isNull(r_int_ptrs)){
     for (int j = 0; j < n; ++j) {
-      p_out[j] = replace;
       k = (i_n == 1 ? p_i[0] : p_i[j]);
       if (k <= Rf_length(p_x[j]) && k > 0){
-        p_out[j] = LOGICAL(p_x[j])[k - 1];
+        p_out[j] = INTEGER_RO(p_x[j])[k - 1];
+      } else {
+        p_out[j] = replace;
       }
     }
-    YIELD(2);
-    return out;
-  }
-  case INTSXP: {
-    int replace = Rf_asInteger(default_value);
-    SEXP out = SHIELD(new_vec(INTSXP, n));
-    int* __restrict__ p_out = INTEGER(out);
-    for (int j = 0; j < n; ++j) {
-      p_out[j] = replace;
-      k = (i_n == 1 ? p_i[0] : p_i[j]);
-      if (k <= Rf_length(p_x[j]) && k > 0){
-        p_out[j] = INTEGER(p_x[j])[k - 1];
-      }
-    }
-    YIELD(2);
-    return out;
-  }
-  case REALSXP: {
-    double replace = Rf_asReal(default_value);
-    SEXP out = SHIELD(new_vec(REALSXP, n));
-    double* __restrict__ p_out = REAL(out);
-    for (int j = 0; j < n; ++j) {
-      p_out[j] = replace;
-      k = (i_n == 1 ? p_i[0] : p_i[j]);
-      if (k <= Rf_length(p_x[j]) && k > 0){
-        p_out[j] = REAL(p_x[j])[k - 1];
-      }
-    }
-    YIELD(2);
-    return out;
-  }
-  case STRSXP: {
-    SEXP replace = SHIELD(Rf_asChar(default_value));
-    SEXP out = SHIELD(new_vec(STRSXP, n));
-    for (int j = 0; j < n; ++j) {
-      SET_STRING_ELT(out, j, replace);
-      k = (i_n == 1 ? p_i[0] : p_i[j]);
-      if (k <= Rf_length(p_x[j]) && k > 0){
-        SET_STRING_ELT(out, j, STRING_ELT(p_x[j], k - 1));
-      }
-    }
-    YIELD(3);
-    return out;
-  }
-  default: {
-    YIELD(1);
-    Rf_error("cpp_list_subset cannot handle supplied SEXP");
-  }
-  }
+  // } else {
+  //   auto& int_ptrs_vec = *static_cast<std::vector<int*>*>(R_ExternalPtrAddr(r_int_ptrs));
+  //   for (int j = 0; j < n; ++j) {
+  //     k = (i_n == 1 ? p_i[0] : p_i[j]);
+  //     if (k <= Rf_length(p_x[j]) && k > 0){
+  //       p_out[j] = int_ptrs_vec[j][k - 1];
+  //     } else {
+  //       p_out[j] = replace;
+  //     }
+  //   }
+  // }
+
+  YIELD(NP);
+  return out;
 }
-
-
-// static void int_list_ptr_finaliser(SEXP extptr){
-//   void *addr = R_ExternalPtrAddr(extptr);
-//   if (addr != NULL) {
-//     R_ClearExternalPtr(extptr);
-//   }
-// }
-//
-// SEXP new_int_list_ptr(int *p){
-//   SEXP xp = SHIELD(R_MakeExternalPtr((void*)p, R_NilValue, R_NilValue));
-//   R_RegisterCFinalizerEx(xp, int_list_ptr_finaliser, TRUE);
-//   YIELD(1);
-//   return xp;
-// }
-
-// SEXP cpp_subset_list_of_integers(SEXP x, SEXP i, SEXP default_value){
-//   int32_t NP = 0;
-//   const SEXP *p_x = VECTOR_PTR_RO(x);
-//   SHIELD(i = Rf_coerceVector(i, INTSXP)); ++NP;
-//   int n = Rf_length(x);
-//   int i_n = Rf_length(i);
-//   int k;
-//   if (n == 0){
-//     YIELD(NP);
-//     return new_vec(INTSXP, 0);
-//   }
-//   if (!(i_n == 1 || (n > 0 && i_n == n))){
-//     YIELD(NP);
-//     Rf_error("i must be an integer vector of length 1 or of length(x)");
-//   }
-//   const int* __restrict__ p_i = INTEGER_RO(i);
-//     int replace = Rf_asInteger(default_value);
-//     SEXP out = SHIELD(new_vec(INTSXP, n)); ++NP;
-//     int* __restrict__ p_out = INTEGER(out);
-//
-//     for (int j = 0; j < n; ++j) {
-//       p_out[j] = replace;
-//       k = (i_n == 1 ? p_i[0] : p_i[j]);
-//       if (k <= Rf_length(p_x[j]) && k > 0){
-//         p_out[j] = INTEGER_RO(p_x[j])[k - 1];
-//       }
-//     }
-//     YIELD(2);
-//     return out;
-// }
 
 // Take a vector of group sizes (sorted by group)
 // And this will return a vector of the start indices of each group (in sorted order)
@@ -330,81 +246,6 @@ SEXP cpp_sorted_group_starts(SEXP group_sizes, int init_loc = 1){
   return out;
 }
 
-[[cpp11::register]]
-SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
-  unsigned int n_groups = Rf_length(group_sizes);
-  const int* __restrict__ p_o = INTEGER_RO(order);
-  const int* __restrict__ p_gs = INTEGER_RO(group_sizes);
-  SEXP out = SHIELD(new_vec(VECSXP, n_groups));
-  const SEXP *p_out = VECTOR_PTR_RO(out);
-  unsigned int k = 0;
-  unsigned int group_size = 0;
-  int *ptr;
-  for (unsigned int i = 0; i < n_groups; ++i, k += group_size){
-    group_size = p_gs[i];
-    SET_VECTOR_ELT(out, i, new_vec(INTSXP, group_size));
-    ptr = INTEGER(p_out[i]);
-    safe_memcpy(&ptr[0], &p_o[k], group_size * sizeof(int));
-  }
-  YIELD(1);
-  return out;
-}
-
-// Alternative to above that can calculate it using
-// group IDs instead of the order
-
-// SEXP cpp_group_locs3(SEXP group_id, SEXP group_sizes){
-//   int32_t NP = 0;
-//   unsigned int n_groups = Rf_length(group_sizes);
-//   SEXP out = SHIELD(new_vec(VECSXP, n_groups)); ++NP;
-//   const int* __restrict__ p_group_sizes = INTEGER_RO(group_sizes);
-//   const int* __restrict__ p_group_id = INTEGER_RO(group_id);
-//   const SEXP *p_out = VECTOR_PTR_RO(out);
-//
-//   // Store a vector of pointers
-//   // Speeds up later allocation
-//   SEXP group_loc_ptrs = SHIELD(new_vec(VECSXP, n_groups)); ++NP;
-//
-//   int *ptr;
-//
-//   // Initialise locations
-//   for (unsigned int i = 0; i != n_groups; ++i){
-//     SET_VECTOR_ELT(out, i, new_vec(INTSXP, p_group_sizes[i]));
-//     ptr = INTEGER(p_out[i]);
-//     SET_VECTOR_ELT(group_loc_ptrs, i, new_int_list_ptr(ptr));
-//   }
-//
-//   const SEXP *p_group_loc_ptrs = VECTOR_PTR_RO(group_loc_ptrs);
-//
-//   // Initialise a vector of group location indices
-//
-//   SEXP loc_indices = SHIELD(new_vec(INTSXP, n_groups)); ++NP;
-//   int* __restrict__ p_loc_indices = INTEGER(loc_indices);
-//   safe_memset(p_loc_indices, 0, n_groups * sizeof(int));
-//
-//   int n = Rf_length(group_id);
-//   int cur_group;
-//   int cur_group_loc;
-//   void *addr;
-//   int *ptr2;
-//   for (int i = 0; i < n; ++i){
-//     cur_group = p_group_id[i] - 1;
-//     cur_group_loc = p_loc_indices[cur_group]++;
-//     addr = R_ExternalPtrAddr(p_group_loc_ptrs[cur_group]);
-//     ptr2 = static_cast<int*>(addr);
-//     ptr2[cur_group_loc] = i + 1;
-//   }
-//   Rf_setAttrib(out, Rf_install(".integer_ptrs"), group_loc_ptrs);
-//   YIELD(NP);
-//   return out;
-// }
-
-// auto* pack = static_cast<std::vector<int*>*>(R_ExternalPtrAddr(ext));
-// if (pack) {
-//   delete pack;
-//   R_ClearExternalPtr(ext);
-// }
-
 // Finaliser for external pointer to vector of int ptrs
 static void int_ptrs_finaliser(SEXP ext) {
 
@@ -417,34 +258,42 @@ static void int_ptrs_finaliser(SEXP ext) {
   R_ClearExternalPtr(ext);
 }
 
-// SEXP new_ext_int_ptrs(int* ptrs, SEXP obj_to_keep_alive){
-//   SEXP r_int_ptrs = SHIELD(R_MakeExternalPtr(ptrs, Rf_install(".int_ptrs"), obj_to_keep_alive));
-//   R_RegisterCFinalizerEx(r_int_ptrs, int_ptrs_finaliser, TRUE);
-//   YIELD(1);
-//   return r_int_ptrs;
-// }
+template<typename T>
+SEXP new_ext_int_ptrs(T* ptrs){
+  SEXP r_int_ptrs = SHIELD(R_MakeExternalPtr(ptrs, Rf_install("int_ptrs"), R_NilValue));
+  R_RegisterCFinalizerEx(r_int_ptrs, int_ptrs_finaliser, TRUE);
+  YIELD(1);
+  return r_int_ptrs;
+}
 
-// Create a vector of int ptrs from a list of integers
-// SEXP create_int_ptrs(SEXP x) {
-//   if (TYPEOF(x) != VECSXP){
-//     Rf_error("`x` must be a list of integer vectors");
-//   }
-//
-//   R_xlen_t n = Rf_xlength(x);
-//
-//   auto* pack = new std::vector<int*>(n);
-//
-//   const SEXP *p_x = VECTOR_PTR_RO(x);
-//
-//   for (R_xlen_t i = 0; i < n; ++i){
-//     (*pack)[i] = INTEGER(p_x[i]);
-//   }
-//
-//   SEXP xp = SHIELD(R_MakeExternalPtr(pack, Rf_install("int_ptrs"), x));
-//   R_RegisterCFinalizerEx(xp, int_ptrs_finaliser, TRUE);
-//   YIELD(1);
-//   return xp;
-// }
+[[cpp11::register]]
+SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
+  unsigned int n_groups = Rf_length(group_sizes);
+  const int* __restrict__ p_o = INTEGER_RO(order);
+  const int* __restrict__ p_gs = INTEGER_RO(group_sizes);
+  SEXP out = SHIELD(new_vec(VECSXP, n_groups));
+  const SEXP *p_out = VECTOR_PTR_RO(out);
+  unsigned int k = 0;
+  unsigned int group_size = 0;
+
+  // int *ptr;
+  // auto* loc_ptrs = new std::vector<int*>(n_groups);
+
+  for (unsigned int i = 0; i < n_groups; ++i, k += group_size){
+    group_size = p_gs[i];
+    SET_VECTOR_ELT(out, i, new_vec(INTSXP, group_size));
+    // ptr = INTEGER(p_out[i]);
+    // (*loc_ptrs)[i] = ptr;
+    safe_memcpy(&INTEGER(p_out[i])[0], &p_o[k], group_size * sizeof(int));
+  }
+  // SEXP r_int_ptrs = SHIELD(new_ext_int_ptrs<std::vector<int*>>(loc_ptrs));
+  // Rf_setAttrib(out, Rf_install(".integer_ptrs"), r_int_ptrs);
+  YIELD(1);
+  return out;
+}
+
+// Alternative to above that can calculate it using
+// group IDs instead of the order
 
 [[cpp11::register]]
 SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
@@ -457,17 +306,17 @@ SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
 
   // Store a vector of pointers
   // Speeds up later allocation
-  auto* loc_ptrs = new std::vector<int*>(n_groups);
+  // auto* loc_ptrs = new std::vector<int*>(n_groups);
+  std::vector<int*> loc_ptrs(n_groups);
 
   // Initialise locations
   for (unsigned int i = 0; i != n_groups; ++i){
     SET_VECTOR_ELT(out, i, new_vec(INTSXP, p_group_sizes[i]));
-    (*loc_ptrs)[i] = static_cast<int*>(INTEGER(p_out[i]));
+    loc_ptrs[i] = INTEGER(p_out[i]);
+    // (*loc_ptrs)[i] = static_cast<int*>(INTEGER(p_out[i]));
   }
 
-  SEXP r_int_ptrs = SHIELD(R_MakeExternalPtr(loc_ptrs, Rf_install("int_ptrs"), R_NilValue)); ++NP;
-  R_RegisterCFinalizerEx(r_int_ptrs, int_ptrs_finaliser, TRUE);
-  // SEXP r_int_ptrs = new_ext_int_ptrs(loc_ptrs, out);
+  // SEXP r_int_ptrs = SHIELD(new_ext_int_ptrs<std::vector<int*>>(loc_ptrs)); ++NP;
 
   // Initialise a vector of group location indices
 
@@ -478,14 +327,18 @@ SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
   int n = Rf_length(group_id);
   int cur_group;
   int cur_group_loc;
-  int *loc_ptr;
+
+  // int *loc_ptr;
+
   for (int i = 0; i < n; ++i){
     cur_group = p_group_id[i] - 1;
     cur_group_loc = p_loc_indices[cur_group]++;
-    loc_ptr = (*loc_ptrs)[cur_group];
-    loc_ptr[cur_group_loc] = i + 1;
+    loc_ptrs[cur_group][cur_group_loc] = i + 1;
+
+    // loc_ptr = (*loc_ptrs)[cur_group];
+    // loc_ptr[cur_group_loc] = i + 1;
   }
-  Rf_setAttrib(out, Rf_install(".integer_ptrs"), r_int_ptrs);
+  // Rf_setAttrib(out, Rf_install(".integer_ptrs"), r_int_ptrs);
   YIELD(NP);
   return out;
 }
@@ -704,16 +557,13 @@ SEXP cpp_which_all(SEXP x){
   return out;
 }
 
-
 // Slice integers (only in-bounds data is returned)
 // indices must NOT INCLUDE NA values
 
-SEXP cpp_int_slice(SEXP x, SEXP indices, const int *pi, int indn){
-  int xn = Rf_length(x);
+SEXP int_slice(SEXP x, SEXP indices, const int *p_x, int xn, const int *pi, int indn){
   int32_t NP = 0;
   int k = 0;
   SEXP out = SHIELD(new_vec(INTSXP, indn)); ++NP;
-  const int *p_x = INTEGER_RO(x);
   int* __restrict__ p_out = INTEGER(out);
   int j;
   for (int i = 0; i < indn; ++i){
@@ -733,23 +583,117 @@ SEXP cpp_int_slice(SEXP x, SEXP indices, const int *pi, int indn){
   YIELD(NP);
   return out;
 }
+//
+// SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
+//   int n_groups = Rf_length(group_locs);
+//
+//   const SEXP *p_groups = VECTOR_PTR_RO(group_locs);
+//
+//   SEXP out = SHIELD(new_vec(VECSXP, n_groups));
+//
+//   const int *p_locs = INTEGER_RO(locs);
+//   int loc_size = Rf_length(locs);
+//
+//   // SEXP r_int_ptrs = SHIELD(get_int_ptrs(group_locs));
+//
+//   SEXP elem = R_NilValue;
+//
+//   // if (Rf_isNull(r_int_ptrs)){
+//     for (int i = 0; i < n_groups; ++i){
+//       elem = p_groups[i];
+//       SET_VECTOR_ELT(out, i, int_slice(elem, locs, INTEGER_RO(elem), Rf_length(elem), p_locs, loc_size));
+//     }
+//   // } else {
+//   //   const auto& int_ptrs_vec = *static_cast<std::vector<int*>*>(R_ExternalPtrAddr(r_int_ptrs));
+//   //   for (int i = 0; i < n_groups; ++i){
+//   //     elem = p_groups[i];
+//   //     SET_VECTOR_ELT(out, i, int_slice(elem, locs, int_ptrs_vec[i], Rf_length(elem), p_locs, loc_size));
+//   //   }
+//   //   // const auto int_ptrs_vec = static_cast<std::vector<int*>*>(R_ExternalPtrAddr(r_int_ptrs));
+//   //   // for (int i = 0; i < n_groups; ++i){
+//   //   //   elem = p_groups[i];
+//   //   //   SET_VECTOR_ELT(out, i, int_slice(elem, locs, (*int_ptrs_vec)[i], Rf_length(elem), p_locs, loc_size));
+//   //   // }
+//   // }
+//   YIELD(1);
+//   return out;
+// }
 
 [[cpp11::register]]
 SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
+
+  int32_t NP = 0;
+  // int k = 0;
+
   int n_groups = Rf_length(group_locs);
+  int locs_size = Rf_length(locs);
 
-  const SEXP *p_groups = VECTOR_PTR_RO(group_locs);
-
-  SEXP out = SHIELD(new_vec(VECSXP, n_groups));
-
+  const SEXP *p_group_locs = VECTOR_PTR_RO(group_locs);
   const int *p_locs = INTEGER_RO(locs);
-  int loc_size = Rf_length(locs);
 
-  for (int i = 0; i < n_groups; ++i){
-    SET_VECTOR_ELT(out, i, cpp_int_slice(p_groups[i], locs, p_locs, loc_size));
-  }
-  YIELD(1);
-  return out;
+  // R_xlen_t size_estimate = static_cast<R_xlen_t>(locs_size) *
+  //   static_cast<R_xlen_t>(n_groups);
+
+  // Check for negative indices
+
+  // bool any_neg = false;
+
+  // for (int i = 0; i < locs_size; ++i){
+  //   if (p_locs[i] < 0){
+  //     any_neg = true;
+  //     break;
+  //   }
+  // }
+
+  // Can't subset using negative indices here
+  // if (size_estimate < std::pow(10, 9) && !any_neg){
+  //
+  //   // Loop through groups and store pointers
+  //
+  //   std::vector<const int*> int_ptrs(n_groups);
+  //
+  //   for (int i = 0; i < n_groups; ++i){
+  //     int_ptrs[i] = INTEGER_RO(p_group_locs[i]);
+  //   }
+  //
+  //   SEXP out = SHIELD(new_vec(INTSXP, size_estimate)); ++NP;
+  //   int* __restrict__ p_out = INTEGER(out);
+  //   int cur_group = 0;
+  //   int j;
+  //   int loci = 0;
+  //   for (int i = 0; i < size_estimate; ++i){
+  //     j = p_locs[loci];
+  //     if (j != 0 && j <= Rf_length(p_group_locs[cur_group])){
+  //       p_out[k++] = int_ptrs[cur_group][j - 1];
+  //     }
+  //     if (++loci == locs_size){
+  //       loci = 0;
+  //       ++cur_group;
+  //     }
+  //   }
+  //   if (k != size_estimate){
+  //     SHIELD(out = Rf_lengthgets(out, k)); ++NP;
+  //   }
+  //
+  //   YIELD(NP);
+  //   return out;
+  // } else {
+
+    SEXP out = SHIELD(new_vec(VECSXP, n_groups)); ++NP;
+    SEXP elem = R_NilValue;
+
+    for (int i = 0; i < n_groups; ++i){
+      elem = p_group_locs[i];
+      SET_VECTOR_ELT(
+        out, i,
+        int_slice(
+          elem, locs, INTEGER_RO(elem), Rf_length(elem), p_locs, locs_size
+        )
+      );
+    }
+    YIELD(NP);
+    return out;
+  // }
 }
 
 SEXP cpp_run_id(SEXP x){

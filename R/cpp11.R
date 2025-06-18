@@ -24,8 +24,8 @@ cpp_as_list_of_frames <- function(x) {
   .Call(`_fastplyr_cpp_as_list_of_frames`, x)
 }
 
-cpp_list_subset <- function(x, ptype, i, default_value) {
-  .Call(`_fastplyr_cpp_list_subset`, x, ptype, i, default_value)
+cpp_pluck_list_of_integers <- function(x, i, default_value) {
+  .Call(`_fastplyr_cpp_pluck_list_of_integers`, x, i, default_value)
 }
 
 cpp_sorted_group_starts <- function(group_sizes, init_loc) {

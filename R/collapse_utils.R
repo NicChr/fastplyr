@@ -344,13 +344,13 @@ group_locs <- function(x){
 # Groups are assumed to be sorted and
 # index locations are also assumed to be sorted
 GRP_loc_starts <- function(loc){
-  cpp_list_subset(loc, integer(), 1L, 0L)
+  cpp_pluck_list_of_integers(loc, 1L, 0L)
 }
 GRP_loc_ends <- function(loc, sizes = NULL){
   if (is.null(sizes)){
     sizes <- cheapr::list_lengths(loc)
   }
-  list_subset(loc, sizes, default = 0L)
+  cpp_pluck_list_of_integers(loc, sizes, 0L)
 }
 GRP_ordered <- function(GRP){
   GRP[["ordered"]]
@@ -572,7 +572,7 @@ construct_grouped_df <- function(data, g, group_vars){
     groups <- cheapr::sset_df(cpp_ungroup(data), GRP_starts(g), j = group_vars)
   }
   group_locs <- GRP_loc(g)
-  groups[[".rows"]] <- vctrs_new_list_of(group_locs, integer())
+  groups[[".rows"]] <- as_list_of_ints(group_locs)
   attr(groups, ".drop") <- df_group_by_drop_default(data)
   attr(groups, "ordered") <- group_by_order_default(data)
   out <- data

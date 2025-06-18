@@ -3,6 +3,7 @@
 
 #include <cpp11.hpp>
 #include <Rinternals.h>
+#include <vector>
 
 #ifndef R_NO_REMAP
 #define R_NO_REMAP
@@ -57,6 +58,32 @@ inline void *safe_memcpy(void *dst, const void *src, size_t n){
 inline void *safe_memset(void *dst, int val, size_t n){
   return n ? memset(dst, val, n) : dst;
 }
+
+// inline void check_int_ptrs(SEXP x){
+//
+//   if (!Rf_isNull(x)){
+//     void *address = R_ExternalPtrAddr(x);
+//
+//     if (address == NULL){
+//       Rf_error("Internal error, external pointer points to `NULL`");
+//     }
+//   }
+// }
+
+// inline SEXP get_int_ptrs(SEXP x){
+//   SEXP out = SHIELD(Rf_getAttrib(x, Rf_install(".integer_ptrs")));
+//   check_int_ptrs(out);
+//   if (!Rf_isNull(out)){
+//     auto* int_ptrs_vec = static_cast<std::vector<int*>*>(R_ExternalPtrAddr(out));
+//     if ((*int_ptrs_vec).size() != static_cast<uint64_t>(Rf_xlength(x))){
+//       Rf_warning("Number of pointers doesn't match length of integers list, returning `NULL`");
+//       YIELD(1);
+//       return R_NilValue;
+//     }
+//   }
+//   YIELD(1);
+//   return out;
+// }
 
 
 SEXP get_list_element(SEXP list, const char *str);

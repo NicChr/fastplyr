@@ -1,6 +1,5 @@
 #include "fastplyr.h"
 #include "cheapr_api.h"
-#include <vector>
 
 // Basically R's get()
 
@@ -776,9 +775,9 @@ SEXP cpp_group_indices(SEXP rows, int size) {
   const SEXP* p_rows = VECTOR_PTR_RO(rows);
 
   // Get external ptr of int ptrs
-  SEXP int_ptrs = SHIELD(Rf_getAttrib(rows, Rf_install(".integer_ptrs")));
+  // SEXP int_ptrs = SHIELD(get_int_ptrs(rows));
 
-  if (int_ptrs == R_NilValue){
+  // if (Rf_isNull(int_ptrs)){
 
     for (int i = 0; i < ng; ++i) {
       SEXP rows_i = p_rows[i];
@@ -788,26 +787,21 @@ SEXP cpp_group_indices(SEXP rows, int size) {
         p_indices[*p_rows_i - 1] = i + 1;
       }
     }
-  } else {
-    void *ptrs_vec_addr = R_ExternalPtrAddr(int_ptrs);
-
-    if (ptrs_vec_addr == NULL){
-      YIELD(1);
-      Rf_error("Internal error, external pointer points to `NULL`");
-    }
-
-    auto* int_ptrs_vec = static_cast<std::vector<int*>*>(ptrs_vec_addr);
-
-    for (int i = 0; i < ng; ++i) {
-      SEXP rows_i = p_rows[i];
-      int n_i = Rf_length(rows_i);
-      int* p_rows_i = (*int_ptrs_vec)[i];
-      for (int j = 0; j < n_i; j++, ++p_rows_i) {
-        p_indices[*p_rows_i - 1] = i + 1;
-      }
-    }
-  }
-  YIELD(2);
+  // } else {
+  //
+  //   // check_int_ptrs(int_ptrs);
+  //   auto* int_ptrs_vec = static_cast<std::vector<int*>*>(R_ExternalPtrAddr(int_ptrs));
+  //
+  //   for (int i = 0; i < ng; ++i) {
+  //     SEXP rows_i = p_rows[i];
+  //     int n_i = Rf_length(rows_i);
+  //     int* p_rows_i = (*int_ptrs_vec)[i];
+  //     for (int j = 0; j < n_i; j++, ++p_rows_i) {
+  //       p_indices[*p_rows_i - 1] = i + 1;
+  //     }
+  //   }
+  // }
+  YIELD(1);
   return indices;
 }
 
@@ -1228,8 +1222,6 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
     // Get group locations
     SHIELD(rows = VECTOR_ELT(group_data, Rf_length(group_data) - 1)); ++NP;
     p_rows = VECTOR_PTR_RO(rows);
-  } else {
-    p_rows = VECTOR_PTR_RO(data);
   }
 
   n_groups = std::max(n_groups, 1);

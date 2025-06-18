@@ -1115,9 +1115,22 @@ tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
 #   invisible(x)
 # }
 
-as_fastplyr_list_of_ints <- function(x){
-  vctrs::new_vctr(
-    x, .integer_ptrs = attr(x, ".integer_ptrs", TRUE),
-    class = "fastplyr_list_of_ints"
-  )
+# Like vctrs list of integers but
+# fastplyr includes pointers to all those integers in C++
+
+# as_list_of_ints <- function(x, integer_ptrs = NULL){
+#   # out <- vctrs::new_vctr(
+#   #   x, .integer_ptrs = integer_ptrs
+#   # )
+#   # out <- vctrs::as_list_of(out, .ptype = integer())
+#   out <- vctrs_new_list_of(x, integer())
+#   if (!is.null(integer_ptrs)){
+#     class(out) <- c("fastplyr_list_of_ints", class(out))
+#     attr(out, ".integer_ptrs") <- integer_ptrs
+#   }
+#   out
+# }
+
+as_list_of_ints <- function(x){
+  vctrs_new_list_of(x, integer())
 }

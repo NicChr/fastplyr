@@ -42,7 +42,7 @@ f_rowwise <- function(data, ..., .ascending = TRUE,
     row_ids <- as.list(df_seq_along(out))
   }
 
-  row_ids <- vctrs_new_list_of(row_ids, integer())
+  row_ids <- as_list_of_ints(row_ids)
   groups[[".rows"]] <- row_ids
 
   attr(groups, "ordered") <- FALSE

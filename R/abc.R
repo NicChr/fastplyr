@@ -87,18 +87,6 @@ is_sorted <- function(x){
   isTRUE(!is.unsorted(x))
 }
 
-list_subset <- function(x, i, default = NA){
-  check_length(default, 1)
-  if (length(x) == 0){
-    first_element <- NULL
-    ptype <- NULL
-  } else {
-    first_element <- x[[1]]
-    ptype <- first_element[0]
-  }
-  cpp_list_subset(x, ptype, as.integer(i), default)
-}
-
 # Very fast unique function
 sort_unique <- function(x, sort = FALSE){
   if (sort){
