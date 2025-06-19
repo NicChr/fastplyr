@@ -216,8 +216,12 @@ construct_dplyr_group_data <- function(g, drop){
     end = FALSE,
     drop = drop
   )
+  rows <- as_list_of_ints(group_data[[".loc"]])
+  # Remove .loc_ptrs from rows in-place
+  # remove_loc_ptrs_in_place(rows)
+
   group_data <- cheapr::list_assign(group_data,
-    list(.rows = as_list_of_ints(group_data[[".loc"]]), .loc = NULL)
+    list(.rows = rows, .loc = NULL)
   )
   group_data <- list_as_tbl(group_data)
   attr(group_data, ".drop") <- drop
@@ -228,6 +232,15 @@ construct_fastplyr_group_data <- function(g, drop){
 
   out <- construct_dplyr_group_data(g, drop = drop)
   attr(out, "ordered") <- GRP_is_ordered(g)
+  # rows <- out[[".rows"]]
+  # loc_ptrs <- attr(rows, ".loc_ptrs", TRUE)
+  # out <- cheapr::attrs_add(
+  #   out,
+  #   ordered = GRP_is_ordered(g),
+  #   .loc_ptrs = loc_ptrs
+  # )
+  # # Remove .loc_ptrs from rows in-place
+  # remove_loc_ptrs_in_place(rows)
   out
 }
 
