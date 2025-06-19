@@ -775,7 +775,7 @@ SEXP cpp_group_indices(SEXP rows, int size) {
   const SEXP* p_rows = VECTOR_PTR_RO(rows);
 
   // Get external ptr of int ptrs
-  // SEXP int_ptrs = SHIELD(get_int_ptrs(rows));
+  // SEXP int_ptrs = SHIELD(get_loc_ptrs(rows));
 
   // if (Rf_isNull(int_ptrs)){
 
@@ -789,7 +789,7 @@ SEXP cpp_group_indices(SEXP rows, int size) {
     }
   // } else {
   //
-  //   // check_int_ptrs(int_ptrs);
+  //   // check_loc_ptrs(int_ptrs);
   //   auto* int_ptrs_vec = static_cast<std::vector<int*>*>(R_ExternalPtrAddr(int_ptrs));
   //
   //   for (int i = 0; i < ng; ++i) {

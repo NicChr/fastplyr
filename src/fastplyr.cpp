@@ -199,7 +199,7 @@ SEXP cpp_pluck_list_of_integers(SEXP x, SEXP i, SEXP default_value){
   SEXP out = SHIELD(new_vec(INTSXP, n)); ++NP;
   int* __restrict__ p_out = INTEGER(out);
 
-  // SEXP r_int_ptrs = SHIELD(get_int_ptrs(x)); ++NP;
+  // SEXP r_int_ptrs = SHIELD(get_loc_ptrs(x)); ++NP;
 
   // if (Rf_isNull(r_int_ptrs)){
     for (int j = 0; j < n; ++j) {
@@ -591,7 +591,7 @@ SEXP int_slice(SEXP x, SEXP indices, const int *p_x, int xn, const int *pi, int 
 //   const int *p_locs = INTEGER_RO(locs);
 //   int loc_size = Rf_length(locs);
 //
-//   // SEXP r_int_ptrs = SHIELD(get_int_ptrs(group_locs));
+//   // SEXP r_int_ptrs = SHIELD(get_loc_ptrs(group_locs));
 //
 //   SEXP elem = R_NilValue;
 //
@@ -631,7 +631,7 @@ SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
   SEXP out = SHIELD(new_vec(VECSXP, n_groups)); ++NP;
   SEXP elem = R_NilValue;
 
-  // SEXP r_loc_ptrs = SHIELD(get_int_ptrs(group_locs)); ++NP;
+  // SEXP r_loc_ptrs = SHIELD(get_loc_ptrs(group_locs)); ++NP;
 
   // if (Rf_isNull(r_loc_ptrs)){
     for (int i = 0; i < n_groups; ++i){
@@ -1085,4 +1085,18 @@ SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg){
   }
   YIELD(1);
   return out;
+}
+
+[[cpp11::register]]
+SEXP cpp_new_loc_ptrs(SEXP x){
+  const SEXP *p_x = VECTOR_PTR_RO(x);
+  int n = Rf_length(x);
+
+  int **loc_ptrs = (int **) R_Calloc(n, int*);
+
+  for (int i = 0; i < n; ++i){
+    loc_ptrs[i] = INTEGER(p_x[i]);
+  }
+  // Registers finaliser that will free loc_ptrs
+  return new_ext_int_ptrs(loc_ptrs);
 }

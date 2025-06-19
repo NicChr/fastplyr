@@ -138,6 +138,13 @@ extern "C" SEXP _fastplyr_cpp_df_transform_exotic(SEXP x, SEXP order, SEXP as_qg
     return cpp11::as_sexp(cpp_df_transform_exotic(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<bool>>(order), cpp11::as_cpp<cpp11::decay_t<bool>>(as_qg)));
   END_CPP11
 }
+// fastplyr.cpp
+SEXP cpp_new_loc_ptrs(SEXP x);
+extern "C" SEXP _fastplyr_cpp_new_loc_ptrs(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_new_loc_ptrs(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
 // tidy.cpp
 bool is_nested_call(SEXP expr);
 extern "C" SEXP _fastplyr_is_nested_call(SEXP expr) {
@@ -354,6 +361,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_is_fn_call",                       (DL_FUNC) &_fastplyr_cpp_is_fn_call,                       4},
     {"_fastplyr_cpp_list_tidy",                        (DL_FUNC) &_fastplyr_cpp_list_tidy,                        1},
     {"_fastplyr_cpp_nest_split",                       (DL_FUNC) &_fastplyr_cpp_nest_split,                       3},
+    {"_fastplyr_cpp_new_loc_ptrs",                     (DL_FUNC) &_fastplyr_cpp_new_loc_ptrs,                     1},
     {"_fastplyr_cpp_orig_order",                       (DL_FUNC) &_fastplyr_cpp_orig_order,                       2},
     {"_fastplyr_cpp_pluck_list_of_integers",           (DL_FUNC) &_fastplyr_cpp_pluck_list_of_integers,           3},
     {"_fastplyr_cpp_quo_data_vars",                    (DL_FUNC) &_fastplyr_cpp_quo_data_vars,                    2},

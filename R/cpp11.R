@@ -76,6 +76,10 @@ cpp_df_transform_exotic <- function(x, order, as_qg) {
   .Call(`_fastplyr_cpp_df_transform_exotic`, x, order, as_qg)
 }
 
+cpp_new_loc_ptrs <- function(x) {
+  .Call(`_fastplyr_cpp_new_loc_ptrs`, x)
+}
+
 is_nested_call <- function(expr) {
   .Call(`_fastplyr_is_nested_call`, expr)
 }

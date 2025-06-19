@@ -59,7 +59,7 @@ inline void *safe_memset(void *dst, int val, size_t n){
   return n ? memset(dst, val, n) : dst;
 }
 
-inline void check_int_ptrs(SEXP x){
+inline void check_loc_ptrs(SEXP x){
 
   if (!Rf_isNull(x)){
     void *address = R_ExternalPtrAddr(x);
@@ -70,9 +70,9 @@ inline void check_int_ptrs(SEXP x){
   }
 }
 
-inline SEXP get_int_ptrs(SEXP x){
+inline SEXP get_loc_ptrs(SEXP x){
   SEXP out = SHIELD(Rf_getAttrib(x, Rf_install(".loc_ptrs")));
-  check_int_ptrs(out);
+  check_loc_ptrs(out);
   // if (!Rf_isNull(out)){
   //   auto* int_ptrs_vec = static_cast<std::vector<int*>*>(R_ExternalPtrAddr(out));
   //   if ((*int_ptrs_vec).size() != static_cast<uint64_t>(Rf_xlength(x))){
