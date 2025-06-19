@@ -254,13 +254,31 @@ static void int_ptrs_finaliser(SEXP ext) {
 
   if (!addr) return;
 
-  int **int_ptrs = (int **) R_ExternalPtrAddr(ext);
-  R_Free(int_ptrs);
+  INT_LOC_PTRS *loc_ptrs = (INT_LOC_PTRS *) R_ExternalPtrAddr(ext);
+  R_Free(loc_ptrs->PTRS);
+  std::free(loc_ptrs);
   R_ClearExternalPtr(ext);
 }
 
-SEXP new_ext_int_ptrs(int** ptrs){
-  SEXP r_int_ptrs = SHIELD(R_MakeExternalPtr(ptrs, Rf_install("int_ptrs"), R_NilValue));
+SEXP new_ext_int_ptrs(int** ptrs, int n_ptrs, SEXP list_of_ints){
+
+  INT_LOC_PTRS *loc_ptrs = (INT_LOC_PTRS *) calloc(1, sizeof *loc_ptrs);
+
+  if (!loc_ptrs){
+    R_Free(ptrs);
+    std::free(loc_ptrs);
+    Rf_error("Internal error, out of memory");
+  }
+
+  loc_ptrs->N_PTRS = n_ptrs;
+  loc_ptrs->PTRS = ptrs;
+
+  if (!loc_ptrs->PTRS){
+    R_Free(ptrs);
+    std::free(loc_ptrs);
+    Rf_error("Internal error, out of memory");
+  }
+  SEXP r_int_ptrs = SHIELD(R_MakeExternalPtr(loc_ptrs, R_NilValue, list_of_ints));
   R_RegisterCFinalizerEx(r_int_ptrs, int_ptrs_finaliser, TRUE);
   YIELD(1);
   return r_int_ptrs;
@@ -276,19 +294,11 @@ SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
   unsigned int k = 0;
   unsigned int group_size = 0;
 
-  int *ptr;
-  int **loc_ptrs = (int **) R_Calloc(n_groups, int*);
-
   for (unsigned int i = 0; i < n_groups; ++i, k += group_size){
     group_size = p_gs[i];
     SET_VECTOR_ELT(out, i, new_vec(INTSXP, group_size));
-    ptr = INTEGER(p_out[i]);
-    loc_ptrs[i] = ptr;
-    safe_memcpy(&ptr[0], &p_o[k], group_size * sizeof(int));
+    safe_memcpy(&INTEGER(p_out[i])[0], &p_o[k], group_size * sizeof(int));
   }
-  R_Free(loc_ptrs);
-  // SEXP r_int_ptrs = SHIELD(new_ext_int_ptrs(loc_ptrs));
-  // Rf_setAttrib(out, Rf_install(".loc_ptrs"), r_int_ptrs);
   YIELD(1);
   return out;
 }
@@ -1098,5 +1108,5 @@ SEXP cpp_new_loc_ptrs(SEXP x){
     loc_ptrs[i] = INTEGER(p_x[i]);
   }
   // Registers finaliser that will free loc_ptrs
-  return new_ext_int_ptrs(loc_ptrs);
+  return new_ext_int_ptrs(loc_ptrs, n, x);
 }
