@@ -75,20 +75,10 @@ inline void check_loc_ptrs(SEXP x){
   }
 }
 
-// inline SEXP get_loc_ptrs(SEXP x){
-//   SEXP out = SHIELD(Rf_getAttrib(x, Rf_install(".loc_ptrs")));
-//   check_loc_ptrs(out);
-//   // if (!Rf_isNull(out)){
-//   //   auto* int_ptrs_vec = static_cast<std::vector<int*>*>(R_ExternalPtrAddr(out));
-//   //   if ((*int_ptrs_vec).size() != static_cast<uint64_t>(Rf_xlength(x))){
-//   //     Rf_warning("Number of pointers doesn't match length of integers list, returning `NULL`");
-//   //     YIELD(1);
-//   //     return R_NilValue;
-//   //   }
-//   // }
-//   YIELD(1);
-//   return out;
-// }
+inline INT_LOC_PTRS* get_loc_ptrs(SEXP ext_ptr){
+  check_loc_ptrs(ext_ptr);
+  return (INT_LOC_PTRS *) R_ExternalPtrAddr(ext_ptr);
+}
 
 
 SEXP get_list_element(SEXP list, const char *str);

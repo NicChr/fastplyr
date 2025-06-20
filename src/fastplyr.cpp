@@ -286,34 +286,51 @@ SEXP new_ext_int_ptrs(int** ptrs, int n_ptrs, SEXP list_of_ints){
 
 [[cpp11::register]]
 SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
+  int32_t NP = 0;
   unsigned int n_groups = Rf_length(group_sizes);
   const int* __restrict__ p_o = INTEGER_RO(order);
   const int* __restrict__ p_gs = INTEGER_RO(group_sizes);
-  SEXP out = SHIELD(new_vec(VECSXP, n_groups));
-  const SEXP *p_out = VECTOR_PTR_RO(out);
+  SEXP group_locs = SHIELD(new_vec(VECSXP, n_groups)); ++NP;
+  const SEXP *p_out = VECTOR_PTR_RO(group_locs);
   unsigned int k = 0;
   unsigned int group_size = 0;
 
+  int **loc_ptrs = (int **) R_Calloc(n_groups, int*);
+  int *int_ptr;
+
   for (unsigned int i = 0; i < n_groups; ++i, k += group_size){
     group_size = p_gs[i];
-    SET_VECTOR_ELT(out, i, new_vec(INTSXP, group_size));
-    safe_memcpy(&INTEGER(p_out[i])[0], &p_o[k], group_size * sizeof(int));
+    SET_VECTOR_ELT(group_locs, i, new_vec(INTSXP, group_size));
+    int_ptr = INTEGER(p_out[i]);
+    safe_memcpy(&int_ptr[0], &p_o[k], group_size * sizeof(int));
+    loc_ptrs[i] = int_ptr;
   }
-  YIELD(1);
-  return out;
+  // SEXP r_int_ptrs = SHIELD(new_ext_int_ptrs(loc_ptrs, n_groups, group_locs)); ++NP;
+  // SEXP out = SHIELD(new_vec(VECSXP, 2)); ++NP;
+  // SET_VECTOR_ELT(out, 0, group_locs);
+  // SET_VECTOR_ELT(out, 1, r_int_ptrs);
+  // SEXP out_names = SHIELD(new_vec(STRSXP, 2)); ++NP;
+  // SET_STRING_ELT(out_names, 0, Rf_mkCharCE("group_locs", CE_UTF8));
+  // SET_STRING_ELT(out_names, 1, Rf_mkCharCE("loc_ptrs", CE_UTF8));
+  // set_names(out, out_names);
+  R_Free(loc_ptrs);
+  YIELD(NP);
+  return group_locs;
 }
 
 // Alternative to above that can calculate it using
 // group IDs instead of the order
 
+// group IDs must be in range [1, n_groups]
+
 [[cpp11::register]]
 SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
   int32_t NP = 0;
   unsigned int n_groups = Rf_length(group_sizes);
-  SEXP out = SHIELD(new_vec(VECSXP, n_groups)); ++NP;
+  SEXP group_locs = SHIELD(new_vec(VECSXP, n_groups)); ++NP;
   const int* __restrict__ p_group_sizes = INTEGER_RO(group_sizes);
   const int* __restrict__ p_group_id = INTEGER_RO(group_id);
-  const SEXP *p_out = VECTOR_PTR_RO(out);
+  const SEXP *p_out = VECTOR_PTR_RO(group_locs);
 
   // Store a vector of pointers
   // Speeds up later allocation
@@ -321,7 +338,7 @@ SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
 
   // Initialise locations
   for (unsigned int i = 0; i != n_groups; ++i){
-    SET_VECTOR_ELT(out, i, new_vec(INTSXP, p_group_sizes[i]));
+    SET_VECTOR_ELT(group_locs, i, new_vec(INTSXP, p_group_sizes[i]));
     loc_ptrs[i] = INTEGER(p_out[i]);
   }
 
@@ -344,10 +361,17 @@ SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
     cur_group_loc = p_loc_indices[cur_group]++;
     loc_ptrs[cur_group][cur_group_loc] = i + 1;
   }
+  // SEXP r_int_ptrs = SHIELD(new_ext_int_ptrs(loc_ptrs, n_groups, group_locs)); ++NP;
+  // SEXP out = SHIELD(new_vec(VECSXP, 2)); ++NP;
+  // SET_VECTOR_ELT(out, 0, group_locs);
+  // SET_VECTOR_ELT(out, 1, r_int_ptrs);
+  // SEXP out_names = SHIELD(new_vec(STRSXP, 2)); ++NP;
+  // SET_STRING_ELT(out_names, 0, Rf_mkCharCE("group_locs", CE_UTF8));
+  // SET_STRING_ELT(out_names, 1, Rf_mkCharCE("loc_ptrs", CE_UTF8));
+  // set_names(out, out_names);
   R_Free(loc_ptrs);
-  // Rf_setAttrib(out, Rf_install(".loc_ptrs"), r_int_ptrs);
   YIELD(NP);
-  return out;
+  return group_locs;
 }
 
 // Using a combination of group_id and sorted group_sizes
@@ -1099,6 +1123,9 @@ SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg){
 
 [[cpp11::register]]
 SEXP cpp_new_loc_ptrs(SEXP x){
+  if (TYPEOF(x) != VECSXP){
+    Rf_error("`x` must be a list of integer vectors in %s", __func__);
+  }
   const SEXP *p_x = VECTOR_PTR_RO(x);
   int n = Rf_length(x);
 

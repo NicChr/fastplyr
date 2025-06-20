@@ -86,10 +86,7 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
     if (length(i) == 1 && i >= 0){
       data_locs <- cheapr::na_rm(cpp_pluck_list_of_integers(group_locs, i, NA_integer_))
     } else {
-      data_locs <- cpp_unlist_group_locs(
-        cpp_slice_locs(group_locs, i),
-        NULL
-      )
+      data_locs <- unlist(cpp_slice_locs(group_locs, i))
     }
     if (is.null(data_locs)){
       data_locs <- integer(0)
