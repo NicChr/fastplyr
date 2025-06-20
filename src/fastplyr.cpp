@@ -248,41 +248,41 @@ SEXP cpp_sorted_group_starts(SEXP group_sizes, int init_loc = 1){
 }
 
 // Finaliser for external pointer to vector of int ptrs
-static void int_ptrs_finaliser(SEXP ext) {
-
-  void *addr = R_ExternalPtrAddr(ext);
-
-  if (!addr) return;
-
-  INT_LOC_PTRS *loc_ptrs = (INT_LOC_PTRS *) R_ExternalPtrAddr(ext);
-  R_Free(loc_ptrs->PTRS);
-  std::free(loc_ptrs);
-  R_ClearExternalPtr(ext);
-}
-
-SEXP new_ext_int_ptrs(int** ptrs, int n_ptrs, SEXP list_of_ints){
-
-  INT_LOC_PTRS *loc_ptrs = (INT_LOC_PTRS *) calloc(1, sizeof *loc_ptrs);
-
-  if (!loc_ptrs){
-    R_Free(ptrs);
-    std::free(loc_ptrs);
-    Rf_error("Internal error, out of memory");
-  }
-
-  loc_ptrs->N_PTRS = n_ptrs;
-  loc_ptrs->PTRS = ptrs;
-
-  if (!loc_ptrs->PTRS){
-    R_Free(ptrs);
-    std::free(loc_ptrs);
-    Rf_error("Internal error, out of memory");
-  }
-  SEXP r_int_ptrs = SHIELD(R_MakeExternalPtr(loc_ptrs, R_NilValue, list_of_ints));
-  R_RegisterCFinalizerEx(r_int_ptrs, int_ptrs_finaliser, TRUE);
-  YIELD(1);
-  return r_int_ptrs;
-}
+// static void int_ptrs_finaliser(SEXP ext) {
+//
+//   void *addr = R_ExternalPtrAddr(ext);
+//
+//   if (!addr) return;
+//
+//   INT_LOC_PTRS *loc_ptrs = (INT_LOC_PTRS *) R_ExternalPtrAddr(ext);
+//   R_Free(loc_ptrs->PTRS);
+//   std::free(loc_ptrs);
+//   R_ClearExternalPtr(ext);
+// }
+//
+// SEXP new_ext_int_ptrs(int** ptrs, int n_ptrs, SEXP list_of_ints){
+//
+//   INT_LOC_PTRS *loc_ptrs = (INT_LOC_PTRS *) calloc(1, sizeof *loc_ptrs);
+//
+//   if (!loc_ptrs){
+//     R_Free(ptrs);
+//     std::free(loc_ptrs);
+//     Rf_error("Internal error, out of memory");
+//   }
+//
+//   loc_ptrs->N_PTRS = n_ptrs;
+//   loc_ptrs->PTRS = ptrs;
+//
+//   if (!loc_ptrs->PTRS){
+//     R_Free(ptrs);
+//     std::free(loc_ptrs);
+//     Rf_error("Internal error, out of memory");
+//   }
+//   SEXP r_int_ptrs = SHIELD(R_MakeExternalPtr(loc_ptrs, R_NilValue, list_of_ints));
+//   R_RegisterCFinalizerEx(r_int_ptrs, int_ptrs_finaliser, TRUE);
+//   YIELD(1);
+//   return r_int_ptrs;
+// }
 
 [[cpp11::register]]
 SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
@@ -1121,19 +1121,18 @@ SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg){
   return out;
 }
 
-[[cpp11::register]]
-SEXP cpp_new_loc_ptrs(SEXP x){
-  if (TYPEOF(x) != VECSXP){
-    Rf_error("`x` must be a list of integer vectors in %s", __func__);
-  }
-  const SEXP *p_x = VECTOR_PTR_RO(x);
-  int n = Rf_length(x);
-
-  int **loc_ptrs = (int **) R_Calloc(n, int*);
-
-  for (int i = 0; i < n; ++i){
-    loc_ptrs[i] = INTEGER(p_x[i]);
-  }
-  // Registers finaliser that will free loc_ptrs
-  return new_ext_int_ptrs(loc_ptrs, n, x);
-}
+// SEXP cpp_new_loc_ptrs(SEXP x){
+//   if (TYPEOF(x) != VECSXP){
+//     Rf_error("`x` must be a list of integer vectors in %s", __func__);
+//   }
+//   const SEXP *p_x = VECTOR_PTR_RO(x);
+//   int n = Rf_length(x);
+//
+//   int **loc_ptrs = (int **) R_Calloc(n, int*);
+//
+//   for (int i = 0; i < n; ++i){
+//     loc_ptrs[i] = INTEGER(p_x[i]);
+//   }
+//   // Registers finaliser that will free loc_ptrs
+//   return new_ext_int_ptrs(loc_ptrs, n, x);
+// }
