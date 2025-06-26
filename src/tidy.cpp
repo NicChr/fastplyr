@@ -774,11 +774,6 @@ SEXP cpp_group_indices(SEXP rows, int size) {
   int ng = Rf_length(rows);
   const SEXP* p_rows = VECTOR_PTR_RO(rows);
 
-  // Get external ptr of int ptrs
-  // SEXP int_ptrs = SHIELD(get_loc_ptrs(rows));
-
-  // if (Rf_isNull(int_ptrs)){
-
     for (int i = 0; i < ng; ++i) {
       SEXP rows_i = p_rows[i];
       int n_i = Rf_length(rows_i);
@@ -787,20 +782,6 @@ SEXP cpp_group_indices(SEXP rows, int size) {
         p_indices[*p_rows_i - 1] = i + 1;
       }
     }
-  // } else {
-  //
-  //   // check_loc_ptrs(int_ptrs);
-  //   auto* int_ptrs_vec = static_cast<std::vector<int*>*>(R_ExternalPtrAddr(int_ptrs));
-  //
-  //   for (int i = 0; i < ng; ++i) {
-  //     SEXP rows_i = p_rows[i];
-  //     int n_i = Rf_length(rows_i);
-  //     int* p_rows_i = (*int_ptrs_vec)[i];
-  //     for (int j = 0; j < n_i; j++, ++p_rows_i) {
-  //       p_indices[*p_rows_i - 1] = i + 1;
-  //     }
-  //   }
-  // }
   YIELD(1);
   return indices;
 }

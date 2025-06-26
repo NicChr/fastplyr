@@ -59,28 +59,6 @@ inline void *safe_memset(void *dst, int val, size_t n){
   return n ? memset(dst, val, n) : dst;
 }
 
-// typedef struct {
-//   int N_PTRS;        /* number of pointers */
-//   int **PTRS;      /* table of addresses */
-// } INT_LOC_PTRS;
-//
-// inline void check_loc_ptrs(SEXP x){
-//
-//   if (!Rf_isNull(x)){
-//     void *address = R_ExternalPtrAddr(x);
-//
-//     if (address == NULL){
-//       Rf_error("Internal error, external pointer points to `NULL`");
-//     }
-//   }
-// }
-//
-// inline INT_LOC_PTRS* get_loc_ptrs(SEXP ext_ptr){
-//   check_loc_ptrs(ext_ptr);
-//   return (INT_LOC_PTRS *) R_ExternalPtrAddr(ext_ptr);
-// }
-
-
 SEXP get_list_element(SEXP list, const char *str);
 int cpp_n_group_vars(SEXP x);
 SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes);

@@ -199,28 +199,14 @@ SEXP cpp_pluck_list_of_integers(SEXP x, SEXP i, SEXP default_value){
   SEXP out = SHIELD(new_vec(INTSXP, n)); ++NP;
   int* __restrict__ p_out = INTEGER(out);
 
-  // SEXP r_int_ptrs = SHIELD(get_loc_ptrs(x)); ++NP;
-
-  // if (Rf_isNull(r_int_ptrs)){
-    for (int j = 0; j < n; ++j) {
-      k = (i_n == 1 ? p_i[0] : p_i[j]);
-      if (k <= Rf_length(p_x[j]) && k > 0){
-        p_out[j] = INTEGER_RO(p_x[j])[k - 1];
-      } else {
-        p_out[j] = replace;
-      }
+  for (int j = 0; j < n; ++j) {
+    k = (i_n == 1 ? p_i[0] : p_i[j]);
+    if (k <= Rf_length(p_x[j]) && k > 0){
+      p_out[j] = INTEGER_RO(p_x[j])[k - 1];
+    } else {
+      p_out[j] = replace;
     }
-  // } else {
-  //   auto& int_ptrs_vec = *static_cast<std::vector<int*>*>(R_ExternalPtrAddr(r_int_ptrs));
-  //   for (int j = 0; j < n; ++j) {
-  //     k = (i_n == 1 ? p_i[0] : p_i[j]);
-  //     if (k <= Rf_length(p_x[j]) && k > 0){
-  //       p_out[j] = int_ptrs_vec[j][k - 1];
-  //     } else {
-  //       p_out[j] = replace;
-  //     }
-  //   }
-  // }
+  }
 
   YIELD(NP);
   return out;
@@ -247,43 +233,6 @@ SEXP cpp_sorted_group_starts(SEXP group_sizes, int init_loc = 1){
   return out;
 }
 
-// Finaliser for external pointer to vector of int ptrs
-// static void int_ptrs_finaliser(SEXP ext) {
-//
-//   void *addr = R_ExternalPtrAddr(ext);
-//
-//   if (!addr) return;
-//
-//   INT_LOC_PTRS *loc_ptrs = (INT_LOC_PTRS *) R_ExternalPtrAddr(ext);
-//   R_Free(loc_ptrs->PTRS);
-//   std::free(loc_ptrs);
-//   R_ClearExternalPtr(ext);
-// }
-//
-// SEXP new_ext_int_ptrs(int** ptrs, int n_ptrs, SEXP list_of_ints){
-//
-//   INT_LOC_PTRS *loc_ptrs = (INT_LOC_PTRS *) calloc(1, sizeof *loc_ptrs);
-//
-//   if (!loc_ptrs){
-//     R_Free(ptrs);
-//     std::free(loc_ptrs);
-//     Rf_error("Internal error, out of memory");
-//   }
-//
-//   loc_ptrs->N_PTRS = n_ptrs;
-//   loc_ptrs->PTRS = ptrs;
-//
-//   if (!loc_ptrs->PTRS){
-//     R_Free(ptrs);
-//     std::free(loc_ptrs);
-//     Rf_error("Internal error, out of memory");
-//   }
-//   SEXP r_int_ptrs = SHIELD(R_MakeExternalPtr(loc_ptrs, R_NilValue, list_of_ints));
-//   R_RegisterCFinalizerEx(r_int_ptrs, int_ptrs_finaliser, TRUE);
-//   YIELD(1);
-//   return r_int_ptrs;
-// }
-
 [[cpp11::register]]
 SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
   int32_t NP = 0;
@@ -305,14 +254,6 @@ SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
     safe_memcpy(&int_ptr[0], &p_o[k], group_size * sizeof(int));
     loc_ptrs[i] = int_ptr;
   }
-  // SEXP r_int_ptrs = SHIELD(new_ext_int_ptrs(loc_ptrs, n_groups, group_locs)); ++NP;
-  // SEXP out = SHIELD(new_vec(VECSXP, 2)); ++NP;
-  // SET_VECTOR_ELT(out, 0, group_locs);
-  // SET_VECTOR_ELT(out, 1, r_int_ptrs);
-  // SEXP out_names = SHIELD(new_vec(STRSXP, 2)); ++NP;
-  // SET_STRING_ELT(out_names, 0, Rf_mkCharCE("group_locs", CE_UTF8));
-  // SET_STRING_ELT(out_names, 1, Rf_mkCharCE("loc_ptrs", CE_UTF8));
-  // set_names(out, out_names);
   R_Free(loc_ptrs);
   YIELD(NP);
   return group_locs;
@@ -342,8 +283,6 @@ SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
     loc_ptrs[i] = INTEGER(p_out[i]);
   }
 
-  // SEXP r_int_ptrs = SHIELD(new_ext_int_ptrs(loc_ptrs)); ++NP;
-
   // Initialise a vector of group location indices
 
   SEXP loc_indices = SHIELD(new_vec(INTSXP, n_groups)); ++NP;
@@ -354,21 +293,11 @@ SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
   int cur_group;
   int cur_group_loc;
 
-  // int *loc_ptr;
-
   for (int i = 0; i < n; ++i){
     cur_group = p_group_id[i] - 1;
     cur_group_loc = p_loc_indices[cur_group]++;
     loc_ptrs[cur_group][cur_group_loc] = i + 1;
   }
-  // SEXP r_int_ptrs = SHIELD(new_ext_int_ptrs(loc_ptrs, n_groups, group_locs)); ++NP;
-  // SEXP out = SHIELD(new_vec(VECSXP, 2)); ++NP;
-  // SET_VECTOR_ELT(out, 0, group_locs);
-  // SET_VECTOR_ELT(out, 1, r_int_ptrs);
-  // SEXP out_names = SHIELD(new_vec(STRSXP, 2)); ++NP;
-  // SET_STRING_ELT(out_names, 0, Rf_mkCharCE("group_locs", CE_UTF8));
-  // SET_STRING_ELT(out_names, 1, Rf_mkCharCE("loc_ptrs", CE_UTF8));
-  // set_names(out, out_names);
   R_Free(loc_ptrs);
   YIELD(NP);
   return group_locs;
@@ -450,84 +379,6 @@ SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
   YIELD(1);
   return out;
 }
-
-// Takes a data frame of logical vectors
-// And reduces them to a single logical vector
-// Applying the && (AND) condition for each row
-// Then uses the cheapr::cpp_which algorithm
-// To find which rows are TRUE
-
-// Alternative that goes col-wise
-
-// SEXP cpp_which_all(SEXP x){
-//   if (!Rf_inherits(x, "data.frame")){
-//     Rf_error("x must be a data frame");
-//   }
-//   const SEXP *p_x = VECTOR_PTR_RO(x);
-//   int NP = 0, n_true = 0;
-//
-//   int n_cols = Rf_length(x);
-//   int n_rows = df_nrow(x);
-//
-//   // Store pointers for fast access
-//   std::vector<const int*> col_ptrs(n_cols);
-//
-//   for (int i = 0; i < n_cols; ++i) {
-//     col_ptrs[i] = INTEGER_RO(p_x[i]);
-//   }
-//
-//   SEXP out = R_NilValue;
-//
-//   if (n_cols == 0){
-//     out = SHIELD(new_vec(INTSXP, 0)); ++NP;
-//   } else if (n_cols == 1){
-//     SEXP r_true = SHIELD(new_vec(LGLSXP, 1)); ++NP;
-//     LOGICAL(r_true)[0] = 1;
-//     out = SHIELD(cheapr::val_find(p_x[0], r_true, false)); ++NP;
-//   } else {
-//     SEXP lgl = SHIELD(new_vec(LGLSXP, n_rows)); ++NP;
-//     int* __restrict__ p_lgl = INTEGER(lgl);
-//
-//     // Copy values of x[[1]] into our vector
-//
-//     const int *p_first = col_ptrs[0];
-//     safe_memmove(p_lgl, &p_first[0], sizeof(int) * n_rows);
-//
-//     const int *p_temp;
-//
-//     // Starting from 2nd col to 2nd last col
-//
-//     for (int i = 1; i < (n_cols - 1); ++i) {
-//       p_temp = col_ptrs[i];
-//       for (int j = 0; j < n_rows; ++j){
-//         p_lgl[j] = p_lgl[j] == 1 && p_temp[j] == 1;
-//       }
-//     }
-//
-//     // Last col
-//     // This is where we count how many true values
-//     // are returned in the final vector
-//
-//     p_temp = col_ptrs[n_cols - 1];
-//     for (int j = 0; j < n_rows; ++j){
-//       p_lgl[j] = (p_lgl[j] == 1) && (p_temp[j] == 1);
-//       n_true += p_lgl[j];
-//     }
-//
-//     // WHICH algo
-//
-//     out = SHIELD(new_vec(INTSXP, n_true)); ++NP;
-//     int* __restrict__ p_out = INTEGER(out);
-//     int whichi = 0;
-//     int i = 0;
-//     while (whichi < n_true){
-//       p_out[whichi] = i + 1;
-//       whichi += (p_lgl[i++] == 1);
-//     }
-//   }
-//   YIELD(NP);
-//   return out;
-// }
 
 // Alternative that goes row-wise through x
 // When data is mixed it tends to be a bit faster
@@ -614,41 +465,6 @@ SEXP int_slice(SEXP x, SEXP indices, const int *p_x, int xn, const int *pi, int 
   YIELD(NP);
   return out;
 }
-//
-// SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
-//   int n_groups = Rf_length(group_locs);
-//
-//   const SEXP *p_groups = VECTOR_PTR_RO(group_locs);
-//
-//   SEXP out = SHIELD(new_vec(VECSXP, n_groups));
-//
-//   const int *p_locs = INTEGER_RO(locs);
-//   int loc_size = Rf_length(locs);
-//
-//   // SEXP r_int_ptrs = SHIELD(get_loc_ptrs(group_locs));
-//
-//   SEXP elem = R_NilValue;
-//
-//   // if (Rf_isNull(r_int_ptrs)){
-//     for (int i = 0; i < n_groups; ++i){
-//       elem = p_groups[i];
-//       SET_VECTOR_ELT(out, i, int_slice(elem, locs, INTEGER_RO(elem), Rf_length(elem), p_locs, loc_size));
-//     }
-//   // } else {
-//   //   const auto& int_ptrs_vec = *static_cast<std::vector<int*>*>(R_ExternalPtrAddr(r_int_ptrs));
-//   //   for (int i = 0; i < n_groups; ++i){
-//   //     elem = p_groups[i];
-//   //     SET_VECTOR_ELT(out, i, int_slice(elem, locs, int_ptrs_vec[i], Rf_length(elem), p_locs, loc_size));
-//   //   }
-//   //   // const auto int_ptrs_vec = static_cast<std::vector<int*>*>(R_ExternalPtrAddr(r_int_ptrs));
-//   //   // for (int i = 0; i < n_groups; ++i){
-//   //   //   elem = p_groups[i];
-//   //   //   SET_VECTOR_ELT(out, i, int_slice(elem, locs, (*int_ptrs_vec)[i], Rf_length(elem), p_locs, loc_size));
-//   //   // }
-//   // }
-//   YIELD(1);
-//   return out;
-// }
 
 [[cpp11::register]]
 SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
@@ -665,30 +481,15 @@ SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
   SEXP out = SHIELD(new_vec(VECSXP, n_groups)); ++NP;
   SEXP elem = R_NilValue;
 
-  // SEXP r_loc_ptrs = SHIELD(get_loc_ptrs(group_locs)); ++NP;
-
-  // if (Rf_isNull(r_loc_ptrs)){
-    for (int i = 0; i < n_groups; ++i){
-      elem = p_group_locs[i];
-      SET_VECTOR_ELT(
-        out, i,
-        int_slice(
-          elem, locs, INTEGER_RO(elem), Rf_length(elem), p_locs, locs_size
-        )
-      );
-    }
-  // } else {
-  //   int **locs_ptrs = static_cast<int**>(R_ExternalPtrAddr(r_loc_ptrs));
-  //   for (int i = 0; i < n_groups; ++i){
-  //     elem = p_group_locs[i];
-  //     SET_VECTOR_ELT(
-  //       out, i,
-  //       int_slice(
-  //         elem, locs, locs_ptrs[i], Rf_length(elem), p_locs, locs_size
-  //       )
-  //     );
-  //   }
-  // }
+  for (int i = 0; i < n_groups; ++i){
+    elem = p_group_locs[i];
+    SET_VECTOR_ELT(
+      out, i,
+      int_slice(
+        elem, locs, INTEGER_RO(elem), Rf_length(elem), p_locs, locs_size
+      )
+    );
+  }
   YIELD(NP);
   return out;
 }
@@ -1120,19 +921,3 @@ SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg){
   YIELD(1);
   return out;
 }
-
-// SEXP cpp_new_loc_ptrs(SEXP x){
-//   if (TYPEOF(x) != VECSXP){
-//     Rf_error("`x` must be a list of integer vectors in %s", __func__);
-//   }
-//   const SEXP *p_x = VECTOR_PTR_RO(x);
-//   int n = Rf_length(x);
-//
-//   int **loc_ptrs = (int **) R_Calloc(n, int*);
-//
-//   for (int i = 0; i < n; ++i){
-//     loc_ptrs[i] = INTEGER(p_x[i]);
-//   }
-//   // Registers finaliser that will free loc_ptrs
-//   return new_ext_int_ptrs(loc_ptrs, n, x);
-// }
