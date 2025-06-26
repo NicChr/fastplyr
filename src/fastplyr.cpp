@@ -217,7 +217,7 @@ SEXP cpp_pluck_list_of_integers(SEXP x, SEXP i, SEXP default_value){
 
 [[cpp11::register]]
 SEXP cpp_sorted_group_starts(SEXP group_sizes, int init_loc = 1){
-  const int* __restrict__ p_gsizes = INTEGER(group_sizes);
+  const int* __restrict__ p_gsizes = INTEGER_RO(group_sizes);
   int n = Rf_length(group_sizes);
   SEXP out = SHIELD(new_vec(INTSXP, n));
   int* __restrict__ p_out = INTEGER(out);
@@ -244,17 +244,11 @@ SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
   unsigned int k = 0;
   unsigned int group_size = 0;
 
-  int **loc_ptrs = (int **) R_Calloc(n_groups, int*);
-  int *int_ptr;
-
   for (unsigned int i = 0; i < n_groups; ++i, k += group_size){
     group_size = p_gs[i];
     SET_VECTOR_ELT(group_locs, i, new_vec(INTSXP, group_size));
-    int_ptr = INTEGER(p_out[i]);
-    safe_memcpy(&int_ptr[0], &p_o[k], group_size * sizeof(int));
-    loc_ptrs[i] = int_ptr;
+    safe_memcpy(&INTEGER(p_out[i])[0], &p_o[k], group_size * sizeof(int));
   }
-  R_Free(loc_ptrs);
   YIELD(NP);
   return group_locs;
 }
@@ -345,35 +339,35 @@ SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes){
 
 [[cpp11::register]]
 SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
+
   int n = Rf_length(order);
+  int n_groups = Rf_length(group_sizes);
+
   SEXP out = SHIELD(new_vec(INTSXP, n));
+
   int* __restrict__ p_out = INTEGER(out);
-  const int* __restrict__ p_o = INTEGER(order);
-  int* __restrict__ p_group_sizes = INTEGER(group_sizes);
-  int j = 0;
-  int running_group_size;
-  if (Rf_length(group_sizes) == 0){
-    running_group_size = n;
-  } else {
-    running_group_size = p_group_sizes[0];
-  }
+  const int* __restrict__ p_o = INTEGER_RO(order);
+  const int* __restrict__ p_group_sizes = INTEGER_RO(group_sizes);
+
+  int row_number, group_size;
+  int k = 0;
+
   if (ascending){
-    int init = 0;
-    for (int i = 0; i < n; ++i){
-      if (i >= running_group_size){
-        init = 0;
-        running_group_size += p_group_sizes[++j];
+
+    for (int j = 0; j < n_groups; ++j){
+      group_size = p_group_sizes[j];
+      row_number = 0;
+      for (int i = 0; i < group_size; ++i, ++k){
+        p_out[p_o[k] - 1] = ++row_number;
       }
-      p_out[p_o[i] - 1] = ++init;
     }
   } else {
-    int init = running_group_size + 1;
-    for (int i = 0; i < n; ++i){
-      if (i >= running_group_size){
-        init = p_group_sizes[++j] + 1;
-        running_group_size += p_group_sizes[j];
+    for (int j = 0; j < n_groups; ++j){
+      group_size = p_group_sizes[j];
+      row_number = group_size;
+      for (int i = 0; i < group_size; ++i, ++k){
+        p_out[p_o[k] - 1] = row_number--;
       }
-      p_out[p_o[i] - 1] = --init;
     }
   }
   YIELD(1);
@@ -494,77 +488,7 @@ SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
   return out;
 }
 
-SEXP cpp_run_id(SEXP x){
-  R_xlen_t n = Rf_xlength(x);
-  if (cheapr::is_compact_seq(x)){
-    return cpp11::package("base")[":"](1, n);
-  }
-  SEXP out = SHIELD(new_vec(INTSXP, n));
-  int *p_out = INTEGER(out);
-
-#define FP_RUN_ID for (R_xlen_t i = 1; i < n; ++i) p_out[i] = p_out[i - 1] + (p_x[i] != p_x[i - 1]);
-
-  if (n >= 1){
-    p_out[0] = 1;
-  }
-
-  switch (TYPEOF(x)){
-  case LGLSXP:
-  case INTSXP: {
-    int *p_x = INTEGER(x);
-    FP_RUN_ID;
-    break;
-  }
-  case REALSXP: {
-    if (Rf_inherits(x, "integer64")){
-    int64_t *p_x = INTEGER64_PTR(x);
-    FP_RUN_ID;
-  } else {
-    // The above statement works almost always for
-    // doubles, except for +0.0 == -0.0
-    bool diff;
-    double *p_x = REAL(x);
-    for (R_xlen_t i = 1; i < n; ++i){
-      diff = !(
-        ((p_x[i] != p_x[i]) && (p_x[i - 1] != p_x[i - 1])) ||
-          (p_x[i] == p_x[i - 1])
-      );
-      p_out[i] = p_out[i - 1] + diff;
-    }
-  }
-    break;
-  }
-  case STRSXP: {
-    const SEXP *p_x = STRING_PTR_RO(x);
-    FP_RUN_ID;
-    break;
-  }
-  case CPLXSXP: {
-    Rcomplex *p_x = COMPLEX(x);
-    for (R_xlen_t i = 1; i < n; ++i){
-      p_out[i] = memcmp(&p_x[i - 1], &p_x[i], sizeof(Rcomplex)) == 0 ?
-      p_out[i - 1] : p_out[i - 1] + 1;
-    }
-    break;
-  }
-  case RAWSXP: {
-    Rbyte *p_x = RAW(x);
-    for (R_xlen_t i = 1; i < n; ++i){
-      p_out[i] = memcmp(&p_x[i - 1], &p_x[i], sizeof(Rbyte)) == 0 ?
-      p_out[i - 1] : p_out[i - 1] + 1;
-    }
-   break;
-  }
-  default: {
-    YIELD(1);
-    Rf_error("%s cannot handle an object of type %s", __func__, Rf_type2char(TYPEOF(x)));
-  }
-  }
-  YIELD(1);
-  return out;
-}
-
-SEXP cpp_df_run_id(cpp11::writable::list x){
+SEXP cpp_df_run_id(SEXP x){
   int32_t NP = 0;
   int n_cols = Rf_length(x);
   int n_rows = df_nrow(x);
@@ -573,30 +497,25 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
 
   for (int l = n_cols - 1; l >= 0; --l){
     if (cheapr::is_compact_seq(p_x[l])){
-      SEXP compact_seq = SHIELD(p_x[l]); ++NP;
-      SEXP out = SHIELD(cpp_run_id(compact_seq)); ++NP;
+      SEXP out = SHIELD(compact_int_seq_len(n_rows)); ++NP;
       YIELD(NP);
       return out;
     }
     if (cpp_is_exotic(p_x[l])){
-      SEXP group_ids = SHIELD(fp_group_id(p_x[l], cpp11::named_arg("order") = false));
-      x[l] = group_ids;
-      YIELD(1);
+      SEXP group_ids = SHIELD(fp_group_id(p_x[l], cpp11::named_arg("order") = false)); ++NP;
+      SHIELD(x = Rf_shallow_duplicate(x)); ++NP;
+      SET_VECTOR_ELT(x, l, group_ids);
     }
   }
 
-  if (n_cols == 1){
-    SEXP x1 = SHIELD(VECTOR_ELT(x, 0)); ++NP;
-    SEXP out = SHIELD(cpp_run_id(x1)); ++NP;
-    YIELD(NP);
-    return out;
-  }
+  // Re-point to the possibly shallow duplicated list `x`
+  p_x = VECTOR_PTR_RO(x);
 
   SEXP out = SHIELD(new_vec(INTSXP, n_rows)); ++NP;
-  int *p_out = INTEGER(out);
+  int* __restrict__ p_out = INTEGER(out);
 
   if (n_cols < 1){
-    for (int i = 0; i < n_rows; ++i) p_out[i] = 1;
+    std::fill(p_out, p_out + n_rows, 1);
     YIELD(NP);
     return out;
   }
@@ -615,7 +534,7 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
       switch (TYPEOF(p_x[j])){
       case LGLSXP:
       case INTSXP: {
-        int *p_xj = INTEGER(p_x[j]);
+        const int *p_xj = INTEGER_RO(p_x[j]);
           diff = (p_xj[i] != p_xj[i - 1]);
           p_out[i] = (k += diff);
           break;
@@ -626,7 +545,7 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
         diff = (p_xj[i] != p_xj[i - 1]);
         p_out[i] = (k += diff);
       } else {
-        double *p_xj = REAL(p_x[j]);
+        const double *p_xj = REAL_RO(p_x[j]);
         diff = !(
           ((p_xj[i] != p_xj[i]) && (p_xj[i - 1] != p_xj[i - 1])) ||
             (p_xj[i] == p_xj[i - 1])
@@ -643,13 +562,13 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
         break;
       }
       case CPLXSXP: {
-        Rcomplex *p_xj = COMPLEX(p_x[j]);
+        const Rcomplex *p_xj = COMPLEX_RO(p_x[j]);
         diff = memcmp(&p_xj[i], &p_xj[i - 1], sizeof(Rcomplex)) != 0;
         p_out[i] = (k += diff);
         break;
       }
       case RAWSXP: {
-        Rbyte *p_xj = RAW(p_x[j]);
+        const Rbyte *p_xj = RAW_RO(p_x[j]);
         diff = memcmp(&p_xj[i], &p_xj[i - 1], sizeof(Rbyte)) != 0;
         p_out[i] = (k += diff);
        break;
@@ -670,14 +589,13 @@ SEXP cpp_df_run_id(cpp11::writable::list x){
 SEXP cpp_consecutive_id(SEXP x){
   if (Rf_inherits(x, "data.frame")){
     return cpp_df_run_id(x);
-  } else if (cpp_is_exotic(x)){
-    cpp11::function fastplyr_group_id = cpp11::package("fastplyr")["group_id"];
-    SEXP group_ids = SHIELD(fastplyr_group_id(x, cpp11::named_arg("order") = false));
-    SEXP out = SHIELD(cpp_run_id(group_ids));
-    YIELD(2);
-    return out;
   } else {
-    return cpp_run_id(x);
+    SEXP temp = SHIELD(new_vec(VECSXP, 1));
+    SET_VECTOR_ELT(temp, 0, x);
+    SHIELD(temp = cheapr::new_df(temp, R_NilValue, false, false));
+    SEXP out = SHIELD(cpp_df_run_id(temp));
+    YIELD(3);
+    return out;
   }
 }
 

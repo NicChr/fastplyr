@@ -639,13 +639,18 @@ void set_as_vctrs_new_list_of_int(SEXP x){
   YIELD(1);
 }
 
-// A pretty hacky way of recreating `seq_len()`
 SEXP compact_int_seq_len(int n){
-  SEXP r_n = SHIELD(Rf_ScalarInteger(n));
-  SEXP empty_list = SHIELD(new_vec(VECSXP, 0));
-  SEXP temp = SHIELD(cheapr::new_df(empty_list, r_n, false, false));
-  SEXP out = Rf_getAttrib(temp, R_RowNamesSymbol);
-  YIELD(3);
+  if (n == NA_INTEGER || n < 0){
+    Rf_error("`n` must be >= 0");
+  }
+  if (n == 0){
+    return new_vec(INTSXP, 0);
+  }
+  SEXP start = SHIELD(Rf_ScalarInteger(1));
+  SEXP end = SHIELD(Rf_ScalarInteger(n));
+  SEXP expr = SHIELD(Rf_lang3(Rf_install(":"), start, end));
+  SEXP out = SHIELD(Rf_eval(expr, R_BaseEnv));
+  YIELD(4);
   return out;
 }
 
