@@ -126,7 +126,8 @@ f_slice_head <- function(data, n, prop, .by = NULL,
     if (length(slice_sizes) > 1L){
       i <- cpp_unlist_group_locs(
         slice_info[["rows"]], slice_info[["group_sizes"]]
-      )[sequences]
+      ) |>
+        cheapr::sset(sequences)
     } else {
       i <- sequences
     }
@@ -159,7 +160,8 @@ f_slice_tail <- function(data, n, prop, .by = NULL,
     if (length(slice_sizes) > 1L){
       i <- cpp_unlist_group_locs(
         slice_info[["rows"]], slice_info[["group_sizes"]]
-      )[sequences]
+      ) |>
+        cheapr::sset(sequences)
     } else {
       i <- sequences
     }
@@ -306,12 +308,15 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
   }
   rows <- cpp_unlist_group_locs(rows, slice_sizes)
   if (length(rows) > 0L){
-    rows <- rows + rep.int(sorted_group_starts(group_sizes, 0L),
-                           times = slice_sizes)
+    cheapr::set_add(
+      rows,
+      cheapr::cheapr_rep(sorted_group_starts(group_sizes, 0L), slice_sizes)
+    )
   }
   i <- cpp_unlist_group_locs(
     slice_info[["rows"]], group_sizes
-  )[rows]
+  ) |>
+    cheapr::sset(rows)
   if (is.null(i)){
     i <- integer()
   }
@@ -364,7 +369,7 @@ df_slice_prepare <- function(data, n, prop, .by = NULL,
         slice_sizes <- pmax.int(0L, group_sizes + n)
       }
     } else {
-      slice_sizes <- rep_len(as.integer(n), length(rows))
+      slice_sizes <- cheapr::cheapr_rep_len(as.integer(n), length(rows))
     }
   } else {
     # USING prop
@@ -381,13 +386,5 @@ df_slice_prepare <- function(data, n, prop, .by = NULL,
     }
     slice_sizes <- as.integer(slice_sizes)
   }
-  # keep <- cheapr::val_find(slice_sizes, 0, invert = TRUE)
-  # if (length(rows) - length(keep) > 0L){
-  #   rows <- rows[keep]
-  #   group_sizes <- group_sizes[keep]
-  #   slice_sizes <- slice_sizes[keep]
-  # }
-  list("rows" = rows,
-       "group_sizes" = group_sizes,
-       "slice_sizes" = slice_sizes)
+  list_tidy(rows, group_sizes, slice_sizes, .named = TRUE)
 }
