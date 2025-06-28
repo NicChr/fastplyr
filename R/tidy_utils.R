@@ -419,10 +419,12 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
             seq_len(df_nrow(.data))
           } else {
             locs <- GRP_loc(.fastplyr.g)
-            out <- cpp_unlist_group_locs(locs, GRP_group_sizes(.fastplyr.g))
+            out <- cpp_unlist_group_locs(
+              locs, GRP_group_sizes(.fastplyr.g)
+            )
             order <- cpp_orig_order(GRP_group_id(.fastplyr.g),
                                     GRP_group_sizes(.fastplyr.g))
-            out[order]
+            cheapr::sset(out, order)
           }
         })
       } else if (.optimise_expand && cpp_is_fn_call(expr, "lag", "dplyr", env)){
@@ -478,19 +480,19 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
     ### Calculate group locations here so that
     ### tidy evaluation can be done
     ### eval_all_tidy needs a plain or grouped data frame
-    if (!is.null(.groups)){
+    if (!is.null(.fastplyr.g)){
       if (identical(f_group_vars(.data), group_vars) &&
-          GRP_is_ordered(.groups) == group_by_order_default(.data)){
-        .groups[["locs"]] <- f_group_rows(.data)
+          GRP_is_ordered(.fastplyr.g) == group_by_order_default(.data)){
+        .fastplyr.g[["locs"]] <- f_group_rows(.data)
       } else {
-        .groups[["locs"]] <- GRP_loc(.groups)
+        .fastplyr.g[["locs"]] <- GRP_loc(.groups)
       }
     }
   }
   cheapr::attrs_add(
     out,
     .optimised = optimised,
-    .GRP = .groups,
+    .GRP = .fastplyr.g,
     .fastplyr_quos = TRUE,
     .set = TRUE
   )
