@@ -193,7 +193,7 @@ check_data_GRP_size <- function(x, GRP){
 GRP_duplicated <- function(GRP, all = FALSE){
   sizes <- GRP_group_sizes(GRP)
   group_id <- GRP_group_id(GRP)
-  out <- (sizes > 1L)[group_id]
+  out <- cheapr::sset(sizes > 1L, group_id)
   if (!all){
     out[GRP_starts(GRP)] <- FALSE
   }
@@ -210,7 +210,7 @@ GRP_duplicated <- function(GRP, all = FALSE){
 #   }
 # }
 GRP_which_duplicated <- function(GRP, all = FALSE){
-  which(GRP_duplicated(GRP, all))
+  cheapr::which_(GRP_duplicated(GRP, all))
 }
 sorted_group_starts <- function(group_sizes, init_loc = 1L){
   cpp_sorted_group_starts(as.integer(group_sizes), init_loc)
@@ -231,15 +231,17 @@ GRP_starts <- function(GRP, use.g.names = FALSE){
       }
       # For factors with 0 size, replace calculated group starts with 0
       out[cheapr::which_val(GRP_sizes, 0L)] <- 0L
-    } else {
+    } else if (!is.null(GRP[["order"]])){
       o <- GRP_order(GRP)
       starts <- attr(o, "starts")
       if (collapse::anyv(GRP_sizes, 0L)){
         out <- integer(GRP_n_groups(GRP))
         out[cheapr::which_val(GRP_sizes, 0L, invert = TRUE)] <- o[starts]
       } else {
-        out <- o[starts]
+        out <- cheapr::sset(o, starts)
       }
+    } else {
+      out <- cpp_group_starts(GRP_group_id(GRP), GRP_n_groups(GRP))
     }
   }
   if (is.null(out)){
@@ -251,18 +253,14 @@ GRP_starts <- function(GRP, use.g.names = FALSE){
   out
 }
 # Extract group ends from GRP object safely and efficiently
-GRP_ends <- function(GRP, use.g.names = FALSE,
-                     loc = NULL){
-  GRP_sizes <- GRP_group_sizes(GRP)
+GRP_ends <- function(GRP, use.g.names = FALSE){
   if (GRP_is_sorted(GRP)){
-    out <- sorted_group_ends(GRP_sizes)
+    group_sizes <- GRP_group_sizes(GRP)
+    out <- sorted_group_ends(group_sizes)
     # For factors with 0 size, replace 0 with NA
-    out[cheapr::which_val(GRP_sizes, 0L)] <- 0L
+    out[cheapr::which_val(group_sizes, 0L)] <- 0L
   } else {
-    if (is.null(loc)){
-      loc <- GRP_loc(GRP, use.g.names = FALSE)
-    }
-    out <- GRP_loc_ends(loc, GRP_sizes)
+    out <- cpp_group_ends(GRP_group_id(GRP), GRP_n_groups(GRP))
   }
   if (is.null(out)){
     out <- integer()

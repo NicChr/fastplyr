@@ -138,6 +138,20 @@ extern "C" SEXP _fastplyr_cpp_df_transform_exotic(SEXP x, SEXP order, SEXP as_qg
     return cpp11::as_sexp(cpp_df_transform_exotic(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<bool>>(order), cpp11::as_cpp<cpp11::decay_t<bool>>(as_qg)));
   END_CPP11
 }
+// fastplyr.cpp
+SEXP cpp_group_starts(SEXP group_id, int n_groups);
+extern "C" SEXP _fastplyr_cpp_group_starts(SEXP group_id, SEXP n_groups) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_starts(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_id), cpp11::as_cpp<cpp11::decay_t<int>>(n_groups)));
+  END_CPP11
+}
+// fastplyr.cpp
+SEXP cpp_group_ends(SEXP group_id, int n_groups);
+extern "C" SEXP _fastplyr_cpp_group_ends(SEXP group_id, SEXP n_groups) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_ends(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_id), cpp11::as_cpp<cpp11::decay_t<int>>(n_groups)));
+  END_CPP11
+}
 // tidy.cpp
 bool is_nested_call(SEXP expr);
 extern "C" SEXP _fastplyr_is_nested_call(SEXP expr) {
@@ -336,6 +350,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_group_by_drop_default",            (DL_FUNC) &_fastplyr_cpp_group_by_drop_default,            1},
     {"_fastplyr_cpp_group_by_order_default",           (DL_FUNC) &_fastplyr_cpp_group_by_order_default,           1},
     {"_fastplyr_cpp_group_data",                       (DL_FUNC) &_fastplyr_cpp_group_data,                       1},
+    {"_fastplyr_cpp_group_ends",                       (DL_FUNC) &_fastplyr_cpp_group_ends,                       2},
     {"_fastplyr_cpp_group_id",                         (DL_FUNC) &_fastplyr_cpp_group_id,                         1},
     {"_fastplyr_cpp_group_id_sorted",                  (DL_FUNC) &_fastplyr_cpp_group_id_sorted,                  1},
     {"_fastplyr_cpp_group_indices",                    (DL_FUNC) &_fastplyr_cpp_group_indices,                    2},
@@ -345,6 +360,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_group_rows",                       (DL_FUNC) &_fastplyr_cpp_group_rows,                       1},
     {"_fastplyr_cpp_group_size",                       (DL_FUNC) &_fastplyr_cpp_group_size,                       1},
     {"_fastplyr_cpp_group_split",                      (DL_FUNC) &_fastplyr_cpp_group_split,                      1},
+    {"_fastplyr_cpp_group_starts",                     (DL_FUNC) &_fastplyr_cpp_group_starts,                     2},
     {"_fastplyr_cpp_group_vars",                       (DL_FUNC) &_fastplyr_cpp_group_vars,                       1},
     {"_fastplyr_cpp_grouped_df_as_grp",                (DL_FUNC) &_fastplyr_cpp_grouped_df_as_grp,                1},
     {"_fastplyr_cpp_grouped_eval_mutate",              (DL_FUNC) &_fastplyr_cpp_grouped_eval_mutate,              2},

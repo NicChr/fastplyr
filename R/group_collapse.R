@@ -15,8 +15,7 @@ df_collapse <- function(data, cols = names(data),
   if (id){
     out <- df_add_col(out, ".group", df_seq_along(out))
   }
-  include_loc <- loc || end
-  if (include_loc){
+  if (loc){
     if (add && identical(group_vars(data), cols) &&
         order == group_by_order_default(data) &&
         drop == group_by_order_default(data)){
@@ -32,10 +31,7 @@ df_collapse <- function(data, cols = names(data),
     out <- df_add_col(out, ".start", GRP_starts(g))
   }
   if (end){
-    out <- df_add_col(out, ".end", GRP_ends(g, loc = GRP_loc))
-  }
-  if (!loc && include_loc){
-    out <- df_rm_cols(out, ".loc")
+    out <- df_add_col(out, ".end", GRP_ends(g))
   }
   if (size){
     out <- df_add_col(out, ".size", GRP_group_sizes(g))
@@ -132,8 +128,7 @@ GRP_collapse <- function(g,
   if (id){
     out <- cheapr::df_modify(out, list(.group = df_seq_along(out)))
   }
-  include_loc <- loc || end
-  if (include_loc){
+  if (loc){
     GRP_loc <- GRP_loc(g)
     out <- cheapr::df_modify(out, list(.loc = GRP_loc))
   } else {
@@ -143,10 +138,7 @@ GRP_collapse <- function(g,
     out <- cheapr::df_modify(out, list(.start = GRP_starts(g)))
   }
   if (end){
-    out <- cheapr::df_modify(out, list(.end = GRP_ends(g, loc = GRP_loc)))
-  }
-  if (!loc && include_loc){
-    out <- cheapr::df_modify(out, list(.loc = NULL))
+    out <- cheapr::df_modify(out, list(.end = GRP_ends(g)))
   }
   if (size){
     out <- cheapr::df_modify(out, list(.size = GRP_group_sizes(g)))

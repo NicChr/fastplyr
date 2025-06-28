@@ -839,3 +839,104 @@ SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg){
   YIELD(1);
   return out;
 }
+
+[[cpp11::register]]
+SEXP cpp_group_starts(SEXP group_id, int n_groups){
+
+  int n = Rf_length(group_id);
+
+  SEXP out = SHIELD(new_vec(INTSXP, n_groups));
+  const int* p_group_id = INTEGER_RO(group_id);
+  int* __restrict__ p_out = INTEGER(out);
+
+
+  // Slower but easier to read alternative
+  // std::fill(p_out, p_out + n_groups, 0);
+  // for (int i = 0; i < n; ++i) {
+  //   const int g = p_group_id[i] - 1;
+  //   if (p_out[g] == 0){
+  //     p_out[g] = i + 1;
+  //   }
+  // }
+
+
+  int fill_value = std::numeric_limits<int>::max();
+
+  if (n < fill_value){
+    // Initialise start locations
+    std::fill(p_out, p_out + n_groups, fill_value);
+    for (int i = 0; i < n; ++i){
+      p_out[p_group_id[i] - 1] = std::min(p_out[p_group_id[i] - 1], i + 1);
+    }
+
+    for (int i = 0; i < n_groups; ++i){
+      if (p_out[i] == fill_value){
+        p_out[i] = 0;
+      }
+    }
+  } else {
+
+    // Slightly slower method than above
+    // this can handle the edge-case where a group's start location
+    // happens to be at .Machine$integer.max
+
+    // Initialise start locations
+    std::fill(p_out, p_out + n_groups, 0);
+    for (int i = 0; i < n; ++i){
+      p_out[p_group_id[i] - 1] = static_cast<int>(
+        std::min(
+          static_cast<unsigned int>(p_out[p_group_id[i] - 1]) - 1,
+          static_cast<unsigned int>(i)
+        ) + 1
+      );
+    }
+  }
+  YIELD(1);
+  return out;
+}
+
+// SEXP cpp_unique(SEXP x, SEXP group_id, int n_groups){
+//
+//   int n = Rf_length(group_id);
+//
+//   const int* p_group_id = INTEGER_RO(group_id);
+//
+//   SEXP out = SHIELD(new_vec(REALSXP, n_groups));
+//
+//   const double *p_x = REAL_RO(x);
+//   double* __restrict__ p_out = REAL(out);
+//
+//   int g;
+//
+//   std::vector<uint8_t> seen(n_groups);
+//   std::fill(seen.begin(), seen.begin() + n_groups, static_cast<uint8_t>(0));
+//   std::vector<uint8_t> *p_seen = &seen;
+//
+//   for (int i = 0; i < n; ++i){
+//     g = p_group_id[i] - 1;
+//     if ((*p_seen)[g] == static_cast<uint8_t>(0)){
+//       p_out[g] = p_x[i];
+//       (*p_seen)[g] = static_cast<uint8_t>(1);
+//     }
+//   }
+//   YIELD(1);
+//   return out;
+// }
+
+[[cpp11::register]]
+SEXP cpp_group_ends(SEXP group_id, int n_groups){
+
+  int n = Rf_length(group_id);
+
+  SEXP out = SHIELD(new_vec(INTSXP, n_groups));
+  const int* p_group_id = INTEGER_RO(group_id);
+  int* __restrict__ p_out = INTEGER(out);
+
+  // Initialise start locations
+  std::fill(p_out, p_out + n_groups, 0);
+  for (int i = 0; i < n; ++i){
+    p_out[p_group_id[i] - 1] = std::max(p_out[p_group_id[i] - 1], i + 1);
+  }
+  YIELD(1);
+  return out;
+}

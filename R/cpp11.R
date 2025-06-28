@@ -76,6 +76,14 @@ cpp_df_transform_exotic <- function(x, order, as_qg) {
   .Call(`_fastplyr_cpp_df_transform_exotic`, x, order, as_qg)
 }
 
+cpp_group_starts <- function(group_id, n_groups) {
+  .Call(`_fastplyr_cpp_group_starts`, group_id, n_groups)
+}
+
+cpp_group_ends <- function(group_id, n_groups) {
+  .Call(`_fastplyr_cpp_group_ends`, group_id, n_groups)
+}
+
 is_nested_call <- function(expr) {
   .Call(`_fastplyr_is_nested_call`, expr)
 }
