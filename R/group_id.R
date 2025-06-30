@@ -308,8 +308,8 @@ quick_group <- function(x, order = TRUE, ascending = TRUE, na_exclude = FALSE){
       out[na_loc] <- NA
       if (order){
         attr(out, "n_groups") <- n_groups - 1L
-        attr(out, "starts") <- starts[seq_len(length(starts) - 1L)]
-        attr(out, "group.sizes") <- sizes[seq_len(length(sizes) - 1L)]
+        attr(out, "starts") <- cheapr::sset(starts, seq_len(length(starts) - 1L))
+        attr(out, "group.sizes") <- cheapr::sset(sizes, seq_len(length(sizes) - 1L))
       } else {
         unique_ids <- out[starts]
         unique_non_na_loc <- cheapr::which_not_na(unique_ids)

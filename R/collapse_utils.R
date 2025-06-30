@@ -238,7 +238,7 @@ GRP_starts <- function(GRP, use.g.names = FALSE){
         out <- integer(GRP_n_groups(GRP))
         out[cheapr::which_val(GRP_sizes, 0L, invert = TRUE)] <- o[starts]
       } else {
-        out <- cheapr::sset(o, starts)
+        out <- cheapr::attrs_rm(cheapr::sset(o, starts), .set = TRUE)
       }
     } else {
       out <- cpp_group_starts(GRP_group_id(GRP), GRP_n_groups(GRP))

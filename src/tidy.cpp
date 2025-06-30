@@ -936,11 +936,67 @@ SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
   }
 }
 
+// SEXP cpp_unlist_group_locs2(SEXP x, SEXP group_sizes){
+//   if (TYPEOF(x) != VECSXP){
+//     return x;
+//   }
+//   int n = Rf_length(x);
+//   int m = 0, k = 0, out_size = 0;
+//   const SEXP *p_x = VECTOR_PTR_RO(x);
+//
+//   std::vector<const int*> loc_ptrs(n);
+//   const int** p_loc_ptrs = loc_ptrs.data();
+//   // std::vector<const int*> *p_loc_ptrs = &loc_ptrs;
+//
+//   if (Rf_isNull(group_sizes)){
+//
+//     // Figure out unlisted length
+//     for (int i = 0; i < n; ++i){
+//       out_size += Rf_length(p_x[i]);
+//       p_loc_ptrs[i] = INTEGER_RO(p_x[i]);
+//       // (*p_loc_ptrs)[i] = INTEGER_RO(p_x[i]);
+//     }
+//
+//     SEXP out = SHIELD(new_vec(INTSXP, out_size));
+//     int* __restrict__ p_out = INTEGER(out);
+//
+//     for (int i = 0; i < n; k += m, ++i){
+//       m = Rf_length(p_x[i]);
+//       // safe_memcpy(&p_out[k], &((*p_loc_ptrs)[i][0]), m * sizeof(int));
+//       safe_memcpy(&p_out[k], &(p_loc_ptrs[i][0]), m * sizeof(int));
+//     }
+//     YIELD(1);
+//     return out;
+//   } else {
+//     if (Rf_length(group_sizes) != n){
+//       Rf_error("`length(x)` must match `length(group_sizes)`");
+//     }
+//     const int* __restrict__ p_gs = INTEGER_RO(group_sizes);
+//
+//     // Figure out unlisted length
+//     for (int i = 0; i < n; ++i){
+//       out_size += p_gs[i];
+//       // (*p_loc_ptrs)[i] = INTEGER_RO(p_x[i]);
+//       p_loc_ptrs[i] = INTEGER_RO(p_x[i]);
+//     }
+//
+//     SEXP out = SHIELD(new_vec(INTSXP, out_size));
+//     int* __restrict__ p_out = INTEGER(out);
+//
+//     for (int i = 0; i < n; k += m, ++i){
+//       m = p_gs[i];
+//       // safe_memcpy(&p_out[k], &((*p_loc_ptrs)[i][0]), m * sizeof(int));
+//       safe_memcpy(&p_out[k], &(p_loc_ptrs[i][0]), m * sizeof(int));
+//     }
+//     YIELD(1);
+//     return out;
+//   }
+// }
+
 // Are group IDs sorted?
 // This function expects no NAs
 [[cpp11::register]]
 bool cpp_group_id_sorted(SEXP x){
-  bool out = true;
   int n = Rf_length(x);
   const int* __restrict__ p_x = INTEGER_RO(x);
   for (int i = 1; i < n; ++i){
@@ -948,7 +1004,7 @@ bool cpp_group_id_sorted(SEXP x){
       return false;
     }
   }
-  return out;
+  return true;
 }
 
 [[cpp11::register]]

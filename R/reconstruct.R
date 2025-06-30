@@ -4,7 +4,7 @@ rebuild.grouped_df <- function(x, template, ...){
 
   plain_tbl <- fast_tbl()
 
-  template_groups <- group_vars(template)
+  template_groups <- f_group_vars(template)
 
   # If groups in template are all in data AND
   # the data relating to groups in template
@@ -29,7 +29,7 @@ rebuild.grouped_df <- function(x, template, ...){
       out_class <- class(template)
     }
   }
-  out <- cheapr::rebuild(x, cpp_ungroup(template))
+  out <- cheapr::rebuild(x, f_ungroup(template))
   attr(out, "groups") <- groups
   class(out) <- out_class
   out
@@ -41,7 +41,7 @@ rebuild.fastplyr_grouped_df <- function(x, template, ...){
 
   plain_tbl <- fast_tbl()
 
-  template_groups <- group_vars(template)
+  template_groups <- f_group_vars(template)
 
   # If groups in template are all in data AND
   # the data relating to groups in template
@@ -70,7 +70,7 @@ rebuild.fastplyr_grouped_df <- function(x, template, ...){
       out_class <- class(template)
     }
   }
-  out <- cheapr::rebuild(x, cpp_ungroup(template))
+  out <- cheapr::rebuild(x, f_ungroup(template))
   attr(out, "groups") <- groups
   attr(out, "GRP") <- GRP
   class(out) <- out_class

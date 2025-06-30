@@ -127,7 +127,7 @@ f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
 
     group_vars <- GRP_group_vars(GRP)
     if (is.null(weights)){
-      counts <- GRP_group_sizes(GRP)[GRP_group_id(GRP)]
+      counts <- cheapr::sset(GRP_group_sizes(GRP), GRP_group_id(GRP))
     } else {
       counts <- collapse::fsum(
         as.double(weights),

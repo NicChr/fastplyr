@@ -93,7 +93,7 @@ grouped_df_counts <- function(data, weights = NULL, expand = FALSE){
   } else {
     counts <- f_group_size(data)
     if (expand){
-      counts <- counts[f_group_indices(data)]
+      counts <- cheapr::sset(counts, f_group_indices(data))
     }
   }
   counts
