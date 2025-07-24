@@ -9,6 +9,10 @@
 if all calls satisfy either or both conditions, then they can be run 
 on entire dataset
 
+### Bug fixes
+
+- An issue where `f_arrange` would add variables has been fixed.
+
 # fastplyr 0.9.0
 
 ### New features

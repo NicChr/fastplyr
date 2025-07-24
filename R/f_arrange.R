@@ -31,11 +31,10 @@ f_arrange <- function(data, ..., .by = NULL, .by_group = FALSE,
     if (.by_group){
       data
     } else {
-      cpp_ungroup(data)
+      f_ungroup(data)
     }, ..., .by = {{ .by }},
     .cols = .cols
   )
-  data <- group_info[["data"]]
   dot_vars <- group_info[["new_cols"]]
   group_vars <- group_info[["all_groups"]]
   if (length(dot_vars) == 0L){
@@ -57,6 +56,6 @@ f_arrange <- function(data, ..., .by = NULL, .by_group = FALSE,
   if (isTRUE(sorted)){
     data
   } else {
-    cheapr::sset_df(data, out_order)
+    cheapr::sset(data, out_order)
   }
 }
