@@ -22,7 +22,9 @@
 #' @keywords internal
 #' @importFrom dplyr .data
 #' @importFrom dplyr across
+#' @importFrom dplyr pick
 #' @importFrom dplyr all_of
+#' @importFrom dplyr any_of
 #' @importFrom cheapr vector_length
 "_PACKAGE"
 
