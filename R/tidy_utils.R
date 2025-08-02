@@ -152,10 +152,13 @@ fix_quo_names <- function(quos){
   quos
 }
 
-unpack_across <- function(quo, data, unpack_default = FALSE){
+unpack_across <- function(quo, data, groups = character(), unpack_default = FALSE){
 
   expr <- rlang::quo_get_expr(quo)
   quo_env <- rlang::quo_get_env(quo)
+
+  # Remove group variables from data
+  data <- cheapr::sset_col(data, vec_setdiff(names(data), groups))
 
   clean_expr <- match.call(
     definition = dplyr::across,
@@ -255,6 +258,15 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
 
   out <- rlang::quos(..., .ignore_empty = "all")
   quo_nms <- attr(out, "names", TRUE)
+
+  if (is.null(.groups)){
+    n_groups <- 1L
+    group_vars <- character()
+  } else {
+    n_groups <- GRP_n_groups(.groups)
+    group_vars <- GRP_group_vars(.groups)
+  }
+
   k <- 1L
   for (i in seq_along(out)){
     quo <- out[[k]]
@@ -264,7 +276,12 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
     if (!nzchar(quo_nms[[k]]) && cpp_is_fn_call(expr, "across", ns = "dplyr", env)){
       left <- out[seq_len(k - 1L)]
       left_nms <- quo_nms[seq_len(k - 1L)]
-      unpacked_quos <- unpack_across(quo, .data, unpack_default = .unpack_default)
+      unpacked_quos <- unpack_across(
+        quo,
+        data = .data,
+        groups = group_vars,
+        unpack_default = .unpack_default
+      )
       if (k < length(out)){
         right <- out[seq.int(k + 1L, length(out), 1L)]
         right_nms <- quo_nms[seq.int(k + 1L, length(quo_nms), 1L)]
@@ -289,14 +306,6 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
   }
 
   optimised <- logical(length(out))
-
-  if (is.null(.groups)){
-    n_groups <- 1L
-    group_vars <- character()
-  } else {
-    n_groups <- GRP_n_groups(.groups)
-    group_vars <- GRP_group_vars(.groups)
-  }
 
   if (n_groups <= 1){
     .fastplyr.g <- NULL
