@@ -370,12 +370,18 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
       expr <- rlang::quo_get_expr(quo)
       env <- rlang::quo_get_env(quo)
 
-      if (is_nested_call(expr)) next
+      group_unaware_expr <- is_group_unaware_call(expr, env)
 
+      if (is_nested_call(expr) && !group_unaware_expr) next
+
+
+      if (group_unaware_expr){
+
+      }
       ### Cases when we are just selecting columns
       ### We can just optimise it away by leaving the expression as is
       ### and then running it through `eval_optimised_quos()`
-      if (is.name(expr) && rlang::as_string(expr) == quo_nms[[i]]){
+      else if (is.name(expr) && rlang::as_string(expr) == quo_nms[[i]]){
 
       } else if (.optimise_expand && is_fn_call(expr, "identity", "base", env)){
 

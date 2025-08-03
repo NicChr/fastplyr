@@ -6,13 +6,13 @@ static SEXP group_unaware_fn_names = NULL;
 [[cpp11::init]]
 void init_group_unaware_fns(DllInfo* dll){
 
-  group_unaware_fns = Rf_allocVector(VECSXP, 19);
+  group_unaware_fns = Rf_allocVector(VECSXP, 21);
   R_PreserveObject(group_unaware_fns);
 
-  group_unaware_fn_names = Rf_allocVector(STRSXP, 19);
+  group_unaware_fn_names = Rf_allocVector(STRSXP, 21);
   R_PreserveObject(group_unaware_fn_names);
 
-  for (int i = 0; i < 19; ++i){
+  for (int i = 0; i < 21; ++i){
     SET_VECTOR_ELT(group_unaware_fns, i, Rf_mkChar("base"));
   }
 
@@ -35,12 +35,14 @@ void init_group_unaware_fns(DllInfo* dll){
   SET_STRING_ELT(group_unaware_fn_names, 16, Rf_mkChar("signif"));
   SET_STRING_ELT(group_unaware_fn_names, 17, Rf_mkChar("exp"));
   SET_STRING_ELT(group_unaware_fn_names, 18, Rf_mkChar("log"));
+  SET_STRING_ELT(group_unaware_fn_names, 19, Rf_mkChar("("));
+  SET_STRING_ELT(group_unaware_fn_names, 20, Rf_mkChar("{"));
 
   set_names(group_unaware_fns, group_unaware_fn_names);
 }
 
-[[cpp11::register]]
-bool is_group_unaware_call(SEXP expr, SEXP env){
+// Only checks the current call and not all nested calls
+bool maybe_is_group_unaware_call(SEXP expr, SEXP env){
   bool maybe = is_fn_call(expr, group_unaware_fn_names, R_NilValue, env);
 
   if (!maybe) return false;
@@ -64,6 +66,36 @@ bool is_group_unaware_call(SEXP expr, SEXP env){
 
   bool out = target_ns == actual_ns;
   YIELD(2);
+  return out;
+}
+
+[[cpp11::register]]
+bool is_group_unaware_call(SEXP expr, SEXP env){
+  if (TYPEOF(expr) != LANGSXP){
+    return false;
+  }
+  int32_t NP = 0;
+
+  if (!maybe_is_group_unaware_call(expr, env)){
+    return false;
+  }
+
+  bool out = true;
+
+  SEXP tree = SHIELD(as_list_call(expr)); ++NP;
+  SEXP branch;
+  for (int i = 0; i < Rf_length(tree); ++i){
+    branch = VECTOR_ELT(tree, i);
+
+    // If branch is a call
+    if (TYPEOF(branch) == LANGSXP){
+      if (!is_group_unaware_call(branch, env)){
+        out = false;
+        break;
+      }
+    }
+  }
+  YIELD(NP);
   return out;
 }
 
