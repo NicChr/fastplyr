@@ -63,6 +63,10 @@ SEXP get_list_element(SEXP list, const char *str);
 int cpp_n_group_vars(SEXP x);
 SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes);
 SEXP compact_int_seq_len(int n);
+SEXP as_list_call(SEXP expr);
+bool is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho);
+bool call_is_namespaced(SEXP expr);
+SEXP get_fun_ns(SEXP x, SEXP rho);
 
 namespace rlang {
 SEXP eval_tidy(SEXP expr, SEXP data, SEXP env);
