@@ -137,14 +137,3 @@ vec_rename <- function(.x, ...){
   }
   .x
 }
-
-# as_group_unaware_fn <- function(fn){
-#   if (!is.function(fn)){
-#     cli::cli_abort("{.arg fn must be a {.cls function}")
-#   }
-#   register_group_unaware_fn(fn)
-# }
-#
-# as_new_fn <- function(fn){
-#   function(...) fn(...)
-# }
