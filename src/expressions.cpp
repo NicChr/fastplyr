@@ -2,6 +2,25 @@
 
 // Helpers for working with R expressions
 
+// Helper to get exported package function
+SEXP find_pkg_fun(const char *name, const char *pkg, bool all_fns){
+  if (all_fns){
+    return Rf_eval(Rf_lang3(R_TripleColonSymbol, Rf_install(pkg), Rf_install(name)), R_BaseEnv);
+  } else {
+    return Rf_eval(Rf_lang3(R_DoubleColonSymbol, Rf_install(pkg), Rf_install(name)), R_BaseEnv);
+  }
+}
+
+SEXP get_fastplyr_env() {
+
+  SEXP fp_count = SHIELD(find_pkg_fun("f_count", "fastplyr", false));
+  SEXP expr = SHIELD(Rf_lang2(Rf_install("environment"), fp_count));
+  SEXP fastplyr_env = SHIELD(Rf_eval(expr, R_BaseEnv));
+
+  YIELD(3);
+  return fastplyr_env;
+}
+
 // Basically R's get()
 
 SEXP get(SEXP sym, SEXP rho){
@@ -375,15 +394,17 @@ bool call_contains_fn(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
   return out;
 }
 
-// Helper to get exported package function
-SEXP find_pkg_fun(const char *name, const char *pkg){
-  return Rf_eval(Rf_lang3(R_DoubleColonSymbol, Rf_install(pkg), Rf_install(name)), R_BaseEnv);
-}
-
 // Initialise environment of group unaware fns
 
 static SEXP group_unaware_fns = NULL;
 static SEXP group_unaware_fn_names = NULL;
+
+// A user defined group unaware fn to be overwritten by the user
+// static SEXP user_defined_group_unaware_fn = NULL;
+// void init_user_defined_group_unaware_fn(DllInfo* dll) {
+//   user_defined_group_unaware_fn = R_NilValue;
+//   R_PreserveObject(user_defined_group_unaware_fn);
+// }
 
 [[cpp11::init]]
 void init_group_unaware_fns(DllInfo* dll) {
@@ -418,24 +439,9 @@ void init_group_unaware_fns(DllInfo* dll) {
   for (int i = 47; i < 49; ++i) {
     fn = Rf_install(names[i]);
     SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
-    Rf_defineVar(fn, find_pkg_fun(names[i], "cheapr"), group_unaware_fns);
+    Rf_defineVar(fn, find_pkg_fun(names[i], "cheapr", false), group_unaware_fns);
   }
 }
-
-// SEXP register_group_unaware_fn(SEXP fn){
-//   int n_fns = Rf_length(group_unaware_fn_names);
-//
-//   SEXP fn_loc = SHIELD(Rf_ScalarInteger(n_fns + 1));
-//   SEXP fn_nm_str = SHIELD(Rf_mkString("fn_"));
-//
-//   SEXP expr = SHIELD(Rf_lang3(Rf_install("paste0"), fn_nm_str, fn_loc));
-//
-//   SEXP new_fn_nm = SHIELD(Rf_eval(expr, R_BaseEnv));
-//
-//   YIELD(4);
-//   return new_fn_nm;
-//
-// }
 
 // Only checks the current call and not all nested calls
 bool maybe_is_group_unaware_call(SEXP expr, SEXP env){
@@ -504,3 +510,46 @@ bool is_group_unaware_call(SEXP expr, SEXP env){
   YIELD(NP);
   return out;
 }
+
+// SEXP register_group_unaware_fn(SEXP fn){
+//
+//   if (!Rf_isFunction(fn)){
+//     Rf_error("`fn` must be a function");
+//   }
+//
+//   user_defined_group_unaware_fn = fn;
+//
+//   return user_defined_group_unaware_fn;
+//
+//   // int n_fns = Rf_length(group_unaware_fn_names);
+//   //
+//   // SEXP fn_loc = SHIELD(Rf_ScalarInteger(n_fns + 1));
+//   // SEXP fn_nm_str = SHIELD(Rf_mkString("group_unaware_fn_"));
+//   // SEXP expr = SHIELD(Rf_lang3(Rf_install("paste0"), fn_nm_str, fn_loc));
+//   // SEXP new_fn_nm = SHIELD(Rf_eval(expr, R_BaseEnv));
+//   //
+//   // SEXP new_fn_sym = SHIELD(Rf_installChar(STRING_ELT(new_fn_nm, 0)));
+//   //
+//   // if (exists(new_fn_sym, group_unaware_fns)){
+//   //   YIELD(5);
+//   //   Rf_error("Group-unaware function %s already exists", CHAR(STRING_ELT(new_fn_nm, 0)));
+//   // }
+//   //
+//   // SEXP as_new_fn = SHIELD(find_pkg_fun("as_new_fn", "fastplyr", true));
+//   // SEXP new_fn_expr = SHIELD(Rf_lang2(as_new_fn, fn));
+//   // SEXP new_fn = SHIELD(Rf_eval(new_fn_expr, R_BaseEnv));
+//   //
+//   // Rf_defineVar(new_fn_sym, new_fn, group_unaware_fns);
+//   //
+//   //
+//   // SEXP new_names = SHIELD(new_vec(STRSXP, n_fns + 1));
+//   //
+//   // for (int i = 0; i < n_fns; ++i){
+//   //   SET_STRING_ELT(new_names, i, STRING_ELT(group_unaware_fn_names, i));
+//   // }
+//   // SET_STRING_ELT(new_names, n_fns, STRING_ELT(new_fn_nm, 0));
+//   // group_unaware_fn_names = new_names;
+//   //
+//   // YIELD(9);
+//   // return new_fn;
+// }
