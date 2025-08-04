@@ -375,6 +375,10 @@ bool call_contains_fn(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
   return out;
 }
 
+// Helper to get exported package function
+SEXP find_pkg_fun(const char *name, const char *pkg){
+  return Rf_eval(Rf_lang3(R_DoubleColonSymbol, Rf_install(pkg), Rf_install(name)), R_BaseEnv);
+}
 
 // Initialise environment of group unaware fns
 
@@ -388,11 +392,11 @@ void init_group_unaware_fns(DllInfo* dll) {
   group_unaware_fns = R_NewEnv(R_EmptyEnv, TRUE, 60);
   R_PreserveObject(group_unaware_fns);
 
-  group_unaware_fn_names = Rf_allocVector(STRSXP, 50);
+  group_unaware_fn_names = Rf_allocVector(STRSXP, 49);
   R_PreserveObject(group_unaware_fn_names);
 
   // vector with the 21 fn symbols
-  const char* const names[50] =
+  const char* const names[49] =
     {
     "|", "&", "!", ">=", ">", "<=", "<", "==", "!=", "%%", "%/%",
       "+", "-",  "*", "/", "^", "abs",  "sign", "floor",
@@ -401,22 +405,20 @@ void init_group_unaware_fns(DllInfo* dll) {
       "cospi", "sinpi", "tanpi", "acos", "asin", "atan",
       "cosh", "sinh", "tanh", "acosh", "asinh", "atanh",
       "lgamma", "gamma", "digamma", "trigamma",
-      "gcd2", "scm2", // cheapr
-      "time_diff" // timeplyr
+      "gcd2", "scm2" // cheapr
     };
 
+  SEXP fn = R_NilValue;
   for (int i = 0; i < 47; ++i) {
+    fn = Rf_install(names[i]);
     SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
-    Rf_defineVar(Rf_install(names[i]), Rf_mkString("base"), group_unaware_fns);
+    Rf_defineVar(fn, get(fn, R_BaseEnv), group_unaware_fns);
   }
 
   for (int i = 47; i < 49; ++i) {
+    fn = Rf_install(names[i]);
     SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
-    Rf_defineVar(Rf_install(names[i]), Rf_mkString("cheapr"), group_unaware_fns);
-  }
-  for (int i = 49; i < 50; ++i) {
-    SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
-    Rf_defineVar(Rf_install(names[i]), Rf_mkString("timeplyr"), group_unaware_fns);
+    Rf_defineVar(fn, find_pkg_fun(names[i], "cheapr"), group_unaware_fns);
   }
 }
 
@@ -458,14 +460,14 @@ bool maybe_is_group_unaware_call(SEXP expr, SEXP env){
     actual_ns = SHIELD(get_fun_ns(fn, env)); ++NP; // CHARSXP namespace
   }
 
-  SEXP target_ns = get(fn, group_unaware_fns);
+  SEXP target_ns = SHIELD(get_fun_ns(get(fn, group_unaware_fns), R_BaseEnv)); ++NP;
 
   if (Rf_isNull(target_ns)){
     YIELD(NP);
     return false;
   }
 
-  bool out = STRING_ELT(target_ns, 0) == actual_ns;
+  bool out = target_ns == actual_ns;
   YIELD(NP);
   return out;
 }
