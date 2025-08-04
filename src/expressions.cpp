@@ -35,107 +35,6 @@ bool exists(SEXP sym, SEXP rho){
   return !Rf_isNull(get(sym, rho));
 }
 
-// Initialise environment of group unaware fns
-
-static SEXP group_unaware_fns = NULL;
-static SEXP group_unaware_fn_names = NULL;
-
-[[cpp11::init]]
-void init_group_unaware_fns(DllInfo* dll) {
-
-  // New environment
-  group_unaware_fns = R_NewEnv(R_EmptyEnv, TRUE, 30);
-  R_PreserveObject(group_unaware_fns);
-
-  group_unaware_fn_names = Rf_allocVector(STRSXP, 21);
-  R_PreserveObject(group_unaware_fn_names);
-
-  // vector with the 21 fn symbols
-  const char* const names[21] = {
-    "|", "&", ">=", ">", "<=", "<", "==",
-      "+", "-",  "*", "/", "abs",  "sign", "floor",
-      "trunc", "round", "signif", "exp", "log", "(", "{"
-  };
-
-  for (int i = 0; i < 21; ++i) {
-    SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
-    Rf_defineVar(Rf_install(names[i]), Rf_mkString("base"), group_unaware_fns);
-  }
-}
-// SEXP register_group_unaware_fn(SEXP fn){
-//   int n_fns = Rf_length(group_unaware_fn_names);
-//
-//   SEXP fn_loc = SHIELD(Rf_ScalarInteger(n_fns + 1));
-//   SEXP fn_nm_str = SHIELD(Rf_mkString("fn_"));
-//
-//   SEXP expr = SHIELD(Rf_lang3(Rf_install("paste0"), fn_nm_str, fn_loc));
-//
-//   SEXP new_fn_nm = SHIELD(Rf_eval(expr, R_BaseEnv));
-//
-//   YIELD(4);
-//   return new_fn_nm;
-//
-// }
-
-// Only checks the current call and not all nested calls
-bool maybe_is_group_unaware_call(SEXP expr, SEXP env){
-
-  bool maybe = is_fn_call(expr, group_unaware_fn_names, R_NilValue, env);
-
-  if (!maybe){
-    return false;
-  }
-
-  // Get fn name as a symbol
-  SEXP fn = R_NilValue;
-  if (call_is_namespaced(expr)){
-    fn = CAR(CDDR(CAR(expr)));
-  } else {
-    fn = CAR(expr);
-  }
-  SEXP actual_ns = SHIELD(get_fun_ns(fn, env)); // CHARSXP namespace
-  SEXP target_ns = get(fn, group_unaware_fns);
-
-  if (Rf_isNull(target_ns)){
-    YIELD(1);
-    return false;
-  }
-
-  bool out = STRING_ELT(target_ns, 0) == actual_ns;
-  YIELD(1);
-  return out;
-}
-
-[[cpp11::register]]
-bool is_group_unaware_call(SEXP expr, SEXP env){
-  if (TYPEOF(expr) != LANGSXP){
-    return false;
-  }
-  int32_t NP = 0;
-
-  if (!maybe_is_group_unaware_call(expr, env)){
-    return false;
-  }
-
-  bool out = true;
-
-  SEXP tree = SHIELD(as_list_call(expr)); ++NP;
-  SEXP branch;
-  for (int i = 0; i < Rf_length(tree); ++i){
-    branch = VECTOR_ELT(tree, i);
-
-    // If branch is a call
-    if (TYPEOF(branch) == LANGSXP){
-      if (!is_group_unaware_call(branch, env)){
-        out = false;
-        break;
-      }
-    }
-  }
-  YIELD(NP);
-  return out;
-}
-
 // Convert call to list of symbols
 SEXP as_list_call(SEXP expr) {
   if (TYPEOF(expr) != LANGSXP) {
@@ -171,8 +70,6 @@ bool is_nested_call(SEXP expr) {
 [[cpp11::register]]
 bool call_is_namespaced(SEXP expr){
 
-  int32_t NP = 0;
-
   if (TYPEOF(expr) != LANGSXP){
     Rf_error("`expr` must be a `call` in %s", __func__);
   }
@@ -180,28 +77,36 @@ bool call_is_namespaced(SEXP expr){
   SEXP expr_call = CAR(expr);
   if (TYPEOF(expr_call) != LANGSXP) return false;
 
-  SEXP call_list = SHIELD(as_list_call(expr_call)); ++NP;
-
-  if (Rf_length(call_list) != 3){
-    YIELD(NP);
+  if (Rf_length(expr_call) != 3){
     return false;
   }
 
-  SEXP first = SHIELD(VECTOR_ELT(call_list, 0)); ++NP;
-  SEXP second = SHIELD(VECTOR_ELT(call_list, 1)); ++NP;
+  SEXP first = CAR(expr_call);
+  SEXP second = CAR(CDR(expr_call));
 
   if (TYPEOF(first) != SYMSXP ||
       (first != R_DoubleColonSymbol &&
       first != R_TripleColonSymbol)){
-    YIELD(NP);
     return false;
   }
   if (TYPEOF(second) != SYMSXP){
-    YIELD(NP);
     return false;
   }
-  YIELD(NP);
   return true;
+}
+
+SEXP get_namespaced_call_fn(SEXP expr){
+  if (!call_is_namespaced(expr)){
+    Rf_error("`expr` must be a namespaced call");
+  }
+  return CAR(CDDR(CAR(expr)));
+}
+
+SEXP get_namespaced_call_ns(SEXP expr){
+  if (!call_is_namespaced(expr)){
+    Rf_error("`expr` must be a namespaced call");
+  }
+  return CAR(CDR(CAR(expr)));
 }
 
 // Basic version of rlang::is_call(expr, ns = ns)
@@ -255,7 +160,7 @@ SEXP get_fun_ns(SEXP x, SEXP rho){
   }
   if (!Rf_isFunction(x)){
     YIELD(NP);
-    Rf_error("Internal error, function cannot be found");
+    return R_BlankString;
   }
   if (TYPEOF(x) != CLOSXP){
     // This is e.g. a primitive function
@@ -464,6 +369,130 @@ bool call_contains_fn(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
     if (is_fn_call(branch, fn, ns, rho)){
       out = true;
       break;
+    }
+  }
+  YIELD(NP);
+  return out;
+}
+
+
+// Initialise environment of group unaware fns
+
+static SEXP group_unaware_fns = NULL;
+static SEXP group_unaware_fn_names = NULL;
+
+[[cpp11::init]]
+void init_group_unaware_fns(DllInfo* dll) {
+
+  // New environment
+  group_unaware_fns = R_NewEnv(R_EmptyEnv, TRUE, 30);
+  R_PreserveObject(group_unaware_fns);
+
+  group_unaware_fn_names = Rf_allocVector(STRSXP, 25);
+  R_PreserveObject(group_unaware_fn_names);
+
+  // vector with the 21 fn symbols
+  const char* const names[25] =
+    {
+    "|", "&", ">=", ">", "<=", "<", "==",
+      "+", "-",  "*", "/", "^", "abs",  "sign", "floor",
+      "trunc", "round", "signif", "exp", "log", "(", "{",
+      "gcd2", "scm2", // cheapr
+      "time_diff" // timeplyr
+    };
+
+  for (int i = 0; i < 22; ++i) {
+    SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
+    Rf_defineVar(Rf_install(names[i]), Rf_mkString("base"), group_unaware_fns);
+  }
+
+  for (int i = 22; i < 24; ++i) {
+    SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
+    Rf_defineVar(Rf_install(names[i]), Rf_mkString("cheapr"), group_unaware_fns);
+  }
+  for (int i = 24; i < 25; ++i) {
+    SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
+    Rf_defineVar(Rf_install(names[i]), Rf_mkString("timeplyr"), group_unaware_fns);
+  }
+}
+
+// SEXP register_group_unaware_fn(SEXP fn){
+//   int n_fns = Rf_length(group_unaware_fn_names);
+//
+//   SEXP fn_loc = SHIELD(Rf_ScalarInteger(n_fns + 1));
+//   SEXP fn_nm_str = SHIELD(Rf_mkString("fn_"));
+//
+//   SEXP expr = SHIELD(Rf_lang3(Rf_install("paste0"), fn_nm_str, fn_loc));
+//
+//   SEXP new_fn_nm = SHIELD(Rf_eval(expr, R_BaseEnv));
+//
+//   YIELD(4);
+//   return new_fn_nm;
+//
+// }
+
+// Only checks the current call and not all nested calls
+bool maybe_is_group_unaware_call(SEXP expr, SEXP env){
+
+  int32_t NP = 0;
+
+  bool maybe = is_fn_call(expr, group_unaware_fn_names, R_NilValue, env);
+
+  if (!maybe){
+    return false;
+  }
+
+  // Get fn name as a symbol
+  SEXP fn = R_NilValue;
+  SEXP actual_ns = R_NilValue;
+  if (call_is_namespaced(expr)){
+    fn = get_namespaced_call_fn(expr);
+    actual_ns = get_namespaced_call_ns(expr);
+    SHIELD(actual_ns = rlang::sym_as_string(actual_ns)); ++NP;
+  } else {
+    fn = CAR(expr);
+    actual_ns = SHIELD(get_fun_ns(fn, env)); ++NP; // CHARSXP namespace
+  }
+
+  SEXP target_ns = get(fn, group_unaware_fns);
+
+  if (Rf_isNull(target_ns)){
+    YIELD(NP);
+    return false;
+  }
+
+  bool out = STRING_ELT(target_ns, 0) == actual_ns;
+  YIELD(NP);
+  return out;
+}
+
+[[cpp11::register]]
+bool is_group_unaware_call(SEXP expr, SEXP env){
+  if (TYPEOF(expr) != LANGSXP){
+    return false;
+  }
+  int32_t NP = 0;
+
+  if (!maybe_is_group_unaware_call(expr, env)){
+    return false;
+  }
+
+  bool out = true;
+
+  SEXP tree = SHIELD(as_list_call(expr)); ++NP;
+  SEXP branch;
+
+  // Skip first element as we have already established
+  // the top-call is group unaware
+  for (int i = 1; i < Rf_length(tree); ++i){
+    branch = VECTOR_ELT(tree, i);
+
+    // If branch is a call
+    if (TYPEOF(branch) == LANGSXP){
+      if (!is_group_unaware_call(branch, env)){
+        out = false;
+        break;
+      }
     }
   }
   YIELD(NP);

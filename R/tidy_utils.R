@@ -372,7 +372,10 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
 
       group_unaware_expr <- is_group_unaware_call(expr, env)
 
-      if (is_nested_call(expr) && !group_unaware_expr) next
+      ### Group-unaware calls CAN BE NESTED
+      ### But currently other optimised calls must not be nested
+
+      if (!group_unaware_expr && is_nested_call(expr)) next
 
 
       if (group_unaware_expr){

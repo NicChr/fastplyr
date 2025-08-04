@@ -6,13 +6,6 @@
 #include <R_ext/Visibility.h>
 
 // expressions.cpp
-bool is_group_unaware_call(SEXP expr, SEXP env);
-extern "C" SEXP _fastplyr_is_group_unaware_call(SEXP expr, SEXP env) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(is_group_unaware_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(env)));
-  END_CPP11
-}
-// expressions.cpp
 bool is_nested_call(SEXP expr);
 extern "C" SEXP _fastplyr_is_nested_call(SEXP expr) {
   BEGIN_CPP11
@@ -38,6 +31,13 @@ bool is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho);
 extern "C" SEXP _fastplyr_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho) {
   BEGIN_CPP11
     return cpp11::as_sexp(is_fn_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(fn), cpp11::as_cpp<cpp11::decay_t<SEXP>>(ns), cpp11::as_cpp<cpp11::decay_t<SEXP>>(rho)));
+  END_CPP11
+}
+// expressions.cpp
+bool is_group_unaware_call(SEXP expr, SEXP env);
+extern "C" SEXP _fastplyr_is_group_unaware_call(SEXP expr, SEXP env) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(is_group_unaware_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(env)));
   END_CPP11
 }
 // fastplyr.cpp
