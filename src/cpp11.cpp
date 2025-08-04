@@ -187,6 +187,76 @@ extern "C" SEXP _fastplyr_cpp_group_ends(SEXP group_id, SEXP n_groups) {
     return cpp11::as_sexp(cpp_group_ends(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_id), cpp11::as_cpp<cpp11::decay_t<int>>(n_groups)));
   END_CPP11
 }
+// groups.cpp
+SEXP cpp_group_data(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_data(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_data(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// groups.cpp
+SEXP cpp_group_keys(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_keys(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_keys(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// groups.cpp
+SEXP cpp_group_vars(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_vars(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// groups.cpp
+SEXP cpp_group_rows(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_rows(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_rows(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// groups.cpp
+SEXP cpp_group_size(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_size(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_size(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// groups.cpp
+SEXP cpp_ungroup(SEXP data);
+extern "C" SEXP _fastplyr_cpp_ungroup(SEXP data) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_ungroup(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
+  END_CPP11
+}
+// groups.cpp
+SEXP cpp_group_indices(SEXP rows, int size);
+extern "C" SEXP _fastplyr_cpp_group_indices(SEXP rows, SEXP size) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_indices(cpp11::as_cpp<cpp11::decay_t<SEXP>>(rows), cpp11::as_cpp<cpp11::decay_t<int>>(size)));
+  END_CPP11
+}
+// groups.cpp
+bool cpp_group_by_drop_default(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_by_drop_default(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_by_drop_default(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// groups.cpp
+bool cpp_group_by_order_default(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_by_order_default(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_by_order_default(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// groups.cpp
+SEXP cpp_group_id(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_id(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_id(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
 // tidy.cpp
 SEXP cpp_quo_data_vars(SEXP quos, SEXP data);
 extern "C" SEXP _fastplyr_cpp_quo_data_vars(SEXP quos, SEXP data) {
@@ -213,76 +283,6 @@ SEXP cpp_list_tidy(SEXP quos);
 extern "C" SEXP _fastplyr_cpp_list_tidy(SEXP quos) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_list_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
-  END_CPP11
-}
-// tidy.cpp
-SEXP cpp_group_data(SEXP x);
-extern "C" SEXP _fastplyr_cpp_group_data(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_group_data(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
-  END_CPP11
-}
-// tidy.cpp
-SEXP cpp_group_keys(SEXP x);
-extern "C" SEXP _fastplyr_cpp_group_keys(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_group_keys(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
-  END_CPP11
-}
-// tidy.cpp
-SEXP cpp_group_vars(SEXP x);
-extern "C" SEXP _fastplyr_cpp_group_vars(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_group_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
-  END_CPP11
-}
-// tidy.cpp
-SEXP cpp_group_rows(SEXP x);
-extern "C" SEXP _fastplyr_cpp_group_rows(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_group_rows(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
-  END_CPP11
-}
-// tidy.cpp
-SEXP cpp_group_size(SEXP x);
-extern "C" SEXP _fastplyr_cpp_group_size(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_group_size(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
-  END_CPP11
-}
-// tidy.cpp
-SEXP cpp_ungroup(SEXP data);
-extern "C" SEXP _fastplyr_cpp_ungroup(SEXP data) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_ungroup(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
-  END_CPP11
-}
-// tidy.cpp
-SEXP cpp_group_indices(SEXP rows, int size);
-extern "C" SEXP _fastplyr_cpp_group_indices(SEXP rows, SEXP size) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_group_indices(cpp11::as_cpp<cpp11::decay_t<SEXP>>(rows), cpp11::as_cpp<cpp11::decay_t<int>>(size)));
-  END_CPP11
-}
-// tidy.cpp
-bool cpp_group_by_drop_default(SEXP x);
-extern "C" SEXP _fastplyr_cpp_group_by_drop_default(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_group_by_drop_default(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
-  END_CPP11
-}
-// tidy.cpp
-bool cpp_group_by_order_default(SEXP x);
-extern "C" SEXP _fastplyr_cpp_group_by_order_default(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_group_by_order_default(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
-  END_CPP11
-}
-// tidy.cpp
-SEXP cpp_group_id(SEXP x);
-extern "C" SEXP _fastplyr_cpp_group_id(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_group_id(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
 // tidy.cpp

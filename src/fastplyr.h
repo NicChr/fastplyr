@@ -67,6 +67,20 @@ SEXP as_list_call(SEXP expr);
 bool is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho);
 bool call_is_namespaced(SEXP expr);
 SEXP get_fun_ns(SEXP x, SEXP rho);
+void set_as_vctrs_new_list_of_int(SEXP x);
+void set_as_tbl(SEXP x);
+
+// Group metadata
+
+SEXP cpp_group_data(SEXP x);
+SEXP cpp_group_keys(SEXP x);
+SEXP cpp_group_vars(SEXP x);
+SEXP cpp_group_rows(SEXP x);
+SEXP cpp_group_size(SEXP x);
+SEXP cpp_ungroup(SEXP data);
+bool cpp_group_by_order_default(SEXP x);
+SEXP cpp_group_id(SEXP x);
+
 
 namespace rlang {
 SEXP eval_tidy(SEXP expr, SEXP data, SEXP env);

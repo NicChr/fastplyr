@@ -104,22 +104,6 @@ cpp_group_ends <- function(group_id, n_groups) {
   .Call(`_fastplyr_cpp_group_ends`, group_id, n_groups)
 }
 
-cpp_quo_data_vars <- function(quos, data) {
-  .Call(`_fastplyr_cpp_quo_data_vars`, quos, data)
-}
-
-cpp_quos_drop_null <- function(quos) {
-  .Call(`_fastplyr_cpp_quos_drop_null`, quos)
-}
-
-cpp_any_quo_contains_dplyr_mask_call <- function(quos) {
-  .Call(`_fastplyr_cpp_any_quo_contains_dplyr_mask_call`, quos)
-}
-
-cpp_list_tidy <- function(quos) {
-  .Call(`_fastplyr_cpp_list_tidy`, quos)
-}
-
 cpp_group_data <- function(x) {
   .Call(`_fastplyr_cpp_group_data`, x)
 }
@@ -158,6 +142,22 @@ cpp_group_by_order_default <- function(x) {
 
 cpp_group_id <- function(x) {
   .Call(`_fastplyr_cpp_group_id`, x)
+}
+
+cpp_quo_data_vars <- function(quos, data) {
+  .Call(`_fastplyr_cpp_quo_data_vars`, quos, data)
+}
+
+cpp_quos_drop_null <- function(quos) {
+  .Call(`_fastplyr_cpp_quos_drop_null`, quos)
+}
+
+cpp_any_quo_contains_dplyr_mask_call <- function(quos) {
+  .Call(`_fastplyr_cpp_any_quo_contains_dplyr_mask_call`, quos)
+}
+
+cpp_list_tidy <- function(quos) {
+  .Call(`_fastplyr_cpp_list_tidy`, quos)
 }
 
 cpp_unlist_group_locs <- function(x, group_sizes) {
