@@ -62,6 +62,20 @@ void init_group_unaware_fns(DllInfo* dll) {
     Rf_defineVar(Rf_install(names[i]), Rf_mkString("base"), group_unaware_fns);
   }
 }
+// SEXP register_group_unaware_fn(SEXP fn){
+//   int n_fns = Rf_length(group_unaware_fn_names);
+//
+//   SEXP fn_loc = SHIELD(Rf_ScalarInteger(n_fns + 1));
+//   SEXP fn_nm_str = SHIELD(Rf_mkString("fn_"));
+//
+//   SEXP expr = SHIELD(Rf_lang3(Rf_install("paste0"), fn_nm_str, fn_loc));
+//
+//   SEXP new_fn_nm = SHIELD(Rf_eval(expr, R_BaseEnv));
+//
+//   YIELD(4);
+//   return new_fn_nm;
+//
+// }
 
 // Only checks the current call and not all nested calls
 bool maybe_is_group_unaware_call(SEXP expr, SEXP env){

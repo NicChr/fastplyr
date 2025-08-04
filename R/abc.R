@@ -137,3 +137,10 @@ vec_rename <- function(.x, ...){
   }
   .x
 }
+
+# as_group_unaware_fn <- function(fn, env = rlang::caller_env()){
+#   if (!is.function(fn)){
+#     cli::cli_abort("{.arg fn must be a {.cls function}")
+#   }
+#   register_group_unaware_fn(fn)
+# }
