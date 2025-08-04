@@ -1,17 +1,34 @@
 # fastplyr (development version)
 
-### Upcoming changes (note to myself)
+### Improvements
 
-- Fix column accessor calls like `.data$`
-- Functional to allow users to mark functions as not-group-aware
-- Mark simple common functions like `==` as not-group-aware
-- Recursively check call tree for both optimised and not-group-aware calls
-if all calls satisfy either or both conditions, then they can be run 
-on entire dataset
+- Optimisations for group-unaware functions
+
+Simple functions such as base R math operators `+`, `/`, `abs`, etc, are
+now internally marked as group-unaware. This has a very significant speed
+improvement for large grouped data frames. 
+
+This means that expressions containing only group-unaware functions, e.g.
+`(x + y) / abs(z)`, are evaluated on the entire data frame instead 
+of on a by-group basis.
+
+If the expression contains any functions not marked as group-unaware, e.g. 
+`x + cumsum(y)` (as `cumsum()` is not flagged as group-unaware), 
+then usual evaluation applies except in the case of other statistical functions
+which are optimised in a separate way.
+
+- Exported common dplyr helpers such as `across`, `pick`, etc.
 
 ### Bug fixes
 
 - An issue where `f_arrange` would add variables has been fixed.
+
+- An issue where `across` was selecting grouped variables has been fixed.
+
+### Upcoming changes (note to devs)
+
+- Fix column accessor calls like `.data$`
+- Functional to allow users to mark functions as not-group-aware
 
 # fastplyr 0.9.0
 

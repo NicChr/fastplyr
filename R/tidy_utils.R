@@ -21,7 +21,7 @@
     "fndistinct"
   ),
   input_ns = c(
-    "", "", "base", "stats", "", "", "dplyr", "dplyr",
+    "base", "base", "base", "stats", "base", "base", "dplyr", "dplyr",
     "stats", "stats", "dplyr", "collapse", "collapse", "collapse", "collapse",
     "collapse", "collapse", "collapse", "collapse", "collapse", "collapse", "collapse",
     "collapse"
@@ -48,8 +48,30 @@
 )
 
 is_optimised_call <- function(expr, env = rlang::caller_env()){
-  cpp_is_fn_call(expr, .optimised_fn_list[["input_fn_nms"]],  NULL, env)
+  is_fn_call(expr, .optimised_fn_list[["input_fn_nms"]], NULL, env)
 }
+
+# is_group_unaware_call <- function(expr, env){
+#   maybe <- is_fn_call(expr, names(.group_unaware_fns), NULL, env)
+#
+#   if (!maybe) return(FALSE)
+#
+#   # Get fn name as a symbol
+#   if (call_is_namespaced(expr)){
+#     fn <- expr[[1]][[3]]
+#   } else {
+#     fn <- expr[[1]]
+#   }
+#
+#   actual_ns <- fun_ns(fn, env)
+#   target_ns <- .group_unaware_fns[[fn]]
+#   # target_ns <- get0(fn, envir = .group_unaware_fns)
+#
+#   if (is.null(target_ns)) return(FALSE)
+#
+#   target_ns == actual_ns
+# }
+
 
 # Somewhat safer check of the .by arg
 # e.g mutate(group_by(iris, Species), .by = any_of("okay"))
@@ -273,7 +295,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
     expr <- rlang::quo_get_expr(quo)
     env <- rlang::quo_get_env(quo)
     attr(quo, ".unpack", TRUE) %||% set_add_attr(quo, ".unpack", .unpack_default)
-    if (!nzchar(quo_nms[[k]]) && cpp_is_fn_call(expr, "across", ns = "dplyr", env)){
+    if (!nzchar(quo_nms[[k]]) && is_fn_call(expr, "across", ns = "dplyr", env)){
       left <- out[seq_len(k - 1L)]
       left_nms <- quo_nms[seq_len(k - 1L)]
       unpacked_quos <- unpack_across(
@@ -348,16 +370,25 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
       expr <- rlang::quo_get_expr(quo)
       env <- rlang::quo_get_env(quo)
 
-      if (is_nested_call(expr)) next
+      group_unaware_expr <- is_group_unaware_call(expr, env)
 
+      ### Group-unaware calls CAN BE NESTED
+      ### But currently other optimised calls must not be nested
+
+      if (!group_unaware_expr && is_nested_call(expr)) next
+
+
+      if (group_unaware_expr){
+
+      }
       ### Cases when we are just selecting columns
       ### We can just optimise it away by leaving the expression as is
       ### and then running it through `eval_optimised_quos()`
-      if (is.name(expr) && rlang::as_string(expr) == quo_nms[[i]]){
+      else if (is.name(expr) && rlang::as_string(expr) == quo_nms[[i]]){
 
-      } else if (.optimise_expand && cpp_is_fn_call(expr, "identity", "base", env)){
+      } else if (.optimise_expand && is_fn_call(expr, "identity", "base", env)){
 
-      } else if (cpp_is_fn_call(expr, "n", "dplyr", env)){
+      } else if (is_fn_call(expr, "n", "dplyr", env)){
         expr <- rlang::call2(\(){
           if (is.null(.fastplyr.g)){
             out <- df_nrow(.data)
@@ -372,7 +403,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
           }
           out
         })
-      } else if (.optimise_expand && cpp_is_fn_call(expr, "row_number", "dplyr", env)){
+      } else if (.optimise_expand && is_fn_call(expr, "row_number", "dplyr", env)){
         expr <- rlang::call2(\(){
           if (is.null(.fastplyr.g)){
             seq_len(df_nrow(.data))
@@ -380,7 +411,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
             cpp_row_id(GRP_order(.fastplyr.g), GRP_group_sizes(.fastplyr.g), TRUE)
           }
         })
-      } else if (cpp_is_fn_call(expr, "cur_group_id", "dplyr", env)){
+      } else if (is_fn_call(expr, "cur_group_id", "dplyr", env)){
         expr <- rlang::call2(\(){
           if (is.null(.fastplyr.g)){
             if (.optimise_expand){
@@ -400,7 +431,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
             }
           }
         })
-      } else if (cpp_is_fn_call(expr, "cur_group", "dplyr", env)){
+      } else if (is_fn_call(expr, "cur_group", "dplyr", env)){
         expr <- rlang::call2(\(){
           if (is.null(.fastplyr.g)){
             if (.optimise_expand){
@@ -422,7 +453,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
             }
           }
         })
-      } else if (.optimise_expand && cpp_is_fn_call(expr, "cur_group_rows", "dplyr", env)){
+      } else if (.optimise_expand && is_fn_call(expr, "cur_group_rows", "dplyr", env)){
         expr <- rlang::call2(\(){
           if (is.null(.fastplyr.g)){
             seq_len(df_nrow(.data))
@@ -436,14 +467,14 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
             cheapr::sset(out, order)
           }
         })
-      } else if (.optimise_expand && cpp_is_fn_call(expr, "lag", "dplyr", env)){
+      } else if (.optimise_expand && is_fn_call(expr, "lag", "dplyr", env)){
         if (!all_blank(vec_setdiff(names(args), c("x", "n", "default", "order_by")))){
           next
         }
         args <- call_args(expr)
         names(args)[names(args) == "default"] <- "fill"
         expr <- rlang::call2("grouped_lag", !!!args, g = .fastplyr.g)
-      } else if (.optimise_expand && cpp_is_fn_call(expr, "lead", "dplyr", env)){
+      } else if (.optimise_expand && is_fn_call(expr, "lead", "dplyr", env)){
         if (!all_blank(vec_setdiff(names(args), c("x", "n", "default", "order_by")))){
           next
         }

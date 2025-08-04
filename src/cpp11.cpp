@@ -5,6 +5,41 @@
 #include "cpp11/declarations.hpp"
 #include <R_ext/Visibility.h>
 
+// expressions.cpp
+bool is_nested_call(SEXP expr);
+extern "C" SEXP _fastplyr_is_nested_call(SEXP expr) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(is_nested_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr)));
+  END_CPP11
+}
+// expressions.cpp
+bool call_is_namespaced(SEXP expr);
+extern "C" SEXP _fastplyr_call_is_namespaced(SEXP expr) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(call_is_namespaced(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr)));
+  END_CPP11
+}
+// expressions.cpp
+SEXP fun_ns(SEXP x, SEXP rho);
+extern "C" SEXP _fastplyr_fun_ns(SEXP x, SEXP rho) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(fun_ns(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(rho)));
+  END_CPP11
+}
+// expressions.cpp
+bool is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho);
+extern "C" SEXP _fastplyr_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(is_fn_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(fn), cpp11::as_cpp<cpp11::decay_t<SEXP>>(ns), cpp11::as_cpp<cpp11::decay_t<SEXP>>(rho)));
+  END_CPP11
+}
+// expressions.cpp
+bool is_group_unaware_call(SEXP expr, SEXP env);
+extern "C" SEXP _fastplyr_is_group_unaware_call(SEXP expr, SEXP env) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(is_group_unaware_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(env)));
+  END_CPP11
+}
 // fastplyr.cpp
 SEXP cpp_frame_addresses_equal(SEXP x, SEXP y);
 extern "C" SEXP _fastplyr_cpp_frame_addresses_equal(SEXP x, SEXP y) {
@@ -150,34 +185,6 @@ SEXP cpp_group_ends(SEXP group_id, int n_groups);
 extern "C" SEXP _fastplyr_cpp_group_ends(SEXP group_id, SEXP n_groups) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_group_ends(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_id), cpp11::as_cpp<cpp11::decay_t<int>>(n_groups)));
-  END_CPP11
-}
-// tidy.cpp
-bool is_nested_call(SEXP expr);
-extern "C" SEXP _fastplyr_is_nested_call(SEXP expr) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(is_nested_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr)));
-  END_CPP11
-}
-// tidy.cpp
-bool call_is_namespaced(SEXP expr);
-extern "C" SEXP _fastplyr_call_is_namespaced(SEXP expr) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(call_is_namespaced(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr)));
-  END_CPP11
-}
-// tidy.cpp
-SEXP fun_ns(SEXP x, SEXP rho);
-extern "C" SEXP _fastplyr_fun_ns(SEXP x, SEXP rho) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(fun_ns(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(rho)));
-  END_CPP11
-}
-// tidy.cpp
-bool cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho);
-extern "C" SEXP _fastplyr_cpp_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_is_fn_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(fn), cpp11::as_cpp<cpp11::decay_t<SEXP>>(ns), cpp11::as_cpp<cpp11::decay_t<SEXP>>(rho)));
   END_CPP11
 }
 // tidy.cpp
@@ -367,7 +374,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_grouped_eval_tidy",                (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy,                4},
     {"_fastplyr_cpp_grouped_run_id",                   (DL_FUNC) &_fastplyr_cpp_grouped_run_id,                   3},
     {"_fastplyr_cpp_is_exotic",                        (DL_FUNC) &_fastplyr_cpp_is_exotic,                        1},
-    {"_fastplyr_cpp_is_fn_call",                       (DL_FUNC) &_fastplyr_cpp_is_fn_call,                       4},
     {"_fastplyr_cpp_list_tidy",                        (DL_FUNC) &_fastplyr_cpp_list_tidy,                        1},
     {"_fastplyr_cpp_nest_split",                       (DL_FUNC) &_fastplyr_cpp_nest_split,                       3},
     {"_fastplyr_cpp_orig_order",                       (DL_FUNC) &_fastplyr_cpp_orig_order,                       2},
@@ -382,14 +388,19 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_unlist_group_locs",                (DL_FUNC) &_fastplyr_cpp_unlist_group_locs,                2},
     {"_fastplyr_cpp_which_all",                        (DL_FUNC) &_fastplyr_cpp_which_all,                        1},
     {"_fastplyr_fun_ns",                               (DL_FUNC) &_fastplyr_fun_ns,                               2},
+    {"_fastplyr_is_fn_call",                           (DL_FUNC) &_fastplyr_is_fn_call,                           4},
+    {"_fastplyr_is_group_unaware_call",                (DL_FUNC) &_fastplyr_is_group_unaware_call,                2},
     {"_fastplyr_is_nested_call",                       (DL_FUNC) &_fastplyr_is_nested_call,                       1},
     {"_fastplyr_n_group_vars",                         (DL_FUNC) &_fastplyr_n_group_vars,                         1},
     {NULL, NULL, 0}
 };
 }
 
+void init_group_unaware_fns(DllInfo* dll);
+
 extern "C" attribute_visible void R_init_fastplyr(DllInfo* dll){
   R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
   R_useDynamicSymbols(dll, FALSE);
+  init_group_unaware_fns(dll);
   R_forceSymbols(dll, TRUE);
 }
