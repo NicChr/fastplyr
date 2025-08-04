@@ -463,7 +463,6 @@ bool cpp_group_by_order_default(SEXP x){
   return out;
 }
 
-[[cpp11::register]]
 int n_group_vars(SEXP x){
   return Rf_length(cpp_group_vars(x));
 }

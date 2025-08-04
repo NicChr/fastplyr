@@ -156,10 +156,6 @@ cpp_group_by_order_default <- function(x) {
   .Call(`_fastplyr_cpp_group_by_order_default`, x)
 }
 
-n_group_vars <- function(x) {
-  .Call(`_fastplyr_n_group_vars`, x)
-}
-
 cpp_group_id <- function(x) {
   .Call(`_fastplyr_cpp_group_id`, x)
 }

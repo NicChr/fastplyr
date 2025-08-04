@@ -279,13 +279,6 @@ extern "C" SEXP _fastplyr_cpp_group_by_order_default(SEXP x) {
   END_CPP11
 }
 // tidy.cpp
-int n_group_vars(SEXP x);
-extern "C" SEXP _fastplyr_n_group_vars(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(n_group_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
-  END_CPP11
-}
-// tidy.cpp
 SEXP cpp_group_id(SEXP x);
 extern "C" SEXP _fastplyr_cpp_group_id(SEXP x) {
   BEGIN_CPP11
@@ -391,7 +384,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_is_fn_call",                           (DL_FUNC) &_fastplyr_is_fn_call,                           4},
     {"_fastplyr_is_group_unaware_call",                (DL_FUNC) &_fastplyr_is_group_unaware_call,                2},
     {"_fastplyr_is_nested_call",                       (DL_FUNC) &_fastplyr_is_nested_call,                       1},
-    {"_fastplyr_n_group_vars",                         (DL_FUNC) &_fastplyr_n_group_vars,                         1},
     {NULL, NULL, 0}
 };
 }
