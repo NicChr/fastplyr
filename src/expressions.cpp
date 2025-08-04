@@ -385,32 +385,36 @@ static SEXP group_unaware_fn_names = NULL;
 void init_group_unaware_fns(DllInfo* dll) {
 
   // New environment
-  group_unaware_fns = R_NewEnv(R_EmptyEnv, TRUE, 30);
+  group_unaware_fns = R_NewEnv(R_EmptyEnv, TRUE, 60);
   R_PreserveObject(group_unaware_fns);
 
-  group_unaware_fn_names = Rf_allocVector(STRSXP, 25);
+  group_unaware_fn_names = Rf_allocVector(STRSXP, 50);
   R_PreserveObject(group_unaware_fn_names);
 
   // vector with the 21 fn symbols
-  const char* const names[25] =
+  const char* const names[50] =
     {
-    "|", "&", ">=", ">", "<=", "<", "==",
+    "|", "&", "!", ">=", ">", "<=", "<", "==", "!=", "%%", "%/%",
       "+", "-",  "*", "/", "^", "abs",  "sign", "floor",
       "trunc", "round", "signif", "exp", "log", "(", "{",
+      "exp1m", "log1p", "cos", "sin", "tan",
+      "cospi", "sinpi", "tanpi", "acos", "asin", "atan",
+      "cosh", "sinh", "tanh", "acosh", "asinh", "atanh",
+      "lgamma", "gamma", "digamma", "trigamma",
       "gcd2", "scm2", // cheapr
       "time_diff" // timeplyr
     };
 
-  for (int i = 0; i < 22; ++i) {
+  for (int i = 0; i < 47; ++i) {
     SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
     Rf_defineVar(Rf_install(names[i]), Rf_mkString("base"), group_unaware_fns);
   }
 
-  for (int i = 22; i < 24; ++i) {
+  for (int i = 47; i < 49; ++i) {
     SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
     Rf_defineVar(Rf_install(names[i]), Rf_mkString("cheapr"), group_unaware_fns);
   }
-  for (int i = 24; i < 25; ++i) {
+  for (int i = 49; i < 50; ++i) {
     SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
     Rf_defineVar(Rf_install(names[i]), Rf_mkString("timeplyr"), group_unaware_fns);
   }
