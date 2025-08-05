@@ -119,46 +119,46 @@ SEXP get_namespaced_call_ns(SEXP expr){
 }
 
 // Basic version of rlang::is_call(expr, ns = ns)
-bool is_ns_call(SEXP expr, SEXP ns){
-
-  int32_t NP = 0;
-
-  if (TYPEOF(ns) != STRSXP){
-    Rf_error("`ns` must be a character vector in %s", __func__);
-  }
-
-  if (TYPEOF(expr) != LANGSXP){
-    return false;
-  }
-
-  SEXP expr_call = CAR(expr);
-  if (TYPEOF(expr_call) != LANGSXP) return false;
-
-  SEXP ns_str = SHIELD(Rf_asChar(ns)); ++NP;
-  SEXP call_list = SHIELD(as_list_call(expr_call)); ++NP;
-
-  if (Rf_length(call_list) != 3){
-    YIELD(NP);
-    return false;
-  }
-
-  SEXP first = SHIELD(VECTOR_ELT(call_list, 0)); ++NP;
-  SEXP second = SHIELD(VECTOR_ELT(call_list, 1)); ++NP;
-
-  if (TYPEOF(first) != SYMSXP ||
-      (first != R_DoubleColonSymbol &&
-      first != R_TripleColonSymbol)){
-    YIELD(NP);
-    return false;
-  }
-  if (TYPEOF(second) != SYMSXP){
-    YIELD(NP);
-    return false;
-  }
-  bool out = rlang::sym_as_string(second) == ns_str;
-  YIELD(NP);
-  return out;
-}
+// bool is_ns_call(SEXP expr, SEXP ns){
+//
+//   int32_t NP = 0;
+//
+//   if (TYPEOF(ns) != STRSXP){
+//     Rf_error("`ns` must be a character vector in %s", __func__);
+//   }
+//
+//   if (TYPEOF(expr) != LANGSXP){
+//     return false;
+//   }
+//
+//   SEXP expr_call = CAR(expr);
+//   if (TYPEOF(expr_call) != LANGSXP) return false;
+//
+//   SEXP ns_str = SHIELD(Rf_asChar(ns)); ++NP;
+//   SEXP call_list = SHIELD(as_list_call(expr_call)); ++NP;
+//
+//   if (Rf_length(call_list) != 3){
+//     YIELD(NP);
+//     return false;
+//   }
+//
+//   SEXP first = SHIELD(VECTOR_ELT(call_list, 0)); ++NP;
+//   SEXP second = SHIELD(VECTOR_ELT(call_list, 1)); ++NP;
+//
+//   if (TYPEOF(first) != SYMSXP ||
+//       (first != R_DoubleColonSymbol &&
+//       first != R_TripleColonSymbol)){
+//     YIELD(NP);
+//     return false;
+//   }
+//   if (TYPEOF(second) != SYMSXP){
+//     YIELD(NP);
+//     return false;
+//   }
+//   bool out = rlang::sym_as_string(second) == ns_str;
+//   YIELD(NP);
+//   return out;
+// }
 
 // get the namespace of a function
 
@@ -223,10 +223,9 @@ bool is_call2(SEXP expr, SEXP fn){
     R_Reprotect(fn_sym = Rf_installChar(STRING_ELT(fn, i)), fn_sym_idx);
 
     if (TYPEOF(expr) == LANGSXP && call_is_namespaced(expr)){
-      SEXP call_tree = SHIELD(as_list_call(expr)); ++NP;
-      SEXP fn_expr_tree = SHIELD(as_list_call(VECTOR_ELT(call_tree, 0))); ++NP;
-      if (TYPEOF(VECTOR_ELT(fn_expr_tree, 2)) == SYMSXP &&
-          VECTOR_ELT(fn_expr_tree, 2) == fn_sym){
+      SEXP fn_expr_tree = CAR(expr);
+      if (TYPEOF(CAR(CDDR(fn_expr_tree))) == SYMSXP &&
+          CAR(CDDR(fn_expr_tree)) == fn_sym){
         YIELD(NP);
         return true;
       }
@@ -281,9 +280,8 @@ bool is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
     }
     out = false; // Reset
     if (call_is_namespaced(expr)){
-      SEXP call_tree = SHIELD(as_list_call(expr)); ++NP;
-      SEXP fn_expr_tree = SHIELD(as_list_call(VECTOR_ELT(call_tree, 0))); ++NP;
-      R_Reprotect(fn_ns = rlang::sym_as_string(VECTOR_ELT(fn_expr_tree, 1)), fn_ns_idx);
+      SEXP fn_expr_tree = CAR(expr);
+      R_Reprotect(fn_ns = rlang::sym_as_string(CAR(CDR(fn_expr_tree))), fn_ns_idx);
       out = fn_ns == ns_char;
     } else {
       for (int i = 0; i < n_fns; ++i){

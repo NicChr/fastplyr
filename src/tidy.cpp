@@ -751,10 +751,9 @@ SEXP cpp_nest_split(SEXP data, SEXP drop, SEXP order){
   SEXP group_vars = SHIELD(cpp_group_vars(data)); ++NP;
   SEXP rows = SHIELD(cpp_group_rows(data)); ++NP;
   SEXP names = SHIELD(get_names(data)); ++NP;
-  SEXP locs, frame;
+  SEXP frame;
 
-  PROTECT_INDEX locs_idx, frame_idx;
-  R_ProtectWithIndex(locs = R_NilValue, &locs_idx); ++NP;
+  PROTECT_INDEX frame_idx;
   R_ProtectWithIndex(frame = R_NilValue, &frame_idx); ++NP;
 
   SEXP temp_cols = SHIELD(cheapr::setdiff(names, group_vars, false)); ++NP;
@@ -769,8 +768,7 @@ SEXP cpp_nest_split(SEXP data, SEXP drop, SEXP order){
   // Slice group chunks
 
   for (int i = 0; i < n_groups; ++i){
-    R_Reprotect(locs = p_rows[i], locs_idx);
-    R_Reprotect(frame = cheapr::df_slice(temp, locs, false), frame_idx);
+    R_Reprotect(frame = cheapr::df_slice(temp, p_rows[i], false), frame_idx);
     Rf_classgets(frame, tbl_class);
     SET_VECTOR_ELT(frames, i, frame);
   }
