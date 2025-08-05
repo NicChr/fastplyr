@@ -789,7 +789,7 @@ eval_optimised_quos <- function(data, quos, add_groups = TRUE){
   }
 
   mask <- rlang::as_data_mask(data)
-  results <- lapply(quos, \(x) rlang::eval_tidy(rlang::quo_get_expr(x), mask))
+  results <- lapply(quos, \(x) rlang::eval_tidy(x, mask))
 
   groups <- NULL
 
