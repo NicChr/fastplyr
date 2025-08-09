@@ -96,7 +96,7 @@ sort_unique <- function(x, sort = FALSE){
     sorted <- isTRUE(attr(o, "sorted"))
     subset <- !(length(sorted_starts) == NROW(x) && sorted)
     if (subset){
-      starts <- o[sorted_starts]
+      starts <- cheapr::sset(o, sorted_starts)
     }
   } else {
     starts <- attr(group3(x, starts = TRUE), "starts")

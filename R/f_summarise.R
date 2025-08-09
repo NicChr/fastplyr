@@ -114,20 +114,8 @@ f_summarise <- function(.data, ..., .by = NULL, .order = group_by_order_default(
   if (length(quos) == 0){
     return(cheapr::rebuild(group_keys, cpp_ungroup(.data)))
   }
-  ## The `recycle` argument won't have a visible effect
-  # on the final result, but it's faster to
-  # set as TRUE as it means the group keys only get recycled once internally
-  # and recycling between results shouldn't happen as they should all be
-  # of equal length
-  results <- eval_all_tidy(.data, quos, recycle = TRUE)
-  groups <- results[["groups"]]
-  results <- results[["results"]]
 
-  result_sizes <- cheapr::list_lengths(results)
-  if (any(result_sizes != df_nrow(group_keys))){
-    cli::cli_abort(c("All expressions should return results of length 1 per-group",
-                     "Use {.run f_reframe()} instead"))
-  }
+  results <- eval_summarise(.data, quos)
   out <- cheapr::df_modify(group_keys, results)
   out <- cheapr::sset_col(out, !duplicated(names(out), fromLast = TRUE))
 

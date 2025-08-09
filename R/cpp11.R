@@ -104,6 +104,10 @@ cpp_group_ends <- function(group_id, n_groups) {
   .Call(`_fastplyr_cpp_group_ends`, group_id, n_groups)
 }
 
+common_length <- function(x) {
+  .Call(`_fastplyr_common_length`, x)
+}
+
 cpp_group_data <- function(x) {
   .Call(`_fastplyr_cpp_group_data`, x)
 }
@@ -156,6 +160,10 @@ cpp_any_quo_contains_dplyr_mask_call <- function(quos) {
   .Call(`_fastplyr_cpp_any_quo_contains_dplyr_mask_call`, quos)
 }
 
+cpp_eval_all_tidy <- function(quos, mask) {
+  .Call(`_fastplyr_cpp_eval_all_tidy`, quos, mask)
+}
+
 cpp_list_tidy <- function(quos) {
   .Call(`_fastplyr_cpp_list_tidy`, quos)
 }
@@ -168,8 +176,16 @@ cpp_group_id_sorted <- function(x) {
   .Call(`_fastplyr_cpp_group_id_sorted`, x)
 }
 
+transpose_eval_results <- function(x) {
+  .Call(`_fastplyr_transpose_eval_results`, x)
+}
+
 cpp_grouped_eval_tidy <- function(data, quos, recycle, add_groups) {
   .Call(`_fastplyr_cpp_grouped_eval_tidy`, data, quos, recycle, add_groups)
+}
+
+cpp_grouped_eval_summarise <- function(data, quos) {
+  .Call(`_fastplyr_cpp_grouped_eval_summarise`, data, quos)
 }
 
 cpp_grouped_eval_mutate <- function(data, quos) {
@@ -186,4 +202,8 @@ cpp_group_split <- function(data) {
 
 cpp_grouped_df_as_grp <- function(data) {
   .Call(`_fastplyr_cpp_grouped_df_as_grp`, data)
+}
+
+foo <- function(data, quos, recycle) {
+  .Call(`_fastplyr_foo`, data, quos, recycle)
 }

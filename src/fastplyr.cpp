@@ -940,3 +940,25 @@ SEXP cpp_group_ends(SEXP group_id, int n_groups){
   YIELD(1);
   return out;
 }
+
+[[cpp11::register]]
+SEXP common_length(SEXP x){
+
+  const SEXP *p_x = VECTOR_PTR_RO(x);
+  R_xlen_t n = Rf_xlength(x);
+
+  R_xlen_t out = 0;
+
+  for (R_xlen_t i = 0; i < n; ++i){
+
+    // Ignore NULL elements
+    if (Rf_isNull(p_x[i])){
+      continue;
+    } else if (cheapr::vec_length(p_x[i]) == 0){
+      return Rf_ScalarInteger(0);
+    } else {
+      out = std::max(out, cheapr::vec_length(p_x[i]));
+    }
+  }
+  return out <= std::numeric_limits<int>::max() ? Rf_ScalarInteger(out) : Rf_ScalarReal(out);
+}

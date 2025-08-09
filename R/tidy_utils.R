@@ -328,6 +328,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
   }
 
   optimised <- logical(length(out))
+  group_unaware <- logical(length(out))
 
   if (n_groups <= 1){
     .fastplyr.g <- NULL
@@ -370,17 +371,21 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
       expr <- rlang::quo_get_expr(quo)
       env <- rlang::quo_get_env(quo)
 
+      group_unaware_expr <- is_group_unaware_call(expr, env)
+
       ### Group-unaware calls CAN BE NESTED
       ### But currently other optimised calls must not be nested
 
-      if (is_nested_call(expr)) next
+      if (!group_unaware_expr && is_nested_call(expr)) next
 
+
+      if (group_unaware_expr){
+        group_unaware[i] <- TRUE
+      }
       ### Cases when we are just selecting columns
       ### We can just optimise it away by leaving the expression as is
       ### and then running it through `eval_optimised_quos()`
-      if (is.name(expr) && rlang::as_string(expr) == quo_nms[[i]]){
-
-      } else if (.optimise_expand && is_fn_call(expr, "identity", "base", env)){
+      else if (is.name(expr) && rlang::as_string(expr) == quo_nms[[i]]){
 
       } else if (is_fn_call(expr, "n", "dplyr", env)){
         expr <- rlang::call2(\(){
@@ -527,6 +532,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
     out,
     .optimised = optimised,
     .GRP = .fastplyr.g,
+    .group_unaware = group_unaware,
     .fastplyr_quos = TRUE,
     .set = TRUE
   )
@@ -543,6 +549,21 @@ check_fastplyr_quos <- function(quos){
   if (!are_fastplyr_quos(quos)){
     cli::cli_abort("{.arg quos} must be built using {.fn fastplyr_quos}")
   }
+}
+
+sset_quos <- function(quos, i){
+  out <- quos[i]
+  cheapr::attrs_add(
+    out,
+    .optimised = attr(quos, ".optimised", TRUE)[i],
+    .group_unaware = attr(quos, ".group_unaware", TRUE)[i],
+    .set = TRUE
+  )
+  cpp_rebuild(
+    out, quos, c("names", "class", ".optimised", ".group_unaware"),
+    vec_setdiff(names(attributes(quos)), c("names", "class", ".optimised", ".group_unaware")),
+    FALSE
+  )
 }
 
 # Tidyselect col positions with names
@@ -763,45 +784,104 @@ check_rowwise <- function(data){
   }
 }
 
-sset_quos <- function(quos, i){
-  out <- quos[i]
-  set_add_attr(out, ".optimised", attr(quos, ".optimised", TRUE)[i])
-  cpp_rebuild(
-    out, quos, c("names", "class", ".optimised"),
-    vec_setdiff(names(attributes(quos)), c("names", "class", ".optimised")),
-    FALSE
-  )
-}
-
-eval_optimised_quos <- function(data, quos, add_groups = TRUE){
+eval_reframe_optimised_quos <- function(data, quos){
 
   quo_names <- names(quos)
   quo_groups <- attr(quos, ".GRP", TRUE)
   GRP <- attr(quos, ".GRP", TRUE)
+  group_unaware <- attr(quos, ".group_unaware", TRUE)
   if (!all(attr(quos, ".optimised", TRUE))){
     cli::cli_abort("All quosures must be tagged as '.optimised'")
   }
 
+  n_quos <- length(quos)
+
   mask <- rlang::as_data_mask(data)
   results <- lapply(quos, \(x) rlang::eval_tidy(x, mask))
 
-  groups <- NULL
+  group_order <- NULL
+  reorder <- FALSE
 
-  if (add_groups){
-    if (length(quos) == 0){
-      groups <- list()
-      names(groups) <- character()
-    } else {
-      groups <- cheapr::cheapr_rep_len(
-        list(
-          cheapr::cheapr_rep_len(GRP_groups(GRP), vector_length(results[[1]]))
-        ),
-        length(quos)
+  if (any(group_unaware)){
+
+    # This is for expressions like `+`
+    # where we re-order it to match the order of sorted groups
+    # which is the way `reframe()` returns its output
+
+    if (!is.null(GRP) && GRP_n_groups(GRP) > 1){
+      group_order <- GRP_order(GRP)
+      reorder <- !isTRUE(attr(group_order, "sorted"))
+    }
+
+    if (reorder){
+      results[group_unaware] <- lapply(
+        results[group_unaware], \(x) cheapr::sset(x, group_order)
       )
-      names(groups) <- quo_names
     }
   }
+
+  groups <- cheapr::new_list(n_quos)
+
+  if (any(group_unaware)){
+    reordered_groups <- cheapr::sset_col(data, GRP_group_vars(GRP))
+    if (reorder){
+      reordered_groups <- cheapr::sset(reordered_groups, group_order)
+    }
+
+    reordered_groups <- cheapr::cheapr_rep_len(
+      list(reordered_groups), cheapr::val_count(group_unaware, TRUE)
+    )
+
+  } else {
+    reordered_groups <- list()
+  }
+
+  if (any(!group_unaware)){
+    reframed_groups <- cheapr::cheapr_rep_len(
+      list(
+        cheapr::cheapr_rep_len(
+          GRP_groups(GRP), vector_length(results[cheapr::which_(group_unaware, invert = TRUE)[1]][[1]])
+        )
+      ),
+      cheapr::val_count(group_unaware, FALSE)
+    )
+  } else {
+    reframed_groups <- list()
+  }
+
+  groups[group_unaware] <- reordered_groups
+  groups[!group_unaware] <- reframed_groups
+  names(groups) <- quo_names
   list(groups = groups, results = results)
+}
+
+eval_summarise_optimised_quos <- function(data, quos){
+
+  if (!all(attr(quos, ".optimised", TRUE))){
+    cli::cli_abort("All quosures must be tagged as '.optimised'")
+  }
+
+  n_groups <- GRP_n_groups(attr(quos, ".GRP")) %||% 1
+
+  out <- cpp_eval_all_tidy(quos, rlang::as_data_mask(data))
+  nrows <- df_nrow(data)
+
+  for (res in out){
+    size <- vector_length(res)
+    if ( !(size == 0 && nrows == 0 || size == n_groups) ){
+     cli::cli_abort("All optimised expressions should return 1 row per-group")
+    }
+  }
+
+  out
+}
+
+eval_mutate_optimised_quos <- function(data, quos){
+
+  if (!all(attr(quos, ".optimised", TRUE))){
+    cli::cli_abort("All quosures must be tagged as '.optimised'")
+  }
+  cpp_eval_all_tidy(quos, rlang::as_data_mask(data))
 }
 
 eval_all_tidy <- function(data, quos, recycle = FALSE){
@@ -819,24 +899,55 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
   quo_names <- names(quos)
   which_optimised <- cheapr::val_find(attr(quos, ".optimised", TRUE), TRUE)
 
-  if (length(which_optimised) > 0L){
-    which_regular <- cheapr::val_find(attr(quos, ".optimised", FALSE), FALSE)
-    regular_quos <- sset_quos(quos, which_regular)
-    optimised_quos <- sset_quos(quos, which_optimised)
-    regular_results <- eval_all_tidy(data, regular_quos, recycle = FALSE)
-    optimised_results <- eval_optimised_quos(data, optimised_quos, add_groups = TRUE)
+  if (length(which_optimised) == length(quos)){
 
-    groups <- cheapr::new_list(length(quos))
-    results <- cheapr::new_list(length(quos))
-
-    groups[which_regular] <- regular_results[[1L]]
-    results[which_regular] <- regular_results[[2L]]
-
-    groups[which_optimised] <- optimised_results[[1L]]
-    results[which_optimised] <- optimised_results[[2L]]
+    results <- eval_reframe_optimised_quos(data, quos)
+    groups <- results[[1]]
+    results <- results[[2]]
 
     if (recycle){
-      results <- cheapr::recycle(.args = results)
+      ## THIS IS A BUG AND IS NOT RECYCLING PROPERLY
+      ## cpp_grouped_eval_tidy actually recycles properly
+      ## so study that
+
+      ## Either we error if result size isn't 1 and doesn't match
+      ## earlier result sizes which ensures very efficient recycling
+      ## Or calculate group sizes across results, find common max
+      ## and then combine
+
+      ## Conclusion: Very difficult to achieve desired result with the format
+      ## of the results here
+      ## It works in C/C++ because we can call cheapr's C fn rep_len()
+      ## To achieve a fast by-group rep_len, we would likely need to
+      ## split the data frame into a list(n_groups) which is inefficient
+      # Solution: Error if result size isn't 1 and doesn't equal previous sizes
+      # Also apply this error on the C/C++ grouped eval side of things
+
+
+      # With 'optimised' expressions, fastplyr only accepts
+      # returning results that are either length 1 or length n for
+      # each group of size n
+
+      n_groups <- GRP_n_groups(GRP)
+      result_sizes <- cheapr::list_lengths(results)
+
+      if (any(result_sizes != n_groups & result_sizes != df_nrow(data), na.rm = TRUE)){
+        cli::cli_abort("Optimised expression result sizes must be either 1 (for each group) or match the nrows of the data frame")
+      }
+
+      common_size <- common_length(results)
+      group_sizes <- GRP_group_sizes(GRP)
+
+      results <- lapply(
+        results,
+        \(x){
+          if (vector_length(x) == common_size){
+            x
+          } else {
+            cheapr::cheapr_rep(x, group_sizes)
+          }
+        }
+      )
       groups <- cheapr::cheapr_rep_len(
         list(cheapr::cheapr_rep_len(groups[[1]], vector_length(results[[1]]))),
         length(results)
@@ -918,6 +1029,63 @@ dplyr_eval_all_tidy <- function(data, ...){
   list(groups = groups, results = results)
 }
 
+eval_summarise <- function(data, quos){
+
+  check_fastplyr_quos(quos)
+
+  if (length(quos) == 0L){
+    return(`names<-`(list(), character()))
+  }
+
+  GRP <- attr(quos, ".GRP", TRUE)
+
+  quo_names <- names(quos)
+  which_optimised <- cheapr::val_find(attr(quos, ".optimised", TRUE), TRUE)
+
+  if (length(which_optimised) > 0){
+
+    which_regular <- cheapr::val_find(attr(quos, ".optimised", FALSE), FALSE)
+    regular_quos <- sset_quos(quos, which_regular)
+    optimised_quos <- sset_quos(quos, which_optimised)
+    optimised_results <- eval_summarise_optimised_quos(data, optimised_quos)[[2]]
+    regular_results <- eval_summarise(data, regular_quos)
+    results <- cheapr::new_list(length(quos))
+    results[which_regular] <- regular_results
+    results[which_optimised] <- optimised_results
+    names(results) <- quo_names
+    return(results)
+  }
+
+  if (cpp_any_quo_contains_dplyr_mask_call(quos)){
+    return(dplyr_eval_all_tidy(
+      construct_fastplyr_grouped_df(data, GRP), !!!quos
+    ))
+  }
+  all_results <- cpp_grouped_eval_summarise(
+    construct_fastplyr_grouped_df(data, GRP), quos
+  )
+  groups <- all_results[[1L]]
+  results <- all_results[[2L]]
+  n_group_vars <- length(GRP_group_vars(GRP))
+
+  k <- 1L
+  for (i in seq_along(results)){
+    # Unpack
+    if (isTRUE(attr(quos[[i]], ".unpack", TRUE)) && is_df(results[[k]])){
+      results_to_append <- as.list(results[[k]])
+      if (nzchar(quo_names[[i]])){
+        names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
+      }
+      results <- append(results, results_to_append, after = k - 1L)
+      k <- k + length(results_to_append)
+      results[[k]] <- NULL
+    } else {
+      k <- k + 1L
+    }
+  }
+  list(groups = groups, results = results)
+}
+
 eval_mutate <- function(data, quos){
   check_fastplyr_quos(quos)
 
@@ -933,11 +1101,11 @@ eval_mutate <- function(data, quos){
     which_regular <- cheapr::val_find(attr(quos, ".optimised", FALSE), FALSE)
     regular_quos <- sset_quos(quos, which_regular)
     optimised_quos <- sset_quos(quos, which_optimised)
-    optimised_results <- eval_optimised_quos(data, optimised_quos, add_groups = FALSE)
+    optimised_results <- eval_mutate_optimised_quos(data, optimised_quos)
     regular_results <- eval_mutate(data, regular_quos)
     results <- cheapr::new_list(length(quos))
     results[which_regular] <- regular_results
-    results[which_optimised] <- optimised_results[[2L]]
+    results[which_optimised] <- optimised_results
     names(results) <- quo_names
     return(results)
   }

@@ -187,6 +187,13 @@ extern "C" SEXP _fastplyr_cpp_group_ends(SEXP group_id, SEXP n_groups) {
     return cpp11::as_sexp(cpp_group_ends(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_id), cpp11::as_cpp<cpp11::decay_t<int>>(n_groups)));
   END_CPP11
 }
+// fastplyr.cpp
+SEXP common_length(SEXP x);
+extern "C" SEXP _fastplyr_common_length(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(common_length(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
 // groups.cpp
 SEXP cpp_group_data(SEXP x);
 extern "C" SEXP _fastplyr_cpp_group_data(SEXP x) {
@@ -279,6 +286,13 @@ extern "C" SEXP _fastplyr_cpp_any_quo_contains_dplyr_mask_call(SEXP quos) {
   END_CPP11
 }
 // tidy.cpp
+SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask);
+extern "C" SEXP _fastplyr_cpp_eval_all_tidy(SEXP quos, SEXP mask) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_eval_all_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<SEXP>>(mask)));
+  END_CPP11
+}
+// tidy.cpp
 SEXP cpp_list_tidy(SEXP quos);
 extern "C" SEXP _fastplyr_cpp_list_tidy(SEXP quos) {
   BEGIN_CPP11
@@ -300,10 +314,24 @@ extern "C" SEXP _fastplyr_cpp_group_id_sorted(SEXP x) {
   END_CPP11
 }
 // tidy.cpp
+SEXP transpose_eval_results(SEXP x);
+extern "C" SEXP _fastplyr_transpose_eval_results(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(transpose_eval_results(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// tidy.cpp
 SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups);
 extern "C" SEXP _fastplyr_cpp_grouped_eval_tidy(SEXP data, SEXP quos, SEXP recycle, SEXP add_groups) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_grouped_eval_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<bool>>(recycle), cpp11::as_cpp<cpp11::decay_t<bool>>(add_groups)));
+  END_CPP11
+}
+// tidy.cpp
+SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos);
+extern "C" SEXP _fastplyr_cpp_grouped_eval_summarise(SEXP data, SEXP quos) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_grouped_eval_summarise(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
   END_CPP11
 }
 // tidy.cpp
@@ -334,16 +362,25 @@ extern "C" SEXP _fastplyr_cpp_grouped_df_as_grp(SEXP data) {
     return cpp11::as_sexp(cpp_grouped_df_as_grp(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
   END_CPP11
 }
+// tidy.cpp
+SEXP foo(SEXP data, SEXP quos, bool recycle);
+extern "C" SEXP _fastplyr_foo(SEXP data, SEXP quos, SEXP recycle) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(foo(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<bool>>(recycle)));
+  END_CPP11
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_call_is_namespaced",                   (DL_FUNC) &_fastplyr_call_is_namespaced,                   1},
+    {"_fastplyr_common_length",                        (DL_FUNC) &_fastplyr_common_length,                        1},
     {"_fastplyr_cpp_any_frames",                       (DL_FUNC) &_fastplyr_cpp_any_frames,                       1},
     {"_fastplyr_cpp_any_frames_exotic",                (DL_FUNC) &_fastplyr_cpp_any_frames_exotic,                1},
     {"_fastplyr_cpp_any_quo_contains_dplyr_mask_call", (DL_FUNC) &_fastplyr_cpp_any_quo_contains_dplyr_mask_call, 1},
     {"_fastplyr_cpp_as_list_of_frames",                (DL_FUNC) &_fastplyr_cpp_as_list_of_frames,                1},
     {"_fastplyr_cpp_consecutive_id",                   (DL_FUNC) &_fastplyr_cpp_consecutive_id,                   1},
     {"_fastplyr_cpp_df_transform_exotic",              (DL_FUNC) &_fastplyr_cpp_df_transform_exotic,              3},
+    {"_fastplyr_cpp_eval_all_tidy",                    (DL_FUNC) &_fastplyr_cpp_eval_all_tidy,                    2},
     {"_fastplyr_cpp_fill_grouped",                     (DL_FUNC) &_fastplyr_cpp_fill_grouped,                     4},
     {"_fastplyr_cpp_frame_addresses_equal",            (DL_FUNC) &_fastplyr_cpp_frame_addresses_equal,            2},
     {"_fastplyr_cpp_frame_dims",                       (DL_FUNC) &_fastplyr_cpp_frame_dims,                       3},
@@ -364,6 +401,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_group_vars",                       (DL_FUNC) &_fastplyr_cpp_group_vars,                       1},
     {"_fastplyr_cpp_grouped_df_as_grp",                (DL_FUNC) &_fastplyr_cpp_grouped_df_as_grp,                1},
     {"_fastplyr_cpp_grouped_eval_mutate",              (DL_FUNC) &_fastplyr_cpp_grouped_eval_mutate,              2},
+    {"_fastplyr_cpp_grouped_eval_summarise",           (DL_FUNC) &_fastplyr_cpp_grouped_eval_summarise,           2},
     {"_fastplyr_cpp_grouped_eval_tidy",                (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy,                4},
     {"_fastplyr_cpp_grouped_run_id",                   (DL_FUNC) &_fastplyr_cpp_grouped_run_id,                   3},
     {"_fastplyr_cpp_is_exotic",                        (DL_FUNC) &_fastplyr_cpp_is_exotic,                        1},
@@ -380,10 +418,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_ungroup",                          (DL_FUNC) &_fastplyr_cpp_ungroup,                          1},
     {"_fastplyr_cpp_unlist_group_locs",                (DL_FUNC) &_fastplyr_cpp_unlist_group_locs,                2},
     {"_fastplyr_cpp_which_all",                        (DL_FUNC) &_fastplyr_cpp_which_all,                        1},
+    {"_fastplyr_foo",                                  (DL_FUNC) &_fastplyr_foo,                                  3},
     {"_fastplyr_fun_ns",                               (DL_FUNC) &_fastplyr_fun_ns,                               2},
     {"_fastplyr_is_fn_call",                           (DL_FUNC) &_fastplyr_is_fn_call,                           4},
     {"_fastplyr_is_group_unaware_call",                (DL_FUNC) &_fastplyr_is_group_unaware_call,                2},
     {"_fastplyr_is_nested_call",                       (DL_FUNC) &_fastplyr_is_nested_call,                       1},
+    {"_fastplyr_transpose_eval_results",               (DL_FUNC) &_fastplyr_transpose_eval_results,               1},
     {NULL, NULL, 0}
 };
 }

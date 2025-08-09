@@ -307,11 +307,11 @@ void init_group_unaware_fns(DllInfo* dll) {
   group_unaware_fns = R_NewEnv(R_EmptyEnv, TRUE, 60);
   R_PreserveObject(group_unaware_fns);
 
-  group_unaware_fn_names = Rf_allocVector(STRSXP, 49);
+  group_unaware_fn_names = Rf_allocVector(STRSXP, 50);
   R_PreserveObject(group_unaware_fn_names);
 
-  // vector with the 21 fn symbols
-  const char* const names[49] =
+  // fn names
+  const char* const names[50] =
     {
     "|", "&", "!", ">=", ">", "<=", "<", "==", "!=", "%%", "%/%",
       "+", "-",  "*", "/", "^", "abs",  "sign", "floor",
@@ -320,17 +320,18 @@ void init_group_unaware_fns(DllInfo* dll) {
       "cospi", "sinpi", "tanpi", "acos", "asin", "atan",
       "cosh", "sinh", "tanh", "acosh", "asinh", "atanh",
       "lgamma", "gamma", "digamma", "trigamma",
+      "identity",
       "gcd2", "scm2" // cheapr
     };
 
   SEXP fn = R_NilValue;
-  for (int i = 0; i < 47; ++i) {
+  for (int i = 0; i < 48; ++i) {
     fn = Rf_install(names[i]);
     SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
     Rf_defineVar(fn, get(fn, R_BaseEnv), group_unaware_fns);
   }
 
-  for (int i = 47; i < 49; ++i) {
+  for (int i = 48; i < 50; ++i) {
     fn = Rf_install(names[i]);
     SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
     Rf_defineVar(fn, find_pkg_fun(names[i], "cheapr", false), group_unaware_fns);
