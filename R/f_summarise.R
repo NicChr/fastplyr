@@ -98,25 +98,17 @@ f_summarise <- function(.data, ..., .by = NULL, .order = group_by_order_default(
   all_groups <- get_groups(.data, .by = {{ .by }})
   if (length(all_groups) == 0L){
     GRP <- NULL
-    group_keys <- f_group_keys(.data)
   } else {
     GRP <- df_to_GRP(.data, all_groups, order = .order)
-    group_keys <- GRP_groups(GRP)
   }
   quos <- fastplyr_quos(..., .data = .data, .groups = GRP,
                         .drop_null = TRUE,
                         .unpack_default = TRUE,
                         .optimise = should_optimise(GRP))
-  if (df_nrow(.data) == 0){
-    group_keys <- cheapr::sset_df(group_keys, 0L)
-  }
-
-  if (length(quos) == 0){
-    return(cheapr::rebuild(group_keys, cpp_ungroup(.data)))
-  }
 
   results <- eval_summarise(.data, quos)
-  out <- cheapr::df_modify(group_keys, results)
+  groups <- results[["groups"]]
+  out <- cheapr::df_modify(groups, results[["results"]])
   out <- cheapr::sset_col(out, !duplicated(names(out), fromLast = TRUE))
 
   cheapr::rebuild(out, cpp_ungroup(.data))

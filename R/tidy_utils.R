@@ -784,6 +784,28 @@ check_rowwise <- function(data){
   }
 }
 
+unpack_results <- function(x, quos){
+
+  quo_names <- names(quos)
+
+  k <- 1L
+  for (i in seq_along(x)){
+    # Unpack
+    if (isTRUE(attr(quos[[i]], ".unpack", TRUE)) && is_df(x[[k]])){
+      results_to_append <- as.list(x[[k]])
+      if (nzchar(quo_names[[i]])){
+        names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
+      }
+      x <- append(x, results_to_append, after = k - 1L)
+      k <- k + length(results_to_append)
+      x[[k]] <- NULL
+    } else {
+      k <- k + 1L
+    }
+  }
+  x
+}
+
 eval_reframe_optimised_quos <- function(data, quos){
 
   quo_names <- names(quos)
@@ -1029,111 +1051,114 @@ dplyr_eval_all_tidy <- function(data, ...){
   list(groups = groups, results = results)
 }
 
+dplyr_eval_summarise <- function(data, ...){
+
+  quos <- rlang::enquos(...)
+  expr_names <- names(quos)
+  group_vars <- group_vars(data)
+  n_groups <- length(group_vars)
+
+  results <- list()
+
+  # Loop over the expressions
+  for (i in seq_along(quos)){
+    quo <- quos[[i]]
+    expr <- rlang::quo_get_expr(quo)
+    expr_name <- expr_names[i]
+    env <- rlang::quo_get_env(quo)
+    #  Fix this later as new objects don't take precedence over data variables here
+    if (nzchar(expr_name)){
+      result <- dplyr::summarise(data, !!expr_name := !!quo)
+    } else {
+      result <- dplyr::summarise(data, !!quo)
+    }
+    result2 <- as.list(result)[seq_len(df_ncol(result) - n_groups) + n_groups]
+    results <- c(results, result2)
+  }
+  results
+  # list(groups = groups, results = results)
+}
+
 eval_summarise <- function(data, quos){
 
   check_fastplyr_quos(quos)
-
-  if (length(quos) == 0L){
-    return(`names<-`(list(), character()))
-  }
-
-  GRP <- attr(quos, ".GRP", TRUE)
-
-  quo_names <- names(quos)
-  which_optimised <- cheapr::val_find(attr(quos, ".optimised", TRUE), TRUE)
-
-  if (length(which_optimised) > 0){
-
-    which_regular <- cheapr::val_find(attr(quos, ".optimised", FALSE), FALSE)
-    regular_quos <- sset_quos(quos, which_regular)
-    optimised_quos <- sset_quos(quos, which_optimised)
-    optimised_results <- eval_summarise_optimised_quos(data, optimised_quos)[[2]]
-    regular_results <- eval_summarise(data, regular_quos)
-    results <- cheapr::new_list(length(quos))
-    results[which_regular] <- regular_results
-    results[which_optimised] <- optimised_results
-    names(results) <- quo_names
-    return(results)
-  }
 
   if (cpp_any_quo_contains_dplyr_mask_call(quos)){
     return(dplyr_eval_all_tidy(
       construct_fastplyr_grouped_df(data, GRP), !!!quos
     ))
   }
-  all_results <- cpp_grouped_eval_summarise(
-    construct_fastplyr_grouped_df(data, GRP), quos
-  )
-  groups <- all_results[[1L]]
-  results <- all_results[[2L]]
-  n_group_vars <- length(GRP_group_vars(GRP))
 
-  k <- 1L
-  for (i in seq_along(results)){
-    # Unpack
-    if (isTRUE(attr(quos[[i]], ".unpack", TRUE)) && is_df(results[[k]])){
-      results_to_append <- as.list(results[[k]])
-      if (nzchar(quo_names[[i]])){
-        names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
-      }
-      results <- append(results, results_to_append, after = k - 1L)
-      k <- k + length(results_to_append)
-      results[[k]] <- NULL
-    } else {
-      k <- k + 1L
-    }
+  optimised <- attr(quos, ".optimised", TRUE)
+  GRP <- attr(quos, ".GRP", TRUE)
+
+  quo_names <- names(quos)
+  which_optimised <- cheapr::val_find(optimised, TRUE)
+  which_regular <- cheapr::val_find(optimised, FALSE)
+  regular_quos <- sset_quos(quos, which_regular)
+  optimised_quos <- sset_quos(quos, which_optimised)
+  optimised_results <- eval_summarise_optimised_quos(data, optimised_quos)
+
+  # Doing this check to potentially avoid calculating group locations
+  # through a call to `construct_fastplyr_grouped_df()`
+  # which will happen in e.g. `f_summarise(df, new = mean(x), .by = g)`
+  if (length(regular_quos) == 0){
+    regular_results <- list(
+      groups = construct_group_keys(data, GRP),
+      results = `names<-`(list(), character())
+    )
+  } else {
+    regular_results <- cpp_grouped_eval_summarise(
+      construct_fastplyr_grouped_df(data, GRP), regular_quos
+    )
   }
+
+  groups <- regular_results[[1]]
+
+  results <- cheapr::new_list(length(quos))
+  results[which_regular] <- regular_results[[2]]
+  results[which_optimised] <- optimised_results
+  names(results) <- quo_names
+  results <- unpack_results(results, quos)
   list(groups = groups, results = results)
 }
 
 eval_mutate <- function(data, quos){
+
   check_fastplyr_quos(quos)
-
-  if (length(quos) == 0){
-    return(`names<-`(list(), character()))
-  }
-
-  GRP <- attr(quos, ".GRP", TRUE)
-  quo_names <- names(quos)
-  which_optimised <- cheapr::val_find(attr(quos, ".optimised", TRUE), TRUE)
-
-  if (length(which_optimised) > 0L){
-    which_regular <- cheapr::val_find(attr(quos, ".optimised", FALSE), FALSE)
-    regular_quos <- sset_quos(quos, which_regular)
-    optimised_quos <- sset_quos(quos, which_optimised)
-    optimised_results <- eval_mutate_optimised_quos(data, optimised_quos)
-    regular_results <- eval_mutate(data, regular_quos)
-    results <- cheapr::new_list(length(quos))
-    results[which_regular] <- regular_results
-    results[which_optimised] <- optimised_results
-    names(results) <- quo_names
-    return(results)
-  }
 
   if (cpp_any_quo_contains_dplyr_mask_call(quos)){
     return(as.list(dplyr::mutate(
       construct_fastplyr_grouped_df(data, GRP), !!!quos
     ))[quo_names])
   }
-  results <- cpp_grouped_eval_mutate(
-    construct_fastplyr_grouped_df(data, GRP), quos
-    )
 
-  k <- 1L
-  for (i in seq_along(results)){
-    # Unpack
-    if (isTRUE(attr(quos[[i]], ".unpack", TRUE)) && is_df(results[[k]])){
-      results_to_append <- as.list(results[[k]])
-      if (nzchar(quo_names[[i]])){
-        names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
-      }
-      results <- append(results, results_to_append, after = k - 1L)
-      k <- k + length(results_to_append)
-      results[[k]] <- NULL
-    } else {
-      k <- k + 1L
-    }
+  optimised <- attr(quos, ".optimised", TRUE)
+  GRP <- attr(quos, ".GRP", TRUE)
+
+  quo_names <- names(quos)
+  which_optimised <- cheapr::val_find(optimised, TRUE)
+  which_regular <- cheapr::val_find(optimised, FALSE)
+  regular_quos <- sset_quos(quos, which_regular)
+  optimised_quos <- sset_quos(quos, which_optimised)
+  optimised_results <- eval_mutate_optimised_quos(data, optimised_quos)
+
+  # Doing this check to potentially avoid calculating group locations
+  # through a call to `construct_fastplyr_grouped_df()`
+  # which will happen in e.g. `f_mutate(df, new = mean(x), .by = g)`
+  if (length(regular_quos) == 0){
+    regular_results <- `names<-`(list(), character())
+  } else {
+    regular_results <- cpp_grouped_eval_mutate(
+      construct_fastplyr_grouped_df(data, GRP), regular_quos
+    )
   }
+
+  results <- cheapr::new_list(length(quos))
+  results[which_regular] <- regular_results
+  results[which_optimised] <- optimised_results
+  names(results) <- quo_names
+  results <- unpack_results(results, quos)
   results
 }
 

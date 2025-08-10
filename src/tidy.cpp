@@ -343,91 +343,90 @@ bool cpp_group_id_sorted(SEXP x){
 // Converts a list of n groups x m results list into an
 // m results x n groups list
 
-[[cpp11::register]]
-SEXP transpose_eval_results(SEXP x) {
-
-  int32_t NP = 0;
-
-  if (TYPEOF(x) != VECSXP) {
-    Rf_error("`x` must be a list in %s", __func__);
-  }
-
-  const SEXP *p_x = VECTOR_PTR_RO(x);
-
-  int n = Rf_length(x);
-  if (n == 0) {
-    return new_vec(VECSXP, 0);
-  }
-
-  SEXP x1 = VECTOR_ELT(x, 0);
-  int m = Rf_length(x1);
-
-  // Create space for output
-  SEXP out = SHIELD(new_vec(VECSXP, m)); ++NP;
-  SEXP names1 = SHIELD(get_names(x)); ++NP;
-
-  const SEXP *p_out = VECTOR_PTR_RO(out);
-
-  for (int j = 0; j < m; ++j) {
-    SEXP xj = SHIELD(new_vec(VECSXP, n));
-    if (!Rf_isNull(names1)) {
-      set_names(xj, names1);
-    }
-    SET_VECTOR_ELT(out, j, xj);
-    YIELD(1);
-  }
-
-  SEXP names2 = SHIELD(get_names(x1)); ++NP;
-
-  if (!Rf_isNull(names2)) {
-    set_names(out, names2);
-  }
-
-  PROTECT_INDEX index_idx;
-  SEXP index;
-  R_ProtectWithIndex(index = R_NilValue, &index_idx); ++NP;
-
-  // Fill output
-  for (int i = 0; i < n; ++i) {
-    SEXP xi = p_x[i];
-
-    const SEXP *p_xi = VECTOR_PTR_RO(xi);
-
-    // find mapping between names and index. Use -1 to indicate not found
-    SEXP names_i = get_names(xi);
-    SEXP index;
-
-    int* __restrict__ p_index;
-
-    if (!Rf_isNull(names2) && !Rf_isNull(names_i)) {
-      R_Reprotect(index = Rf_match(names_i, names2, 0), index_idx);
-      p_index = INTEGER(index);
-    } else {
-      R_Reprotect(index = new_vec(INTSXP, m), index_idx);
-      p_index = INTEGER(index);
-
-      int mi = Rf_length(xi);
-
-      if (m != mi) {
-        YIELD(NP);
-        Rf_error("Element %d must be length %d, not %d", i + 1, m, mi);
-      }
-      for (int i = 0; i < m; ++i) {
-        p_index[i] = (i < mi) ? i + 1 : 0;
-      }
-
-    }
-
-    for (int j = 0; j < m; ++j) {
-      int pos = p_index[j] - 1;
-      if (pos == -1) continue;
-      SET_VECTOR_ELT(p_out[j], i, p_xi[pos]);
-    }
-  }
-
-  YIELD(NP);
-  return out;
-}
+// SEXP transpose_eval_results(SEXP x) {
+//
+//   int32_t NP = 0;
+//
+//   if (TYPEOF(x) != VECSXP) {
+//     Rf_error("`x` must be a list in %s", __func__);
+//   }
+//
+//   const SEXP *p_x = VECTOR_PTR_RO(x);
+//
+//   int n = Rf_length(x);
+//   if (n == 0) {
+//     return new_vec(VECSXP, 0);
+//   }
+//
+//   SEXP x1 = VECTOR_ELT(x, 0);
+//   int m = Rf_length(x1);
+//
+//   // Create space for output
+//   SEXP out = SHIELD(new_vec(VECSXP, m)); ++NP;
+//   SEXP names1 = SHIELD(get_names(x)); ++NP;
+//
+//   const SEXP *p_out = VECTOR_PTR_RO(out);
+//
+//   for (int j = 0; j < m; ++j) {
+//     SEXP xj = SHIELD(new_vec(VECSXP, n));
+//     if (!Rf_isNull(names1)) {
+//       set_names(xj, names1);
+//     }
+//     SET_VECTOR_ELT(out, j, xj);
+//     YIELD(1);
+//   }
+//
+//   SEXP names2 = SHIELD(get_names(x1)); ++NP;
+//
+//   if (!Rf_isNull(names2)) {
+//     set_names(out, names2);
+//   }
+//
+//   PROTECT_INDEX index_idx;
+//   SEXP index;
+//   R_ProtectWithIndex(index = R_NilValue, &index_idx); ++NP;
+//
+//   // Fill output
+//   for (int i = 0; i < n; ++i) {
+//     SEXP xi = p_x[i];
+//
+//     const SEXP *p_xi = VECTOR_PTR_RO(xi);
+//
+//     // find mapping between names and index. Use -1 to indicate not found
+//     SEXP names_i = get_names(xi);
+//     SEXP index;
+//
+//     int* __restrict__ p_index;
+//
+//     if (!Rf_isNull(names2) && !Rf_isNull(names_i)) {
+//       R_Reprotect(index = Rf_match(names_i, names2, 0), index_idx);
+//       p_index = INTEGER(index);
+//     } else {
+//       R_Reprotect(index = new_vec(INTSXP, m), index_idx);
+//       p_index = INTEGER(index);
+//
+//       int mi = Rf_length(xi);
+//
+//       if (m != mi) {
+//         YIELD(NP);
+//         Rf_error("Element %d must be length %d, not %d", i + 1, m, mi);
+//       }
+//       for (int i = 0; i < m; ++i) {
+//         p_index[i] = (i < mi) ? i + 1 : 0;
+//       }
+//
+//     }
+//
+//     for (int j = 0; j < m; ++j) {
+//       int pos = p_index[j] - 1;
+//       if (pos == -1) continue;
+//       SET_VECTOR_ELT(p_out[j], i, p_xi[pos]);
+//     }
+//   }
+//
+//   YIELD(NP);
+//   return out;
+// }
 
 [[cpp11::register]]
 SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
@@ -652,8 +651,11 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
 }
 
 
-// Same as above but with specific constraints around result sizes
+// Similar to above but with specific constraints around result sizes
 // which makes the code somewhat simpler
+// The structure is slightly different in that
+// the groups are always constant for each result
+// and so only one set of group keys is returned
 
 [[cpp11::register]]
 SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos){
@@ -661,15 +663,25 @@ SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos){
   int32_t NP = 0;
   int n_quos = Rf_length(quos);
 
+  SEXP group_keys = SHIELD(cpp_group_keys(data)); ++NP;
+
+  // Add groups
+
+  SEXP out = SHIELD(new_vec(VECSXP, 2)); ++NP;
+  SEXP out_names = SHIELD(new_vec(STRSXP, 2)); ++NP;
+  SET_STRING_ELT(out_names, 0, Rf_mkCharCE("groups", CE_UTF8));
+  SET_STRING_ELT(out_names, 1, Rf_mkCharCE("results", CE_UTF8));
+  set_names(out, out_names);
+
+  SET_VECTOR_ELT(out, 0, group_keys);
+  SET_VECTOR_ELT(out, 1, new_vec(VECSXP, 0));
+  set_names(VECTOR_ELT(out, 1), new_vec(STRSXP, 0));
+
   if (n_quos == 0){
-    SEXP out = SHIELD(new_vec(VECSXP, 0)); ++NP;
-    SEXP names = SHIELD(new_vec(STRSXP, 0)); ++NP;
-    set_names(out, names);
     YIELD(NP);
     return out;
   }
 
-  SEXP group_keys = SHIELD(cpp_group_keys(data)); ++NP;
   SEXP rows = SHIELD(cpp_group_rows(data)); ++NP;
   SEXP quo_name_syms = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
   SEXP quo_names = SHIELD(get_names(quos)); ++NP;
@@ -784,183 +796,11 @@ SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos){
     SET_VECTOR_ELT(results, m, cheapr::c(inner_container));
   }
 
-  // Transpose
-  // SEXP results = SHIELD(transpose_eval_results(outer_container)); ++NP;
-  // set_names(results, quo_names);
-  //
-  // // Combine
-  // for (int i = 0; i < n_quos; ++i){
-  //   SET_VECTOR_ELT(results, i, cheapr::c(VECTOR_ELT(results, i)));
-  // }
-
-  // Add groups
-
-  SEXP out = SHIELD(new_vec(VECSXP, 2)); ++NP;
-  SEXP out_names = SHIELD(new_vec(STRSXP, 2)); ++NP;
-  SET_STRING_ELT(out_names, 0, Rf_mkCharCE("groups", CE_UTF8));
-  SET_STRING_ELT(out_names, 1, Rf_mkCharCE("results", CE_UTF8));
-  set_names(out, out_names);
-
-
-  SEXP groups = SHIELD(new_vec(VECSXP, 1)); ++NP;
-  SET_VECTOR_ELT(groups, 0, group_keys);
-  SHIELD(groups = cheapr::rep_len(groups, n_quos)); ++NP;
-  set_names(groups, quo_names);
-
-  SET_VECTOR_ELT(out, 0, groups);
   SET_VECTOR_ELT(out, 1, results);
   YIELD(NP);
   return out;
 }
-// SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos){
-//
-//   int32_t NP = 0;
-//   int n_quos = Rf_length(quos);
-//
-//   if (n_quos == 0){
-//     SEXP out = SHIELD(new_vec(VECSXP, 0)); ++NP;
-//     SEXP names = SHIELD(new_vec(STRSXP, 0)); ++NP;
-//     set_names(out, names);
-//     YIELD(NP);
-//     return out;
-//   }
-//
-//   SEXP group_keys = SHIELD(cpp_group_keys(data)); ++NP;
-//   SEXP rows = SHIELD(cpp_group_rows(data)); ++NP;
-//   SEXP quo_name_syms = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
-//   SEXP quo_names = SHIELD(get_names(quos)); ++NP;
-//   const SEXP *p_quos = VECTOR_PTR_RO(quos);
-//   const SEXP *p_quo_name_syms = VECTOR_PTR_RO(quo_name_syms);
-//   const SEXP *p_rows = VECTOR_PTR_RO(rows);
-//
-//   int n_rows = df_nrow(data);
-//   int n_groups = df_nrow(group_keys);
-//
-//   // grab the variable names the expressions point to
-//   SEXP quo_data_vars = SHIELD(cpp_quo_data_vars(quos, data)); ++NP;
-//   int chunk_n_cols = Rf_length(quo_data_vars);
-//   SEXP quo_data_syms = SHIELD(new_vec(VECSXP, chunk_n_cols)); ++NP;
-//   const SEXP *p_quo_data_syms = VECTOR_PTR_RO(quo_data_syms);
-//
-//   for (int i = 0; i < chunk_n_cols; ++i){
-//     SET_VECTOR_ELT(quo_data_syms, i, Rf_installChar(STRING_ELT(quo_data_vars, i)));
-//   }
-//
-//   // Initialise symbols of expression names
-//   for (int i = 0; i < n_quos; ++i){
-//     if (STRING_ELT(quo_names, i) == R_BlankString){
-//       SET_VECTOR_ELT(quo_name_syms, i, R_UnboundValue);
-//     } else {
-//       SET_VECTOR_ELT(quo_name_syms, i, Rf_installChar(STRING_ELT(quo_names, i)));
-//     }
-//   }
-//
-//   // Initialise components
-//
-//   SEXP data_subset = SHIELD(cheapr::df_select(data, quo_data_vars)); ++NP;
-//
-//   // We will re-use the mask across all groups but add the same
-//   // vars for each slice in each iteration
-//   SEXP mask = SHIELD(new_bare_data_mask()); ++NP;
-//   SEXP top_env = SHIELD(get_mask_top_env(mask)); ++NP;
-//
-//   SEXP chunk, result, inner_container;
-//
-//   PROTECT_INDEX chunk_idx, result_idx, inner_container_idx;
-//
-//   R_ProtectWithIndex(chunk = data_subset, &chunk_idx); ++NP;
-//   R_ProtectWithIndex(result = R_NilValue, &result_idx); ++NP;
-//   R_ProtectWithIndex(inner_container = R_NilValue, &inner_container_idx); ++NP;
-//
-//
-//   // outer container will contain lists of expressions for each group
-//   // Basically for the mask to work nicely we loop through each and group and
-//   // in each group we loop through the expressions
-//
-//   // At the end we invert that so that we have a
-//   // list of results of length `length(quos)`
-//
-//   SEXP outer_container = SHIELD(new_vec(VECSXP, n_groups)); ++NP;
-//
-//   for (int i = 0; i < n_groups; ++i){
-//
-//     // Filter on the rows relevant to the current group
-//
-//     R_Reprotect(chunk = cheapr::df_slice(data_subset, p_rows[i], false), chunk_idx);
-//
-//     // assign variables to existing data mask
-//     // essentially list2env()
-//
-//     for (int l = 0; l < chunk_n_cols; ++l){
-//       Rf_defineVar(p_quo_data_syms[l], VECTOR_ELT(chunk, l), top_env);
-//     }
-//
-//     // inner container will contain the results of our expressions
-//     // and we assign these inner containers to the bigger outer container
-//     R_Reprotect(inner_container = new_vec(VECSXP, n_quos), inner_container_idx);
-//
-//     for (int m = 0; m < n_quos; ++m){
-//       R_Reprotect(result = eval_tidy(p_quos[m], mask), result_idx);
-//
-//       int result_size = cheapr::vec_length(result);
-//
-//       if (result_size != 1 && n_rows > 0){
-//         YIELD(NP);
-//         Rf_error(
-//           "Result size of %s in group %i must be 1, not %i",
-//           CHAR(STRING_ELT(quo_names, m)),
-//           i + 1,
-//           result_size
-//         );
-//       }
-//
-//       if (p_quo_name_syms[m] != R_UnboundValue){
-//         Rf_defineVar(p_quo_name_syms[m], result, top_env);
-//       }
-//       SET_VECTOR_ELT(inner_container, m, result);
-//     }
-//     SET_VECTOR_ELT(outer_container, i, inner_container);
-//   }
-//
-//   SEXP results = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
-//   const SEXP *p_outer_container = VECTOR_PTR_RO(outer_container);
-//
-//   for (int m = 0; m < n_quos; ++m){
-//     R_Reprotect(inner_container = new_vec(VECSXP, n_groups), inner_container_idx);
-//     for (int j = 0; j < n_groups; ++j){
-//       SET_VECTOR_ELT(inner_container, j, VECTOR_ELT(p_outer_container[j], m));
-//     }
-//     SET_VECTOR_ELT(results, m, cheapr::c(inner_container));
-//   }
-//
-//   // Transpose
-//   // SEXP results = SHIELD(transpose_eval_results(outer_container)); ++NP;
-//   // set_names(results, quo_names);
-//   //
-//   // // Combine
-//   // for (int i = 0; i < n_quos; ++i){
-//   //   SET_VECTOR_ELT(results, i, cheapr::c(VECTOR_ELT(results, i)));
-//   // }
-//
-//   // Add groups
-//
-//   SEXP out = SHIELD(new_vec(VECSXP, 2)); ++NP;
-//   SEXP out_names = SHIELD(new_vec(STRSXP, 2)); ++NP;
-//   SET_STRING_ELT(out_names, 0, Rf_mkCharCE("groups", CE_UTF8));
-//   SET_STRING_ELT(out_names, 1, Rf_mkCharCE("results", CE_UTF8));
-//   set_names(out, out_names);
-//
-//
-//   SEXP groups = SHIELD(new_vec(VECSXP, 1)); ++NP;
-//   SET_VECTOR_ELT(groups, 0, group_keys);
-//   SHIELD(groups = cheapr::rep_len(groups, n_quos)); ++NP;
-//   set_names(groups, quo_names);
-//
-//   SET_VECTOR_ELT(out, 0, groups);
-//   SET_VECTOR_ELT(out, 1, results);
-//   YIELD(NP);
-//   return out;
-// }
+
 // Working, pretty fast but very messy
 
 [[cpp11::register]]
@@ -1433,181 +1273,4 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
   Rf_classgets(out, grp_class);
   YIELD(NP);
   return out;
-}
-
-
-[[cpp11::register]]
-SEXP foo(SEXP data, SEXP quos, bool recycle){
-  int32_t NP = 0;
-  int n_quos = Rf_length(quos);
-
-  if (n_quos == 0){
-    SEXP out = SHIELD(new_vec(VECSXP, 2));
-    SET_VECTOR_ELT(out, 0, new_vec(VECSXP, 0));
-    SET_VECTOR_ELT(out, 1, new_vec(VECSXP, 0));
-    set_names(VECTOR_ELT(out, 0), new_vec(STRSXP, 0));
-    set_names(VECTOR_ELT(out, 1), new_vec(STRSXP, 0));
-    SEXP out_names = SHIELD(new_vec(STRSXP, 2));
-    SET_STRING_ELT(out_names, 0, Rf_mkChar("groups"));
-    SET_STRING_ELT(out_names, 1, Rf_mkChar("results"));
-    set_names(out, out_names);
-    YIELD(2);
-    return out;
-  }
-
-  bool has_groups = Rf_inherits(data, "grouped_df");
-  SEXP group_data = R_NilValue;
-  SEXP rows = R_NilValue;
-  SEXP exprs = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
-  SEXP envs = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
-  SEXP quo_name_syms = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
-  SEXP quo_names = SHIELD(get_names(quos)); ++NP;
-  const SEXP *p_quo_name_syms = VECTOR_PTR_RO(quo_name_syms);
-  const SEXP *p_exprs = VECTOR_PTR_RO(exprs);
-  const SEXP *p_envs = VECTOR_PTR_RO(envs);
-  const SEXP *p_rows;
-
-  int n_groups = 1;
-
-  if (has_groups){
-    SHIELD(group_data = cpp_group_data(data)); ++NP;
-    n_groups = df_nrow(group_data);
-
-    // Get group locations
-    SHIELD(rows = VECTOR_ELT(group_data, Rf_length(group_data) - 1)); ++NP;
-    p_rows = VECTOR_PTR_RO(rows);
-  } else {
-    p_rows = VECTOR_PTR_RO(data);
-  }
-
-  n_groups = std::max(n_groups, 1);
-
-
-  // grab the variable names the expressions point to
-  SEXP quo_data_vars = SHIELD(cpp_quo_data_vars(quos, data)); ++NP;
-  int chunk_n_cols = Rf_length(quo_data_vars);
-  SEXP quo_data_syms = SHIELD(new_vec(VECSXP, chunk_n_cols)); ++NP;
-  const SEXP *p_quo_data_syms = VECTOR_PTR_RO(quo_data_syms);
-
-  for (int i = 0; i < chunk_n_cols; ++i){
-    SET_VECTOR_ELT(quo_data_syms, i, Rf_installChar(STRING_ELT(quo_data_vars, i)));
-  }
-
-  // Initialise expressions, environments and symbols of expression names
-  for (int i = 0; i < n_quos; ++i){
-    SET_VECTOR_ELT(exprs, i, rlang::quo_get_expr(VECTOR_ELT(quos, i)));
-    SET_VECTOR_ELT(envs, i, rlang::quo_get_env(VECTOR_ELT(quos, i)));
-    if (STRING_ELT(quo_names, i) == R_BlankString){
-      SET_VECTOR_ELT(quo_name_syms, i, R_UnboundValue);
-    } else {
-      SET_VECTOR_ELT(quo_name_syms, i, Rf_installChar(STRING_ELT(quo_names, i)));
-    }
-  }
-
-  // Initialise components
-
-  SEXP data_subset = SHIELD(cheapr::df_select(data, quo_data_vars)); ++NP;
-
-  // We will re-use the mask across all groups but add the same
-  // vars for each slice in each iteration
-  SEXP mask = SHIELD(new_bare_data_mask()); ++NP;
-  SEXP top_env = SHIELD(get_mask_top_env(mask)); ++NP;
-
-  SEXP chunk_locs, chunk, result, inner_container;
-
-  PROTECT_INDEX chunk_locs_idx, chunk_idx,
-  result_idx, inner_container_idx;
-
-  R_ProtectWithIndex(chunk_locs = R_NilValue, &chunk_locs_idx); ++NP;
-  R_ProtectWithIndex(chunk = data_subset, &chunk_idx); ++NP;
-  R_ProtectWithIndex(result = R_NilValue, &result_idx); ++NP;
-  R_ProtectWithIndex(inner_container = R_NilValue, &inner_container_idx); ++NP;
-
-
-  // outer container will contain lists of expressions for each group
-  // Basically for the mask to work nicely we loop through each and group and
-  // in each group we loop through the expressions
-
-  // At the end we invert that so that we have a
-  // list of results of length `length(quos)`
-
-  SEXP outer_container = SHIELD(new_vec(VECSXP, n_groups)); ++NP;
-
-  // Recycling in this context means to recycle the results to a common size
-  // on a by-group basis, meaning the recycled sizes may differ between different
-  // groups
-
-  int recycled_size;
-  int result_size;
-
-  SEXP recycled_sizes;
-  PROTECT_INDEX recycled_sizes_idx;
-  R_ProtectWithIndex(recycled_sizes = R_NilValue, &recycled_sizes_idx); ++NP;
-
-  SEXP recycled_sizes_container = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
-  std::vector<int *> recycled_pointers(n_quos);
-
-  // Some C trickery here.. We repeat out the rows of the group keys at the end
-  // but if we recycle we only need to do this once and we only need one
-  // result sizes vector, otherwise we need one for each expression
-  if (recycle){
-    R_Reprotect(recycled_sizes = new_vec(INTSXP, n_groups), recycled_sizes_idx);
-    recycled_pointers[0] = INTEGER(recycled_sizes);
-    for (int m = 0; m < n_quos; ++m){
-      SET_VECTOR_ELT(recycled_sizes_container, m, recycled_sizes);
-      recycled_pointers[m] = recycled_pointers[0];
-    }
-  } else {
-    for (int m = 0; m < n_quos; ++m){
-      SET_VECTOR_ELT(recycled_sizes_container, m, new_vec(INTSXP, n_groups));
-      recycled_pointers[m] = INTEGER(VECTOR_ELT(recycled_sizes_container, m));
-    }
-  }
-
-
-  for (int i = 0; i < n_groups; ++i){
-
-    recycled_size = -1; // Initialise this to < 0 for later logic to work
-
-    // Filter on the rows relevant to the current group
-
-    if (has_groups){
-      chunk_locs = p_rows[i];
-      R_Reprotect(chunk = cheapr::df_slice(data_subset, chunk_locs, false), chunk_idx);
-    }
-
-    // assign variables to existing data mask
-    // essentially list2env()
-
-    for (int l = 0; l < chunk_n_cols; ++l){
-      Rf_defineVar(p_quo_data_syms[l], VECTOR_ELT(chunk, l), top_env);
-    }
-
-    // inner container will contain the results of our expressions
-    // and we assign these inner containers to the bigger outer container
-    R_Reprotect(inner_container = new_vec(VECSXP, n_quos), inner_container_idx);
-
-    for (int m = 0; m < n_quos; ++m){
-      R_Reprotect(result = rlang::eval_tidy(
-        p_exprs[m], mask, p_envs[m]
-      ), result_idx);
-      if (p_quo_name_syms[m] != R_UnboundValue){
-        Rf_defineVar(p_quo_name_syms[m], result, top_env);
-      }
-      SET_VECTOR_ELT(inner_container, m, result);
-      result_size = cheapr::vec_length(result);
-      recycled_size = recycle ? (result_size == 0 ? 0 : recycled_size > result_size ? recycled_size : result_size) : result_size;
-      recycled_pointers[m][i] = recycled_size;
-    }
-
-    // recycle expression results to a common length
-
-    if (recycle){
-      for (int m = 0; m < n_quos; ++m){
-        SET_VECTOR_ELT(inner_container, m, cheapr::rep_len(VECTOR_ELT(inner_container, m), recycled_size));
-      }
-    }
-    SET_VECTOR_ELT(outer_container, i, inner_container);
-  }
-  YIELD(NP); return outer_container;
 }

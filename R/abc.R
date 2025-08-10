@@ -137,3 +137,36 @@ vec_rename <- function(.x, ...){
   }
   .x
 }
+
+# Insert values into a vector
+
+# vec_insert <- function(x, after, what){
+#   if (length(what) == 1){
+#     what <- cheapr::cheapr_rep_len(what, length(after))
+#   }
+#   if (length(after) != length(what)){
+#     cli::cli_abort("`length(after)` should match `length(what)`")
+#   }
+#   if (any(after > length(x) | after < 0)){
+#     cli::cli_abort("{.arg after} must be in [0, {length(x)}] range")
+#   }
+#   vecs <- cheapr::new_list((length(after) * 2 ) + 1)
+#
+#   after <- cheapr::cheapr_c(0L, sort(as.integer(after)))
+#
+#   k <- 0L
+#   for (i in seq_along(what)){
+#     k <- k + 1L
+#     if ( (after[i + 1L]) > 0L){
+#       vecs[[k]] <- x[(after[i] + 1L):after[i + 1L]]
+#     }
+#     k <- k + 1L
+#     vecs[[k]] <- what[i]
+#   }
+#
+#   if (after[length(after)] < length(x)){
+#     vecs[[k + 1L]] <- x[(after[length(after)]+ 1L):length(x)]
+#   }
+#
+#   cheapr::cheapr_c(.args = vecs)
+# }

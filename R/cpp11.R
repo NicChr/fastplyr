@@ -176,10 +176,6 @@ cpp_group_id_sorted <- function(x) {
   .Call(`_fastplyr_cpp_group_id_sorted`, x)
 }
 
-transpose_eval_results <- function(x) {
-  .Call(`_fastplyr_transpose_eval_results`, x)
-}
-
 cpp_grouped_eval_tidy <- function(data, quos, recycle, add_groups) {
   .Call(`_fastplyr_cpp_grouped_eval_tidy`, data, quos, recycle, add_groups)
 }
@@ -202,8 +198,4 @@ cpp_group_split <- function(data) {
 
 cpp_grouped_df_as_grp <- function(data) {
   .Call(`_fastplyr_cpp_grouped_df_as_grp`, data)
-}
-
-foo <- function(data, quos, recycle) {
-  .Call(`_fastplyr_foo`, data, quos, recycle)
 }

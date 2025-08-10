@@ -237,3 +237,16 @@ construct_fastplyr_grouped_df <- function(data, g, drop = df_group_by_drop_defau
   class(data) <- c("fastplyr_grouped_df", "grouped_df", "tbl_df", "tbl", "data.frame")
   data
 }
+
+# Helper to return group keys where they may be available in a GRP
+# which may or may not be `NULL`
+construct_group_keys <- function(data, g){
+
+  if (is.null(g)){
+    f_group_keys(f_ungroup(data))
+  } else if (is.null(GRP_groups(g))){
+    as_tbl(cheapr::sset(f_ungroup(data), GRP_starts(g)))
+  } else {
+    as_tbl(GRP_groups(g))
+  }
+}

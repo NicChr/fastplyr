@@ -29,6 +29,8 @@ which are optimised in a separate way.
 
 - Fix column accessor calls like `.data$`
 - Functional to allow users to mark functions as not-group-aware
+- Fix unpacked across results
+- Fix calls like `fastplyr::across`, the namespace should be calculated as 'dplyr'
 
 # fastplyr 0.9.0
 
