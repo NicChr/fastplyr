@@ -1029,7 +1029,10 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
   if (slow_recycle){
 
     group_keys <- construct_group_keys(data, backup_GRP)
-    grps <- lapply(groups, \(df) GRP2(df[[1L]], return.locs = FALSE, sort = FALSE))
+    grps <- lapply(groups, \(df) GRP2(
+      df[[1L]], return.locs = FALSE, sort = FALSE, return.order = FALSE,
+      return.groups = FALSE
+    ))
 
     sizes <- lapply(grps, GRP_group_sizes)
 
