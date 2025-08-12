@@ -21,6 +21,8 @@ which are optimised in a separate way.
 
 ### Bug fixes
 
+- `f_reframe` would not recycle correctly in some cases and has now been fixed.
+
 - An issue where `f_arrange` would add variables has been fixed.
 
 - An issue where `across` was selecting grouped variables has been fixed.
@@ -30,7 +32,6 @@ which are optimised in a separate way.
 - Fix column accessor calls like `.data$`
 - Functional to allow users to mark functions as not-group-aware
 - Fix unpacked across results
-- Fix calls like `fastplyr::across`, the namespace should be calculated as 'dplyr'
 
 # fastplyr 0.9.0
 
