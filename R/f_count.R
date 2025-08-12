@@ -55,8 +55,8 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
       .order == group_by_order_default(data)){
 
     counts <- grouped_df_counts(data, weights = weights, expand = FALSE)
-    group_vars <- group_vars(data)
-    out <- group_keys(data)
+    group_vars <- f_group_vars(data)
+    out <- f_group_keys(data)
 
   } else {
 
@@ -89,7 +89,7 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
   if (sort){
     out <- f_arrange(out, .cols = count_col, .descending = TRUE)
   }
-  if ((length(group_vars(data)) + 1L) == df_ncol(out)){
+  if ((length(f_group_vars(data)) + 1L) == df_ncol(out)){
     cheapr::rebuild(out, f_ungroup(data))
   } else {
     cheapr::rebuild(out, data)
@@ -111,7 +111,7 @@ f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
       .order == group_by_order_default(data)){
 
     counts <- grouped_df_counts(data, weights = weights, expand = TRUE)
-    group_vars <- group_vars(data)
+    group_vars <- f_group_vars(data)
     out <- data
   } else {
 

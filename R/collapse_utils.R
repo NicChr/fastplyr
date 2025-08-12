@@ -394,7 +394,7 @@ df_to_GRP <- function(data, .cols = character(),
                       return.order = TRUE,
                       return.groups = TRUE,
                       return.locs = FALSE){
-  dplyr_groups <- group_vars(data)
+  dplyr_groups <- f_group_vars(data)
   cols <- drop_names(col_select_names(data, .cols = .cols))
   extra_groups <- vec_setdiff(cols, dplyr_groups)
   data2 <- cheapr::sset_df(data, j = cols)

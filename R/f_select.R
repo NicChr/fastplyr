@@ -31,8 +31,8 @@ f_select.data.frame <- function(data, ..., .cols = NULL){
 }
 #' @export
 f_select.grouped_df <- function(data, ..., .cols = NULL){
-  group_vars <- group_vars(data)
-  group_data <- group_data(data)
+  group_vars <- f_group_vars(data)
+  group_data <- f_group_data(data)
 
   cols <- tidy_select_names(data, ..., .cols = .cols)
 

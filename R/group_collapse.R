@@ -16,7 +16,7 @@ df_collapse <- function(data, cols = names(data),
     out <- df_add_col(out, ".group", df_seq_along(out))
   }
   if (loc){
-    if (add && identical(group_vars(data), cols) &&
+    if (add && identical(f_group_vars(data), cols) &&
         order == group_by_order_default(data) &&
         drop == group_by_order_default(data)){
       GRP_loc <- as.list(group_rows(data))

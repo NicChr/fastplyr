@@ -91,7 +91,7 @@ f_group_by <- function(data, ..., .add = FALSE,
                        .order = group_by_order_default(data),
                        .by = NULL, .cols = NULL,
                        .drop = df_group_by_drop_default(data)){
-  init_group_vars <- group_vars(data)
+  init_group_vars <- f_group_vars(data)
   group_info <- tidy_eval_groups(
     cpp_ungroup(data), ...,
     .by = {{ .by }},

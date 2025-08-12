@@ -928,7 +928,7 @@ dplyr_eval_summarise <- function(data, ...){
 
   quos <- rlang::enquos(...)
   expr_names <- names(quos)
-  group_vars <- group_vars(data)
+  group_vars <- f_group_vars(data)
   n_groups <- length(group_vars)
 
   results <- list()
