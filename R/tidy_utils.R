@@ -1048,11 +1048,6 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
 
   if (slow_recycle){
 
-    cli::cli_inform(
-      c("!" = "A mix of regular and optimised expressions has been detected in
-    {.fn f_reframe}, recycling results might take some time")
-    )
-
     group_keys <- construct_group_keys(data, backup_GRP)
     grps <- lapply(groups, \(df) GRP2(df[[1L]], return.locs = FALSE, sort = FALSE))
 
@@ -1090,72 +1085,26 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
     names(groups) <- quo_names
   }
 
-  # if (slow_recycle){
-  #
-  #   group_keys <- construct_group_keys(data, backup_GRP)
-  #   group_ids <- lapply(groups, \(df) collapse::group(df[[1L]], group.sizes = TRUE))
-  #
-  #   unique_group_ids <- sequence(groups[[1]][[1]][[df_nrow(groups[[1]])]])
-  #
-  #   sizes <- lapply(
-  #     group_ids, \(x){
-  #       attr(x, "group.sizes", TRUE)
-  #       # f_count(
-  #       #   df, .cols = 1L, .order = FALSE, name = ".internal.n"
-  #       # )[[".internal.n"]]
-  #     }
-  #   )
-  #
-  #   max_sizes <- do.call(pmax, sizes)
-  #
-  #
-  #   all_sizes_the_same <- TRUE
-  #
-  #
-  #   for (i in 2:length(sizes)){
-  #     all_sizes_the_same <- all_sizes_the_same &&
-  #       identical(sizes[[i]], sizes[[i - 1L]])
-  #   }
-  #
-  #   if (!all_sizes_the_same){
-  #
-  #     out_groups <- cheapr::seq_id(max_sizes)
-  #
-  #     # which_to_subset <- lapply(
-  #     #   groups, \(df) collapse::fmatch(out_groups, df[[1]], overid = 2L)
-  #     # )
-  #
-  #     # which_to_subset <- lapply(
-  #     #   groups, \(df) collapse::fmatch(out_groups, df[[1]], overid = 2L)
-  #     # )
-  #
-  #     groups <- cheapr::sset(group_keys, out_groups)
-  #     groups <- cheapr::cheapr_rep_len(
-  #       list(groups), length(results)
-  #     )
-  #     names(groups) <- quo_names
-  #     # results <- purrr::map2(results, which_to_subset, \(x, i) sset(x, i))
-  #
-  #   }
-  # }
-
   # Unpack results
 
-  # k <- 1L
-  # for (i in seq_along(x)){
-  #   # Unpack
-  #   if (isTRUE(attr(quos[[i]], ".unpack", TRUE)) && is_df(x[[k]])){
-  #     results_to_append <- as.list(x[[k]])
-  #     if (nzchar(quo_names[[i]])){
-  #       names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
-  #     }
-  #     x <- append(x, results_to_append, after = k - 1L)
-  #     k <- k + length(results_to_append)
-  #     x[[k]] <- NULL
-  #   } else {
-  #     k <- k + 1L
-  #   }
-  # }
+  k <- 1L
+  for (i in seq_along(results)){
+    # Unpack
+    if (isTRUE(attr(quos[[i]], ".unpack", TRUE)) && is_df(results[[k]])){
+      results_to_append <- as.list(results[[k]])
+      if (nzchar(quo_names[[i]])){
+        names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
+      }
+      results <- append(results, results_to_append, after = k - 1L)
+      groups <- append(groups, rep_len(groups[k], length(results_to_append)), after = k - 1L)
+      names(groups) <- names(results)
+      k <- k + length(results_to_append)
+      results[[k]] <- NULL
+      groups[[k]] <- NULL
+    } else {
+      k <- k + 1L
+    }
+  }
 
   list(groups = groups, results = results)
 }
