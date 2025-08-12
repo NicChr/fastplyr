@@ -51,28 +51,6 @@ is_optimised_call <- function(expr, env = rlang::caller_env()){
   is_fn_call(expr, .optimised_fn_list[["input_fn_nms"]], NULL, env)
 }
 
-# is_group_unaware_call <- function(expr, env){
-#   maybe <- is_fn_call(expr, names(.group_unaware_fns), NULL, env)
-#
-#   if (!maybe) return(FALSE)
-#
-#   # Get fn name as a symbol
-#   if (call_is_namespaced(expr)){
-#     fn <- expr[[1]][[3]]
-#   } else {
-#     fn <- expr[[1]]
-#   }
-#
-#   actual_ns <- fun_ns(fn, env)
-#   target_ns <- .group_unaware_fns[[fn]]
-#   # target_ns <- get0(fn, envir = .group_unaware_fns)
-#
-#   if (is.null(target_ns)) return(FALSE)
-#
-#   target_ns == actual_ns
-# }
-
-
 # Somewhat safer check of the .by arg
 # e.g mutate(group_by(iris, Species), .by = any_of("okay"))
 # Should not produce an error with this check
