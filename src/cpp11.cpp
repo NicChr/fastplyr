@@ -111,6 +111,13 @@ extern "C" SEXP _fastplyr_cpp_group_locs2(SEXP group_id, SEXP group_sizes) {
   END_CPP11
 }
 // fastplyr.cpp
+SEXP cpp_vec_group_split(SEXP x, SEXP locs);
+extern "C" SEXP _fastplyr_cpp_vec_group_split(SEXP x, SEXP locs) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_vec_group_split(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(locs)));
+  END_CPP11
+}
+// fastplyr.cpp
 SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes);
 extern "C" SEXP _fastplyr_cpp_orig_order(SEXP group_id, SEXP group_sizes) {
   BEGIN_CPP11
@@ -314,6 +321,20 @@ extern "C" SEXP _fastplyr_cpp_group_id_sorted(SEXP x) {
   END_CPP11
 }
 // tidy.cpp
+SEXP transpose_eval_results(SEXP x);
+extern "C" SEXP _fastplyr_transpose_eval_results(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(transpose_eval_results(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// tidy.cpp
+SEXP recycle_eval_results(SEXP x);
+extern "C" SEXP _fastplyr_recycle_eval_results(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(recycle_eval_results(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
+// tidy.cpp
 SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups);
 extern "C" SEXP _fastplyr_cpp_grouped_eval_tidy(SEXP data, SEXP quos, SEXP recycle, SEXP add_groups) {
   BEGIN_CPP11
@@ -403,11 +424,14 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_sorted_group_starts",              (DL_FUNC) &_fastplyr_cpp_sorted_group_starts,              2},
     {"_fastplyr_cpp_ungroup",                          (DL_FUNC) &_fastplyr_cpp_ungroup,                          1},
     {"_fastplyr_cpp_unlist_group_locs",                (DL_FUNC) &_fastplyr_cpp_unlist_group_locs,                2},
+    {"_fastplyr_cpp_vec_group_split",                  (DL_FUNC) &_fastplyr_cpp_vec_group_split,                  2},
     {"_fastplyr_cpp_which_all",                        (DL_FUNC) &_fastplyr_cpp_which_all,                        1},
     {"_fastplyr_fun_ns",                               (DL_FUNC) &_fastplyr_fun_ns,                               2},
     {"_fastplyr_is_fn_call",                           (DL_FUNC) &_fastplyr_is_fn_call,                           4},
     {"_fastplyr_is_group_unaware_call",                (DL_FUNC) &_fastplyr_is_group_unaware_call,                2},
     {"_fastplyr_is_nested_call",                       (DL_FUNC) &_fastplyr_is_nested_call,                       1},
+    {"_fastplyr_recycle_eval_results",                 (DL_FUNC) &_fastplyr_recycle_eval_results,                 1},
+    {"_fastplyr_transpose_eval_results",               (DL_FUNC) &_fastplyr_transpose_eval_results,               1},
     {NULL, NULL, 0}
 };
 }

@@ -688,3 +688,13 @@ grouped_lag <- function(x, n = 1L, fill = NULL, g = NULL, order_by = NULL){
 grouped_lead <- function(x, n = 1L, fill = NULL, g = NULL, order_by = NULL){
   grouped_lag(x, n = -n, fill = fill, g = g, order_by = order_by)
 }
+
+vec_group_split <- function(x, g){
+  if (is.null(g)){
+    list(x)
+  } else {
+   g <- GRP2(g)
+   locs <- GRP_loc(g)
+   cpp_vec_group_split(x, locs)
+  }
+}

@@ -296,6 +296,20 @@ SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
   YIELD(NP);
   return group_locs;
 }
+[[cpp11::register]]
+SEXP cpp_vec_group_split(SEXP x, SEXP locs){
+
+  int n_groups = Rf_length(locs);
+
+  const SEXP *p_locs = VECTOR_PTR_RO(locs);
+  SEXP out = SHIELD(new_vec(VECSXP, n_groups));
+
+  for (int i = 0; i < n_groups; ++i){
+   SET_VECTOR_ELT(out, i, cheapr::sset(x, p_locs[i], true));
+  }
+  YIELD(1);
+  return out;
+}
 
 // Using a combination of group_id and sorted group_sizes
 // we can quickly calculate an order vector that places

@@ -60,6 +60,10 @@ cpp_group_locs2 <- function(group_id, group_sizes) {
   .Call(`_fastplyr_cpp_group_locs2`, group_id, group_sizes)
 }
 
+cpp_vec_group_split <- function(x, locs) {
+  .Call(`_fastplyr_cpp_vec_group_split`, x, locs)
+}
+
 cpp_orig_order <- function(group_id, group_sizes) {
   .Call(`_fastplyr_cpp_orig_order`, group_id, group_sizes)
 }
@@ -174,6 +178,14 @@ cpp_unlist_group_locs <- function(x, group_sizes) {
 
 cpp_group_id_sorted <- function(x) {
   .Call(`_fastplyr_cpp_group_id_sorted`, x)
+}
+
+transpose_eval_results <- function(x) {
+  .Call(`_fastplyr_transpose_eval_results`, x)
+}
+
+recycle_eval_results <- function(x) {
+  .Call(`_fastplyr_recycle_eval_results`, x)
 }
 
 cpp_grouped_eval_tidy <- function(data, quos, recycle, add_groups) {

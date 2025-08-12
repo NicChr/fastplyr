@@ -7,7 +7,7 @@ get_from_package <- function(x, package){
 # cheapr ------------------------------------------------------------------
 
 set_add_attr <- function(x, which, value){
-  cheapr::attrs_add(x, .args = `names<-`(list(value), which), .set = TRUE)
+  cheapr::attrs_modify(x, .args = `names<-`(list(value), which), .set = TRUE)
 }
 which <- cheapr::which_
 which_not_in <- function(x, table){
@@ -25,6 +25,7 @@ na_init <- function(x, n = 1L){
   cheapr::cheapr_rep_len(cheapr::sset(x, 0L), n)
 }
 
+cpp_sset <- get_from_package("cpp_sset", "cheapr")
 cpp_int64_to_numeric <- get_from_package("cpp_int64_to_numeric", "cheapr")
 cpp_loc_set_replace <- get_from_package("cpp_loc_set_replace", "cheapr")
 cpp_is_simple_atomic_vec <- get_from_package("cpp_is_simple_atomic_vec", "cheapr")

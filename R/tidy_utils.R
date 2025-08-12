@@ -528,7 +528,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
       }
     }
   }
-  cheapr::attrs_add(
+  cheapr::attrs_modify(
     out,
     .optimised = optimised,
     .GRP = .fastplyr.g,
@@ -553,7 +553,7 @@ check_fastplyr_quos <- function(quos){
 
 sset_quos <- function(quos, i){
   out <- quos[i]
-  cheapr::attrs_add(
+  cheapr::attrs_modify(
     out,
     .optimised = attr(quos, ".optimised", TRUE)[i],
     .group_unaware = attr(quos, ".group_unaware", TRUE)[i],
@@ -806,7 +806,7 @@ unpack_results <- function(x, quos){
   x
 }
 
-eval_reframe_optimised_quos <- function(data, quos){
+eval_all_tidy_optimised_quos <- function(data, quos){
 
   quo_names <- names(quos)
   quo_groups <- attr(quos, ".GRP", TRUE)
@@ -906,113 +906,6 @@ eval_mutate_optimised_quos <- function(data, quos){
   cpp_eval_all_tidy(quos, rlang::as_data_mask(data))
 }
 
-eval_all_tidy <- function(data, quos, recycle = FALSE){
-  check_fastplyr_quos(quos)
-
-  if (length(quos) == 0L){
-    return(
-      list(groups = `names<-`(list(), character()),
-           results = `names<-`(list(), character()))
-    )
-  }
-
-  GRP <- attr(quos, ".GRP", TRUE)
-
-  quo_names <- names(quos)
-  which_optimised <- cheapr::val_find(attr(quos, ".optimised", TRUE), TRUE)
-
-  if (length(which_optimised) == length(quos)){
-
-    results <- eval_reframe_optimised_quos(data, quos)
-    groups <- results[[1]]
-    results <- results[[2]]
-
-    if (recycle){
-      ## THIS IS A BUG AND IS NOT RECYCLING PROPERLY
-      ## cpp_grouped_eval_tidy actually recycles properly
-      ## so study that
-
-      ## Either we error if result size isn't 1 and doesn't match
-      ## earlier result sizes which ensures very efficient recycling
-      ## Or calculate group sizes across results, find common max
-      ## and then combine
-
-      ## Conclusion: Very difficult to achieve desired result with the format
-      ## of the results here
-      ## It works in C/C++ because we can call cheapr's C fn rep_len()
-      ## To achieve a fast by-group rep_len, we would likely need to
-      ## split the data frame into a list(n_groups) which is inefficient
-      # Solution: Error if result size isn't 1 and doesn't equal previous sizes
-      # Also apply this error on the C/C++ grouped eval side of things
-
-
-      # With 'optimised' expressions, fastplyr only accepts
-      # returning results that are either length 1 or length n for
-      # each group of size n
-
-      n_groups <- GRP_n_groups(GRP)
-      result_sizes <- cheapr::list_lengths(results)
-
-      if (any(result_sizes != n_groups & result_sizes != df_nrow(data), na.rm = TRUE)){
-        cli::cli_abort("Optimised expression result sizes must be either 1 (for each group) or match the nrows of the data frame")
-      }
-
-      common_size <- common_length(results)
-      group_sizes <- GRP_group_sizes(GRP)
-
-      results <- lapply(
-        results,
-        \(x){
-          if (vector_length(x) == common_size){
-            x
-          } else {
-            cheapr::cheapr_rep(x, group_sizes)
-          }
-        }
-      )
-      groups <- cheapr::cheapr_rep_len(
-        list(cheapr::cheapr_rep_len(groups[[1]], vector_length(results[[1]]))),
-        length(results)
-      )
-    }
-
-    names(groups) <- quo_names
-    names(results) <- quo_names
-
-    return(list(groups = groups, results = results))
-  }
-
-  if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-    return(dplyr_eval_all_tidy(
-      construct_fastplyr_grouped_df(data, GRP), !!!quos
-    ))
-  }
-  all_results <- cpp_grouped_eval_tidy(
-    construct_fastplyr_grouped_df(data, GRP), quos,
-    recycle = recycle, add_groups = TRUE
-  )
-  groups <- all_results[[1L]]
-  results <- all_results[[2L]]
-  n_group_vars <- length(GRP_group_vars(GRP))
-
-  k <- 1L
-  for (i in seq_along(results)){
-    # Unpack
-    if (isTRUE(attr(quos[[i]], ".unpack", TRUE)) && is_df(results[[k]])){
-      results_to_append <- as.list(results[[k]])
-      if (nzchar(quo_names[[i]])){
-        names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
-      }
-      results <- append(results, results_to_append, after = k - 1L)
-      k <- k + length(results_to_append)
-      results[[k]] <- NULL
-    } else {
-      k <- k + 1L
-    }
-  }
-  list(groups = groups, results = results)
-}
-
 ### In the future we hope to not have to use this
 ### But right now I'm not sure how to evaluate
 ### data-mask specific functions like `n()` and friends
@@ -1021,7 +914,7 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
 ### return a structure similar to the one
 ### eval_all_tidy() produces while keeping the expressions
 ### sequentially dependent
-dplyr_eval_all_tidy <- function(data, ...){
+dplyr_eval_reframe <- function(data, ...){
 
   quos <- rlang::enquos(...)
   expr_names <- names(quos)
@@ -1045,7 +938,7 @@ dplyr_eval_all_tidy <- function(data, ...){
     }
     result2 <- as.list(result)[seq_len(df_ncol(result) - n_groups) + n_groups]
     results <- c(results, result2)
-    groups <- cheapr::list_combine(groups, rep(list(df_as_tbl(cheapr::sset_col(result, group_vars))), length(result2)))
+    groups <- cheapr::list_combine(groups, cheapr::cheapr_rep(list(df_as_tbl(cheapr::sset_col(result, group_vars))), length(result2)))
   }
   names(groups) <- names(results)
   list(groups = groups, results = results)
@@ -1079,12 +972,200 @@ dplyr_eval_summarise <- function(data, ...){
   # list(groups = groups, results = results)
 }
 
+eval_all_tidy <- function(data, quos, recycle = FALSE){
+
+  check_fastplyr_quos(quos)
+
+  if (cpp_any_quo_contains_dplyr_mask_call(quos)){
+    return(dplyr_eval_reframe(
+      construct_fastplyr_grouped_df(data, GRP), !!!quos
+    ))
+  }
+
+  optimised <- attr(quos, ".optimised", TRUE)
+  which_optimised <- cheapr::val_find(optimised, TRUE)
+  which_regular <- cheapr::val_find(optimised, FALSE)
+
+  GRP <- attr(quos, ".GRP", TRUE)
+
+  # If slow_recycle is true then we have to do a manual recycling of results
+  slow_recycle <- recycle && length(which_optimised) > 0 && length(which_regular) > 0
+
+  if (slow_recycle){
+    backup_GRP <- GRP
+
+    GRP[["groups"]] <- cheapr::new_df(
+      .internal.x = cheapr::sset(
+        GRP_group_id(GRP), GRP_starts(GRP)
+      )
+    )
+    GRP[["group.vars"]] <- ".internal.x"
+
+    cheapr::attrs_modify(
+      quos, .GRP = GRP, .set = TRUE
+    )
+  }
+
+  quo_names <- names(quos)
+  regular_quos <- sset_quos(quos, which_regular)
+  optimised_quos <- sset_quos(quos, which_optimised)
+  optimised_results <- eval_all_tidy_optimised_quos(data, optimised_quos)
+
+  # Doing this check to potentially avoid calculating group locations
+  # through a call to `construct_fastplyr_grouped_df()`
+  # which will happen in e.g. `f_reframe(df, new = mean(x), .by = g)`
+  if (length(regular_quos) == 0){
+    regular_results <- list(
+      groups = `names<-`(list(), character()),
+      results = `names<-`(list(), character())
+    )
+  } else if (length(optimised_quos) == 0){
+    regular_results <- cpp_grouped_eval_tidy(
+      construct_fastplyr_grouped_df(data, GRP), regular_quos,
+      recycle = recycle, add_groups = TRUE
+    )
+  } else {
+    # Don't recycle in this case as we will manually recycle later
+    regular_results <- cpp_grouped_eval_tidy(
+      construct_fastplyr_grouped_df(data, GRP), regular_quos,
+      recycle = FALSE, add_groups = TRUE
+    )
+  }
+
+  groups <- cheapr::new_list(length(quos))
+  groups[which_regular] <- regular_results[[1]]
+  groups[which_optimised] <- optimised_results[[1]]
+  names(groups) <- quo_names
+
+  results <- cheapr::new_list(length(quos))
+  results[which_regular] <- regular_results[[2]]
+  results[which_optimised] <- optimised_results[[2]]
+  names(results) <- quo_names
+
+  # If the user provides expressions that can be optimised alongside
+  # ones which can't, then special by-group recycling needs to occur
+  # to ensure that each within-group result is recycled correctly
+
+  if (slow_recycle){
+
+    cli::cli_inform(
+      c("!" = "A mix of regular and optimised expressions has been detected in
+    {.fn f_reframe}, recycling results might take some time")
+    )
+
+    group_keys <- construct_group_keys(data, backup_GRP)
+    grps <- lapply(groups, \(df) GRP2(df[[1L]], return.locs = FALSE, sort = FALSE))
+
+    sizes <- lapply(grps, GRP_group_sizes)
+
+    all_sizes_the_same <- TRUE
+
+    for (i in 2:length(sizes)){
+      all_sizes_the_same <- all_sizes_the_same &&
+        identical(sizes[[i]], sizes[[i - 1L]])
+    }
+
+    if (!all_sizes_the_same){
+
+      # Split results by group
+
+      # Add group locations
+      grps <- lapply(grps, \(x) x[["locs"]] <- GRP_loc(x))
+
+      split_results <- purrr::map2(results, grps, \(x, g) vec_group_split(x, g = g))
+      split_results <- transpose_eval_results(split_results)
+      split_results <- recycle_eval_results(split_results)
+      split_results <- transpose_eval_results(split_results)
+      recycled_sizes <- cheapr::list_lengths(split_results[[1]])
+      results <- lapply(split_results, \(x) cheapr::cheapr_c(.args = x))
+    } else {
+      recycled_sizes <- sizes[[1]]
+    }
+    # These are group IDs of our recycled groups
+    out_groups <- cheapr::seq_id(recycled_sizes)
+    groups <- cheapr::sset(group_keys, out_groups)
+    groups <- cheapr::cheapr_rep_len(
+      list(groups), length(results)
+    )
+    names(groups) <- quo_names
+  }
+
+  # if (slow_recycle){
+  #
+  #   group_keys <- construct_group_keys(data, backup_GRP)
+  #   group_ids <- lapply(groups, \(df) collapse::group(df[[1L]], group.sizes = TRUE))
+  #
+  #   unique_group_ids <- sequence(groups[[1]][[1]][[df_nrow(groups[[1]])]])
+  #
+  #   sizes <- lapply(
+  #     group_ids, \(x){
+  #       attr(x, "group.sizes", TRUE)
+  #       # f_count(
+  #       #   df, .cols = 1L, .order = FALSE, name = ".internal.n"
+  #       # )[[".internal.n"]]
+  #     }
+  #   )
+  #
+  #   max_sizes <- do.call(pmax, sizes)
+  #
+  #
+  #   all_sizes_the_same <- TRUE
+  #
+  #
+  #   for (i in 2:length(sizes)){
+  #     all_sizes_the_same <- all_sizes_the_same &&
+  #       identical(sizes[[i]], sizes[[i - 1L]])
+  #   }
+  #
+  #   if (!all_sizes_the_same){
+  #
+  #     out_groups <- cheapr::seq_id(max_sizes)
+  #
+  #     # which_to_subset <- lapply(
+  #     #   groups, \(df) collapse::fmatch(out_groups, df[[1]], overid = 2L)
+  #     # )
+  #
+  #     # which_to_subset <- lapply(
+  #     #   groups, \(df) collapse::fmatch(out_groups, df[[1]], overid = 2L)
+  #     # )
+  #
+  #     groups <- cheapr::sset(group_keys, out_groups)
+  #     groups <- cheapr::cheapr_rep_len(
+  #       list(groups), length(results)
+  #     )
+  #     names(groups) <- quo_names
+  #     # results <- purrr::map2(results, which_to_subset, \(x, i) sset(x, i))
+  #
+  #   }
+  # }
+
+  # Unpack results
+
+  # k <- 1L
+  # for (i in seq_along(x)){
+  #   # Unpack
+  #   if (isTRUE(attr(quos[[i]], ".unpack", TRUE)) && is_df(x[[k]])){
+  #     results_to_append <- as.list(x[[k]])
+  #     if (nzchar(quo_names[[i]])){
+  #       names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
+  #     }
+  #     x <- append(x, results_to_append, after = k - 1L)
+  #     k <- k + length(results_to_append)
+  #     x[[k]] <- NULL
+  #   } else {
+  #     k <- k + 1L
+  #   }
+  # }
+
+  list(groups = groups, results = results)
+}
+
 eval_summarise <- function(data, quos){
 
   check_fastplyr_quos(quos)
 
   if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-    return(dplyr_eval_all_tidy(
+    return(dplyr_eval_reframe(
       construct_fastplyr_grouped_df(data, GRP), !!!quos
     ))
   }

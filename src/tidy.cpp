@@ -343,90 +343,115 @@ bool cpp_group_id_sorted(SEXP x){
 // Converts a list of n groups x m results list into an
 // m results x n groups list
 
-// SEXP transpose_eval_results(SEXP x) {
-//
-//   int32_t NP = 0;
-//
-//   if (TYPEOF(x) != VECSXP) {
-//     Rf_error("`x` must be a list in %s", __func__);
-//   }
-//
-//   const SEXP *p_x = VECTOR_PTR_RO(x);
-//
-//   int n = Rf_length(x);
-//   if (n == 0) {
-//     return new_vec(VECSXP, 0);
-//   }
-//
-//   SEXP x1 = VECTOR_ELT(x, 0);
-//   int m = Rf_length(x1);
-//
-//   // Create space for output
-//   SEXP out = SHIELD(new_vec(VECSXP, m)); ++NP;
-//   SEXP names1 = SHIELD(get_names(x)); ++NP;
-//
-//   const SEXP *p_out = VECTOR_PTR_RO(out);
-//
-//   for (int j = 0; j < m; ++j) {
-//     SEXP xj = SHIELD(new_vec(VECSXP, n));
-//     if (!Rf_isNull(names1)) {
-//       set_names(xj, names1);
-//     }
-//     SET_VECTOR_ELT(out, j, xj);
-//     YIELD(1);
-//   }
-//
-//   SEXP names2 = SHIELD(get_names(x1)); ++NP;
-//
-//   if (!Rf_isNull(names2)) {
-//     set_names(out, names2);
-//   }
-//
-//   PROTECT_INDEX index_idx;
-//   SEXP index;
-//   R_ProtectWithIndex(index = R_NilValue, &index_idx); ++NP;
-//
-//   // Fill output
-//   for (int i = 0; i < n; ++i) {
-//     SEXP xi = p_x[i];
-//
-//     const SEXP *p_xi = VECTOR_PTR_RO(xi);
-//
-//     // find mapping between names and index. Use -1 to indicate not found
-//     SEXP names_i = get_names(xi);
-//     SEXP index;
-//
-//     int* __restrict__ p_index;
-//
-//     if (!Rf_isNull(names2) && !Rf_isNull(names_i)) {
-//       R_Reprotect(index = Rf_match(names_i, names2, 0), index_idx);
-//       p_index = INTEGER(index);
-//     } else {
-//       R_Reprotect(index = new_vec(INTSXP, m), index_idx);
-//       p_index = INTEGER(index);
-//
-//       int mi = Rf_length(xi);
-//
-//       if (m != mi) {
-//         YIELD(NP);
-//         Rf_error("Element %d must be length %d, not %d", i + 1, m, mi);
-//       }
-//       for (int i = 0; i < m; ++i) {
-//         p_index[i] = (i < mi) ? i + 1 : 0;
-//       }
-//
-//     }
-//
-//     for (int j = 0; j < m; ++j) {
-//       int pos = p_index[j] - 1;
-//       if (pos == -1) continue;
-//       SET_VECTOR_ELT(p_out[j], i, p_xi[pos]);
-//     }
-//   }
-//
-//   YIELD(NP);
-//   return out;
-// }
+[[cpp11::register]]
+SEXP transpose_eval_results(SEXP x) {
+
+  int32_t NP = 0;
+
+  if (TYPEOF(x) != VECSXP) {
+    Rf_error("`x` must be a list in %s", __func__);
+  }
+
+  const SEXP *p_x = VECTOR_PTR_RO(x);
+
+  int n = Rf_length(x);
+  if (n == 0) {
+    return new_vec(VECSXP, 0);
+  }
+
+  SEXP x1 = VECTOR_ELT(x, 0);
+  int m = Rf_length(x1);
+
+  // Create space for output
+  SEXP out = SHIELD(new_vec(VECSXP, m)); ++NP;
+  SEXP names1 = SHIELD(get_names(x)); ++NP;
+
+  const SEXP *p_out = VECTOR_PTR_RO(out);
+
+  for (int j = 0; j < m; ++j) {
+    SEXP xj = SHIELD(new_vec(VECSXP, n));
+    if (!Rf_isNull(names1)) {
+      set_names(xj, names1);
+    }
+    SET_VECTOR_ELT(out, j, xj);
+    YIELD(1);
+  }
+
+  SEXP names2 = SHIELD(get_names(x1)); ++NP;
+
+  if (!Rf_isNull(names2)) {
+    set_names(out, names2);
+  }
+
+  PROTECT_INDEX index_idx;
+  SEXP index;
+  R_ProtectWithIndex(index = R_NilValue, &index_idx); ++NP;
+
+  // Fill output
+  for (int i = 0; i < n; ++i) {
+    SEXP xi = p_x[i];
+
+    const SEXP *p_xi = VECTOR_PTR_RO(xi);
+
+    // find mapping between names and index. Use -1 to indicate not found
+    SEXP names_i = get_names(xi);
+    SEXP index;
+
+    int* __restrict__ p_index;
+
+    if (!Rf_isNull(names2) && !Rf_isNull(names_i)) {
+      R_Reprotect(index = Rf_match(names_i, names2, 0), index_idx);
+      p_index = INTEGER(index);
+    } else {
+      R_Reprotect(index = new_vec(INTSXP, m), index_idx);
+      p_index = INTEGER(index);
+
+      int mi = Rf_length(xi);
+
+      if (m != mi) {
+        YIELD(NP);
+        Rf_error("Element %d must be length %d, not %d", i + 1, m, mi);
+      }
+      for (int i = 0; i < m; ++i) {
+        p_index[i] = (i < mi) ? i + 1 : 0;
+      }
+
+    }
+
+    for (int j = 0; j < m; ++j) {
+      int pos = p_index[j] - 1;
+      if (pos == -1) continue;
+      SET_VECTOR_ELT(p_out[j], i, p_xi[pos]);
+    }
+  }
+
+  YIELD(NP);
+  return out;
+}
+
+[[cpp11::register]]
+SEXP recycle_eval_results(SEXP x){
+  int32_t NP = 0;
+
+  if (TYPEOF(x) != VECSXP) {
+    Rf_error("`x` must be a list in %s", __func__);
+  }
+
+  const SEXP *p_x = VECTOR_PTR_RO(x);
+
+  int n = Rf_length(x);
+  if (n == 0) {
+    return new_vec(VECSXP, 0);
+  }
+
+  SEXP out = SHIELD(new_vec(VECSXP, n)); ++NP;
+
+  for (int i = 0; i < n; ++i){
+    SET_VECTOR_ELT(out, i, cheapr::recycle(p_x[i], R_NilValue));
+  }
+  YIELD(NP);
+  return out;
+}
 
 [[cpp11::register]]
 SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
