@@ -1096,7 +1096,7 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
         names(results_to_append) <- paste(quo_names[[i]], names(results_to_append), sep = "_")
       }
       results <- append(results, results_to_append, after = k - 1L)
-      groups <- append(groups, rep_len(groups[k], length(results_to_append)), after = k - 1L)
+      groups <- append(groups, cheapr::cheapr_rep_len(groups[k], length(results_to_append)), after = k - 1L)
       names(groups) <- names(results)
       k <- k + length(results_to_append)
       results[[k]] <- NULL
