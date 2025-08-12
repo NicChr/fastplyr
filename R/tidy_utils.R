@@ -1045,7 +1045,10 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
       # Split results by group
 
       # Add group locations
-      grps <- lapply(grps, \(x) x[["locs"]] <- GRP_loc(x))
+      grps <- lapply(grps, \(x){
+        x[["locs"]] <- GRP_loc(x)
+        x
+      })
 
       split_results <- purrr::map2(results, grps, \(x, g) vec_group_split(x, g = g))
       split_results <- transpose_eval_results(split_results)
