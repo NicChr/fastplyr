@@ -295,7 +295,9 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
     expr <- rlang::quo_get_expr(quo)
     env <- rlang::quo_get_env(quo)
     attr(quo, ".unpack", TRUE) %||% set_add_attr(quo, ".unpack", .unpack_default)
-    if (!nzchar(quo_nms[[k]]) && is_fn_call(expr, "across", ns = "dplyr", env)){
+    if (!nzchar(quo_nms[[k]]) &&
+        (is_fn_call(expr, "across", ns = "dplyr", env) ||
+         is_fn_call(expr, "across", ns = "fastplyr", env))){
       left <- out[seq_len(k - 1L)]
       left_nms <- quo_nms[seq_len(k - 1L)]
       unpacked_quos <- unpack_across(
@@ -975,6 +977,10 @@ dplyr_eval_summarise <- function(data, ...){
 eval_all_tidy <- function(data, quos, recycle = FALSE){
 
   check_fastplyr_quos(quos)
+  quo_names <- names(quos)
+
+  GRP <- attr(quos, ".GRP", TRUE)
+  optimised <- attr(quos, ".optimised", TRUE)
 
   if (cpp_any_quo_contains_dplyr_mask_call(quos)){
     return(dplyr_eval_reframe(
@@ -982,11 +988,8 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
     ))
   }
 
-  optimised <- attr(quos, ".optimised", TRUE)
   which_optimised <- cheapr::val_find(optimised, TRUE)
   which_regular <- cheapr::val_find(optimised, FALSE)
-
-  GRP <- attr(quos, ".GRP", TRUE)
 
   # If slow_recycle is true then we have to do a manual recycling of results
   slow_recycle <- recycle && length(which_optimised) > 0 && length(which_regular) > 0
@@ -1006,7 +1009,6 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
     )
   }
 
-  quo_names <- names(quos)
   regular_quos <- sset_quos(quos, which_regular)
   optimised_quos <- sset_quos(quos, which_optimised)
   optimised_results <- eval_all_tidy_optimised_quos(data, optimised_quos)
@@ -1112,6 +1114,10 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
 eval_summarise <- function(data, quos){
 
   check_fastplyr_quos(quos)
+  quo_names <- names(quos)
+
+  optimised <- attr(quos, ".optimised", TRUE)
+  GRP <- attr(quos, ".GRP", TRUE)
 
   if (cpp_any_quo_contains_dplyr_mask_call(quos)){
     return(dplyr_eval_reframe(
@@ -1119,10 +1125,6 @@ eval_summarise <- function(data, quos){
     ))
   }
 
-  optimised <- attr(quos, ".optimised", TRUE)
-  GRP <- attr(quos, ".GRP", TRUE)
-
-  quo_names <- names(quos)
   which_optimised <- cheapr::val_find(optimised, TRUE)
   which_regular <- cheapr::val_find(optimised, FALSE)
   regular_quos <- sset_quos(quos, which_regular)
@@ -1156,6 +1158,10 @@ eval_summarise <- function(data, quos){
 eval_mutate <- function(data, quos){
 
   check_fastplyr_quos(quos)
+  quo_names <- names(quos)
+
+  optimised <- attr(quos, ".optimised", TRUE)
+  GRP <- attr(quos, ".GRP", TRUE)
 
   if (cpp_any_quo_contains_dplyr_mask_call(quos)){
     return(as.list(dplyr::mutate(
@@ -1163,10 +1169,6 @@ eval_mutate <- function(data, quos){
     ))[quo_names])
   }
 
-  optimised <- attr(quos, ".optimised", TRUE)
-  GRP <- attr(quos, ".GRP", TRUE)
-
-  quo_names <- names(quos)
   which_optimised <- cheapr::val_find(optimised, TRUE)
   which_regular <- cheapr::val_find(optimised, FALSE)
   regular_quos <- sset_quos(quos, which_regular)

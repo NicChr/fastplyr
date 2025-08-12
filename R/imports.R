@@ -34,13 +34,3 @@ cpp_rebuild <- get_from_package("cpp_rebuild", "cheapr")
 vec_setdiff <- get_from_package("vec_setdiff", "cheapr")
 vec_intersect <- get_from_package("vec_intersect", "cheapr")
 `%in_%` <- cheapr::`%in_%`
-
-#' @export
-dplyr::across
-#' @export
-dplyr::pick
-#' @export
-dplyr::all_of
-#' @export
-dplyr::any_of
-
