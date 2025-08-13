@@ -1,25 +1,133 @@
 #include "fastplyr.h"
 #include "cheapr_api.h"
 
+[[cpp11::register]]
+bool is_data_pronoun_call(SEXP expr, SEXP env){
 
-cpp11::writable::strings all_call_names(cpp11::sexp expr){
+  int32_t NP = 0;
 
-  cpp11::list expr_tree = as_list_call(expr);
+  if (Rf_length(expr) != 3){
+    YIELD(NP);
+    return false;
+  }
 
-  cpp11::writable::strings out;
+  SEXP data_pronoun_char = SHIELD(Rf_mkCharCE(".data", CE_UTF8)); ++NP;
+  SEXP data_pronoun_sym = SHIELD(Rf_installChar(data_pronoun_char)); ++NP;
+  SEXP dollar_str = SHIELD(Rf_ScalarString(Rf_mkCharCE("$", CE_UTF8))); ++NP;
+  SEXP double_brackets_str = SHIELD(Rf_ScalarString(Rf_mkCharCE("[[", CE_UTF8))); ++NP;
 
-  cpp11::strings temp;
+  if (!(is_fn_call(expr, dollar_str, R_NilValue, env) ||
+      is_fn_call(expr, double_brackets_str, R_NilValue, env))){
+      YIELD(NP);
+    return false;
+  }
 
-  for (int i = 1; i < expr_tree.size(); ++i){
-    if (TYPEOF(expr_tree[i]) == SYMSXP){
-      out.push_back(rlang::sym_as_string(expr_tree[i]));
-    } else if (TYPEOF(expr_tree[i]) == LANGSXP){
-      temp = all_call_names(expr_tree[i]);
+  bool out = CAR(CDR(expr)) == data_pronoun_sym;
+
+  YIELD(NP);
+  return out;
+}
+
+// TO-DO: SIMPLIFY THE if else statements below
+
+// Get the var of a .data quosure
+SEXP data_pronoun_var(SEXP data, SEXP expr, SEXP env){
+
+  int32_t NP = 0;
+
+  if (!is_data_pronoun_call(expr, env)){
+    YIELD(NP);
+    Rf_error("`expr` must be a `.data` pronoun expression");
+  }
+
+  SEXP dollar_sym = SHIELD(Rf_installChar(Rf_mkCharCE("$", CE_UTF8))); ++NP;
+
+  SEXP vars = CAR(CDDR(expr));
+  SEXP out_var = SHIELD(new_vec(STRSXP, 0)); ++NP;
+
+  if (CAR(expr) == dollar_sym){
+    if (TYPEOF(vars) == SYMSXP){
+      SHIELD(vars = rlang::sym_as_character(vars)); ++NP;
+      SEXP df = SHIELD(cheapr::df_select(data, vars)); ++NP;
+      SHIELD(out_var = get_names(df)); ++NP;
+    } else if (TYPEOF(vars) == STRSXP){
+      if (Rf_length(vars) != 1){
+        YIELD(NP);
+        Rf_error("A string or symbol of length 1 must be supplied to `.data$`");
+      }
+      SEXP df = SHIELD(cheapr::df_select(data, vars)); ++NP;
+      SHIELD(out_var = get_names(df)); ++NP;
+    }
+  } else {
+    SHIELD(vars = rlang::eval_tidy(vars, R_NilValue, env)); ++NP;
+    if (TYPEOF(vars) != STRSXP && TYPEOF(vars) != SYMSXP){
+      YIELD(NP);
+      Rf_error("A string or symbol of length 1 must be supplied to `.data[[`");
+    }
+    if (Rf_length(vars) != 1){
+      YIELD(NP);
+      Rf_error("A string or symbol of length 1 must be supplied to `.data[[`");
+    }
+    if (TYPEOF(vars) == SYMSXP){
+      SHIELD(vars = rlang::sym_as_character(vars)); ++NP;
+      SEXP df = SHIELD(cheapr::df_select(data, vars)); ++NP;
+      SHIELD(out_var = get_names(df)); ++NP;
+    } else if (TYPEOF(vars) == STRSXP){
+      SEXP df = SHIELD(cheapr::df_select(data, vars)); ++NP;
+      SHIELD(out_var = get_names(df)); ++NP;
+    }
+  }
+
+  if (Rf_length(out_var) == 0){
+    YIELD(NP);
+    Rf_error("Column not found in `.data`");
+  }
+  YIELD(NP);
+  return out_var;
+}
+
+[[cpp11::register]]
+cpp11::writable::strings all_call_names(cpp11::data_frame data, cpp11::sexp expr, cpp11::environment env){
+
+  using namespace cpp11;
+  writable::strings out;
+  strings temp;
+
+  if (is_data_pronoun_call(expr, env)){
+    temp = data_pronoun_var(data, expr, env);
+    out.push_back(temp[0]);
+  } else if (TYPEOF(expr) == SYMSXP){
+    out.push_back(rlang::sym_as_string(expr));
+  }else if (TYPEOF(expr) == LANGSXP){
+    list tree = as_list_call(expr);
+    for (int i = 1; i < tree.size(); ++i){
+      sexp branch = tree[i];
+      temp = all_call_names(data, branch, env);
       for (int j = 0; j < temp.size(); ++j){
         out.push_back(temp[j]);
       }
     }
   }
+
+  // if (is_data_pronoun_call(expr, env)){
+  //   temp = data_pronoun_var(data, expr, env);
+  //   out.push_back(temp[0]);
+  // } else if (TYPEOF(expr) == SYMSXP){
+  //   out.push_back(rlang::sym_as_string(expr));
+  // }else if (TYPEOF(expr) == LANGSXP){
+  //   list tree = as_list_call(expr);
+  //   for (int i = 1; i < tree.size(); ++i){
+  //     sexp branch = tree[i];
+  //     if (TYPEOF(branch) == SYMSXP){
+  //       out.push_back(rlang::sym_as_string(branch));
+  //     } else if (TYPEOF(branch) == LANGSXP){
+  //       temp = all_call_names(data, branch, env);
+  //       for (int j = 0; j < temp.size(); ++j){
+  //         out.push_back(temp[j]);
+  //       }
+  //     }
+  //   }
+  // }
   return out;
 }
 
@@ -28,22 +136,22 @@ cpp11::writable::strings all_call_names(cpp11::sexp expr){
 [[cpp11::register]]
 SEXP cpp_quo_data_vars(SEXP quos, SEXP data){
 
-  SEXP list_container = SHIELD(new_vec(VECSXP, 2));
+  SEXP quo_vars = SHIELD(new_vec(VECSXP, Rf_length(quos)));
 
-  SEXP quo_vars, out;
-  PROTECT_INDEX quo_vars_idx, out_idx;
-  R_ProtectWithIndex(quo_vars = R_NilValue, &quo_vars_idx);
-  R_ProtectWithIndex(out = new_vec(STRSXP, 0), &out_idx);
+  SEXP expr, env;
+  PROTECT_INDEX expr_idx, env_idx;
+  R_ProtectWithIndex(expr = R_NilValue, &expr_idx);
+  R_ProtectWithIndex(env = R_NilValue, &env_idx);
 
   for (int i = 0; i < Rf_length(quos); ++i){
-    R_Reprotect(quo_vars = all_call_names(VECTOR_ELT(quos, i)), quo_vars_idx);
-    SET_VECTOR_ELT(list_container, 0, out);
-    SET_VECTOR_ELT(list_container, 1, quo_vars);
-    R_Reprotect(out = cheapr::c(list_container), out_idx);
+    R_Reprotect(expr = rlang::quo_get_expr(VECTOR_ELT(quos, i)), expr_idx);
+    R_Reprotect(env = rlang::quo_get_env(VECTOR_ELT(quos, i)), env_idx);
+    SET_VECTOR_ELT(quo_vars, i, all_call_names(data, expr, env));
   }
+  SEXP out = SHIELD(cheapr::c(quo_vars));
   SEXP names = SHIELD(get_names(data));
   SHIELD(out = cheapr::intersect(names, out, false));
-  YIELD(5);
+  YIELD(6);
   return out;
 }
 

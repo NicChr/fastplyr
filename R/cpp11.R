@@ -152,6 +152,14 @@ cpp_group_id <- function(x) {
   .Call(`_fastplyr_cpp_group_id`, x)
 }
 
+is_data_pronoun_call <- function(expr, env) {
+  .Call(`_fastplyr_is_data_pronoun_call`, expr, env)
+}
+
+all_call_names <- function(data, expr, env) {
+  .Call(`_fastplyr_all_call_names`, data, expr, env)
+}
+
 cpp_quo_data_vars <- function(quos, data) {
   .Call(`_fastplyr_cpp_quo_data_vars`, quos, data)
 }
