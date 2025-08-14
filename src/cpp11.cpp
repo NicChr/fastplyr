@@ -6,6 +6,13 @@
 #include <R_ext/Visibility.h>
 
 // expressions.cpp
+SEXP call_args(SEXP expr);
+extern "C" SEXP _fastplyr_call_args(SEXP expr) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(call_args(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr)));
+  END_CPP11
+}
+// expressions.cpp
 bool is_nested_call(SEXP expr);
 extern "C" SEXP _fastplyr_is_nested_call(SEXP expr) {
   BEGIN_CPP11
@@ -272,24 +279,10 @@ extern "C" SEXP _fastplyr_cpp_group_id(SEXP x) {
   END_CPP11
 }
 // tidy.cpp
-bool is_data_pronoun_call(SEXP expr, SEXP env);
-extern "C" SEXP _fastplyr_is_data_pronoun_call(SEXP expr, SEXP env) {
+SEXP quo_vars(SEXP quos, SEXP data);
+extern "C" SEXP _fastplyr_quo_vars(SEXP quos, SEXP data) {
   BEGIN_CPP11
-    return cpp11::as_sexp(is_data_pronoun_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(env)));
-  END_CPP11
-}
-// tidy.cpp
-cpp11::writable::strings all_call_names(cpp11::data_frame data, cpp11::sexp expr, cpp11::environment env);
-extern "C" SEXP _fastplyr_all_call_names(SEXP data, SEXP expr, SEXP env) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(all_call_names(cpp11::as_cpp<cpp11::decay_t<cpp11::data_frame>>(data), cpp11::as_cpp<cpp11::decay_t<cpp11::sexp>>(expr), cpp11::as_cpp<cpp11::decay_t<cpp11::environment>>(env)));
-  END_CPP11
-}
-// tidy.cpp
-SEXP cpp_quo_data_vars(SEXP quos, SEXP data);
-extern "C" SEXP _fastplyr_cpp_quo_data_vars(SEXP quos, SEXP data) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_quo_data_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
+    return cpp11::as_sexp(quo_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
   END_CPP11
 }
 // tidy.cpp
@@ -393,7 +386,7 @@ extern "C" SEXP _fastplyr_cpp_grouped_df_as_grp(SEXP data) {
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
-    {"_fastplyr_all_call_names",                       (DL_FUNC) &_fastplyr_all_call_names,                       3},
+    {"_fastplyr_call_args",                            (DL_FUNC) &_fastplyr_call_args,                            1},
     {"_fastplyr_call_is_namespaced",                   (DL_FUNC) &_fastplyr_call_is_namespaced,                   1},
     {"_fastplyr_common_length",                        (DL_FUNC) &_fastplyr_common_length,                        1},
     {"_fastplyr_cpp_any_frames",                       (DL_FUNC) &_fastplyr_cpp_any_frames,                       1},
@@ -431,7 +424,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_nest_split",                       (DL_FUNC) &_fastplyr_cpp_nest_split,                       3},
     {"_fastplyr_cpp_orig_order",                       (DL_FUNC) &_fastplyr_cpp_orig_order,                       2},
     {"_fastplyr_cpp_pluck_list_of_integers",           (DL_FUNC) &_fastplyr_cpp_pluck_list_of_integers,           3},
-    {"_fastplyr_cpp_quo_data_vars",                    (DL_FUNC) &_fastplyr_cpp_quo_data_vars,                    2},
     {"_fastplyr_cpp_quos_drop_null",                   (DL_FUNC) &_fastplyr_cpp_quos_drop_null,                   1},
     {"_fastplyr_cpp_row_id",                           (DL_FUNC) &_fastplyr_cpp_row_id,                           3},
     {"_fastplyr_cpp_set_list_element",                 (DL_FUNC) &_fastplyr_cpp_set_list_element,                 3},
@@ -442,10 +434,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_vec_group_split",                  (DL_FUNC) &_fastplyr_cpp_vec_group_split,                  2},
     {"_fastplyr_cpp_which_all",                        (DL_FUNC) &_fastplyr_cpp_which_all,                        1},
     {"_fastplyr_fun_ns",                               (DL_FUNC) &_fastplyr_fun_ns,                               2},
-    {"_fastplyr_is_data_pronoun_call",                 (DL_FUNC) &_fastplyr_is_data_pronoun_call,                 2},
     {"_fastplyr_is_fn_call",                           (DL_FUNC) &_fastplyr_is_fn_call,                           4},
     {"_fastplyr_is_group_unaware_call",                (DL_FUNC) &_fastplyr_is_group_unaware_call,                2},
     {"_fastplyr_is_nested_call",                       (DL_FUNC) &_fastplyr_is_nested_call,                       1},
+    {"_fastplyr_quo_vars",                             (DL_FUNC) &_fastplyr_quo_vars,                             2},
     {"_fastplyr_recycle_eval_results",                 (DL_FUNC) &_fastplyr_recycle_eval_results,                 1},
     {"_fastplyr_transpose_eval_results",               (DL_FUNC) &_fastplyr_transpose_eval_results,               1},
     {NULL, NULL, 0}

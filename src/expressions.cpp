@@ -60,6 +60,35 @@ SEXP as_list_call(SEXP expr) {
   return result;
 }
 
+// basically as.list(call)[-1]
+// and is always named
+
+[[cpp11::register]]
+SEXP call_args(SEXP expr) {
+  if (TYPEOF(expr) != LANGSXP) {
+    Rf_error("`expr` must be a language object");
+  }
+  int n = Rf_length(expr);
+  SEXP out = SHIELD(new_vec(VECSXP, n - 1));
+  SEXP names = SHIELD(new_vec(STRSXP, n - 1));
+
+  SEXP current = CDR(expr);
+  for (int i = 1; i < n; i++) {
+    int j = i - 1;
+    SEXP tag = TAG(current);
+    if (Rf_isNull(tag)){
+      SET_STRING_ELT(names, j, R_BlankString);
+    } else {
+      SET_STRING_ELT(names, j, PRINTNAME(tag));
+    }
+    SET_VECTOR_ELT(out, j, CAR(current));
+    current = CDR(current);
+  }
+  set_names(out, names);
+  YIELD(2);
+  return out;
+}
+
 [[cpp11::register]]
 bool is_nested_call(SEXP expr) {
   if (TYPEOF(expr) != LANGSXP) {

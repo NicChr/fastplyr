@@ -98,15 +98,6 @@ as_named <- function(x){
   `names<-`(x, cheapr::str_coalesce(names(x), as.character(x)))
 }
 
-call_args <- function(x){
-  if (typeof(x) != "language"){
-    cli::cli_abort("{.arg x} must be a call")
-  }
-  out <- as.list(x)[-1L]
-  names(out) <- names(out) %||% character(length(out))
-  out
-}
-
 tidy_as_list_of <- function (..., .keep_null = FALSE){
   dots <- list_tidy(...)
   if (length(dots) == 1 && !is.object(dots[[1L]]) && is.list(dots[[1L]])) {
@@ -150,6 +141,10 @@ fix_quo_names <- function(quos){
   }
   names(quos) <- nms
   quos
+}
+
+should_optimise <- function(GRP){
+  TRUE
 }
 
 unpack_across <- function(quo, data, groups = character(), unpack_default = FALSE){
@@ -518,10 +513,6 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
   )
 }
 
-should_optimise <- function(GRP){
-  TRUE
-}
-
 are_fastplyr_quos <- function(quos){
   isTRUE(attr(quos, ".fastplyr_quos", TRUE))
 }
@@ -627,7 +618,7 @@ mutate_summary <- function(.data, ...,
       new_data[common_cols]
     )
     changed_cols <- common_cols[cheapr::val_find(changed, FALSE)]
-    used_cols <- cpp_quo_data_vars(quos, .data)
+    used_cols <- quo_vars(quos, .data)
     used_cols <- c(used_cols, vec_setdiff(new_cols, used_cols))
     unused_cols <- vec_setdiff(original_cols, new_cols)
 

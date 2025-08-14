@@ -1,7 +1,6 @@
 #include "fastplyr.h"
 #include "cheapr_api.h"
 
-[[cpp11::register]]
 bool is_data_pronoun_call(SEXP expr, SEXP env){
 
   int32_t NP = 0;
@@ -28,8 +27,6 @@ bool is_data_pronoun_call(SEXP expr, SEXP env){
   return out;
 }
 
-// TO-DO: SIMPLIFY THE if else statements below
-
 // Get the var of a .data quosure
 SEXP data_pronoun_var(SEXP data, SEXP expr, SEXP env){
 
@@ -48,45 +45,41 @@ SEXP data_pronoun_var(SEXP data, SEXP expr, SEXP env){
   if (CAR(expr) == dollar_sym){
     if (TYPEOF(vars) == SYMSXP){
       SHIELD(vars = rlang::sym_as_character(vars)); ++NP;
-      SEXP df = SHIELD(cheapr::df_select(data, vars)); ++NP;
-      SHIELD(out_var = get_names(df)); ++NP;
     } else if (TYPEOF(vars) == STRSXP){
       if (Rf_length(vars) != 1){
         YIELD(NP);
-        Rf_error("A string or symbol of length 1 must be supplied to `.data$`");
+        Rf_error("A string or symbol must be supplied to `.data$`");
       }
-      SEXP df = SHIELD(cheapr::df_select(data, vars)); ++NP;
-      SHIELD(out_var = get_names(df)); ++NP;
     }
   } else {
     SHIELD(vars = rlang::eval_tidy(vars, R_NilValue, env)); ++NP;
-    if (TYPEOF(vars) != STRSXP && TYPEOF(vars) != SYMSXP){
+    if (TYPEOF(vars) != STRSXP &&
+        TYPEOF(vars) != SYMSXP &&
+        TYPEOF(vars) != INTSXP &&
+        TYPEOF(vars) != REALSXP){
       YIELD(NP);
-      Rf_error("A string or symbol of length 1 must be supplied to `.data[[`");
+      Rf_error("A string or symbol must be supplied to `.data[[`");
     }
     if (Rf_length(vars) != 1){
       YIELD(NP);
-      Rf_error("A string or symbol of length 1 must be supplied to `.data[[`");
+      Rf_error("A string or symbol must be supplied to `.data[[`");
     }
     if (TYPEOF(vars) == SYMSXP){
       SHIELD(vars = rlang::sym_as_character(vars)); ++NP;
-      SEXP df = SHIELD(cheapr::df_select(data, vars)); ++NP;
-      SHIELD(out_var = get_names(df)); ++NP;
-    } else if (TYPEOF(vars) == STRSXP){
-      SEXP df = SHIELD(cheapr::df_select(data, vars)); ++NP;
-      SHIELD(out_var = get_names(df)); ++NP;
     }
   }
 
+  SEXP df = SHIELD(cheapr::df_select(data, vars)); ++NP;
+  SHIELD(out_var = get_names(df)); ++NP;
+
   if (Rf_length(out_var) == 0){
     YIELD(NP);
-    Rf_error("Column not found in `.data`");
+    Rf_error("Column %s not found in `.data`", CHAR(STRING_ELT(vars, 0)));
   }
   YIELD(NP);
   return out_var;
 }
 
-[[cpp11::register]]
 cpp11::writable::strings all_call_names(cpp11::data_frame data, cpp11::sexp expr, cpp11::environment env){
 
   using namespace cpp11;
@@ -108,33 +101,13 @@ cpp11::writable::strings all_call_names(cpp11::data_frame data, cpp11::sexp expr
       }
     }
   }
-
-  // if (is_data_pronoun_call(expr, env)){
-  //   temp = data_pronoun_var(data, expr, env);
-  //   out.push_back(temp[0]);
-  // } else if (TYPEOF(expr) == SYMSXP){
-  //   out.push_back(rlang::sym_as_string(expr));
-  // }else if (TYPEOF(expr) == LANGSXP){
-  //   list tree = as_list_call(expr);
-  //   for (int i = 1; i < tree.size(); ++i){
-  //     sexp branch = tree[i];
-  //     if (TYPEOF(branch) == SYMSXP){
-  //       out.push_back(rlang::sym_as_string(branch));
-  //     } else if (TYPEOF(branch) == LANGSXP){
-  //       temp = all_call_names(data, branch, env);
-  //       for (int j = 0; j < temp.size(); ++j){
-  //         out.push_back(temp[j]);
-  //       }
-  //     }
-  //   }
-  // }
   return out;
 }
 
 // Which variables are quosures pointing to?
 
 [[cpp11::register]]
-SEXP cpp_quo_data_vars(SEXP quos, SEXP data){
+SEXP quo_vars(SEXP quos, SEXP data){
 
   SEXP quo_vars = SHIELD(new_vec(VECSXP, Rf_length(quos)));
 
@@ -610,7 +583,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
 
 
   // grab the variable names the expressions point to
-  SEXP quo_data_vars = SHIELD(cpp_quo_data_vars(quos, data)); ++NP;
+  SEXP quo_data_vars = SHIELD(quo_vars(quos, data)); ++NP;
   int chunk_n_cols = Rf_length(quo_data_vars);
   SEXP quo_data_syms = SHIELD(new_vec(VECSXP, chunk_n_cols)); ++NP;
   const SEXP *p_quo_data_syms = VECTOR_PTR_RO(quo_data_syms);
@@ -830,7 +803,7 @@ SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos){
   int n_groups = df_nrow(group_keys);
 
   // grab the variable names the expressions point to
-  SEXP quo_data_vars = SHIELD(cpp_quo_data_vars(quos, data)); ++NP;
+  SEXP quo_data_vars = SHIELD(quo_vars(quos, data)); ++NP;
   int chunk_n_cols = Rf_length(quo_data_vars);
   SEXP quo_data_syms = SHIELD(new_vec(VECSXP, chunk_n_cols)); ++NP;
   const SEXP *p_quo_data_syms = VECTOR_PTR_RO(quo_data_syms);
@@ -973,7 +946,7 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
 
 
   // grab the variable names the expressions point to
-  SEXP quo_data_vars = SHIELD(cpp_quo_data_vars(quos, data)); ++NP;
+  SEXP quo_data_vars = SHIELD(quo_vars(quos, data)); ++NP;
   int chunk_n_cols = Rf_length(quo_data_vars);
   SEXP quo_data_syms = SHIELD(new_vec(VECSXP, chunk_n_cols)); ++NP;
   const SEXP *p_quo_data_syms = VECTOR_PTR_RO(quo_data_syms);
