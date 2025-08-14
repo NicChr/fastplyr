@@ -261,33 +261,21 @@ mark(
 )
 ```
 
-### Group IDs
+### Group metadata
 
-In dplyr to work with group IDs you must use the `mutate()` + `cur_group_id()` paradigm.
-
-In fastplyr you can just use `add_group_id()` which is blazing fast.
+Group metadata helpers like `cur_group_id()` get optimised in `f_mutate`
 
 ```{r}
 
 ## Unique ID for each group
 
-grouped_flights |> 
-  add_group_id() |> 
-  f_select(group_id)
-
-```
-
-Another benchmark
-
-```{r}
 mark(
-  fastplyr_group_id = grouped_flights |> 
-  add_group_id() |> 
-  f_select(all_of(group_vars(grouped_flights)), group_id),
-  dplyr_group_id = grouped_flights |> 
-  mutate(group_id = cur_group_id()) |> 
-  select(all_of(group_vars(grouped_flights)), group_id)
+  dplyr = grouped_flights |> 
+  f_mutate(group_id = cur_group_id(), .keep = "none"),
+  fastplyr = grouped_flights |> 
+  mutate(group_id = cur_group_id(), .keep = "none")
 )
+
 ```
 
 ### expand
@@ -435,6 +423,83 @@ mark(
      group_by(year, month, day, origin) |> 
     reframe(enframe(quantile(dep_delay, seq(0, 1, 0.25), na.rm = TRUE))),
   check = FALSE
+)
+```
+
+### Details on optimised functions
+
+fastplyr categorises all expressions into one of 3 categories
+
+1. Standard expressions
+2. Group-unaware expressions
+3. Group-aware optimiseable expressions
+
+The first category are normal expressions and are just expressions which don't
+belong to the other 2 categories. These get evaluated normally.
+
+The second category consists of group-unaware expressions. These can be
+be evaluated once on the entire data instead of by-group. 
+For example the plus function `+` is group-unaware.
+
+The third category consists of functions that are group-aware but can be
+optimised, such as most of the common statistical functions like `sum`, `mean`,
+etc.
+
+### Optimising group-unaware functions
+
+Common base R functions can be thought of as group-unaware in the sense that
+they return the same results regardless of if they are called in a grouped context.
+
+fastplyr evaluates these functions once as if there are no groups
+
+Current list of functions marked as group-unaware
+
+```{r}
+fns <- get_group_unaware_fns()
+
+names(fns)
+
+# base::round for example
+fns$round
+```
+
+An expression is marked as group-unaware if and only if all calls in the call-tree
+are group-unaware.
+
+```{r}
+
+# Group-unaware fn names
+fn_names <- names(fns)
+
+expr <- quote(x - y)
+rlang::is_call(expr, "-")
+
+expr <- quote(x - y + z)
+
+# Top-level expr is a group-unaware call
+rlang::is_call(expr, "+")
+
+# `-` expression nested inside is also group-unaware
+expr |> 
+  as.list() |> 
+  pluck(2) |> 
+  print() |> 
+  rlang::is_call(fn_names)
+
+# Definitely group-aware as `sum()` depends on the group-context
+expr <- quote(sum(x - y))
+rlang::is_call(expr, fn_names)
+```
+
+This allows us to write out more complex expressions and evaluate them 
+very efficiently
+
+```{r}
+mark(
+    fastplyr = grouped_flights |> 
+        f_mutate(x = round(abs(arr_time - dep_time)), .keep = "none"), 
+    dplyr = grouped_flights |> 
+        mutate(x = round(abs(arr_time - dep_time)), .keep = "none")
 )
 ```
 

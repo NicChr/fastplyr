@@ -24,6 +24,10 @@ is_group_unaware_call <- function(expr, env) {
   .Call(`_fastplyr_is_group_unaware_call`, expr, env)
 }
 
+cpp_group_unaware_fns <- function() {
+  .Call(`_fastplyr_cpp_group_unaware_fns`)
+}
+
 cpp_frame_addresses_equal <- function(x, y) {
   .Call(`_fastplyr_cpp_frame_addresses_equal`, x, y)
 }

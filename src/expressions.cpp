@@ -345,7 +345,7 @@ void init_group_unaware_fns(DllInfo* dll) {
     "|", "&", "!", ">=", ">", "<=", "<", "==", "!=", "%%", "%/%",
       "+", "-",  "*", "/", "^", "abs",  "sign", "floor",
       "trunc", "round", "signif", "exp", "log", "(", "{",
-      "exp1m", "log1p", "cos", "sin", "tan",
+      "expm1", "log1p", "cos", "sin", "tan",
       "cospi", "sinpi", "tanpi", "acos", "asin", "atan",
       "cosh", "sinh", "tanh", "acosh", "asinh", "atanh",
       "lgamma", "gamma", "digamma", "trigamma",
@@ -432,5 +432,21 @@ bool is_group_unaware_call(SEXP expr, SEXP env){
     }
   }
   YIELD(NP);
+  return out;
+}
+
+[[cpp11::register]]
+SEXP cpp_group_unaware_fns(){
+  int n = Rf_length(group_unaware_fns);
+  SEXP out = SHIELD(new_vec(VECSXP, n));
+  SEXP names = SHIELD(Rf_duplicate(group_unaware_fn_names));
+
+  for (int i = 0; i < n; ++i){
+    SEXP fn_name = Rf_installChar(STRING_ELT(names, i));
+    SEXP fn = get(fn_name, group_unaware_fns);
+    SET_VECTOR_ELT(out, i, fn);
+  }
+  set_names(out, names);
+  YIELD(2);
   return out;
 }

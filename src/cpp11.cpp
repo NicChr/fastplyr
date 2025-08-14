@@ -47,6 +47,13 @@ extern "C" SEXP _fastplyr_is_group_unaware_call(SEXP expr, SEXP env) {
     return cpp11::as_sexp(is_group_unaware_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(env)));
   END_CPP11
 }
+// expressions.cpp
+SEXP cpp_group_unaware_fns();
+extern "C" SEXP _fastplyr_cpp_group_unaware_fns() {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_unaware_fns());
+  END_CPP11
+}
 // fastplyr.cpp
 SEXP cpp_frame_addresses_equal(SEXP x, SEXP y);
 extern "C" SEXP _fastplyr_cpp_frame_addresses_equal(SEXP x, SEXP y) {
@@ -413,6 +420,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_group_size",                       (DL_FUNC) &_fastplyr_cpp_group_size,                       1},
     {"_fastplyr_cpp_group_split",                      (DL_FUNC) &_fastplyr_cpp_group_split,                      1},
     {"_fastplyr_cpp_group_starts",                     (DL_FUNC) &_fastplyr_cpp_group_starts,                     2},
+    {"_fastplyr_cpp_group_unaware_fns",                (DL_FUNC) &_fastplyr_cpp_group_unaware_fns,                0},
     {"_fastplyr_cpp_group_vars",                       (DL_FUNC) &_fastplyr_cpp_group_vars,                       1},
     {"_fastplyr_cpp_grouped_df_as_grp",                (DL_FUNC) &_fastplyr_cpp_grouped_df_as_grp,                1},
     {"_fastplyr_cpp_grouped_eval_mutate",              (DL_FUNC) &_fastplyr_cpp_grouped_eval_mutate,              2},
