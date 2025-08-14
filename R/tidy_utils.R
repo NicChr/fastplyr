@@ -951,6 +951,13 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
   GRP <- attr(quos, ".GRP", TRUE)
   optimised <- attr(quos, ".optimised", TRUE)
 
+  if (is.null(GRP)){
+    GRP <- df_as_one_GRP(data)
+    cheapr::attrs_modify(
+      quos, .GRP = GRP, .set = TRUE
+    )
+  }
+
   if (cpp_any_quo_contains_dplyr_mask_call(quos)){
     return(dplyr_eval_reframe(
       construct_fastplyr_grouped_df(data, GRP), !!!quos
@@ -975,6 +982,9 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
 
     cheapr::attrs_modify(
       quos, .GRP = GRP, .set = TRUE
+    )
+    data <- df_add_cols(
+      data, list(.internal.x = GRP_group_id(GRP))
     )
   }
 
