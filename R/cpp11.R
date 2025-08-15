@@ -160,8 +160,8 @@ cpp_group_id <- function(x) {
   .Call(`_fastplyr_cpp_group_id`, x)
 }
 
-quo_vars <- function(quos, data) {
-  .Call(`_fastplyr_quo_vars`, quos, data)
+quo_vars <- function(quos, data, combine) {
+  .Call(`_fastplyr_quo_vars`, quos, data, combine)
 }
 
 cpp_quos_drop_null <- function(quos) {

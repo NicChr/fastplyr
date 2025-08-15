@@ -107,25 +107,35 @@ cpp11::writable::strings all_call_names(cpp11::data_frame data, cpp11::sexp expr
 // Which variables are quosures pointing to?
 
 [[cpp11::register]]
-SEXP quo_vars(SEXP quos, SEXP data){
+SEXP quo_vars(SEXP quos, SEXP data, bool combine){
 
-  SEXP quo_vars = SHIELD(new_vec(VECSXP, Rf_length(quos)));
+  int n_quos = Rf_length(quos);
+
+  SEXP quo_vars = SHIELD(new_vec(VECSXP, n_quos));
+  SEXP quo_names = SHIELD(get_names(quos));
+  set_names(quo_vars, quo_names);
+  SEXP names = SHIELD(get_names(data));
 
   SEXP expr, env;
   PROTECT_INDEX expr_idx, env_idx;
   R_ProtectWithIndex(expr = R_NilValue, &expr_idx);
   R_ProtectWithIndex(env = R_NilValue, &env_idx);
 
-  for (int i = 0; i < Rf_length(quos); ++i){
+  for (int i = 0; i < n_quos; ++i){
     R_Reprotect(expr = rlang::quo_get_expr(VECTOR_ELT(quos, i)), expr_idx);
     R_Reprotect(env = rlang::quo_get_env(VECTOR_ELT(quos, i)), env_idx);
     SET_VECTOR_ELT(quo_vars, i, all_call_names(data, expr, env));
+    SET_VECTOR_ELT(quo_vars, i, cheapr::intersect(names, VECTOR_ELT(quo_vars, i), false));
   }
-  SEXP out = SHIELD(cheapr::c(quo_vars));
-  SEXP names = SHIELD(get_names(data));
-  SHIELD(out = cheapr::intersect(names, out, false));
-  YIELD(6);
-  return out;
+  if (combine){
+    SEXP out = SHIELD(cheapr::c(quo_vars));
+    SHIELD(out = cheapr::intersect(names, out, false));
+    YIELD(7);
+    return out;
+  } else {
+    YIELD(5);
+    return quo_vars;
+  }
 }
 
 
@@ -583,7 +593,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
 
 
   // grab the variable names the expressions point to
-  SEXP quo_data_vars = SHIELD(quo_vars(quos, data)); ++NP;
+  SEXP quo_data_vars = SHIELD(quo_vars(quos, data, true)); ++NP;
   int chunk_n_cols = Rf_length(quo_data_vars);
   SEXP quo_data_syms = SHIELD(new_vec(VECSXP, chunk_n_cols)); ++NP;
   const SEXP *p_quo_data_syms = VECTOR_PTR_RO(quo_data_syms);
@@ -803,7 +813,7 @@ SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos){
   int n_groups = df_nrow(group_keys);
 
   // grab the variable names the expressions point to
-  SEXP quo_data_vars = SHIELD(quo_vars(quos, data)); ++NP;
+  SEXP quo_data_vars = SHIELD(quo_vars(quos, data, true)); ++NP;
   int chunk_n_cols = Rf_length(quo_data_vars);
   SEXP quo_data_syms = SHIELD(new_vec(VECSXP, chunk_n_cols)); ++NP;
   const SEXP *p_quo_data_syms = VECTOR_PTR_RO(quo_data_syms);
@@ -946,7 +956,7 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
 
 
   // grab the variable names the expressions point to
-  SEXP quo_data_vars = SHIELD(quo_vars(quos, data)); ++NP;
+  SEXP quo_data_vars = SHIELD(quo_vars(quos, data, true)); ++NP;
   int chunk_n_cols = Rf_length(quo_data_vars);
   SEXP quo_data_syms = SHIELD(new_vec(VECSXP, chunk_n_cols)); ++NP;
   const SEXP *p_quo_data_syms = VECTOR_PTR_RO(quo_data_syms);

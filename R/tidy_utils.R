@@ -618,7 +618,7 @@ mutate_summary <- function(.data, ...,
       new_data[common_cols]
     )
     changed_cols <- common_cols[cheapr::val_find(changed, FALSE)]
-    used_cols <- quo_vars(quos, .data)
+    used_cols <- quo_vars(quos, .data, combine = TRUE)
     used_cols <- c(used_cols, vec_setdiff(new_cols, used_cols))
     unused_cols <- vec_setdiff(original_cols, new_cols)
 

@@ -24,8 +24,9 @@ SEXP get(SEXP sym, SEXP rho){
     Rf_error("second argument to '%s' must be an environment", __func__);
   }
 
-  SEXP val = Rf_findVarInFrame(rho, sym);
-  // SEXP val = Rf_findVar(sym, rho);
+  // SEXP val = Rf_findVarInFrame(rho, sym); // get(inherits = F)
+  SEXP val = Rf_findVar(sym, rho); // get(inherits = T)
+
   if (val == R_MissingArg){
     YIELD(NP);
     Rf_error("arg `sym` cannot be missing");
