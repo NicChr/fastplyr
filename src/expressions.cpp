@@ -24,7 +24,8 @@ SEXP get(SEXP sym, SEXP rho){
     Rf_error("second argument to '%s' must be an environment", __func__);
   }
 
-  SEXP val = Rf_findVar(sym, rho);
+  SEXP val = Rf_findVarInFrame(rho, sym);
+  // SEXP val = Rf_findVar(sym, rho);
   if (val == R_MissingArg){
     YIELD(NP);
     Rf_error("arg `sym` cannot be missing");
@@ -450,3 +451,41 @@ SEXP cpp_group_unaware_fns(){
   YIELD(2);
   return out;
 }
+
+
+// void foo(SEXP fn, SEXP nm, SEXP env){
+//
+//   if (!Rf_isFunction(fn)){
+//     Rf_error("`fn` must be a function in %s", __func__);
+//   }
+//
+//   if (TYPEOF(nm) != SYMSXP){
+//     Rf_error("`nm` must be a symbol in %s", __func__);
+//   }
+//
+//   if (TYPEOF(env) != ENVSXP){
+//     Rf_error("`env` must be an environment in %s", __func__);
+//   }
+//
+//   if (exists(nm, group_unaware_fns)){
+//     Rf_error("Group-unaware function %s already exists in fastplyr's internal list", CHAR(PRINTNAME(nm)));
+//   }
+//
+//   Rf_defineVar(nm, fn, group_unaware_fns);
+//
+//   if (exists(nm, env)){
+//
+//     // Remove it if we added it before in this case
+//     if (exists(nm, group_unaware_fns)){
+//       rlang::env_unbind(group_unaware_fns, nm);
+//     }
+//     Rf_error("Object %s already exists in the supplied environment", CHAR(PRINTNAME(nm)));
+//   }
+//
+//   Rf_defineVar(nm, fn, env);
+//   SEXP names = SHIELD(R_lsInternal(group_unaware_fns, FALSE));
+//   R_ReleaseObject(group_unaware_fn_names);
+//   group_unaware_fn_names = names;
+//   YIELD(1);
+//   R_PreserveObject(group_unaware_fn_names);
+// }

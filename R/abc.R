@@ -138,6 +138,19 @@ vec_rename <- function(.x, ...){
   .x
 }
 
+# Almost working
+# Should prob make internal call checking look at environments instead of namespaces
+
+# register_group_unaware_fn <- function(fn, name = deparse(substitute(fn)), env = rlang::caller_env()){
+#   foo(fn, as.symbol(name), env)
+#   cli::cli_inform(
+#     c(
+#       "{cli::col_magenta(name)} has been registered as a group-unaware function",
+#       "To use this function, simply call it by the name given, e.g. `{name}`()"
+#     )
+#   )
+# }
+
 # Insert values into a vector
 
 # vec_insert <- function(x, after, what){
