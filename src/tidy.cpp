@@ -1,6 +1,18 @@
 #include "fastplyr.h"
 #include "cheapr_api.h"
 
+static SEXP top_env_sym = NULL;
+static SEXP data_pronoun_sym = NULL;
+
+[[cpp11::init]]
+void init_mask_symbols(DllInfo* dll){
+
+  // Symbols get added to internal R protected list so no need to preserve
+
+  top_env_sym = Rf_installChar(Rf_mkCharCE(".top_env", CE_UTF8));
+  data_pronoun_sym = Rf_installChar(Rf_mkCharCE(".data", CE_UTF8));
+}
+
 bool is_data_pronoun_call(SEXP expr, SEXP env){
 
   int32_t NP = 0;
@@ -10,8 +22,6 @@ bool is_data_pronoun_call(SEXP expr, SEXP env){
     return false;
   }
 
-  SEXP data_pronoun_char = SHIELD(Rf_mkCharCE(".data", CE_UTF8)); ++NP;
-  SEXP data_pronoun_sym = SHIELD(Rf_installChar(data_pronoun_char)); ++NP;
   SEXP dollar_str = SHIELD(Rf_ScalarString(Rf_mkCharCE("$", CE_UTF8))); ++NP;
   SEXP double_brackets_str = SHIELD(Rf_ScalarString(Rf_mkCharCE("[[", CE_UTF8))); ++NP;
 
@@ -249,10 +259,24 @@ bool cpp_any_quo_contains_dplyr_mask_call(SEXP quos){
 }
 
 SEXP get_mask_top_env(SEXP mask){
-  if (TYPEOF(mask) != ENVSXP){
-    Rf_error("Object must be a data mask `environment` in %s", __func__);
-  }
-  return Rf_findVar(Rf_install(".top_env"), mask);
+  return Rf_findVarInFrame(mask, top_env_sym);
+}
+
+SEXP new_bare_data_mask(){
+  SEXP env = SHIELD(R_NewEnv(R_EmptyEnv, false, 0));
+  SEXP mask = SHIELD(rlang::new_data_mask(env, env));
+  SEXP top_env = SHIELD(get_mask_top_env(mask));
+
+  // Add .data pronoun
+  SEXP data_pronoun = SHIELD(rlang::as_data_pronoun(env));
+  Rf_defineVar(data_pronoun_sym, data_pronoun, top_env);
+
+  YIELD(4);
+  return mask;
+}
+
+void reset_mask_top_env(SEXP mask, int env_size){
+  Rf_defineVar(top_env_sym, mask, R_NewEnv(R_EmptyEnv, false, env_size));
 }
 
 // Just a wrapper around rlang::eval_tidy
@@ -300,20 +324,6 @@ SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
   set_names(out, out_names);
   YIELD(NP);
   return out;
-}
-
-SEXP new_bare_data_mask(){
-  SEXP env = SHIELD(R_NewEnv(R_EmptyEnv, false, 0));
-  SEXP mask = SHIELD(rlang::new_data_mask(env, env));
-  SEXP top_env = SHIELD(get_mask_top_env(mask));
-
-  // Add .data pronoun
-  SEXP data_pronoun_sym = Rf_install(".data");
-  SEXP data_pronoun = SHIELD(rlang::as_data_pronoun(env));
-  Rf_defineVar(data_pronoun_sym, data_pronoun, top_env);
-
-  YIELD(4);
-  return mask;
 }
 
 [[cpp11::register]]
@@ -546,7 +556,9 @@ SEXP recycle_eval_results(SEXP x){
 
 [[cpp11::register]]
 SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
+
   int32_t NP = 0;
+
   int n_quos = Rf_length(quos);
 
   if (n_quos == 0){
@@ -564,9 +576,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
   }
 
   bool has_groups = Rf_inherits(data, "grouped_df");
-  SEXP group_data = R_NilValue;
   SEXP groups = SHIELD(cpp_group_keys(data)); ++NP;
-  SEXP rows = R_NilValue;
   SEXP exprs = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
   SEXP envs = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
   SEXP quo_name_syms = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
@@ -574,36 +584,49 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
   const SEXP *p_quo_name_syms = VECTOR_PTR_RO(quo_name_syms);
   const SEXP *p_exprs = VECTOR_PTR_RO(exprs);
   const SEXP *p_envs = VECTOR_PTR_RO(envs);
-  const SEXP *p_rows;
 
-  int n_groups = 1;
-
-  if (has_groups){
-    SHIELD(group_data = cpp_group_data(data)); ++NP;
-    n_groups = df_nrow(group_data);
-
-    // Get group locations
-    SHIELD(rows = VECTOR_ELT(group_data, Rf_length(group_data) - 1)); ++NP;
-    p_rows = VECTOR_PTR_RO(rows);
-  } else {
-    p_rows = VECTOR_PTR_RO(data);
-  }
-
-  n_groups = std::max(n_groups, 1);
+  // Get group locations
+  SEXP rows = SHIELD(cpp_group_rows(data)); ++NP;
+  int n_groups = std::max(Rf_length(rows), 1);
+  const SEXP *p_rows = VECTOR_PTR_RO(rows);
 
 
   // grab the variable names the expressions point to
-  SEXP quo_data_vars = SHIELD(quo_vars(quos, data, true)); ++NP;
-  int chunk_n_cols = Rf_length(quo_data_vars);
-  SEXP quo_data_syms = SHIELD(new_vec(VECSXP, chunk_n_cols)); ++NP;
-  const SEXP *p_quo_data_syms = VECTOR_PTR_RO(quo_data_syms);
+  SEXP quo_data_vars = SHIELD(quo_vars(quos, data, false)); ++NP;
+  SEXP quo_data_syms = SHIELD(new_vec(VECSXP, n_quos)); ++NP; // list of symbol lists
+  SEXP col_subsets = SHIELD(new_vec(VECSXP, n_quos)); ++NP; // List of col subsets
 
-  for (int i = 0; i < chunk_n_cols; ++i){
-    SET_VECTOR_ELT(quo_data_syms, i, Rf_installChar(STRING_ELT(quo_data_vars, i)));
-  }
+  const SEXP *p_col_subsets = VECTOR_PTR_RO(col_subsets);
 
-  // Initialise expressions, environments and symbols of expression names
+  SEXP vars, new_vars;
+  PROTECT_INDEX vars_idx, new_vars_idx;
+  R_ProtectWithIndex(vars = new_vec(STRSXP, 0), &vars_idx); ++NP;
+  R_ProtectWithIndex(new_vars = new_vec(STRSXP, 0), &new_vars_idx); ++NP;
+
   for (int i = 0; i < n_quos; ++i){
+
+    // Initialise data frame col subsets + col name symbols
+
+    // As we go through expressions, exclude previously
+    // referenced variables
+    // This is because when we go to evaluate them,
+    // previously referenced variables are already added to
+    // the mask top env and so don't need to be added again
+    // and data doesn't need to be re-filtered
+
+    R_Reprotect(new_vars = cheapr::setdiff(VECTOR_ELT(quo_data_vars, i), vars, false), new_vars_idx);
+    R_Reprotect(vars = binary_combine(vars, new_vars), vars_idx);
+    SET_VECTOR_ELT(col_subsets, i, cheapr::df_select(data, new_vars));
+
+    int n_vars = Rf_length(new_vars);
+    SET_VECTOR_ELT(quo_data_syms, i, new_vec(VECSXP, n_vars));
+
+    for (int j = 0; j < n_vars; ++j){
+      SET_VECTOR_ELT(VECTOR_ELT(quo_data_syms, i), j, Rf_installChar(STRING_ELT(new_vars, j)));
+    }
+
+    // Initialise expressions, environments and symbols of expression names
+
     SET_VECTOR_ELT(exprs, i, rlang::quo_get_expr(VECTOR_ELT(quos, i)));
     SET_VECTOR_ELT(envs, i, rlang::quo_get_env(VECTOR_ELT(quos, i)));
     if (STRING_ELT(quo_names, i) == R_BlankString){
@@ -613,14 +636,13 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
     }
   }
 
-  // Initialise components
+  int n_used_vars = Rf_length(vars);
 
-  SEXP data_subset = SHIELD(cheapr::df_select(data, quo_data_vars)); ++NP;
+  // Initialise components
 
   // We will re-use the mask across all groups but add the same
   // vars for each slice in each iteration
   SEXP mask = SHIELD(new_bare_data_mask()); ++NP;
-  SEXP top_env = SHIELD(get_mask_top_env(mask)); ++NP;
 
   SEXP chunk_locs, chunk, result, inner_container;
 
@@ -628,7 +650,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
   result_idx, inner_container_idx;
 
   R_ProtectWithIndex(chunk_locs = R_NilValue, &chunk_locs_idx); ++NP;
-  R_ProtectWithIndex(chunk = data_subset, &chunk_idx); ++NP;
+  R_ProtectWithIndex(chunk = R_NilValue, &chunk_idx); ++NP;
   R_ProtectWithIndex(result = R_NilValue, &result_idx); ++NP;
   R_ProtectWithIndex(inner_container = R_NilValue, &inner_container_idx); ++NP;
 
@@ -660,7 +682,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
   // Some C trickery here.. We repeat out the rows of the group keys at the end
   // but if we recycle we only need to do this once and we only need one
   // result sizes vector, otherwise we need one for each expression
-  if (recycle){
+  if (recycle && n_quos > 0){
     R_Reprotect(recycled_sizes = new_vec(INTSXP, n_groups), recycled_sizes_idx);
     recycled_pointers[0] = INTEGER(recycled_sizes);
     for (int m = 0; m < n_quos; ++m){
@@ -674,30 +696,35 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
     }
   }
 
-
   for (int i = 0; i < n_groups; ++i){
 
+    // Start with a fresh top env for each group
+    reset_mask_top_env(mask, n_used_vars);
+    SEXP top_env = get_mask_top_env(mask);
+
     recycled_size = -1; // Initialise this to < 0 for later logic to work
-
-    // Filter on the rows relevant to the current group
-
-    if (has_groups){
-      chunk_locs = p_rows[i];
-      R_Reprotect(chunk = cheapr::df_slice(data_subset, chunk_locs, false), chunk_idx);
-    }
-
-    // assign variables to existing data mask
-    // essentially list2env()
-
-    for (int l = 0; l < chunk_n_cols; ++l){
-      Rf_defineVar(p_quo_data_syms[l], VECTOR_ELT(chunk, l), top_env);
-    }
 
     // inner container will contain the results of our expressions
     // and we assign these inner containers to the bigger outer container
     R_Reprotect(inner_container = new_vec(VECSXP, n_quos), inner_container_idx);
 
     for (int m = 0; m < n_quos; ++m){
+
+      SEXP col_subset = p_col_subsets[m];
+
+      if (has_groups){
+        R_Reprotect(chunk = cheapr::df_slice(col_subset, p_rows[i], false), chunk_idx);
+      } else {
+        chunk = col_subset;
+      }
+
+      for (int l = 0; l < Rf_length(chunk); ++l){
+        Rf_defineVar(
+          VECTOR_ELT(VECTOR_ELT(quo_data_syms, m), l),
+          VECTOR_ELT(chunk, l), top_env
+        );
+      }
+
       R_Reprotect(result = rlang::eval_tidy(
         p_exprs[m], mask, p_envs[m]
       ), result_idx);
@@ -723,7 +750,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
   // Combine results
 
   SEXP results = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
-  Rf_setAttrib(results, R_NamesSymbol, quo_names);
+  set_names(results, quo_names);
   const SEXP *p_outer_container = VECTOR_PTR_RO(outer_container);
 
 
@@ -765,7 +792,6 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
   YIELD(NP);
   return out;
 }
-
 
 // Similar to above but with specific constraints around result sizes
 // which makes the code somewhat simpler
@@ -810,7 +836,7 @@ SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos){
   const SEXP *p_envs = VECTOR_PTR_RO(envs);
 
   int n_rows = df_nrow(data);
-  int n_groups = df_nrow(group_keys);
+  int n_groups = std::max(df_nrow(group_keys), 1);
 
   // grab the variable names the expressions point to
   SEXP quo_data_vars = SHIELD(quo_vars(quos, data, true)); ++NP;
@@ -933,7 +959,6 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
 
   bool has_groups = Rf_inherits(data, "grouped_df");
   int n_rows = df_nrow(data);
-  SEXP rows = R_NilValue;
   SEXP exprs = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
   SEXP envs = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
   SEXP quo_name_syms = SHIELD(new_vec(VECSXP, n_quos)); ++NP;
@@ -941,18 +966,11 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
   const SEXP *p_quo_name_syms = VECTOR_PTR_RO(quo_name_syms);
   const SEXP *p_exprs = VECTOR_PTR_RO(exprs);
   const SEXP *p_envs = VECTOR_PTR_RO(envs);
-  const SEXP *p_rows;
 
-  int n_groups = 1;
-
-  if (has_groups){
-    // Get group locations
-    SHIELD(rows = cpp_group_rows(data)); ++NP;
-    n_groups = Rf_length(rows);
-    p_rows = VECTOR_PTR_RO(rows);
-  }
-
-  n_groups = std::max(n_groups, 1);
+  // Get group locations
+  SEXP rows = SHIELD(cpp_group_rows(data)); ++NP;
+  const SEXP *p_rows = VECTOR_PTR_RO(rows);
+  int n_groups = std::max(Rf_length(rows), 1);
 
 
   // grab the variable names the expressions point to

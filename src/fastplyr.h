@@ -69,6 +69,7 @@ bool call_is_namespaced(SEXP expr);
 SEXP get_fun_ns(SEXP x, SEXP rho);
 void set_as_vctrs_new_list_of_int(SEXP x);
 void set_as_tbl(SEXP x);
+SEXP binary_combine(SEXP x, SEXP y);
 
 // Group metadata
 

@@ -976,3 +976,18 @@ SEXP common_length(SEXP x){
   }
   return out <= std::numeric_limits<int>::max() ? Rf_ScalarInteger(out) : Rf_ScalarReal(out);
 }
+
+// Combine two vectors
+
+SEXP binary_combine(SEXP x, SEXP y){
+
+  SEXP container = SHIELD(new_vec(VECSXP, 2));
+
+  SET_VECTOR_ELT(container, 0, x);
+  SET_VECTOR_ELT(container, 1, y);
+
+  SEXP out = SHIELD(cheapr::c(container));
+
+  YIELD(2);
+  return out;
+}

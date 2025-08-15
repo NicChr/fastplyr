@@ -453,10 +453,12 @@ static const R_CallMethodDef CallEntries[] = {
 }
 
 void init_group_unaware_fns(DllInfo* dll);
+void init_mask_symbols(DllInfo* dll);
 
 extern "C" attribute_visible void R_init_fastplyr(DllInfo* dll){
   R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
   R_useDynamicSymbols(dll, FALSE);
   init_group_unaware_fns(dll);
+  init_mask_symbols(dll);
   R_forceSymbols(dll, TRUE);
 }
