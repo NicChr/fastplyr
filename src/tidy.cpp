@@ -102,8 +102,8 @@ cpp11::writable::strings all_call_names(cpp11::data_frame data, cpp11::sexp expr
   } else if (TYPEOF(expr) == SYMSXP){
     out.push_back(rlang::sym_as_string(expr));
   }else if (TYPEOF(expr) == LANGSXP){
-    list tree = as_list_call(expr);
-    for (int i = 1; i < tree.size(); ++i){
+    list tree = call_args(expr);
+    for (int i = 0; i < tree.size(); ++i){
       sexp branch = tree[i];
       temp = all_call_names(data, branch, env);
       for (int j = 0; j < temp.size(); ++j){

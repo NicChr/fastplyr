@@ -68,7 +68,7 @@ SEXP as_list_call(SEXP expr) {
 [[cpp11::register]]
 SEXP call_args(SEXP expr) {
   if (TYPEOF(expr) != LANGSXP) {
-    Rf_error("`expr` must be a language object");
+    Rf_error("`expr` must be a language object in %s", __func__);
   }
   int n = Rf_length(expr);
   SEXP out = SHIELD(new_vec(VECSXP, n - 1));
@@ -406,9 +406,11 @@ bool maybe_is_group_unaware_call(SEXP expr, SEXP env){
 
 [[cpp11::register]]
 bool is_group_unaware_call(SEXP expr, SEXP env){
+
   if (TYPEOF(expr) != LANGSXP){
-    return false;
+    return maybe_is_group_unaware_call(expr, env);
   }
+
   int32_t NP = 0;
 
   if (!maybe_is_group_unaware_call(expr, env)){
@@ -417,12 +419,12 @@ bool is_group_unaware_call(SEXP expr, SEXP env){
 
   bool out = true;
 
-  SEXP tree = SHIELD(as_list_call(expr)); ++NP;
+  SEXP tree = SHIELD(call_args(expr)); ++NP;
   SEXP branch;
 
   // Skip first element as we have already established
   // the top-call is group unaware
-  for (int i = 1; i < Rf_length(tree); ++i){
+  for (int i = 0; i < Rf_length(tree); ++i){
     branch = VECTOR_ELT(tree, i);
 
     // If branch is a call
