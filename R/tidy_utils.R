@@ -143,6 +143,19 @@ fix_quo_names <- function(quos){
   quos
 }
 
+inform_user_on_eval_split <- function(regular_quos, optimised_quos){
+  if (length(regular_quos) && length(optimised_quos)){
+    cli::cli_inform(c(
+      "Expressions will be evaluated in separate masks",
+      paste("Normal exprs:", cli::col_blue("{names(regular_quos)}")),
+      paste("Optimised exprs:", cli::col_red("{names(optimised_quos)}")),
+      ""
+      # paste("Normal exprs:", cli::col_blue("{lapply(regular_quos, quo_get_expr)}")),
+      # paste("Optimised exprs:", cli::col_red("{lapply(optimised_quos, quo_get_expr)}"))
+    ))
+  }
+}
+
 should_optimise <- function(GRP){
   TRUE
 }
@@ -447,14 +460,14 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
         }
         args <- call_args(expr)
         names(args)[names(args) == "default"] <- "fill"
-        expr <- rlang::call2("grouped_lag", !!!args, g = .fastplyr.g)
+        expr <- rlang::call2(grouped_lag, !!!args, g = .fastplyr.g)
       } else if (.optimise_expand && is_fn_call(expr, "lead", "dplyr", env)){
         if (!all_blank(vec_setdiff(names(args), c("x", "n", "default", "order_by")))){
           next
         }
         args <- call_args(expr)
         names(args)[names(args) == "default"] <- "fill"
-        expr <- rlang::call2("grouped_lead", !!!args, g = .fastplyr.g)
+        expr <- rlang::call2(grouped_lead, !!!args, g = .fastplyr.g)
       } else if (is_optimised_call(expr, env)){
         args <- call_args(expr)
         unsupported_args <- vec_setdiff(names(args), c("x", "na.rm", "nthreads"))
@@ -576,7 +589,7 @@ tidy_select_names <- function(data, ..., .cols = NULL){
   add_names(names(data)[match(pos, seq_along(data))], names(pos))
 }
 
-# To replace tidy_group_info_datamask in the future
+# workhorse of f_mutate() with metadata
 mutate_summary <- function(.data, ...,
                            .keep = "all",
                            .by = NULL,
@@ -790,7 +803,7 @@ eval_all_tidy_optimised_quos <- function(data, quos){
   n_quos <- length(quos)
 
   mask <- rlang::as_data_mask(data)
-  results <- lapply(quos, \(x) rlang::eval_tidy(x, mask))
+  results <- cpp_eval_all_tidy(quos, mask)
 
   group_order <- NULL
   reorder <- FALSE
@@ -939,8 +952,7 @@ dplyr_eval_summarise <- function(data, ...){
     result2 <- as.list(result)[seq_len(df_ncol(result) - n_groups) + n_groups]
     results <- c(results, result2)
   }
-  results
-  # list(groups = groups, results = results)
+  list(groups = f_group_keys(data), results = results)
 }
 
 eval_all_tidy <- function(data, quos, recycle = FALSE){
@@ -956,12 +968,6 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
     cheapr::attrs_modify(
       quos, .GRP = GRP, .set = TRUE
     )
-  }
-
-  if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-    return(dplyr_eval_reframe(
-      construct_fastplyr_grouped_df(data, GRP), !!!quos
-    ))
   }
 
   which_optimised <- cheapr::val_find(optimised, TRUE)
@@ -992,25 +998,33 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
   optimised_quos <- sset_quos(quos, which_optimised)
   optimised_results <- eval_all_tidy_optimised_quos(data, optimised_quos)
 
-  # Doing this check to potentially avoid calculating group locations
-  # through a call to `construct_fastplyr_grouped_df()`
-  # which will happen in e.g. `f_reframe(df, new = mean(x), .by = g)`
-  if (length(regular_quos) == 0){
-    regular_results <- list(
-      groups = `names<-`(list(), character()),
-      results = `names<-`(list(), character())
-    )
-  } else if (length(optimised_quos) == 0){
-    regular_results <- cpp_grouped_eval_tidy(
-      construct_fastplyr_grouped_df(data, GRP), regular_quos,
-      recycle = recycle, add_groups = TRUE
+  inform_user_on_eval_split(regular_quos, optimised_quos)
+
+  if (cpp_any_quo_contains_dplyr_mask_call(regular_quos)){
+    regular_results <- dplyr_eval_reframe(
+      construct_fastplyr_grouped_df(data, GRP), !!!regular_quos
     )
   } else {
-    # Don't recycle in this case as we will manually recycle later
-    regular_results <- cpp_grouped_eval_tidy(
-      construct_fastplyr_grouped_df(data, GRP), regular_quos,
-      recycle = FALSE, add_groups = TRUE
-    )
+    # Doing this check to potentially avoid calculating group locations
+    # through a call to `construct_fastplyr_grouped_df()`
+    # which will happen in e.g. `f_reframe(df, new = mean(x), .by = g)`
+    if (length(regular_quos) == 0){
+      regular_results <- list(
+        groups = `names<-`(list(), character()),
+        results = `names<-`(list(), character())
+      )
+    } else if (length(optimised_quos) == 0){
+      regular_results <- cpp_grouped_eval_tidy(
+        construct_fastplyr_grouped_df(data, GRP), regular_quos,
+        recycle = recycle, add_groups = TRUE
+      )
+    } else {
+      # Don't recycle in this case as we will manually recycle later
+      regular_results <- cpp_grouped_eval_tidy(
+        construct_fastplyr_grouped_df(data, GRP), regular_quos,
+        recycle = FALSE, add_groups = TRUE
+      )
+    }
   }
 
   groups <- cheapr::new_list(length(quos))
@@ -1104,31 +1118,34 @@ eval_summarise <- function(data, quos){
   optimised <- attr(quos, ".optimised", TRUE)
   GRP <- attr(quos, ".GRP", TRUE)
 
-  if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-    return(dplyr_eval_reframe(
-      construct_fastplyr_grouped_df(data, GRP), !!!quos
-    ))
-  }
-
   which_optimised <- cheapr::val_find(optimised, TRUE)
   which_regular <- cheapr::val_find(optimised, FALSE)
   regular_quos <- sset_quos(quos, which_regular)
   optimised_quos <- sset_quos(quos, which_optimised)
   optimised_results <- eval_summarise_optimised_quos(data, optimised_quos)
 
-  # Doing this check to potentially avoid calculating group locations
-  # through a call to `construct_fastplyr_grouped_df()`
-  # which will happen in e.g. `f_summarise(df, new = mean(x), .by = g)`
-  if (length(regular_quos) == 0){
-    regular_results <- list(
-      groups = construct_group_keys(data, GRP),
-      results = `names<-`(list(), character())
+  inform_user_on_eval_split(regular_quos, optimised_quos)
+
+  if (cpp_any_quo_contains_dplyr_mask_call(regular_quos)){
+    regular_results <- dplyr_eval_summarise(
+      construct_fastplyr_grouped_df(data, GRP), !!!regular_quos
     )
   } else {
-    regular_results <- cpp_grouped_eval_summarise(
-      construct_fastplyr_grouped_df(data, GRP), regular_quos
-    )
+    # Doing this check to potentially avoid calculating group locations
+    # through a call to `construct_fastplyr_grouped_df()`
+    # which will happen in e.g. `f_summarise(df, new = mean(x), .by = g)`
+    if (length(regular_quos) == 0){
+      regular_results <- list(
+        groups = construct_group_keys(data, GRP),
+        results = `names<-`(list(), character())
+      )
+    } else {
+      regular_results <- cpp_grouped_eval_summarise(
+        construct_fastplyr_grouped_df(data, GRP), regular_quos
+      )
+    }
   }
+
 
   groups <- regular_results[[1]]
 
@@ -1148,28 +1165,32 @@ eval_mutate <- function(data, quos){
   optimised <- attr(quos, ".optimised", TRUE)
   GRP <- attr(quos, ".GRP", TRUE)
 
-  if (cpp_any_quo_contains_dplyr_mask_call(quos)){
-    return(as.list(dplyr::mutate(
-      construct_fastplyr_grouped_df(data, GRP), !!!quos
-    ))[quo_names])
-  }
-
   which_optimised <- cheapr::val_find(optimised, TRUE)
   which_regular <- cheapr::val_find(optimised, FALSE)
   regular_quos <- sset_quos(quos, which_regular)
   optimised_quos <- sset_quos(quos, which_optimised)
   optimised_results <- eval_mutate_optimised_quos(data, optimised_quos)
 
-  # Doing this check to potentially avoid calculating group locations
-  # through a call to `construct_fastplyr_grouped_df()`
-  # which will happen in e.g. `f_mutate(df, new = mean(x), .by = g)`
-  if (length(regular_quos) == 0){
-    regular_results <- `names<-`(list(), character())
+  inform_user_on_eval_split(regular_quos, optimised_quos)
+
+  if (cpp_any_quo_contains_dplyr_mask_call(regular_quos)){
+    regular_results <- as.list(dplyr::mutate(
+      construct_fastplyr_grouped_df(data, GRP), !!!regular_quos
+    ))[names(regular_quos)]
   } else {
-    regular_results <- cpp_grouped_eval_mutate(
-      construct_fastplyr_grouped_df(data, GRP), regular_quos
-    )
+    # Doing this check to potentially avoid calculating group locations
+    # through a call to `construct_fastplyr_grouped_df()`
+    # which will happen in e.g. `f_mutate(df, new = mean(x), .by = g)`
+    if (length(regular_quos) == 0){
+      regular_results <- `names<-`(list(), character())
+    } else {
+      regular_results <- cpp_grouped_eval_mutate(
+        construct_fastplyr_grouped_df(data, GRP), regular_quos
+      )
+    }
   }
+
+
 
   results <- cheapr::new_list(length(quos))
   results[which_regular] <- regular_results

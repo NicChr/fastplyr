@@ -426,16 +426,16 @@ mark(
 )
 ```
 
-### Details on optimised functions
+### Details on internally optimised functions
 
 fastplyr categorises all expressions into one of 3 categories
 
 1. Standard expressions
 2. Group-unaware expressions
-3. Group-aware optimiseable expressions
+3. Group-aware optimisable expressions
 
-The first category are normal expressions and are just expressions which don't
-belong to the other 2 categories. These get evaluated normally.
+The first category are normal expressions which simply don't
+belong to the other 2 categories and are evaluated normally.
 
 The second category consists of group-unaware expressions. These can be
 be evaluated once on the entire data instead of by-group. 
@@ -445,12 +445,12 @@ The third category consists of functions that are group-aware but can be
 optimised, such as most of the common statistical functions like `sum`, `mean`,
 etc.
 
-### Optimising group-unaware functions
+### Group-unaware functions
 
-Common base R functions can be thought of as group-unaware in the sense that
+Some common base R functions can be thought of as group-unaware in the sense that
 they return the same results regardless of if they are called in a grouped context.
 
-fastplyr evaluates these functions once as if there are no groups
+fastplyr evaluates these functions once as if there are no groups.
 
 Current list of functions marked as group-unaware
 
@@ -502,6 +502,50 @@ mark(
         mutate(x = round(abs(arr_time - dep_time)), .keep = "none")
 )
 ```
+
+### Group-aware optimised functions
+
+fastplyr also optimises many common statistical functions like `sum`, `mean`
+for use on large grouped data frames.
+
+A list of currently optimised group-aware functions can be viewed in 
+`f_summarise.Rd` or by running `?f_summarise` in Rstudio.
+
+```{r}
+res <- grouped_flights |> 
+  f_summarise(across(where(is.numeric), mean)) |> 
+  mark()
+res$result;res
+```
+
+
+Other group-aware functions that fastplyr optimises include dplyr group metadata
+functions like `n()`, `row_number()`, `cur_group_id()`, etc.
+
+```{r}
+grouped_flights |> 
+  f_mutate(
+    n = n(),
+    row_id = row_number(),
+    group_id = cur_group_id(),
+    group_locs = cur_group_rows(),
+    .keep = "none"
+  )
+```
+
+Lags and leads are also optimised by-group
+
+```{r}
+flights |> 
+  f_mutate(
+    time_hour,
+    lag = lag(time_hour),
+    lead = lead(time_hour),
+    .by = origin,
+    .keep = "none"
+  )
+```
+
 
 ## tidytable vs fastplyr
 

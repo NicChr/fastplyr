@@ -104,7 +104,8 @@ f_summarise <- function(.data, ..., .by = NULL, .order = group_by_order_default(
   quos <- fastplyr_quos(..., .data = .data, .groups = GRP,
                         .drop_null = TRUE,
                         .unpack_default = TRUE,
-                        .optimise = should_optimise(GRP))
+                        .optimise = should_optimise(GRP),
+                        .optimise_expand = FALSE)
 
   results <- eval_summarise(.data, quos)
   groups <- results[["groups"]]

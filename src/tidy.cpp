@@ -37,8 +37,8 @@ bool is_data_pronoun_call(SEXP expr, SEXP env){
   return out;
 }
 
-// Get the var of a .data quosure
-SEXP data_pronoun_var(SEXP data, SEXP expr, SEXP env){
+// Get the var of a .data call
+SEXP data_pronoun_var(SEXP expr, SEXP env){
 
   int32_t NP = 0;
 
@@ -64,9 +64,7 @@ SEXP data_pronoun_var(SEXP data, SEXP expr, SEXP env){
   } else {
     SHIELD(vars = rlang::eval_tidy(vars, R_NilValue, env)); ++NP;
     if (TYPEOF(vars) != STRSXP &&
-        TYPEOF(vars) != SYMSXP &&
-        TYPEOF(vars) != INTSXP &&
-        TYPEOF(vars) != REALSXP){
+        TYPEOF(vars) != SYMSXP){
       YIELD(NP);
       Rf_error("A string or symbol must be supplied to `.data[[`");
     }
@@ -79,13 +77,8 @@ SEXP data_pronoun_var(SEXP data, SEXP expr, SEXP env){
     }
   }
 
-  SEXP df = SHIELD(cheapr::df_select(data, vars)); ++NP;
-  SHIELD(out_var = get_names(df)); ++NP;
+  SHIELD(out_var = vars); ++NP;
 
-  if (Rf_length(out_var) == 0){
-    YIELD(NP);
-    Rf_error("Column %s not found in `.data`", CHAR(STRING_ELT(vars, 0)));
-  }
   YIELD(NP);
   return out_var;
 }
@@ -97,7 +90,7 @@ cpp11::writable::strings all_call_names(cpp11::data_frame data, cpp11::sexp expr
   strings temp;
 
   if (is_data_pronoun_call(expr, env)){
-    temp = data_pronoun_var(data, expr, env);
+    temp = data_pronoun_var(expr, env);
     out.push_back(temp[0]);
   } else if (TYPEOF(expr) == SYMSXP){
     out.push_back(rlang::sym_as_string(expr));
