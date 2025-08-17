@@ -372,6 +372,8 @@ void init_group_unaware_fns(DllInfo* dll) {
 // Only checks the current call and not all nested calls
 bool maybe_is_group_unaware_call(SEXP expr, SEXP env){
 
+  return false;
+
   int32_t NP = 0;
 
   bool maybe = is_fn_call(expr, group_unaware_fn_names, R_NilValue, env);
