@@ -83,7 +83,7 @@ SEXP data_pronoun_var(SEXP expr, SEXP env){
   return out_var;
 }
 
-cpp11::writable::strings all_call_names(cpp11::data_frame data, cpp11::sexp expr, cpp11::environment env){
+cpp11::writable::strings all_call_names(cpp11::sexp expr, cpp11::environment env){
 
   using namespace cpp11;
   writable::strings out;
@@ -98,7 +98,7 @@ cpp11::writable::strings all_call_names(cpp11::data_frame data, cpp11::sexp expr
     list tree = call_args(expr);
     for (int i = 0; i < tree.size(); ++i){
       sexp branch = tree[i];
-      temp = all_call_names(data, branch, env);
+      temp = all_call_names(branch, env);
       for (int j = 0; j < temp.size(); ++j){
         out.push_back(temp[j]);
       }
@@ -110,14 +110,14 @@ cpp11::writable::strings all_call_names(cpp11::data_frame data, cpp11::sexp expr
 // Which variables are quosures pointing to?
 
 [[cpp11::register]]
-SEXP quo_vars(SEXP quos, SEXP data, bool combine){
+SEXP quo_vars(SEXP quos, SEXP mask, bool combine){
 
   int n_quos = Rf_length(quos);
 
   SEXP quo_vars = SHIELD(new_vec(VECSXP, n_quos));
   SEXP quo_names = SHIELD(get_names(quos));
   set_names(quo_vars, quo_names);
-  SEXP names = SHIELD(get_names(data));
+  SEXP names = SHIELD(get_mask_data_vars(mask));
 
   SEXP expr, env;
   PROTECT_INDEX expr_idx, env_idx;
@@ -127,7 +127,7 @@ SEXP quo_vars(SEXP quos, SEXP data, bool combine){
   for (int i = 0; i < n_quos; ++i){
     R_Reprotect(expr = rlang::quo_get_expr(VECTOR_ELT(quos, i)), expr_idx);
     R_Reprotect(env = rlang::quo_get_env(VECTOR_ELT(quos, i)), env_idx);
-    SET_VECTOR_ELT(quo_vars, i, all_call_names(data, expr, env));
+    SET_VECTOR_ELT(quo_vars, i, all_call_names(expr, env));
     SET_VECTOR_ELT(quo_vars, i, cheapr::intersect(names, VECTOR_ELT(quo_vars, i), false));
   }
   if (combine){
@@ -255,6 +255,14 @@ SEXP get_mask_top_env(SEXP mask){
   return Rf_findVarInFrame(mask, top_env_sym);
 }
 
+SEXP get_mask_data_vars(SEXP mask){
+  return R_lsInternal3(
+    get_mask_top_env(mask),
+    FALSE, // Exclude objects beginning with `.` like `.data`
+    FALSE // Unsorted
+  );
+}
+
 SEXP new_bare_data_mask(){
   SEXP env = SHIELD(R_NewEnv(R_EmptyEnv, false, 0));
   SEXP mask = SHIELD(rlang::new_data_mask(env, env));
@@ -306,13 +314,15 @@ SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
     SEXP expr_name = p_expr_names[i];
 
     if (expr_name != R_BlankString){
+
       SEXP sym = Rf_installChar(expr_name);
       Rf_defineVar(sym, result, top_env);
+      // if (Rf_isNull(result)){
+      //   R_removeVarFromFrame(sym, top_env);
+      // }
       SET_STRING_ELT(out_names, i, expr_name);
     }
-    if (!Rf_isNull(result)){
-      SET_VECTOR_ELT(out, i, result);
-    }
+    SET_VECTOR_ELT(out, i, result);
   }
   set_names(out, out_names);
   YIELD(NP);
@@ -585,7 +595,8 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
 
 
   // grab the variable names the expressions point to
-  SEXP quo_data_vars = SHIELD(quo_vars(quos, data, true)); ++NP;
+  SEXP data_mask = SHIELD(rlang::as_data_mask(data)); ++NP;
+  SEXP quo_data_vars = SHIELD(quo_vars(quos, data_mask, true)); ++NP;
   int chunk_n_cols = Rf_length(quo_data_vars);
   SEXP quo_data_syms = SHIELD(new_vec(VECSXP, chunk_n_cols)); ++NP;
   const SEXP *p_quo_data_syms = VECTOR_PTR_RO(quo_data_syms);
@@ -1047,7 +1058,8 @@ SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos){
   int n_groups = std::max(df_nrow(group_keys), 1);
 
   // grab the variable names the expressions point to
-  SEXP quo_data_vars = SHIELD(quo_vars(quos, data, true)); ++NP;
+  SEXP data_mask = SHIELD(rlang::as_data_mask(data)); ++NP;
+  SEXP quo_data_vars = SHIELD(quo_vars(quos, data_mask, true)); ++NP;
   int chunk_n_cols = Rf_length(quo_data_vars);
   SEXP quo_data_syms = SHIELD(new_vec(VECSXP, chunk_n_cols)); ++NP;
   const SEXP *p_quo_data_syms = VECTOR_PTR_RO(quo_data_syms);
@@ -1182,7 +1194,8 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
 
 
   // grab the variable names the expressions point to
-  SEXP quo_data_vars = SHIELD(quo_vars(quos, data, true)); ++NP;
+  SEXP data_mask = SHIELD(rlang::as_data_mask(data)); ++NP;
+  SEXP quo_data_vars = SHIELD(quo_vars(quos, data_mask, true)); ++NP;
   int chunk_n_cols = Rf_length(quo_data_vars);
   SEXP quo_data_syms = SHIELD(new_vec(VECSXP, chunk_n_cols)); ++NP;
   const SEXP *p_quo_data_syms = VECTOR_PTR_RO(quo_data_syms);
@@ -1264,6 +1277,9 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
       R_Reprotect(result = cheapr::rep_len(result, chunk_size), result_idx);
       if (p_quo_name_syms[m] != R_UnboundValue){
         Rf_defineVar(p_quo_name_syms[m], result, top_env);
+      }
+      if (Rf_isNull(result)){
+        R_removeVarFromFrame(p_quo_name_syms[m], top_env);
       }
       SET_VECTOR_ELT(inner_container, m, result);
     }

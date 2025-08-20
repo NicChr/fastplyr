@@ -121,11 +121,13 @@ test_that("summarise", {
   expect_equal(
     airquality |>
       f_summarise(
-        dplyr::across(dplyr::everything(), list(mean = \(x) mean(x, na.rm = TRUE),
-                                                median = \(x) median(x, na.rm = TRUE),
-                                                min = \(x) min(x, na.rm = TRUE),
-                                                max = \(x) max(x, na.rm = TRUE)),
-                      .names = "col_{.col}_fun_{.fn}"),
+        dplyr::across(dplyr::everything(), list(
+          mean = mean,
+          median = median,
+          min = min,
+          max = max
+        ),
+        .names = "col_{.col}_fun_{.fn}"),
         N = dplyr::n()
       ),
     target

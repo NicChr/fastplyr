@@ -20,12 +20,12 @@ is_fn_call <- function(expr, fn, ns, rho) {
   .Call(`_fastplyr_is_fn_call`, expr, fn, ns, rho)
 }
 
-is_group_unaware_call <- function(expr, env) {
-  .Call(`_fastplyr_is_group_unaware_call`, expr, env)
-}
-
 cpp_group_unaware_fns <- function() {
   .Call(`_fastplyr_cpp_group_unaware_fns`)
+}
+
+is_group_unaware_call <- function(expr, env, mask) {
+  .Call(`_fastplyr_is_group_unaware_call`, expr, env, mask)
 }
 
 cpp_frame_addresses_equal <- function(x, y) {
@@ -160,8 +160,8 @@ cpp_group_id <- function(x) {
   .Call(`_fastplyr_cpp_group_id`, x)
 }
 
-quo_vars <- function(quos, data, combine) {
-  .Call(`_fastplyr_quo_vars`, quos, data, combine)
+quo_vars <- function(quos, mask, combine) {
+  .Call(`_fastplyr_quo_vars`, quos, mask, combine)
 }
 
 cpp_quos_drop_null <- function(quos) {

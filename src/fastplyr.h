@@ -71,6 +71,9 @@ SEXP get_fun_ns(SEXP x, SEXP rho);
 void set_as_vctrs_new_list_of_int(SEXP x);
 void set_as_tbl(SEXP x);
 SEXP binary_combine(SEXP x, SEXP y);
+SEXP get_mask_data_vars(SEXP mask);
+SEXP quo_vars(SEXP quos, SEXP mask, bool combine);
+bool exists(SEXP sym, SEXP rho);
 
 // Group metadata
 
@@ -88,6 +91,7 @@ namespace rlang {
 SEXP eval_tidy(SEXP expr, SEXP data, SEXP env);
 SEXP as_data_pronoun(SEXP x);
 SEXP new_data_mask(SEXP bottom, SEXP top);
+SEXP new_quosure(SEXP expr, SEXP env);
 SEXP as_data_mask(SEXP data);
 SEXP str_as_symbol(SEXP str);
 SEXP sym_as_character(SEXP sym);

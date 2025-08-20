@@ -369,18 +369,66 @@ void init_group_unaware_fns(DllInfo* dll) {
   }
 }
 
-// Only checks the current call and not all nested calls
-bool maybe_is_group_unaware_call(SEXP expr, SEXP env){
+[[cpp11::register]]
+SEXP cpp_group_unaware_fns(){
+  int n = Rf_length(group_unaware_fns);
+  SEXP out = SHIELD(new_vec(VECSXP, n));
+  SEXP names = SHIELD(Rf_duplicate(group_unaware_fn_names));
 
-  return false;
+  for (int i = 0; i < n; ++i){
+    SEXP fn_name = Rf_installChar(STRING_ELT(names, i));
+    SEXP fn = get(fn_name, group_unaware_fns);
+    SET_VECTOR_ELT(out, i, fn);
+  }
+  set_names(out, names);
+  YIELD(2);
+  return out;
+}
+
+// Recursively check call is group-unaware
+// If symbol belongs to mask top env it is group-unaware
+// If fn being called belongs to group-unaware fn list
+// then it is a group-unaware call
+// But all calls and symbols within that must also be group-unaware
+
+[[cpp11::register]]
+bool is_group_unaware_call(SEXP expr, SEXP env, SEXP mask){
+
+  if (TYPEOF(expr) != LANGSXP && TYPEOF(expr) != SYMSXP){
+    return false;
+  }
 
   int32_t NP = 0;
+
+  if (TYPEOF(expr) == SYMSXP){
+    SEXP temp = SHIELD(new_vec(VECSXP, 1)); ++NP;
+    SEXP new_quo = SHIELD(rlang::new_quosure(expr, env)); ++NP;
+    SET_VECTOR_ELT(temp, 0, new_quo);
+    SEXP expr_vars = SHIELD(quo_vars(temp, mask, true)); ++NP;
+
+    SEXP expr_str = SHIELD(rlang::sym_as_string(expr)); ++NP;
+
+    bool sym_in_mask = false;
+
+    for (int i = 0; i < Rf_length(expr_vars); ++i){
+      if (expr_str == STRING_ELT(expr_vars, i)){
+        sym_in_mask = true;
+        break;
+      }
+    }
+    YIELD(NP);
+    return sym_in_mask;
+  }
 
   bool maybe = is_fn_call(expr, group_unaware_fn_names, R_NilValue, env);
 
   if (!maybe){
+    YIELD(NP);
     return false;
   }
+
+  // Verify that the fn the user is calling is the same as the one
+  // stored in our internal group-unaware fn list
 
   // Get fn name as a symbol
   SEXP fn = R_NilValue;
@@ -401,62 +449,25 @@ bool maybe_is_group_unaware_call(SEXP expr, SEXP env){
     return false;
   }
 
-  bool out = target_ns == actual_ns;
-  YIELD(NP);
-  return out;
-}
-
-[[cpp11::register]]
-bool is_group_unaware_call(SEXP expr, SEXP env){
-
-  if (TYPEOF(expr) != LANGSXP){
-    return maybe_is_group_unaware_call(expr, env);
-  }
-
-  int32_t NP = 0;
-
-  if (!maybe_is_group_unaware_call(expr, env)){
+  if (target_ns != actual_ns){
+    YIELD(NP);
     return false;
   }
 
-  bool out = true;
 
+  // Check remaining symbols and nested calls
   SEXP tree = SHIELD(call_args(expr)); ++NP;
-  SEXP branch;
-
-  // Skip first element as we have already established
-  // the top-call is group unaware
   for (int i = 0; i < Rf_length(tree); ++i){
-    branch = VECTOR_ELT(tree, i);
-
-    // If branch is a call
-    if (TYPEOF(branch) == LANGSXP){
-      if (!is_group_unaware_call(branch, env)){
-        out = false;
-        break;
-      }
+    SEXP branch = VECTOR_ELT(tree, i);
+    if (!is_group_unaware_call(branch, env, mask)){
+      YIELD(NP);
+      return false;
     }
   }
+
   YIELD(NP);
-  return out;
+  return true;
 }
-
-[[cpp11::register]]
-SEXP cpp_group_unaware_fns(){
-  int n = Rf_length(group_unaware_fns);
-  SEXP out = SHIELD(new_vec(VECSXP, n));
-  SEXP names = SHIELD(Rf_duplicate(group_unaware_fn_names));
-
-  for (int i = 0; i < n; ++i){
-    SEXP fn_name = Rf_installChar(STRING_ELT(names, i));
-    SEXP fn = get(fn_name, group_unaware_fns);
-    SET_VECTOR_ELT(out, i, fn);
-  }
-  set_names(out, names);
-  YIELD(2);
-  return out;
-}
-
 
 // void foo(SEXP fn, SEXP nm, SEXP env){
 //

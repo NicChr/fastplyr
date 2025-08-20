@@ -41,17 +41,17 @@ extern "C" SEXP _fastplyr_is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho) {
   END_CPP11
 }
 // expressions.cpp
-bool is_group_unaware_call(SEXP expr, SEXP env);
-extern "C" SEXP _fastplyr_is_group_unaware_call(SEXP expr, SEXP env) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(is_group_unaware_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(env)));
-  END_CPP11
-}
-// expressions.cpp
 SEXP cpp_group_unaware_fns();
 extern "C" SEXP _fastplyr_cpp_group_unaware_fns() {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_group_unaware_fns());
+  END_CPP11
+}
+// expressions.cpp
+bool is_group_unaware_call(SEXP expr, SEXP env, SEXP mask);
+extern "C" SEXP _fastplyr_is_group_unaware_call(SEXP expr, SEXP env, SEXP mask) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(is_group_unaware_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(env), cpp11::as_cpp<cpp11::decay_t<SEXP>>(mask)));
   END_CPP11
 }
 // fastplyr.cpp
@@ -286,10 +286,10 @@ extern "C" SEXP _fastplyr_cpp_group_id(SEXP x) {
   END_CPP11
 }
 // tidy.cpp
-SEXP quo_vars(SEXP quos, SEXP data, bool combine);
-extern "C" SEXP _fastplyr_quo_vars(SEXP quos, SEXP data, SEXP combine) {
+SEXP quo_vars(SEXP quos, SEXP mask, bool combine);
+extern "C" SEXP _fastplyr_quo_vars(SEXP quos, SEXP mask, SEXP combine) {
   BEGIN_CPP11
-    return cpp11::as_sexp(quo_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<SEXP>>(data), cpp11::as_cpp<cpp11::decay_t<bool>>(combine)));
+    return cpp11::as_sexp(quo_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<SEXP>>(mask), cpp11::as_cpp<cpp11::decay_t<bool>>(combine)));
   END_CPP11
 }
 // tidy.cpp
@@ -443,7 +443,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_which_all",                        (DL_FUNC) &_fastplyr_cpp_which_all,                        1},
     {"_fastplyr_fun_ns",                               (DL_FUNC) &_fastplyr_fun_ns,                               2},
     {"_fastplyr_is_fn_call",                           (DL_FUNC) &_fastplyr_is_fn_call,                           4},
-    {"_fastplyr_is_group_unaware_call",                (DL_FUNC) &_fastplyr_is_group_unaware_call,                2},
+    {"_fastplyr_is_group_unaware_call",                (DL_FUNC) &_fastplyr_is_group_unaware_call,                3},
     {"_fastplyr_is_nested_call",                       (DL_FUNC) &_fastplyr_is_nested_call,                       1},
     {"_fastplyr_quo_vars",                             (DL_FUNC) &_fastplyr_quo_vars,                             3},
     {"_fastplyr_recycle_eval_results",                 (DL_FUNC) &_fastplyr_recycle_eval_results,                 1},
