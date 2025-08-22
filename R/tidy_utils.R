@@ -2,42 +2,52 @@
 .optimised_fn_list <- list(
 
   input_fns = list(
-    base::sum, base::prod, base::mean, stats::median,
-    base::min, base::max,
-    dplyr::first, dplyr::last,
-    stats::sd, stats::var,
-    dplyr::n_distinct, collapse::fndistinct,
-    collapse::fsum, collapse::fprod, collapse::fmean,
-    collapse::fmedian,
-    collapse::fmin, collapse::fmax,
-    collapse::ffirst, collapse::flast,
-    collapse::fsd, collapse::fvar,
-    collapse::fndistinct
-  ),
-  input_fn_nms = c(
-    "sum", "prod", "mean", "median", "min", "max", "first", "last",
-    "sd", "var", "n_distinct", "ndistinct", "fsum", "fprod", "fmean",
-    "fmedian", "fmin", "fmax", "ffirst", "flast", "fsd", "fvar",
-    "fndistinct"
-  ),
-  input_ns = c(
-    "base", "base", "base", "stats", "base", "base", "dplyr", "dplyr",
-    "stats", "stats", "dplyr", "collapse", "collapse", "collapse", "collapse",
-    "collapse", "collapse", "collapse", "collapse", "collapse", "collapse", "collapse",
-    "collapse"
+    sum = base::sum,
+    prod = base::prod,
+    mean = base::mean,
+    median = stats::median,
+    min = base::min,
+    max = base::max,
+    first = dplyr::first,
+    last = dplyr::last,
+    sd = stats::sd,
+    var = stats::var,
+    n_distinct = dplyr::n_distinct,
+    fsum = collapse::fsum,
+    fprod = collapse::fprod,
+    fmean = collapse::fmean,
+    fmedian = collapse::fmedian,
+    fmin = collapse::fmin,
+    fmax = collapse::fmax,
+    ffirst = collapse::ffirst,
+    flast = collapse::flast,
+    fsd = collapse::fsd,
+    fvar = collapse::fvar,
+    fndistinct = collapse::fndistinct
   ),
   target_fns = list(
-    collapse::fsum, collapse::fprod, collapse::fmean, collapse::fmedian,
-    collapse::fmin, collapse::fmax,
-    grouped_first, grouped_last,
-    collapse::fsd, collapse::fvar,
-    collapse::fndistinct, collapse::fndistinct,
-    collapse::fsum, collapse::fprod, collapse::fmean,
-    collapse::fmedian,
-    collapse::fmin, collapse::fmax,
-    grouped_first, grouped_last,
-    collapse::fsd, collapse::fvar,
-    collapse::fndistinct
+    fsum = collapse::fsum,
+    fprod = collapse::fprod,
+    fmean = collapse::fmean,
+    fmedian = collapse::fmedian,
+    fmin = collapse::fmin,
+    fmax = collapse::fmax,
+    grouped_first = grouped_first,
+    grouped_last = grouped_last,
+    fsd = collapse::fsd,
+    fvar = collapse::fvar,
+    fndistinct = collapse::fndistinct,
+    fsum = collapse::fsum,
+    fprod = collapse::fprod,
+    fmean = collapse::fmean,
+    fmedian = collapse::fmedian,
+    fmin = collapse::fmin,
+    fmax = collapse::fmax,
+    grouped_first = grouped_first,
+    grouped_last = grouped_last,
+    fsd = collapse::fsd,
+    fvar = collapse::fvar,
+    fndistinct = collapse::fndistinct
   )
 )
 .optimised_fns_inform <- c(
@@ -48,7 +58,7 @@
 )
 
 is_optimised_call <- function(expr, env = rlang::caller_env()){
-  is_fn_call(expr, .optimised_fn_list[["input_fn_nms"]], NULL, env)
+  is_fn_call(expr, names(.optimised_fn_list[["input_fns"]]), NULL, env)
 }
 
 # Somewhat safer check of the .by arg
@@ -500,8 +510,8 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
           match_loc <- match_fun(fn, .optimised_fn_list[["input_fns"]])
         } else {
           fn <- rlang::as_string(fn)
-          match_loc <- match(fn, .optimised_fn_list[["input_fn_nms"]])
-          input_ns <- .optimised_fn_list[["input_ns"]][[match_loc]]
+          match_loc <- match(fn, names(.optimised_fn_list[["input_fns"]]))
+          input_ns <- fun_ns(.optimised_fn_list[["input_fns"]][[match_loc]], env)
           if (input_ns != ns){
             next
           }
