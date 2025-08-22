@@ -340,9 +340,9 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
           "!" = "The following functions will be optimised package-wide:",
           paste0("`", paste(.optimised_fns_inform, sep = "``"), "`"),
           "",
-          "Optimised expressions are independent from each other and typical data-masking rules may not apply",
+          "Optimised expressions are independent from unoptimised ones and typical data-masking rules may not apply",
           "",
-          "Run {.run options(fastplyr.optimise = FALSE)} to disable optimisations globally",
+          "Run {.run fastplyr_disable_optimisations()} to disable optimisations globally",
           "",
           "Run {.run options(fastplyr.inform = FALSE)} to disable this message"
         ),

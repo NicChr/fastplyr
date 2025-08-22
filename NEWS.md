@@ -29,6 +29,9 @@ which are optimised in a separate way.
 
 - An issue where `across` was selecting grouped variables has been fixed.
 
+- Fixed an issue where in some cases lists where not being handled correctly in 
+calls to `across()`.
+
 ### Upcoming changes (note to devs)
 
 - Functional to allow users to mark functions as not-group-aware
