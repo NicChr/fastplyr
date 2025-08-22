@@ -2,6 +2,14 @@
 
 // Helpers for working with R expressions
 
+bool functions_equal(SEXP x, SEXP y){
+  if (!Rf_isFunction(x) || !Rf_isFunction(y)){
+    Rf_error("`x` and `y` must be functions");
+  }
+
+  return R_compute_identical(x, y, 8);
+}
+
 // Helper to get exported package function
 SEXP find_pkg_fun(const char *name, const char *pkg, bool all_fns){
   if (all_fns){
@@ -9,6 +17,26 @@ SEXP find_pkg_fun(const char *name, const char *pkg, bool all_fns){
   } else {
     return Rf_eval(Rf_lang3(R_DoubleColonSymbol, Rf_install(pkg), Rf_install(name)), R_BaseEnv);
   }
+}
+
+// Match fn to a list of fns
+[[cpp11::register]]
+int match_fun(SEXP x, SEXP fns){
+
+  if (TYPEOF(fns) != VECSXP){
+    Rf_error("`fns` must be a list of functions in %s", __func__);
+  }
+
+  int out = NA_INTEGER;
+  int n = Rf_length(fns);
+
+  for (int i = 0; i < n; ++i){
+    if (functions_equal(x, VECTOR_ELT(fns, i))){
+      out = i + 1;
+      break;
+    }
+  }
+  return out;
 }
 
 // Basically R's get()
@@ -237,6 +265,7 @@ SEXP fun_ns(SEXP x, SEXP rho){
 }
 
 // is this call a call to any function supplied to `fn`?
+// doesn't make sense if expr contains inlined-function
 
 bool is_call2(SEXP expr, SEXP fn){
 
@@ -278,6 +307,8 @@ bool is_call2(SEXP expr, SEXP fn){
 // for example, is_fn_call(quote(mean()), "mean", "base", globalenv())
 // returns true whereas
 // rlang::is_call(quote(mean()), "mean", ns = "base") returns false
+// Furthermore, the expression may contain an inlined function instead of the
+// function name
 
 [[cpp11::register]]
 bool is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
@@ -296,7 +327,49 @@ bool is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
   int32_t NP = 0;
   int n_fns = Rf_length(fn);
 
-  if (Rf_isNull(ns)){
+  // If expr contains inlined-function
+  // instead of a symbol to a function
+
+  if (Rf_isFunction(CAR(expr))){
+
+    bool out = false;
+
+    SEXP actual_ns = SHIELD(get_fun_ns(CAR(expr), rho)); ++NP;
+
+    // Check namespace of actual function matches user-supplied one
+    // if they give a non-NULL namespace
+    if (!Rf_isNull(ns)){
+      SEXP target_ns = STRING_ELT(ns, 0);
+      if (actual_ns != target_ns){
+        YIELD(NP);
+        return out;
+      }
+    }
+    SEXP target_fn;
+    PROTECT_INDEX target_fn_idx;
+    R_ProtectWithIndex(target_fn = R_NilValue, &target_fn_idx); ++NP;
+
+    for (int i = 0; i < n_fns; ++i){
+      R_Reprotect(target_fn = get(Rf_installChar(STRING_ELT(fn, i)), rho), target_fn_idx);
+
+      if (!Rf_isFunction(target_fn)){
+        continue;
+        // YIELD(NP);
+        // Rf_error("Could not find function %s", CHAR(STRING_ELT(fn, i)));
+      }
+      if (functions_equal(target_fn, CAR(expr))){
+        out = true;
+        break;
+      }
+    }
+
+    // out will be false if we get to this stage
+    YIELD(NP);
+    return out;
+
+  // The below code deals with more standard calls
+
+  } else if (Rf_isNull(ns)){
     return is_call2(expr, fn);
   } else {
     SEXP ns_char = STRING_ELT(ns, 0);
@@ -377,7 +450,7 @@ SEXP cpp_group_unaware_fns(){
 
   for (int i = 0; i < n; ++i){
     SEXP fn_name = Rf_installChar(STRING_ELT(names, i));
-    SEXP fn = get(fn_name, group_unaware_fns);
+    SEXP fn = Rf_findVarInFrame(group_unaware_fns, fn_name);
     SET_VECTOR_ELT(out, i, fn);
   }
   set_names(out, names);
@@ -430,30 +503,14 @@ bool is_group_unaware_call(SEXP expr, SEXP env, SEXP mask){
   // Verify that the fn the user is calling is the same as the one
   // stored in our internal group-unaware fn list
 
-  // Get fn name as a symbol
-  SEXP fn = R_NilValue;
-  SEXP actual_ns = R_NilValue;
-  if (call_is_namespaced(expr)){
-    fn = get_namespaced_call_fn(expr);
-    actual_ns = get_namespaced_call_ns(expr);
-    SHIELD(actual_ns = rlang::sym_as_string(actual_ns)); ++NP;
-  } else {
-    fn = CAR(expr);
-    actual_ns = SHIELD(get_fun_ns(fn, env)); ++NP; // CHARSXP namespace
-  }
+  SEXP actual_fn = SHIELD(Rf_eval(CAR(expr), env)); ++NP;
+  SEXP group_unaware_functions = SHIELD(cpp_group_unaware_fns()); ++NP;
+  maybe = match_fun(actual_fn, group_unaware_functions) != NA_INTEGER;
 
-  SEXP target_ns = SHIELD(get_fun_ns(get(fn, group_unaware_fns), R_BaseEnv)); ++NP;
-
-  if (Rf_isNull(target_ns)){
+  if (!maybe){
     YIELD(NP);
     return false;
   }
-
-  if (target_ns != actual_ns){
-    YIELD(NP);
-    return false;
-  }
-
 
   // Check remaining symbols and nested calls
   SEXP tree = SHIELD(call_args(expr)); ++NP;
@@ -468,40 +525,3 @@ bool is_group_unaware_call(SEXP expr, SEXP env, SEXP mask){
   YIELD(NP);
   return true;
 }
-
-// void foo(SEXP fn, SEXP nm, SEXP env){
-//
-//   if (!Rf_isFunction(fn)){
-//     Rf_error("`fn` must be a function in %s", __func__);
-//   }
-//
-//   if (TYPEOF(nm) != SYMSXP){
-//     Rf_error("`nm` must be a symbol in %s", __func__);
-//   }
-//
-//   if (TYPEOF(env) != ENVSXP){
-//     Rf_error("`env` must be an environment in %s", __func__);
-//   }
-//
-//   if (exists(nm, group_unaware_fns)){
-//     Rf_error("Group-unaware function %s already exists in fastplyr's internal list", CHAR(PRINTNAME(nm)));
-//   }
-//
-//   Rf_defineVar(nm, fn, group_unaware_fns);
-//
-//   if (exists(nm, env)){
-//
-//     // Remove it if we added it before in this case
-//     if (exists(nm, group_unaware_fns)){
-//       rlang::env_unbind(group_unaware_fns, nm);
-//     }
-//     Rf_error("Object %s already exists in the supplied environment", CHAR(PRINTNAME(nm)));
-//   }
-//
-//   Rf_defineVar(nm, fn, env);
-//   SEXP names = SHIELD(R_lsInternal(group_unaware_fns, FALSE));
-//   R_ReleaseObject(group_unaware_fn_names);
-//   group_unaware_fn_names = names;
-//   YIELD(1);
-//   R_PreserveObject(group_unaware_fn_names);
-// }

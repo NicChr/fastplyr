@@ -6,6 +6,13 @@
 #include <R_ext/Visibility.h>
 
 // expressions.cpp
+int match_fun(SEXP x, SEXP fns);
+extern "C" SEXP _fastplyr_match_fun(SEXP x, SEXP fns) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(match_fun(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(fns)));
+  END_CPP11
+}
+// expressions.cpp
 SEXP call_args(SEXP expr);
 extern "C" SEXP _fastplyr_call_args(SEXP expr) {
   BEGIN_CPP11
@@ -445,6 +452,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_is_fn_call",                           (DL_FUNC) &_fastplyr_is_fn_call,                           4},
     {"_fastplyr_is_group_unaware_call",                (DL_FUNC) &_fastplyr_is_group_unaware_call,                3},
     {"_fastplyr_is_nested_call",                       (DL_FUNC) &_fastplyr_is_nested_call,                       1},
+    {"_fastplyr_match_fun",                            (DL_FUNC) &_fastplyr_match_fun,                            2},
     {"_fastplyr_quo_vars",                             (DL_FUNC) &_fastplyr_quo_vars,                             3},
     {"_fastplyr_recycle_eval_results",                 (DL_FUNC) &_fastplyr_recycle_eval_results,                 1},
     {"_fastplyr_transpose_eval_results",               (DL_FUNC) &_fastplyr_transpose_eval_results,               1},

@@ -384,7 +384,9 @@ GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
 # Either treats data as 1 big group or
 # Uses dplyr group vars
 grouped_df_as_GRP <- function(data, return.order = TRUE, ...){
-  cpp_grouped_df_as_grp(data)
+  out <- cpp_grouped_df_as_grp(data)
+  out[["locs"]] <- unclass(f_group_rows(data))
+  out
 }
 # Custom GRP method for data frames
 # Group starts is always returned

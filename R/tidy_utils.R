@@ -160,111 +160,6 @@ should_optimise <- function(GRP){
   TRUE
 }
 
-# unpack_across <- function(quo, data, groups = character(), unpack_default = FALSE){
-#
-#   expr <- rlang::quo_get_expr(quo)
-#   quo_env <- rlang::quo_get_env(quo)
-#
-#   # Remove group variables from data
-#   data <- cheapr::sset_col(data, vec_setdiff(names(data), groups))
-#
-#   clean_expr <- match.call(
-#     definition = dplyr::across,
-#     call = expr,
-#     expand.dots = FALSE,
-#     envir = quo_env
-#   )
-#
-#   if (!".cols" %in% names(clean_expr)){
-#     cli::cli_abort("{.arg .cols} must be supplied in {.fn across}")
-#   }
-#   unused_args <- vec_setdiff(names(clean_expr)[-1], c(".cols", ".fns", ".names", ".unpack"))
-#
-#   if (length(unused_args) > 0){
-#     cli::cli_abort("{.arg ...} must be unused")
-#   }
-#
-#   across_vars <- clean_expr[[".cols"]]
-#   across_fns <- clean_expr[[".fns"]]
-#   across_nms <- clean_expr[[".names"]]
-#   across_unpack <- clean_expr[[".unpack"]]
-#
-#   fn_names <- NULL
-#   unpack <- FALSE
-#
-#   if (is.atomic(across_vars)){
-#     cols <- unname(col_select_names(data, across_vars))
-#   } else if (rlang::is_call(across_vars, ":")){
-#     args <- as.list(across_vars)[-1L]
-#     if (length(args) == 2 && is.atomic(args[[1L]]) && is.atomic(args[[2L]])){
-#       cols <- unname(col_select_names(data, eval(across_vars, envir = quo_env)))
-#     } else {
-#       cols <- names(tidyselect::eval_select(across_vars, data, env = quo_env))
-#     }
-#   } else if (is.symbol(across_vars) && (rlang::as_string(across_vars) %in% names(data))){
-#     cols <- rlang::as_string(across_vars)
-#   } else {
-#     cols <- names(tidyselect::eval_select(across_vars, data, env = quo_env))
-#   }
-#
-#   evaluated_across_fns <- eval(across_fns, envir = quo_env)
-#
-#   if (is.list(evaluated_across_fns)){
-#     fn_tree <- evaluated_across_fns
-#     fn_names <- names(fn_tree) %||% character(length(fn_tree))
-#
-#     # This line is to not break timeplyr unit tests
-#     if (!all(nzchar(fn_names)) && rlang::is_call(across_fns, "list")){
-#       fn_names <- cheapr::str_coalesce(
-#         fn_names,
-#         vapply(call_args(across_fns), deparse2, "", USE.NAMES = FALSE)
-#       )
-#     }
-#   } else if (!".fns" %in% names(clean_expr)){
-#     fn_tree <- list(as.symbol("identity"))
-#   } else {
-#     fn_tree <- list(evaluated_across_fns)
-#   }
-#
-#   # Evaluate functions
-#
-#   for (i in seq_along(fn_tree)){
-#     evaluated_fn <- eval(fn_tree[[i]], envir = quo_env)
-#     if (!is.function(evaluated_fn)){
-#       fn_tree[[i]] <- rlang::as_function(evaluated_fn)
-#     }
-#   }
-#
-#   if (".unpack" %in% names(expr)){
-#     unpack <- eval(across_unpack, envir = quo_env)
-#   } else {
-#     unpack <- unpack_default
-#   }
-#
-#   out_names <- across_col_names(cols, .names = across_nms, .fns = fn_names)
-#   out_size <- length(out_names)
-#
-#   # Recycle cols/fns
-#   cols <- cheapr::cheapr_rep_each(cols, out_size / length(cols))
-#   fn_tree <- rep_len(fn_tree, out_size)
-#
-#   out <- cheapr::new_list(out_size)
-#   names(out) <- out_names
-#
-#   for (i in seq_along(out)){
-#     fn <- fn_tree[[i]]
-#     col <- cols[[i]]
-#     new_quo <- rlang::new_quosure(
-#       rlang::call2(fn, as.symbol(col)),
-#       # rlang::call2(fn, call("$", quote(.data), as.symbol(col))),
-#       quo_env
-#       )
-#     set_add_attr(new_quo, ".unpack", unpack)
-#     out[[i]] <- new_quo
-#   }
-#   out
-# }
-
 unpack_across <- function(quo, data, groups = character(), unpack_default = FALSE){
 
   expr <- rlang::quo_get_expr(quo)
@@ -300,7 +195,7 @@ unpack_across <- function(quo, data, groups = character(), unpack_default = FALS
   if (is.atomic(across_vars)){
     cols <- unname(col_select_names(data, across_vars))
   } else if (rlang::is_call(across_vars, ":")){
-    args <- as.list(across_vars)[-1L]
+    args <- call_args(across_vars)
     if (length(args) == 2 && is.atomic(args[[1L]]) && is.atomic(args[[2L]])){
       cols <- unname(col_select_names(data, eval(across_vars, envir = quo_env)))
     } else {
@@ -312,19 +207,20 @@ unpack_across <- function(quo, data, groups = character(), unpack_default = FALS
     cols <- names(tidyselect::eval_select(across_vars, data, env = quo_env))
   }
 
-  if (rlang::is_call(across_fns, "list")){
-    fn_tree <- as.list(across_fns)[-1L]
+  evaluated_across_fns <- eval(across_fns, envir = quo_env)
+
+  if (is.list(evaluated_across_fns)){
+    fn_tree <- evaluated_across_fns
     fn_names <- names(fn_tree) %||% character(length(fn_tree))
 
     # This line is to not break timeplyr unit tests
-    if (!all(nzchar(fn_names))){
+    if (!all(nzchar(fn_names)) && rlang::is_call(across_fns, "list")){
       fn_names <- cheapr::str_coalesce(
         fn_names,
-        vapply(fn_tree, deparse2, "", USE.NAMES = FALSE)
+        vapply(call_args(across_fns), deparse2, "", USE.NAMES = FALSE)
       )
     }
   } else if (!".fns" %in% names(clean_expr)){
-    # fn_tree <- list(identity)
     fn_tree <- list(as.symbol("identity"))
   } else {
     fn_tree <- list(across_fns)
@@ -350,7 +246,7 @@ unpack_across <- function(quo, data, groups = character(), unpack_default = FALS
 
   # Recycle cols/fns
   cols <- cheapr::cheapr_rep_each(cols, out_size / length(cols))
-  fn_tree <- rep_len(fn_tree, out_size)
+  fn_tree <- cheapr::cheapr_rep_len(fn_tree, out_size)
 
   out <- cheapr::new_list(out_size)
   names(out) <- out_names
@@ -358,7 +254,11 @@ unpack_across <- function(quo, data, groups = character(), unpack_default = FALS
   for (i in seq_along(out)){
     fn <- fn_tree[[i]]
     col <- cols[[i]]
-    new_quo <- rlang::new_quosure(rlang::call2(fn, as.symbol(col)), quo_env)
+    new_quo <- rlang::new_quosure(
+      rlang::call2(fn, as.symbol(col)),
+      # rlang::call2(fn, call("$", quote(.data), as.symbol(col))),
+      quo_env
+      )
     set_add_attr(new_quo, ".unpack", unpack)
     out[[i]] <- new_quo
   }
@@ -459,12 +359,15 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
     } else {
       TRA <- NULL
     }
+
+    data_mask <- rlang::as_data_mask(.data)
+
     for (i in seq_along(out)){
       quo <- out[[i]]
       expr <- rlang::quo_get_expr(quo)
       env <- rlang::quo_get_env(quo)
 
-      group_unaware_expr <- is_group_unaware_call(expr, env, rlang::as_data_mask(.data))
+      group_unaware_expr <- is_group_unaware_call(expr, env, data_mask)
 
       ### Group-unaware calls CAN BE NESTED
       ### But currently other optimised calls must not be nested
@@ -591,14 +494,20 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
           fn <- expr[[1]]
           ns <- fun_ns(fn, env)
         }
-        fn <- rlang::as_string(fn)
-        match_loc <- match(fn, .optimised_fn_list[["input_fn_nms"]])
-        input_ns <- .optimised_fn_list[["input_ns"]][[match_loc]]
-        if (input_ns != ns){
-          next
+
+        # If fn is inlined into the expr
+        if (is.function(fn)){
+          match_loc <- match_fun(fn, .optimised_fn_list[["input_fns"]])
+        } else {
+          fn <- rlang::as_string(fn)
+          match_loc <- match(fn, .optimised_fn_list[["input_fn_nms"]])
+          input_ns <- .optimised_fn_list[["input_ns"]][[match_loc]]
+          if (input_ns != ns){
+            next
+          }
         }
-        fn <- .optimised_fn_list[["target_fns"]][[match_loc]]
-        expr <- rlang::call2(fn, !!!args, g = .fastplyr.g, TRA = TRA, use.g.names = FALSE)
+        new_fn <- .optimised_fn_list[["target_fns"]][[match_loc]]
+        expr <- rlang::call2(new_fn, !!!args, g = .fastplyr.g, TRA = TRA, use.g.names = FALSE)
       } else {
         next
       }
@@ -608,6 +517,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
       out[[i]] <- quo
     }
   }
+
   if (!all(optimised)){
     ### Calculate group locations here so that
     ### tidy evaluation can be done
@@ -615,7 +525,9 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
     if (!is.null(.fastplyr.g)){
       if (identical(f_group_vars(.data), group_vars) &&
           GRP_is_ordered(.fastplyr.g) == group_by_order_default(.data)){
-        .fastplyr.g[["locs"]] <- f_group_rows(.data)
+        if (is.null(.fastplyr.g[["locs"]])){
+          .fastplyr.g[["locs"]] <- f_group_rows(.data)
+        }
       } else {
         .fastplyr.g[["locs"]] <- GRP_loc(.groups)
       }
