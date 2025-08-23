@@ -76,18 +76,37 @@ bool exists(SEXP sym, SEXP rho){
 
 // Convert call to list of symbols
 SEXP as_list_call(SEXP expr) {
-  if (TYPEOF(expr) != LANGSXP) {
+
+  if (!Rf_isLanguage(expr)){
     Rf_error("`expr` must be a language object");
   }
+
   int n = Rf_length(expr);
-  SEXP result = SHIELD(new_vec(VECSXP, n));
+
+  SEXP out = SHIELD(new_vec(VECSXP, n));
+  SEXP names = SHIELD(new_vec(STRSXP, n));
+
   SEXP current = expr;
+
   for (int i = 0; i < n; i++) {
-    SET_VECTOR_ELT(result, i, CAR(current));
+
+    SEXP tag = TAG(current);
+
+    // Set name of list element
+    if (Rf_isNull(tag)){
+      SET_STRING_ELT(names, i, R_BlankString);
+    } else {
+      SET_STRING_ELT(names, i, PRINTNAME(tag));
+    }
+
+    // Set list element
+    SET_VECTOR_ELT(out, i, CAR(current));
+
     current = CDR(current);
   }
-  YIELD(1);
-  return result;
+  set_names(out, names);
+  YIELD(2);
+  return out;
 }
 
 // basically as.list(call)[-1]

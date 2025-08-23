@@ -5,8 +5,16 @@
 \alias{reexports}
 \alias{across}
 \alias{pick}
+\alias{n}
 \alias{all_of}
 \alias{any_of}
+\alias{where}
+\alias{contains}
+\alias{starts_with}
+\alias{ends_with}
+\alias{everything}
+\alias{num_range}
+\alias{last_col}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -14,6 +22,8 @@ These objects are imported from other packages. Follow the links
 below to see their documentation.
 
 \describe{
-  \item{dplyr}{\code{\link[dplyr]{across}}, \code{\link[dplyr:reexports]{all_of}}, \code{\link[dplyr:reexports]{any_of}}, \code{\link[dplyr]{pick}}}
+  \item{dplyr}{\code{\link[dplyr]{across}}, \code{\link[dplyr:context]{n}}, \code{\link[dplyr]{pick}}}
+
+  \item{tidyselect}{\code{\link[tidyselect]{all_of}}, \code{\link[tidyselect:all_of]{any_of}}, \code{\link[tidyselect:starts_with]{contains}}, \code{\link[tidyselect:starts_with]{ends_with}}, \code{\link[tidyselect]{everything}}, \code{\link[tidyselect:everything]{last_col}}, \code{\link[tidyselect:starts_with]{num_range}}, \code{\link[tidyselect]{starts_with}}, \code{\link[tidyselect]{where}}}
 }}
 

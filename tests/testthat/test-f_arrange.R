@@ -1,6 +1,5 @@
 test_that("f_arrange", {
 
-  options(fastplyr.inform = FALSE)
   suppressWarnings(add_row_id(new_tbl()))
   suppressWarnings(add_group_id(new_tbl()))
 

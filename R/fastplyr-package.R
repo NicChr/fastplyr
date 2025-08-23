@@ -23,8 +23,16 @@
 #' @importFrom dplyr .data
 #' @importFrom dplyr across
 #' @importFrom dplyr pick
-#' @importFrom dplyr all_of
-#' @importFrom dplyr any_of
+#' @importFrom dplyr n
+#' @importFrom tidyselect all_of
+#' @importFrom tidyselect any_of
+#' @importFrom tidyselect contains
+#' @importFrom tidyselect starts_with
+#' @importFrom tidyselect ends_with
+#' @importFrom tidyselect everything
+#' @importFrom tidyselect last_col
+#' @importFrom tidyselect num_range
+#' @importFrom tidyselect where
 #' @importFrom cheapr vector_length
 "_PACKAGE"
 

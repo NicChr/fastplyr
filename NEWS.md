@@ -36,6 +36,26 @@ calls to `across()`.
 
 - Functional to allow users to mark functions as not-group-aware
 
+- New type of expr: scalar (Reserved for length-1 numeric/character vectors, etc)
+
+Thoughts on improving fastplyr quosures
+
+Maybe create an attribute that encodes type of expr:
+
+1 - Normal - (No changes need)
+2 - Group-unaware (doesn't need re-ordering in mutate, does in reframe/summarise)
+3 - Group-aware optimised (needs re-ordering in mutate, not in reframe/summarise)
+4 - Scalar (Needs recycling in both mutate and reframe/summarise)
+
+Re-ordering type attribute:
+
+0 - No re-ordering
+1 - Re-ordering in mutate 
+2 - Re-ordering in reframe/summarise
+
+Additional recycling attribute?..
+
+
 # fastplyr 0.9.0
 
 ### New features

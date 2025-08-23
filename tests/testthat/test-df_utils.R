@@ -1,3 +1,6 @@
+
+options(fastplyr.inform = FALSE)
+
 test_that("order defaults", {
 
   options(.fastplyr.order.groups = NULL)

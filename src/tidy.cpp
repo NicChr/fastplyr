@@ -15,6 +15,10 @@ void init_mask_symbols(DllInfo* dll){
 
 bool is_data_pronoun_call(SEXP expr, SEXP env){
 
+  if (!Rf_isLanguage(expr)){
+    return false;
+  }
+
   int32_t NP = 0;
 
   if (Rf_length(expr) != 3){
@@ -288,6 +292,48 @@ void add_to_mask(SEXP mask, SEXP result, SEXP name){
     R_removeVarFromFrame(name, top_env);
   }
 }
+
+// SEXP replace_data_pronoun_with_sym(SEXP expr, SEXP env, SEXP mask){
+//
+//   if (!Rf_isLanguage(expr)){
+//     return expr;
+//   }
+//
+//   if (is_data_pronoun_call(expr, env)){
+//     SEXP var = SHIELD(data_pronoun_var(expr, env));
+//     SEXP out = SHIELD(Rf_installChar(var));
+//     YIELD(2);
+//     return out;
+//   }
+//
+//   int32_t NP = 0;
+//
+//   int n = Rf_length(expr);
+//
+//   SEXP out = SHIELD(Rf_duplicate(expr)); ++NP;
+//
+//   SEXP temp;
+//   PROTECT_INDEX temp_idx;
+//   R_ProtectWithIndex(temp = R_NilValue, &temp_idx); ++NP;
+//
+//   SEXP curr = expr;
+//   SEXP curr2 = out;
+//
+//   for (int i = 0; i < n; ++i){
+//
+//     SEXP branch = CAR(curr);
+//
+//     if (Rf_isLanguage(branch)){
+//       R_Reprotect(temp = replace_data_pronoun_with_sym(expr, env, mask), temp_idx);
+//       SETCAR(curr2, temp);
+//     }
+//     curr = CDR(expr);
+//     curr2 = CDR(out);
+//   }
+//
+//   YIELD(NP);
+//   return out;
+// }
 
 // Just a wrapper around rlang::eval_tidy
 // but only supplying a quosure and data mask

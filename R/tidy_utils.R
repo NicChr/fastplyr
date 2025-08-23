@@ -154,14 +154,18 @@ fix_quo_names <- function(quos){
 }
 
 inform_user_on_eval_split <- function(regular_quos, optimised_quos){
-  if (length(regular_quos) && length(optimised_quos)){
+
+  inform <- getOption("fastplyr.inform")
+
+  if (inform %||% TRUE &&
+      length(regular_quos) &&
+      length(optimised_quos)){
     cli::cli_inform(c(
       "Expressions will be evaluated in separate masks",
       paste("Normal exprs:", cli::col_blue("{names(regular_quos)}")),
       paste("Optimised exprs:", cli::col_red("{names(optimised_quos)}")),
-      ""
-      # paste("Normal exprs:", cli::col_blue("{lapply(regular_quos, quo_get_expr)}")),
-      # paste("Optimised exprs:", cli::col_red("{lapply(optimised_quos, quo_get_expr)}"))
+      "",
+      "To always evaluate everything in the same mask run {.run fastplyr_disable_optimisations()}"
     ))
   }
 }
@@ -343,8 +347,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
   # Second pass to check for optimised calls
   if (.optimise && getOption("fastplyr.optimise", TRUE)){
 
-    inform <- getOption("fastplyr.inform")
-    if (inform %||% TRUE){
+    if (is.null(getOption("fastplyr.inform"))){
       cli::cli_inform(
         c(
           "!" = "The following functions will be optimised package-wide:",
@@ -354,14 +357,11 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
           "",
           "Run {.run fastplyr_disable_optimisations()} to disable optimisations globally",
           "",
-          "Run {.run options(fastplyr.inform = FALSE)} to disable this message"
+          "Run {.run fastplyr_disable_informative_msgs()} to disable this and other informative messages"
         ),
         .frequency = "once", .frequency_id = ".optimise_inform"
       )
-    }
-
-    if (is.null(inform)){
-      options(fastplyr.inform = FALSE)
+      options(fastplyr.inform = TRUE)
     }
 
     if (.optimise_expand){

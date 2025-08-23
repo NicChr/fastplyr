@@ -1,7 +1,5 @@
 test_that("summarise", {
 
-  options(fastplyr.inform = FALSE)
-
   set.seed(82134)
   airquality <- f_slice_sample(airquality, 2e04, TRUE)
   airquality$Month <- sample.int(2e04)
@@ -121,12 +119,7 @@ test_that("summarise", {
   expect_equal(
     airquality |>
       f_summarise(
-        dplyr::across(dplyr::everything(), list(
-          mean = mean,
-          median = median,
-          min = min,
-          max = max
-        ),
+        dplyr::across(dplyr::everything(), list_tidy(mean, median, min, max, .named = TRUE),
         .names = "col_{.col}_fun_{.fn}"),
         N = dplyr::n()
       ),
