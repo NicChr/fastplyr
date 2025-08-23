@@ -276,22 +276,22 @@ SEXP new_bare_data_mask(){
   return mask;
 }
 
-void reset_mask_top_env(SEXP mask, int env_size){
-  Rf_defineVar(top_env_sym, mask, R_NewEnv(R_EmptyEnv, false, env_size));
-}
-
-void add_to_mask(SEXP mask, SEXP result, SEXP name){
-
-  SEXP top_env = get_mask_top_env(mask);
-
-  if (name != R_UnboundValue){
-    Rf_defineVar(name, result, top_env);
-  }
-
-  if (Rf_isNull(result)){
-    R_removeVarFromFrame(name, top_env);
-  }
-}
+// void reset_mask_top_env(SEXP mask, int env_size){
+//   Rf_defineVar(top_env_sym, mask, R_NewEnv(R_EmptyEnv, false, env_size));
+// }
+//
+// void add_to_mask(SEXP mask, SEXP result, SEXP name){
+//
+//   SEXP top_env = get_mask_top_env(mask);
+//
+//   if (name != R_UnboundValue){
+//     Rf_defineVar(name, result, top_env);
+//   }
+//
+//   if (Rf_isNull(result)){
+//     R_removeVarFromFrame(name, top_env);
+//   }
+// }
 
 // SEXP replace_data_pronoun_with_sym(SEXP expr, SEXP env, SEXP mask){
 //
