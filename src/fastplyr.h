@@ -74,6 +74,9 @@ SEXP binary_combine(SEXP x, SEXP y);
 SEXP get_mask_data_vars(SEXP mask);
 SEXP quo_vars(SEXP quos, SEXP mask, bool combine);
 bool exists(SEXP sym, SEXP rho);
+bool is_data_pronoun_call(SEXP expr, SEXP env);
+SEXP data_pronoun_var(SEXP expr, SEXP env);
+SEXP get_mask_top_env(SEXP mask);
 
 // Group metadata
 

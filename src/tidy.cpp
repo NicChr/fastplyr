@@ -49,38 +49,35 @@ SEXP data_pronoun_var(SEXP expr, SEXP env){
 
   SEXP dollar_sym = SHIELD(Rf_installChar(Rf_mkCharCE("$", CE_UTF8))); ++NP;
 
-  SEXP vars = CAR(CDDR(expr));
-  SEXP out_var = SHIELD(new_vec(STRSXP, 0)); ++NP;
+  SEXP out = CAR(CDDR(expr));
 
   if (CAR(expr) == dollar_sym){
-    if (TYPEOF(vars) == SYMSXP){
-      SHIELD(vars = rlang::sym_as_character(vars)); ++NP;
-    } else if (TYPEOF(vars) == STRSXP){
-      if (Rf_length(vars) != 1){
+    if (TYPEOF(out) == SYMSXP){
+      SHIELD(out = rlang::sym_as_string(out)); ++NP;
+    } else if (TYPEOF(out) == STRSXP){
+      if (Rf_length(out) != 1){
         YIELD(NP);
         Rf_error("A string or symbol must be supplied to `.data$`");
       }
     }
   } else {
-    SHIELD(vars = rlang::eval_tidy(vars, R_NilValue, env)); ++NP;
-    if (TYPEOF(vars) != STRSXP &&
-        TYPEOF(vars) != SYMSXP){
+    SHIELD(out = rlang::eval_tidy(out, R_NilValue, env)); ++NP;
+    if (TYPEOF(out) != STRSXP &&
+        TYPEOF(out) != SYMSXP){
       YIELD(NP);
       Rf_error("A string or symbol must be supplied to `.data[[`");
     }
-    if (Rf_length(vars) != 1){
+    if (Rf_length(out) != 1){
       YIELD(NP);
       Rf_error("A string or symbol must be supplied to `.data[[`");
     }
-    if (TYPEOF(vars) == SYMSXP){
-      SHIELD(vars = rlang::sym_as_character(vars)); ++NP;
+    if (TYPEOF(out) == SYMSXP){
+      SHIELD(out = rlang::sym_as_string(out)); ++NP;
     }
   }
 
-  SHIELD(out_var = vars); ++NP;
-
   YIELD(NP);
-  return out_var;
+  return out;
 }
 
 cpp11::writable::strings all_call_names(cpp11::sexp expr, cpp11::environment env){
@@ -90,8 +87,7 @@ cpp11::writable::strings all_call_names(cpp11::sexp expr, cpp11::environment env
   strings temp;
 
   if (is_data_pronoun_call(expr, env)){
-    temp = data_pronoun_var(expr, env);
-    out.push_back(temp[0]);
+    out.push_back(data_pronoun_var(expr, env));
   } else if (TYPEOF(expr) == SYMSXP){
     out.push_back(rlang::sym_as_string(expr));
   }else if (TYPEOF(expr) == LANGSXP){
@@ -278,6 +274,19 @@ SEXP new_bare_data_mask(){
 
 void reset_mask_top_env(SEXP mask, int env_size){
   Rf_defineVar(top_env_sym, mask, R_NewEnv(R_EmptyEnv, false, env_size));
+}
+
+void add_to_mask(SEXP mask, SEXP result, SEXP name){
+
+  SEXP top_env = get_mask_top_env(mask);
+
+  if (name != R_UnboundValue){
+    Rf_defineVar(name, result, top_env);
+  }
+
+  if (Rf_isNull(result)){
+    R_removeVarFromFrame(name, top_env);
+  }
 }
 
 // Just a wrapper around rlang::eval_tidy

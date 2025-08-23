@@ -493,6 +493,16 @@ bool is_group_unaware_call(SEXP expr, SEXP env, SEXP mask){
     return sym_in_mask;
   }
 
+  if (is_data_pronoun_call(expr, env)){
+
+    SEXP var = SHIELD(Rf_installChar(data_pronoun_var(expr, env))); ++NP;
+
+    bool sym_in_mask = exists(var, get_mask_top_env(mask));
+
+    YIELD(NP);
+    return sym_in_mask;
+  }
+
   bool maybe = is_fn_call(expr, group_unaware_fn_names, R_NilValue, env);
 
   if (!maybe){
