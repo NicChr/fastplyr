@@ -830,7 +830,7 @@ eval_all_tidy_optimised_quos <- function(data, quos){
   n_quos <- length(quos)
 
   mask <- rlang::as_data_mask(data)
-  results <- lapply(quos, \(quo) rlang::eval_tidy(quo, mask))
+  results <- lapply(quos, rlang::eval_tidy, mask)
 
   group_order <- NULL
   reorder <- FALSE
@@ -898,8 +898,7 @@ eval_summarise_optimised_quos <- function(data, quos){
 
   mask <- rlang::as_data_mask(data)
 
-  # out <- cpp_eval_all_tidy(quos, mask)
-  out <- lapply(quos, \(quo) rlang::eval_tidy(quo, mask))
+  out <- lapply(quos, rlang::eval_tidy, mask)
   nrows <- df_nrow(data)
 
   for (res in out){

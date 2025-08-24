@@ -455,7 +455,7 @@ df_to_GRP <- function(data, .cols = character(),
     }
   }
   if (return.locs){
-    out <- cheapr::list_assign(out, list("locs" = GRP_loc(out)))
+    out <- cheapr::list_assign(out, list(locs = GRP_loc(out)))
   }
   class(out) <- "GRP"
   out
@@ -684,9 +684,9 @@ vec_group_split <- function(x, g){
   if (is.null(g)){
     list(x)
   } else {
-   g <- GRP2(g)
-   locs <- GRP_loc(g)
-   cpp_vec_group_split(x, locs)
+    g <- GRP2(g)
+    locs <- GRP_loc(g)
+    cpp_vec_group_split(x, locs)
   }
 }
 
