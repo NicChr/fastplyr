@@ -207,3 +207,150 @@ test_that("summarise", {
     target
   )
 })
+
+
+test_that("summarise2", {
+
+  cheapr::with_local_seed(
+    {
+      df <- new_tbl(
+        x = rnorm(25),
+        y = round(x, 2) + 0,
+        g = sample.int(3, 25, TRUE)
+      )
+    }, 42
+  )
+
+  # New variables
+  expect_error(
+    df |>
+      f_summarise(z = x)
+  )
+
+  expect_equal(
+    df |>
+      f_summarise(z = 0L),
+    df |>
+      dplyr::summarise(z = 0L)
+  )
+
+  expect_equal(
+    df |>
+      f_summarise(b = 0L, c = mean(x)),
+    df |>
+      dplyr::summarise(b = 0L, c = mean(x))
+  )
+
+  # Using .data and .env
+
+  x <- seq_len(nrow(df))
+
+  expect_equal(
+    df |>
+      f_summarise(new1 = sum(x), new2 = sum(.data$x), new3 = sum(.env$x)),
+    df |>
+      dplyr::summarise(new1 = sum(x), new2 = sum(.data$x), new3 = sum(.env$x))
+  )
+
+  expect_equal(
+    df |>
+      f_summarise(new1 = 0L, new2 = sum(.data$new1)),
+    df |>
+      dplyr::summarise(new1 = 0L, new2 = sum(.data$new1))
+  )
+
+  a <- 1:nrow(df)
+
+  expect_equal(
+    df |>
+      f_summarise(a = 0L, b = sum(.data$a), c = sum(.env$a)),
+    df |>
+      dplyr::summarise(a = 0L, b = sum(.data$a), c = sum(.env$a))
+  )
+
+  expect_equal(
+    df |> f_summarise(new1 = mean(x), new2 = sum(x), n = n(), .by = g, .order = FALSE),
+    df |> dplyr::summarise(new1 = mean(x), new2 = sum(x), n = n(), .by = g)
+  )
+
+})
+
+
+test_that("summarise + across", {
+  cheapr::with_local_seed(
+    {
+      df <- new_tbl(
+        x = rnorm(25),
+        y = round(x, 2) + 0,
+        g = sample.int(3, 25, TRUE)
+      )
+    }, 42
+  )
+
+  expect_equal(
+    df |>
+      f_summarise(across(x, sum)),
+    df |>
+      dplyr::summarise(across(x, sum))
+  )
+
+  expect_equal(
+    df |>
+      f_summarise(across(x, list(sum = sum), .names = "{.col}")),
+    df |>
+      dplyr::summarise(across(x, list(sum = sum), .names = "{.col}"))
+  )
+
+  expect_equal(
+    df |>
+      f_summarise(across(1:2, list(sum = sum), .names = "{.col}")),
+    df |>
+      dplyr::summarise(across(1:2, list(sum = sum), .names = "{.col}"))
+  )
+
+  expect_equal(
+    df |>
+      f_summarise(across(1:2, list_tidy(sum, .named = TRUE), .names = "{.col}")),
+    df |>
+      dplyr::summarise(across(1:2, list_tidy(sum, .named = TRUE), .names = "{.col}"))
+  )
+
+  expect_equal(
+    df |>
+      f_summarise(across(1:2, list_tidy(sum, mean, .named = TRUE), .names = "{.col}_fn_{.fn}")),
+    df |>
+      dplyr::summarise(across(1:2, list_tidy(sum, mean, .named = TRUE), .names = "{.col}_fn_{.fn}"))
+  )
+
+  expect_equal(
+    df |>
+      f_summarise(
+        across(
+          1:2, list_tidy(sum, mean, .named = TRUE),
+          .names = "{.col}_fn_{.fn}"
+        ), .by = g
+      ),
+    df |>
+      dplyr::summarise(
+        across(
+          1:2, list_tidy(sum, mean, .named = TRUE), .names = "{.col}_fn_{.fn}"
+        ), .by = g
+      )
+  )
+
+  # .unpack
+  expect_equal(
+    df |>
+      f_summarise(across(1:2, \(x) new_tbl(new1 = sum(x), new2 = mean(x)), .unpack = FALSE)),
+    df |>
+      dplyr::summarise(across(1:2, \(x) new_tbl(new1 = sum(x), new2 = mean(x)), .unpack = FALSE))
+  )
+
+  expect_equal(
+    df |>
+      f_summarise(across(1:2, \(x) new_tbl(new1 = sum(x), new2 = mean(x)), .unpack = TRUE)),
+    df |>
+      dplyr::summarise(across(1:2, \(x) new_tbl(new1 = sum(x), new2 = mean(x)), .unpack = TRUE))
+  )
+
+})
