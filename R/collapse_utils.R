@@ -501,17 +501,6 @@ GRP.integer64 <- function(X, return.groups = TRUE, ...){
   }
   out
 }
-gsplit2 <- function(x = NULL, g = NULL, use.g.names = FALSE, ...){
-  if (is.null(g)){
-    if (is.null(x)){
-      list(integer())
-    } else {
-      list(x)
-    }
-  } else {
-    collapse::gsplit(x, g = g, use.g.names = use.g.names, ...)
-  }
-}
 
 radixorderv2 <- function(x, na.last = TRUE, decreasing = FALSE,
                          starts = FALSE, sort = TRUE, group.sizes = FALSE){
@@ -698,5 +687,14 @@ vec_group_split <- function(x, g){
    g <- GRP2(g)
    locs <- GRP_loc(g)
    cpp_vec_group_split(x, locs)
+  }
+}
+
+gsplit2 <- function(x = NULL, g = NULL){
+  g <- GRP2(g)
+  if (cpp_is_simple_atomic_vec(x)){
+    collapse::gsplit(x, g = g)
+  } else {
+    vec_group_split(x, g = g)
   }
 }
