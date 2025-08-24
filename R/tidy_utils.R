@@ -830,7 +830,7 @@ eval_all_tidy_optimised_quos <- function(data, quos){
   n_quos <- length(quos)
 
   mask <- rlang::as_data_mask(data)
-  results <- cpp_eval_all_tidy(quos, mask)
+  results <- lapply(quos, \(quo) rlang::eval_tidy(quo, mask))
 
   group_order <- NULL
   reorder <- FALSE
@@ -896,7 +896,10 @@ eval_summarise_optimised_quos <- function(data, quos){
 
   n_groups <- GRP_n_groups(attr(quos, ".GRP")) %||% 1
 
-  out <- cpp_eval_all_tidy(quos, rlang::as_data_mask(data))
+  mask <- rlang::as_data_mask(data)
+
+  # out <- cpp_eval_all_tidy(quos, mask)
+  out <- lapply(quos, \(quo) rlang::eval_tidy(quo, mask))
   nrows <- df_nrow(data)
 
   for (res in out){
@@ -989,6 +992,7 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
 
   GRP <- attr(quos, ".GRP", TRUE)
   optimised <- attr(quos, ".optimised", TRUE)
+  group_unaware <- attr(quos, ".group_unaware", TRUE)
 
   if (is.null(GRP)){
     GRP <- df_as_one_GRP(data)
@@ -1000,8 +1004,15 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
   which_optimised <- cheapr::val_find(optimised, TRUE)
   which_regular <- cheapr::val_find(optimised, FALSE)
 
+  n_regular <- length(which_regular)
+  n_group_aware_optimised <- cheapr::val_count(group_unaware, FALSE)
+  n_group_unaware <- cheapr::val_count(group_unaware, TRUE)
+
   # If slow_recycle is true then we have to do a manual recycling of results
-  slow_recycle <- recycle && length(which_optimised) > 0 && length(which_regular) > 0
+  slow_recycle <- recycle && length(which_optimised) > 0 &&
+    length(which_regular) > 0
+
+  slow_recycle <- slow_recycle || (n_group_unaware > 0 && n_group_aware_optimised > 0)
 
   if (slow_recycle){
     backup_GRP <- GRP
