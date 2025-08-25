@@ -1,14 +1,14 @@
-test_that("mutate", {
+cheapr::with_local_seed(
+  {
+    df <- new_tbl(
+      x = rnorm(25),
+      y = round(x, 2) + 0,
+      g = sample.int(3, 25, TRUE)
+    )
+  }, 42
+)
 
-  cheapr::with_local_seed(
-    {
-      df <- new_tbl(
-        x = rnorm(25),
-        y = round(x, 2) + 0,
-        g = sample.int(3, 25, TRUE)
-      )
-    }, 42
-  )
+test_that("mutate", {
 
   # New variables
     expect_equal(
@@ -101,15 +101,6 @@ test_that("mutate", {
 
 
 test_that("mutate + across", {
-  cheapr::with_local_seed(
-    {
-      df <- new_tbl(
-        x = rnorm(25),
-        y = round(x, 2) + 0,
-        g = sample.int(3, 25, TRUE)
-      )
-    }, 42
-  )
 
   expect_equal(
     df |>
@@ -177,4 +168,38 @@ test_that("mutate + across", {
       dplyr::mutate(across(1:2, \(x) new_tbl(new1 = x, new2 = mean(x)), .unpack = TRUE))
   )
 
+})
+
+
+test_that("more tests", {
+
+
+  # Removing variables
+
+  expect_equal(
+    df |> f_mutate(across(everything(), \(x) NULL)),
+    f_select(df, nothing())
+  )
+
+  options(fastplyr.optimise = FALSE)
+  expect_error(df |> f_mutate(y = NULL, new = y))
+  options(fastplyr.optimise = TRUE)
+
+  # Using .data[[
+
+  ok <- "x"
+  expect_equal(
+    df |>
+      f_mutate(
+        new1 = sum(.data[["x"]]),
+        new2 = sum(.data[[ok]]),
+        new3 = sum(.data[[unique(c(ok, "x"))]])
+      ),
+    df |>
+      dplyr::mutate(
+        new1 = sum(.data[["x"]]),
+        new2 = sum(.data[[ok]]),
+        new3 = sum(.data[[unique(c(ok, "x"))]])
+      )
+  )
 })

@@ -51,33 +51,26 @@ SEXP data_pronoun_var(SEXP expr, SEXP env){
     Rf_error("`expr` must be a `.data` pronoun expression");
   }
 
-  SEXP dollar_sym = SHIELD(Rf_installChar(Rf_mkCharCE("$", CE_UTF8))); ++NP;
+  SEXP double_brackets_sym = SHIELD(Rf_installChar(Rf_mkCharCE("[[", CE_UTF8))); ++NP;
 
   SEXP out = CAR(CDDR(expr));
 
-  if (CAR(expr) == dollar_sym){
-    if (TYPEOF(out) == SYMSXP){
-      SHIELD(out = rlang::sym_as_string(out)); ++NP;
-    } else if (TYPEOF(out) == STRSXP){
-      if (Rf_length(out) != 1){
-        YIELD(NP);
-        Rf_error("A string or symbol must be supplied to `.data$`");
-      }
-    }
-  } else {
+  if (CAR(expr) == double_brackets_sym){
     SHIELD(out = rlang::eval_tidy(out, R_NilValue, env)); ++NP;
-    if (TYPEOF(out) != STRSXP &&
-        TYPEOF(out) != SYMSXP){
-      YIELD(NP);
-      Rf_error("A string or symbol must be supplied to `.data[[`");
-    }
-    if (Rf_length(out) != 1){
-      YIELD(NP);
-      Rf_error("A string or symbol must be supplied to `.data[[`");
-    }
-    if (TYPEOF(out) == SYMSXP){
-      SHIELD(out = rlang::sym_as_string(out)); ++NP;
-    }
+  }
+
+  if (TYPEOF(out) != STRSXP && TYPEOF(out) != SYMSXP){
+    YIELD(NP);
+    Rf_error("A string or symbol must be supplied to `.data%s`", CHAR(rlang::sym_as_string(CAR(expr))));
+  }
+  if (Rf_length(out) != 1){
+    YIELD(NP);
+    Rf_error("A string (length-1 character) or symbol must be supplied to `.data%s`", CHAR(rlang::sym_as_string(CAR(expr))));
+  }
+  if (TYPEOF(out) == SYMSXP){
+    SHIELD(out = rlang::sym_as_string(out)); ++NP;
+  } else {
+    SHIELD(out = STRING_ELT(out, 0)); ++NP;
   }
 
   YIELD(NP);
