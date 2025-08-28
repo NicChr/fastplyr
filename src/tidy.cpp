@@ -174,18 +174,18 @@ bool call_contains_dplyr_mask(SEXP expr, SEXP rho){
   int32_t NP = 0;
 
   SEXP dplyr_mask_fns = SHIELD(new_vec(STRSXP, 11)); ++NP;
-  SET_STRING_ELT(dplyr_mask_fns, 0, Rf_mkChar("n"));
-  SET_STRING_ELT(dplyr_mask_fns, 1, Rf_mkChar("pick"));
-  SET_STRING_ELT(dplyr_mask_fns, 2, Rf_mkChar("row_number"));
-  SET_STRING_ELT(dplyr_mask_fns, 3, Rf_mkChar("cur_group_id"));
-  SET_STRING_ELT(dplyr_mask_fns, 4, Rf_mkChar("cur_group_rows"));
-  SET_STRING_ELT(dplyr_mask_fns, 5, Rf_mkChar("cur_column"));
-  SET_STRING_ELT(dplyr_mask_fns, 6, Rf_mkChar("cur_data"));
-  SET_STRING_ELT(dplyr_mask_fns, 7, Rf_mkChar("cur_data_all"));
-  SET_STRING_ELT(dplyr_mask_fns, 8, Rf_mkChar("if_any"));
-  SET_STRING_ELT(dplyr_mask_fns, 9, Rf_mkChar("if_all"));
-  SET_STRING_ELT(dplyr_mask_fns, 10, Rf_mkChar("c_across"));
-  SEXP dplyr_str = SHIELD(Rf_mkString("dplyr")); ++NP;
+  SET_STRING_ELT(dplyr_mask_fns, 0, Rf_mkCharCE("n", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 1, Rf_mkCharCE("pick", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 2, Rf_mkCharCE("row_number", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 3, Rf_mkCharCE("cur_group_id", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 4, Rf_mkCharCE("cur_group_rows", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 5, Rf_mkCharCE("cur_column", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 6, Rf_mkCharCE("cur_data", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 7, Rf_mkCharCE("cur_data_all", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 8, Rf_mkCharCE("if_any", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 9, Rf_mkCharCE("if_all", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 10, Rf_mkCharCE("c_across", CE_UTF8));
+  SEXP dplyr_str = SHIELD(Rf_ScalarString(Rf_mkCharCE("dplyr", CE_UTF8))); ++NP;
 
   if (is_fn_call(expr, dplyr_mask_fns, dplyr_str, rho)){
     YIELD(NP);
@@ -357,31 +357,114 @@ SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
   const SEXP *p_quos = VECTOR_PTR_RO(quos);
   const SEXP *p_expr_names = STRING_PTR_RO(expr_names);
 
+  bool any_named_exprs = false;
+
   for (int i = 0; i < n_exprs; ++i){
     SEXP result = SHIELD(eval_tidy(p_quos[i], mask)); ++NP;
     SEXP expr_name = p_expr_names[i];
 
     if (expr_name != R_BlankString){
-
       SEXP sym = Rf_installChar(expr_name);
       Rf_defineVar(sym, result, top_env);
-      // if (Rf_isNull(result)){
-      //   R_removeVarFromFrame(sym, top_env);
-      // }
       SET_STRING_ELT(out_names, i, expr_name);
+      any_named_exprs = true;
     }
     SET_VECTOR_ELT(out, i, result);
   }
-  set_names(out, out_names);
+  if (any_named_exprs){
+    set_names(out, out_names);
+  }
   YIELD(NP);
   return out;
 }
 
 [[cpp11::register]]
-SEXP cpp_list_tidy(SEXP quos){
-  SEXP mask = SHIELD(new_bare_data_mask());
-  SEXP out = SHIELD(cpp_eval_all_tidy(quos, mask));
-  YIELD(2); return out;
+SEXP r_deparse(SEXP quo){
+
+  SEXP deparse_expr = SHIELD(Rf_lang2(
+    find_pkg_fun("deparse2", "fastplyr", true),
+    Rf_lang2(
+      Rf_lang3(R_DoubleColonSymbol, Rf_install("rlang"), Rf_install("quo_get_expr")),
+      quo
+    )
+  ));
+  SEXP out = SHIELD(Rf_eval(deparse_expr, R_BaseEnv));
+
+  YIELD(2);
+  return out;
+}
+
+SEXP make_named_quos(SEXP quos){
+
+  int32_t NP = 0;
+
+  int n = Rf_length(quos);
+
+  SEXP out = SHIELD(Rf_duplicate(quos)); ++NP;
+  SEXP names = SHIELD(get_names(out)); ++NP;
+
+  SEXP expr;
+  PROTECT_INDEX expr_idx;
+  R_ProtectWithIndex(expr = R_NilValue, &expr_idx); ++NP;
+
+  if (Rf_isNull(names)){
+
+    SHIELD(names = new_vec(STRSXP, n)); ++NP;
+
+    for (int i = 0; i < n; ++i){
+      SEXP quo = VECTOR_ELT(quos, i);
+
+      if (Rf_isSymbol(expr)){
+        R_Reprotect(expr = rlang::quo_get_expr(quo), expr_idx);
+        SET_STRING_ELT(names, i, rlang::sym_as_string(expr));
+      } else {
+        SET_STRING_ELT(names, i, STRING_ELT(r_deparse(quo), 0));
+      }
+    }
+
+    set_names(out, names);
+
+  } else {
+    for (int i = 0; i < n; ++i){
+
+      // If name is empty
+      if (STRING_ELT(names, i) == R_BlankString){
+
+        SEXP quo = VECTOR_ELT(quos, i);
+
+        if (Rf_isSymbol(expr)){
+          R_Reprotect(expr = rlang::quo_get_expr(quo), expr_idx);
+          SET_STRING_ELT(names, i, rlang::sym_as_string(expr));
+        } else {
+          SET_STRING_ELT(names, i, STRING_ELT(r_deparse(quo), 0));
+        }
+      }
+    }
+  }
+
+  YIELD(NP);
+  return out;
+}
+
+[[cpp11::register]]
+SEXP cpp_list_tidy(SEXP quos, bool named, bool keep_null){
+
+  int32_t NP = 0;
+
+  SEXP mask = SHIELD(new_bare_data_mask()); ++NP;
+
+  if (named){
+    SHIELD(quos = make_named_quos(quos)); ++NP;
+  }
+
+  if (!keep_null){
+   SHIELD(quos = cpp_quos_drop_null(quos)); ++NP;
+  }
+
+  SEXP out = SHIELD(cpp_eval_all_tidy(quos, mask)); ++NP;
+
+  YIELD(NP);
+  return out;
 }
 
 void set_as_tbl(SEXP x){

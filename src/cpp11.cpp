@@ -321,10 +321,17 @@ extern "C" SEXP _fastplyr_cpp_eval_all_tidy(SEXP quos, SEXP mask) {
   END_CPP11
 }
 // tidy.cpp
-SEXP cpp_list_tidy(SEXP quos);
-extern "C" SEXP _fastplyr_cpp_list_tidy(SEXP quos) {
+SEXP r_deparse(SEXP quo);
+extern "C" SEXP _fastplyr_r_deparse(SEXP quo) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cpp_list_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
+    return cpp11::as_sexp(r_deparse(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quo)));
+  END_CPP11
+}
+// tidy.cpp
+SEXP cpp_list_tidy(SEXP quos, bool named, bool keep_null);
+extern "C" SEXP _fastplyr_cpp_list_tidy(SEXP quos, SEXP named, SEXP keep_null) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_list_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<bool>>(named), cpp11::as_cpp<cpp11::decay_t<bool>>(keep_null)));
   END_CPP11
 }
 // tidy.cpp
@@ -435,7 +442,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_grouped_eval_tidy",                (DL_FUNC) &_fastplyr_cpp_grouped_eval_tidy,                4},
     {"_fastplyr_cpp_grouped_run_id",                   (DL_FUNC) &_fastplyr_cpp_grouped_run_id,                   3},
     {"_fastplyr_cpp_is_exotic",                        (DL_FUNC) &_fastplyr_cpp_is_exotic,                        1},
-    {"_fastplyr_cpp_list_tidy",                        (DL_FUNC) &_fastplyr_cpp_list_tidy,                        1},
+    {"_fastplyr_cpp_list_tidy",                        (DL_FUNC) &_fastplyr_cpp_list_tidy,                        3},
     {"_fastplyr_cpp_nest_split",                       (DL_FUNC) &_fastplyr_cpp_nest_split,                       3},
     {"_fastplyr_cpp_orig_order",                       (DL_FUNC) &_fastplyr_cpp_orig_order,                       2},
     {"_fastplyr_cpp_pluck_list_of_integers",           (DL_FUNC) &_fastplyr_cpp_pluck_list_of_integers,           3},
@@ -454,6 +461,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_is_nested_call",                       (DL_FUNC) &_fastplyr_is_nested_call,                       1},
     {"_fastplyr_match_fun",                            (DL_FUNC) &_fastplyr_match_fun,                            2},
     {"_fastplyr_quo_vars",                             (DL_FUNC) &_fastplyr_quo_vars,                             3},
+    {"_fastplyr_r_deparse",                            (DL_FUNC) &_fastplyr_r_deparse,                            1},
     {"_fastplyr_recycle_eval_results",                 (DL_FUNC) &_fastplyr_recycle_eval_results,                 1},
     {"_fastplyr_transpose_eval_results",               (DL_FUNC) &_fastplyr_transpose_eval_results,               1},
     {NULL, NULL, 0}

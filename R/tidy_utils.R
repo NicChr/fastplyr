@@ -131,28 +131,6 @@ quo_labels <- function(quos, named = TRUE){
   out
 }
 
-fix_quo_names <- function(quos){
-
-  nms <- names(quos)
-
-  if (is.null(nms)){
-    nms <- quo_labels(quos, named = FALSE)
-  } else {
-    for (i in seq_along(quos)){
-      if (!nzchar(nms[[i]])){
-        expr <- rlang::quo_get_expr(quos[[i]])
-        if (is.symbol(expr)){
-          nms[i] <- rlang::as_string(expr)
-        } else {
-          nms[i] <- deparse2(expr)
-        }
-      }
-    }
-  }
-  names(quos) <- nms
-  quos
-}
-
 inform_user_on_eval_split <- function(regular_quos, optimised_quos){
 
   inform <- getOption("fastplyr.inform")

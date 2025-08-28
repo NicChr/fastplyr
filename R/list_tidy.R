@@ -12,12 +12,5 @@
 #'
 #' @export
 list_tidy <- function(..., .keep_null = TRUE, .named = FALSE){
-  quos <- rlang::quos(..., .ignore_empty = "all")
-  if (.named){
-    quos <- fix_quo_names(quos)
-  }
-  if (!.keep_null){
-    quos <- cpp_quos_drop_null(quos)
-  }
-  cpp_list_tidy(quos)
+  .Call(`_fastplyr_cpp_list_tidy`, rlang::quos(..., .ignore_empty = "all"), .named, .keep_null)
 }

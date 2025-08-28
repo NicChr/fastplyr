@@ -180,8 +180,12 @@ cpp_eval_all_tidy <- function(quos, mask) {
   .Call(`_fastplyr_cpp_eval_all_tidy`, quos, mask)
 }
 
-cpp_list_tidy <- function(quos) {
-  .Call(`_fastplyr_cpp_list_tidy`, quos)
+r_deparse <- function(quo) {
+  .Call(`_fastplyr_r_deparse`, quo)
+}
+
+cpp_list_tidy <- function(quos, named, keep_null) {
+  .Call(`_fastplyr_cpp_list_tidy`, quos, named, keep_null)
 }
 
 cpp_unlist_group_locs <- function(x, group_sizes) {

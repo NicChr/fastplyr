@@ -77,6 +77,7 @@ bool exists(SEXP sym, SEXP rho);
 bool is_data_pronoun_call(SEXP expr, SEXP env);
 SEXP data_pronoun_var(SEXP expr, SEXP env);
 SEXP get_mask_top_env(SEXP mask);
+SEXP find_pkg_fun(const char *name, const char *pkg, bool all_fns);
 
 // Group metadata
 
