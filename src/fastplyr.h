@@ -78,6 +78,10 @@ bool is_data_pronoun_call(SEXP expr, SEXP env);
 SEXP data_pronoun_var(SEXP expr, SEXP env);
 SEXP get_mask_top_env(SEXP mask);
 SEXP find_pkg_fun(const char *name, const char *pkg, bool all_fns);
+SEXP new_bare_data_mask();
+SEXP cpp_quos_drop_null(SEXP quos);
+SEXP r_deparse(SEXP quo);
+SEXP make_named_quos(SEXP quos);
 
 // Group metadata
 

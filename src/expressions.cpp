@@ -1,4 +1,5 @@
 #include "fastplyr.h"
+#include "cheapr_api.h"
 
 // Helpers for working with R expressions
 
@@ -418,6 +419,21 @@ bool is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
   }
 }
 
+SEXP r_deparse(SEXP quo){
+
+  SEXP deparse_expr = SHIELD(Rf_lang2(
+    find_pkg_fun("deparse2", "fastplyr", true),
+    Rf_lang2(
+      Rf_lang3(R_DoubleColonSymbol, Rf_install("rlang"), Rf_install("quo_get_expr")),
+      quo
+    )
+  ));
+  SEXP out = SHIELD(Rf_eval(deparse_expr, R_BaseEnv));
+
+  YIELD(2);
+  return out;
+}
+
 // Initialise environment of group unaware fns
 
 static SEXP group_unaware_fns = NULL;
@@ -553,4 +569,329 @@ bool is_group_unaware_call(SEXP expr, SEXP env, SEXP mask){
 
   YIELD(NP);
   return true;
+}
+
+bool is_data_pronoun_call(SEXP expr, SEXP env){
+
+  if (!Rf_isLanguage(expr)){
+    return false;
+  }
+
+  int32_t NP = 0;
+
+  if (Rf_length(expr) != 3){
+    YIELD(NP);
+    return false;
+  }
+
+  SEXP dollar_str = SHIELD(Rf_ScalarString(Rf_mkCharCE("$", CE_UTF8))); ++NP;
+  SEXP double_brackets_str = SHIELD(Rf_ScalarString(Rf_mkCharCE("[[", CE_UTF8))); ++NP;
+
+  if (!(is_fn_call(expr, dollar_str, R_NilValue, env) ||
+      is_fn_call(expr, double_brackets_str, R_NilValue, env))){
+    YIELD(NP);
+    return false;
+  }
+
+  bool out = CAR(CDR(expr)) == Rf_installChar(Rf_mkCharCE(".data", CE_UTF8));
+
+  YIELD(NP);
+  return out;
+}
+
+// Get the var of a .data call
+SEXP data_pronoun_var(SEXP expr, SEXP env){
+
+  int32_t NP = 0;
+
+  if (!is_data_pronoun_call(expr, env)){
+    YIELD(NP);
+    Rf_error("`expr` must be a `.data` pronoun expression");
+  }
+
+  SEXP double_brackets_sym = SHIELD(Rf_installChar(Rf_mkCharCE("[[", CE_UTF8))); ++NP;
+
+  SEXP out = CAR(CDDR(expr));
+
+  if (CAR(expr) == double_brackets_sym){
+    SHIELD(out = rlang::eval_tidy(out, R_NilValue, env)); ++NP;
+  }
+
+  if (TYPEOF(out) != STRSXP && TYPEOF(out) != SYMSXP){
+    YIELD(NP);
+    Rf_error("A string or symbol must be supplied to `.data%s`", CHAR(rlang::sym_as_string(CAR(expr))));
+  }
+  if (Rf_length(out) != 1){
+    YIELD(NP);
+    Rf_error("A string (length-1 character) or symbol must be supplied to `.data%s`", CHAR(rlang::sym_as_string(CAR(expr))));
+  }
+  if (TYPEOF(out) == SYMSXP){
+    SHIELD(out = rlang::sym_as_string(out)); ++NP;
+  } else {
+    SHIELD(out = STRING_ELT(out, 0)); ++NP;
+  }
+
+  YIELD(NP);
+  return out;
+}
+
+cpp11::writable::strings all_call_names(cpp11::sexp expr, cpp11::environment env){
+
+  using namespace cpp11;
+  writable::strings out;
+  strings temp;
+
+  if (is_data_pronoun_call(expr, env)){
+    out.push_back(data_pronoun_var(expr, env));
+  } else if (TYPEOF(expr) == SYMSXP){
+    out.push_back(rlang::sym_as_string(expr));
+  }else if (TYPEOF(expr) == LANGSXP){
+    list tree = call_args(expr);
+    for (int i = 0; i < tree.size(); ++i){
+      sexp branch = tree[i];
+      temp = all_call_names(branch, env);
+      for (int j = 0; j < temp.size(); ++j){
+        out.push_back(temp[j]);
+      }
+    }
+  }
+  return out;
+}
+
+// Which variables are quosures pointing to?
+
+[[cpp11::register]]
+SEXP quo_vars(SEXP quos, SEXP mask, bool combine){
+
+  int n_quos = Rf_length(quos);
+
+  SEXP quo_vars = SHIELD(new_vec(VECSXP, n_quos));
+  SEXP quo_names = SHIELD(get_names(quos));
+  set_names(quo_vars, quo_names);
+  SEXP names = SHIELD(get_mask_data_vars(mask));
+
+  SEXP expr, env;
+  PROTECT_INDEX expr_idx, env_idx;
+  R_ProtectWithIndex(expr = R_NilValue, &expr_idx);
+  R_ProtectWithIndex(env = R_NilValue, &env_idx);
+
+  for (int i = 0; i < n_quos; ++i){
+    R_Reprotect(expr = rlang::quo_get_expr(VECTOR_ELT(quos, i)), expr_idx);
+    R_Reprotect(env = rlang::quo_get_env(VECTOR_ELT(quos, i)), env_idx);
+    SET_VECTOR_ELT(quo_vars, i, all_call_names(expr, env));
+    SET_VECTOR_ELT(quo_vars, i, cheapr::intersect(names, VECTOR_ELT(quo_vars, i), false));
+  }
+  if (combine){
+    SEXP out = SHIELD(cheapr::c(quo_vars));
+    SHIELD(out = cheapr::intersect(names, out, false));
+    YIELD(7);
+    return out;
+  } else {
+    YIELD(5);
+    return quo_vars;
+  }
+}
+
+
+[[cpp11::register]]
+SEXP cpp_quos_drop_null(SEXP quos){
+
+  int n = Rf_length(quos);
+
+  SEXP not_null = SHIELD(new_vec(LGLSXP, n));
+  int *p_not_null = INTEGER(not_null);
+  const SEXP *p_quos = VECTOR_PTR_RO(quos);
+  int n_null = 0;
+
+  for (int i = 0; i < n; ++i){
+    p_not_null[i] = TYPEOF(rlang::quo_get_expr(p_quos[i])) != NILSXP;
+    n_null += !p_not_null[i];
+  }
+  if (n_null == 0){
+    YIELD(1);
+    return quos;
+  }
+  SEXP r_true = SHIELD(new_vec(LGLSXP, 1));
+  LOGICAL(r_true)[0] = TRUE;
+  SEXP not_null_locs = SHIELD(cheapr::val_find(not_null, r_true, false));
+  SEXP out = SHIELD(cheapr::sset_vec(quos, not_null_locs, false));
+  Rf_copyMostAttrib(quos, out);
+  SEXP names = SHIELD(get_names(quos));
+  set_names(out, cheapr::sset_vec(names, not_null_locs, false));
+  SEXP cls = SHIELD(Rf_getAttrib(quos, R_ClassSymbol));
+  Rf_classgets(out, cls);
+  YIELD(6);
+  return out;
+}
+
+bool call_contains_dplyr_mask(SEXP expr, SEXP rho){
+  if (TYPEOF(expr) != LANGSXP){
+    return false;
+  }
+
+  int32_t NP = 0;
+
+  SEXP dplyr_mask_fns = SHIELD(new_vec(STRSXP, 11)); ++NP;
+  SET_STRING_ELT(dplyr_mask_fns, 0, Rf_mkCharCE("n", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 1, Rf_mkCharCE("pick", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 2, Rf_mkCharCE("row_number", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 3, Rf_mkCharCE("cur_group_id", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 4, Rf_mkCharCE("cur_group_rows", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 5, Rf_mkCharCE("cur_column", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 6, Rf_mkCharCE("cur_data", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 7, Rf_mkCharCE("cur_data_all", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 8, Rf_mkCharCE("if_any", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 9, Rf_mkCharCE("if_all", CE_UTF8));
+  SET_STRING_ELT(dplyr_mask_fns, 10, Rf_mkCharCE("c_across", CE_UTF8));
+  SEXP dplyr_str = SHIELD(Rf_ScalarString(Rf_mkCharCE("dplyr", CE_UTF8))); ++NP;
+
+  if (is_fn_call(expr, dplyr_mask_fns, dplyr_str, rho)){
+    YIELD(NP);
+    return true;
+  }
+
+  bool out = false;
+
+  SEXP tree = SHIELD(as_list_call(expr)); ++NP;
+  SEXP branch;
+  for (int i = 0; i < Rf_length(tree); ++i){
+    branch = VECTOR_ELT(tree, i);
+
+    // If branch is a call
+    if (TYPEOF(branch) == LANGSXP){
+      if (call_contains_dplyr_mask(branch, rho)){
+        out = true;
+        break;
+      }
+    }
+    if (TYPEOF(branch) == SYMSXP){
+      SEXP branch_name = SHIELD(rlang::sym_as_character(branch)); ++NP;
+      if (is_fn_call(branch_name, dplyr_mask_fns, dplyr_str, rho)){
+        out = true;
+        break;
+      }
+    }
+  }
+  YIELD(NP);
+  return out;
+}
+
+[[cpp11::register]]
+bool cpp_any_quo_contains_dplyr_mask_call(SEXP quos){
+
+  if (TYPEOF(quos) != VECSXP){
+    Rf_error("`quos` must be a list of quosures in %s", __func__);
+  }
+
+  bool out = false;
+
+  SEXP expr, quo_env;
+  PROTECT_INDEX expr_idx, quo_env_idx;
+  R_ProtectWithIndex(expr = R_NilValue, &expr_idx);
+  R_ProtectWithIndex(quo_env = R_NilValue, &quo_env_idx);
+
+  for (int i = 0; i < Rf_length(quos); ++i){
+    R_Reprotect(expr = rlang::quo_get_expr(VECTOR_ELT(quos, i)), expr_idx);
+    R_Reprotect(quo_env = rlang::quo_get_env(VECTOR_ELT(quos, i)), quo_env_idx);
+    if (call_contains_dplyr_mask(expr, quo_env)){
+      out = true;
+      break;
+    }
+  }
+  YIELD(2);
+  return out;
+}
+
+// SEXP replace_data_pronoun_with_sym(SEXP expr, SEXP env, SEXP mask){
+//
+//   if (!Rf_isLanguage(expr)){
+//     return expr;
+//   }
+//
+//   if (is_data_pronoun_call(expr, env)){
+//     SEXP var = SHIELD(data_pronoun_var(expr, env));
+//     SEXP out = SHIELD(Rf_installChar(var));
+//     YIELD(2);
+//     return out;
+//   }
+//
+//   int32_t NP = 0;
+//
+//   int n = Rf_length(expr);
+//
+//   SEXP out = SHIELD(Rf_duplicate(expr)); ++NP;
+//
+//   SEXP temp;
+//   PROTECT_INDEX temp_idx;
+//   R_ProtectWithIndex(temp = R_NilValue, &temp_idx); ++NP;
+//
+//   SEXP curr = expr;
+//   SEXP curr2 = out;
+//
+//   for (int i = 0; i < n; ++i){
+//
+//     SEXP branch = CAR(curr);
+//
+//     if (Rf_isLanguage(branch)){
+//       R_Reprotect(temp = replace_data_pronoun_with_sym(expr, env, mask), temp_idx);
+//       SETCAR(curr2, temp);
+//     }
+//     curr = CDR(expr);
+//     curr2 = CDR(out);
+//   }
+//
+//   YIELD(NP);
+//   return out;
+// }
+
+SEXP make_named_quos(SEXP quos){
+
+  int32_t NP = 0;
+
+  int n = Rf_length(quos);
+
+  SEXP out = SHIELD(Rf_duplicate(quos)); ++NP;
+  SEXP names = SHIELD(get_names(out)); ++NP;
+
+  SEXP expr;
+  PROTECT_INDEX expr_idx;
+  R_ProtectWithIndex(expr = R_NilValue, &expr_idx); ++NP;
+
+  if (Rf_isNull(names)){
+
+    SHIELD(names = new_vec(STRSXP, n)); ++NP;
+
+    for (int i = 0; i < n; ++i){
+      SEXP quo = VECTOR_ELT(quos, i);
+
+      if (Rf_isSymbol(expr)){
+        R_Reprotect(expr = rlang::quo_get_expr(quo), expr_idx);
+        SET_STRING_ELT(names, i, rlang::sym_as_string(expr));
+      } else {
+        SET_STRING_ELT(names, i, STRING_ELT(r_deparse(quo), 0));
+      }
+    }
+
+    set_names(out, names);
+
+  } else {
+    for (int i = 0; i < n; ++i){
+
+      // If name is empty
+      if (STRING_ELT(names, i) == R_BlankString){
+
+        SEXP quo = VECTOR_ELT(quos, i);
+
+        if (Rf_isSymbol(expr)){
+          R_Reprotect(expr = rlang::quo_get_expr(quo), expr_idx);
+          SET_STRING_ELT(names, i, rlang::sym_as_string(expr));
+        } else {
+          SET_STRING_ELT(names, i, STRING_ELT(r_deparse(quo), 0));
+        }
+      }
+    }
+  }
+
+  YIELD(NP);
+  return out;
 }

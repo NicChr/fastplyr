@@ -32,6 +32,18 @@ is_group_unaware_call <- function(expr, env, mask) {
   .Call(`_fastplyr_is_group_unaware_call`, expr, env, mask)
 }
 
+quo_vars <- function(quos, mask, combine) {
+  .Call(`_fastplyr_quo_vars`, quos, mask, combine)
+}
+
+cpp_quos_drop_null <- function(quos) {
+  .Call(`_fastplyr_cpp_quos_drop_null`, quos)
+}
+
+cpp_any_quo_contains_dplyr_mask_call <- function(quos) {
+  .Call(`_fastplyr_cpp_any_quo_contains_dplyr_mask_call`, quos)
+}
+
 cpp_frame_addresses_equal <- function(x, y) {
   .Call(`_fastplyr_cpp_frame_addresses_equal`, x, y)
 }
@@ -58,26 +70,6 @@ cpp_as_list_of_frames <- function(x) {
 
 cpp_pluck_list_of_integers <- function(x, i, default_value) {
   .Call(`_fastplyr_cpp_pluck_list_of_integers`, x, i, default_value)
-}
-
-cpp_sorted_group_starts <- function(group_sizes, init_loc) {
-  .Call(`_fastplyr_cpp_sorted_group_starts`, group_sizes, init_loc)
-}
-
-cpp_group_locs <- function(order, group_sizes) {
-  .Call(`_fastplyr_cpp_group_locs`, order, group_sizes)
-}
-
-cpp_group_locs2 <- function(group_id, group_sizes) {
-  .Call(`_fastplyr_cpp_group_locs2`, group_id, group_sizes)
-}
-
-cpp_vec_group_split <- function(x, locs) {
-  .Call(`_fastplyr_cpp_vec_group_split`, x, locs)
-}
-
-cpp_orig_order <- function(group_id, group_sizes) {
-  .Call(`_fastplyr_cpp_orig_order`, group_id, group_sizes)
 }
 
 cpp_row_id <- function(order, group_sizes, ascending) {
@@ -164,36 +156,40 @@ cpp_group_id <- function(x) {
   .Call(`_fastplyr_cpp_group_id`, x)
 }
 
-quo_vars <- function(quos, mask, combine) {
-  .Call(`_fastplyr_quo_vars`, quos, mask, combine)
-}
-
-cpp_quos_drop_null <- function(quos) {
-  .Call(`_fastplyr_cpp_quos_drop_null`, quos)
-}
-
-cpp_any_quo_contains_dplyr_mask_call <- function(quos) {
-  .Call(`_fastplyr_cpp_any_quo_contains_dplyr_mask_call`, quos)
-}
-
-cpp_eval_all_tidy <- function(quos, mask) {
-  .Call(`_fastplyr_cpp_eval_all_tidy`, quos, mask)
-}
-
-r_deparse <- function(quo) {
-  .Call(`_fastplyr_r_deparse`, quo)
-}
-
-cpp_list_tidy <- function(quos, named, keep_null) {
-  .Call(`_fastplyr_cpp_list_tidy`, quos, named, keep_null)
+cpp_group_id_sorted <- function(x) {
+  .Call(`_fastplyr_cpp_group_id_sorted`, x)
 }
 
 cpp_unlist_group_locs <- function(x, group_sizes) {
   .Call(`_fastplyr_cpp_unlist_group_locs`, x, group_sizes)
 }
 
-cpp_group_id_sorted <- function(x) {
-  .Call(`_fastplyr_cpp_group_id_sorted`, x)
+cpp_sorted_group_starts <- function(group_sizes, init_loc) {
+  .Call(`_fastplyr_cpp_sorted_group_starts`, group_sizes, init_loc)
+}
+
+cpp_group_locs <- function(order, group_sizes) {
+  .Call(`_fastplyr_cpp_group_locs`, order, group_sizes)
+}
+
+cpp_group_locs2 <- function(group_id, group_sizes) {
+  .Call(`_fastplyr_cpp_group_locs2`, group_id, group_sizes)
+}
+
+cpp_vec_group_split <- function(x, locs) {
+  .Call(`_fastplyr_cpp_vec_group_split`, x, locs)
+}
+
+cpp_orig_order <- function(group_id, group_sizes) {
+  .Call(`_fastplyr_cpp_orig_order`, group_id, group_sizes)
+}
+
+cpp_eval_all_tidy <- function(quos, mask) {
+  .Call(`_fastplyr_cpp_eval_all_tidy`, quos, mask)
+}
+
+cpp_list_tidy <- function(quos, named, keep_null) {
+  .Call(`_fastplyr_cpp_list_tidy`, quos, named, keep_null)
 }
 
 transpose_eval_results <- function(x) {

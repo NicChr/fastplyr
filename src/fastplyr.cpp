@@ -212,145 +212,6 @@ SEXP cpp_pluck_list_of_integers(SEXP x, SEXP i, SEXP default_value){
   return out;
 }
 
-// Take a vector of group sizes (sorted by group)
-// And this will return a vector of the start indices of each group (in sorted order)
-
-[[cpp11::register]]
-SEXP cpp_sorted_group_starts(SEXP group_sizes, int init_loc = 1){
-  const int* __restrict__ p_gsizes = INTEGER_RO(group_sizes);
-  int n = Rf_length(group_sizes);
-  SEXP out = SHIELD(new_vec(INTSXP, n));
-  int* __restrict__ p_out = INTEGER(out);
-  if (n > 0){
-    int init = init_loc;
-    p_out[0] = init;
-    // cumsum over group_sizes[-length(group_sizes)]
-    for (int i = 0; i < (n - 1); ++i){
-      p_out[i + 1] = (init += p_gsizes[i]);
-    }
-  }
-  YIELD(1);
-  return out;
-}
-
-[[cpp11::register]]
-SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
-  int32_t NP = 0;
-  unsigned int n_groups = Rf_length(group_sizes);
-  const int* __restrict__ p_o = INTEGER_RO(order);
-  const int* __restrict__ p_gs = INTEGER_RO(group_sizes);
-  SEXP group_locs = SHIELD(new_vec(VECSXP, n_groups)); ++NP;
-  const SEXP *p_out = VECTOR_PTR_RO(group_locs);
-  unsigned int k = 0;
-  unsigned int group_size = 0;
-
-  for (unsigned int i = 0; i < n_groups; ++i, k += group_size){
-    group_size = p_gs[i];
-    SET_VECTOR_ELT(group_locs, i, new_vec(INTSXP, group_size));
-    safe_memcpy(&INTEGER(p_out[i])[0], &p_o[k], group_size * sizeof(int));
-  }
-  YIELD(NP);
-  return group_locs;
-}
-
-// Alternative to above that can calculate it using
-// group IDs instead of the order
-
-// group IDs must be in range [1, n_groups]
-
-[[cpp11::register]]
-SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
-  int32_t NP = 0;
-  unsigned int n_groups = Rf_length(group_sizes);
-  SEXP group_locs = SHIELD(new_vec(VECSXP, n_groups)); ++NP;
-  const int* __restrict__ p_group_sizes = INTEGER_RO(group_sizes);
-  const int* __restrict__ p_group_id = INTEGER_RO(group_id);
-  const SEXP *p_out = VECTOR_PTR_RO(group_locs);
-
-  // Store a vector of pointers
-  // Speeds up later allocation
-  int **loc_ptrs = (int **) R_Calloc(n_groups, int*);
-
-  // Initialise locations
-  for (unsigned int i = 0; i != n_groups; ++i){
-    SET_VECTOR_ELT(group_locs, i, new_vec(INTSXP, p_group_sizes[i]));
-    loc_ptrs[i] = INTEGER(p_out[i]);
-  }
-
-  // Initialise a vector of group location indices
-
-  SEXP loc_indices = SHIELD(new_vec(INTSXP, n_groups)); ++NP;
-  int* __restrict__ p_loc_indices = INTEGER(loc_indices);
-  safe_memset(p_loc_indices, 0, n_groups * sizeof(int));
-
-  int n = Rf_length(group_id);
-  int cur_group;
-  int cur_group_loc;
-
-  for (int i = 0; i < n; ++i){
-    cur_group = p_group_id[i] - 1;
-    cur_group_loc = p_loc_indices[cur_group]++;
-    loc_ptrs[cur_group][cur_group_loc] = i + 1;
-  }
-  R_Free(loc_ptrs);
-  YIELD(NP);
-  return group_locs;
-}
-[[cpp11::register]]
-SEXP cpp_vec_group_split(SEXP x, SEXP locs){
-
-  int n_groups = Rf_length(locs);
-
-  const SEXP *p_locs = VECTOR_PTR_RO(locs);
-  SEXP out = SHIELD(new_vec(VECSXP, n_groups));
-
-  for (int i = 0; i < n_groups; ++i){
-   SET_VECTOR_ELT(out, i, cheapr::sset(x, p_locs[i], true));
-  }
-  YIELD(1);
-  return out;
-}
-
-// Using a combination of group_id and sorted group_sizes
-// we can quickly calculate an order vector that places
-// sorted group IDs back into original order
-
-[[cpp11::register]]
-SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes){
-  int n = Rf_length(group_id);
-  int n_groups = Rf_length(group_sizes);
-  const int* __restrict__ p_group_id = INTEGER(group_id);
-
-  if (n_groups == 0){
-    return new_vec(INTSXP, 0);
-  }
-
-  // Sorted group start locs
-  SEXP cumulative_sizes = SHIELD(cpp_sorted_group_starts(group_sizes, 0));
-  int* __restrict__ p_cumulative_sizes = INTEGER(cumulative_sizes);
-
-  SEXP out = SHIELD(new_vec(INTSXP, n));
-  int* __restrict__ p_out = INTEGER(out);
-
-  int ans;
-
-  bool sorted = true;
-  // for (int i = 0; i < n; ++i){
-  //   p_out[i] = ++p_cumulative_sizes[p_group_id[i] - 1];
-  // }
-  for (int i = 0; i < n; ++i){
-    ans = ++p_cumulative_sizes[p_group_id[i] - 1];
-    sorted = sorted && ans == (i + 1);
-    p_out[i] = ans;
-  }
-  SEXP sorted_sym = SHIELD(Rf_install("sorted"));
-  SEXP r_sorted = SHIELD(new_vec(LGLSXP, 1));
-  LOGICAL(r_sorted)[0] = sorted;
-  Rf_setAttrib(out, sorted_sym, r_sorted);
-  YIELD(4);
-  return out;
-}
-
 [[cpp11::register]]
 SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
 
@@ -989,5 +850,20 @@ SEXP binary_combine(SEXP x, SEXP y){
   SEXP out = SHIELD(cheapr::c(container));
 
   YIELD(2);
+  return out;
+}
+
+SEXP compact_int_seq_len(int n){
+  if (n == NA_INTEGER || n < 0){
+    Rf_error("`n` must be >= 0");
+  }
+  if (n == 0){
+    return new_vec(INTSXP, 0);
+  }
+  SEXP start = SHIELD(Rf_ScalarInteger(1));
+  SEXP end = SHIELD(Rf_ScalarInteger(n));
+  SEXP expr = SHIELD(Rf_lang3(Rf_install(":"), start, end));
+  SEXP out = SHIELD(Rf_eval(expr, R_BaseEnv));
+  YIELD(4);
   return out;
 }

@@ -61,6 +61,27 @@ extern "C" SEXP _fastplyr_is_group_unaware_call(SEXP expr, SEXP env, SEXP mask) 
     return cpp11::as_sexp(is_group_unaware_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(expr), cpp11::as_cpp<cpp11::decay_t<SEXP>>(env), cpp11::as_cpp<cpp11::decay_t<SEXP>>(mask)));
   END_CPP11
 }
+// expressions.cpp
+SEXP quo_vars(SEXP quos, SEXP mask, bool combine);
+extern "C" SEXP _fastplyr_quo_vars(SEXP quos, SEXP mask, SEXP combine) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(quo_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<SEXP>>(mask), cpp11::as_cpp<cpp11::decay_t<bool>>(combine)));
+  END_CPP11
+}
+// expressions.cpp
+SEXP cpp_quos_drop_null(SEXP quos);
+extern "C" SEXP _fastplyr_cpp_quos_drop_null(SEXP quos) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_quos_drop_null(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
+  END_CPP11
+}
+// expressions.cpp
+bool cpp_any_quo_contains_dplyr_mask_call(SEXP quos);
+extern "C" SEXP _fastplyr_cpp_any_quo_contains_dplyr_mask_call(SEXP quos) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_any_quo_contains_dplyr_mask_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
+  END_CPP11
+}
 // fastplyr.cpp
 SEXP cpp_frame_addresses_equal(SEXP x, SEXP y);
 extern "C" SEXP _fastplyr_cpp_frame_addresses_equal(SEXP x, SEXP y) {
@@ -108,41 +129,6 @@ SEXP cpp_pluck_list_of_integers(SEXP x, SEXP i, SEXP default_value);
 extern "C" SEXP _fastplyr_cpp_pluck_list_of_integers(SEXP x, SEXP i, SEXP default_value) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_pluck_list_of_integers(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(i), cpp11::as_cpp<cpp11::decay_t<SEXP>>(default_value)));
-  END_CPP11
-}
-// fastplyr.cpp
-SEXP cpp_sorted_group_starts(SEXP group_sizes, int init_loc);
-extern "C" SEXP _fastplyr_cpp_sorted_group_starts(SEXP group_sizes, SEXP init_loc) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_sorted_group_starts(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_sizes), cpp11::as_cpp<cpp11::decay_t<int>>(init_loc)));
-  END_CPP11
-}
-// fastplyr.cpp
-SEXP cpp_group_locs(SEXP order, SEXP group_sizes);
-extern "C" SEXP _fastplyr_cpp_group_locs(SEXP order, SEXP group_sizes) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_group_locs(cpp11::as_cpp<cpp11::decay_t<SEXP>>(order), cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_sizes)));
-  END_CPP11
-}
-// fastplyr.cpp
-SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes);
-extern "C" SEXP _fastplyr_cpp_group_locs2(SEXP group_id, SEXP group_sizes) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_group_locs2(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_id), cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_sizes)));
-  END_CPP11
-}
-// fastplyr.cpp
-SEXP cpp_vec_group_split(SEXP x, SEXP locs);
-extern "C" SEXP _fastplyr_cpp_vec_group_split(SEXP x, SEXP locs) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_vec_group_split(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(locs)));
-  END_CPP11
-}
-// fastplyr.cpp
-SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes);
-extern "C" SEXP _fastplyr_cpp_orig_order(SEXP group_id, SEXP group_sizes) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_orig_order(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_id), cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_sizes)));
   END_CPP11
 }
 // fastplyr.cpp
@@ -292,25 +278,53 @@ extern "C" SEXP _fastplyr_cpp_group_id(SEXP x) {
     return cpp11::as_sexp(cpp_group_id(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
-// tidy.cpp
-SEXP quo_vars(SEXP quos, SEXP mask, bool combine);
-extern "C" SEXP _fastplyr_quo_vars(SEXP quos, SEXP mask, SEXP combine) {
+// groups.cpp
+bool cpp_group_id_sorted(SEXP x);
+extern "C" SEXP _fastplyr_cpp_group_id_sorted(SEXP x) {
   BEGIN_CPP11
-    return cpp11::as_sexp(quo_vars(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<SEXP>>(mask), cpp11::as_cpp<cpp11::decay_t<bool>>(combine)));
+    return cpp11::as_sexp(cpp_group_id_sorted(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
-// tidy.cpp
-SEXP cpp_quos_drop_null(SEXP quos);
-extern "C" SEXP _fastplyr_cpp_quos_drop_null(SEXP quos) {
+// groups.cpp
+SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes);
+extern "C" SEXP _fastplyr_cpp_unlist_group_locs(SEXP x, SEXP group_sizes) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cpp_quos_drop_null(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
+    return cpp11::as_sexp(cpp_unlist_group_locs(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_sizes)));
   END_CPP11
 }
-// tidy.cpp
-bool cpp_any_quo_contains_dplyr_mask_call(SEXP quos);
-extern "C" SEXP _fastplyr_cpp_any_quo_contains_dplyr_mask_call(SEXP quos) {
+// groups.cpp
+SEXP cpp_sorted_group_starts(SEXP group_sizes, int init_loc);
+extern "C" SEXP _fastplyr_cpp_sorted_group_starts(SEXP group_sizes, SEXP init_loc) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cpp_any_quo_contains_dplyr_mask_call(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos)));
+    return cpp11::as_sexp(cpp_sorted_group_starts(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_sizes), cpp11::as_cpp<cpp11::decay_t<int>>(init_loc)));
+  END_CPP11
+}
+// groups.cpp
+SEXP cpp_group_locs(SEXP order, SEXP group_sizes);
+extern "C" SEXP _fastplyr_cpp_group_locs(SEXP order, SEXP group_sizes) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_locs(cpp11::as_cpp<cpp11::decay_t<SEXP>>(order), cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_sizes)));
+  END_CPP11
+}
+// groups.cpp
+SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes);
+extern "C" SEXP _fastplyr_cpp_group_locs2(SEXP group_id, SEXP group_sizes) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_group_locs2(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_id), cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_sizes)));
+  END_CPP11
+}
+// groups.cpp
+SEXP cpp_vec_group_split(SEXP x, SEXP locs);
+extern "C" SEXP _fastplyr_cpp_vec_group_split(SEXP x, SEXP locs) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_vec_group_split(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(locs)));
+  END_CPP11
+}
+// groups.cpp
+SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes);
+extern "C" SEXP _fastplyr_cpp_orig_order(SEXP group_id, SEXP group_sizes) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cpp_orig_order(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_id), cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_sizes)));
   END_CPP11
 }
 // tidy.cpp
@@ -321,31 +335,10 @@ extern "C" SEXP _fastplyr_cpp_eval_all_tidy(SEXP quos, SEXP mask) {
   END_CPP11
 }
 // tidy.cpp
-SEXP r_deparse(SEXP quo);
-extern "C" SEXP _fastplyr_r_deparse(SEXP quo) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(r_deparse(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quo)));
-  END_CPP11
-}
-// tidy.cpp
 SEXP cpp_list_tidy(SEXP quos, bool named, bool keep_null);
 extern "C" SEXP _fastplyr_cpp_list_tidy(SEXP quos, SEXP named, SEXP keep_null) {
   BEGIN_CPP11
     return cpp11::as_sexp(cpp_list_tidy(cpp11::as_cpp<cpp11::decay_t<SEXP>>(quos), cpp11::as_cpp<cpp11::decay_t<bool>>(named), cpp11::as_cpp<cpp11::decay_t<bool>>(keep_null)));
-  END_CPP11
-}
-// tidy.cpp
-SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes);
-extern "C" SEXP _fastplyr_cpp_unlist_group_locs(SEXP x, SEXP group_sizes) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_unlist_group_locs(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_sizes)));
-  END_CPP11
-}
-// tidy.cpp
-bool cpp_group_id_sorted(SEXP x);
-extern "C" SEXP _fastplyr_cpp_group_id_sorted(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_group_id_sorted(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
 // tidy.cpp
@@ -461,7 +454,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_is_nested_call",                       (DL_FUNC) &_fastplyr_is_nested_call,                       1},
     {"_fastplyr_match_fun",                            (DL_FUNC) &_fastplyr_match_fun,                            2},
     {"_fastplyr_quo_vars",                             (DL_FUNC) &_fastplyr_quo_vars,                             3},
-    {"_fastplyr_r_deparse",                            (DL_FUNC) &_fastplyr_r_deparse,                            1},
     {"_fastplyr_recycle_eval_results",                 (DL_FUNC) &_fastplyr_recycle_eval_results,                 1},
     {"_fastplyr_transpose_eval_results",               (DL_FUNC) &_fastplyr_transpose_eval_results,               1},
     {NULL, NULL, 0}
