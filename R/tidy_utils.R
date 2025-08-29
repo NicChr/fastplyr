@@ -541,9 +541,10 @@ check_fastplyr_quos <- function(quos){
 }
 
 sset_quos <- function(quos, i){
-  out <- quos[i]
+  out <- unclass(quos)[i]
   cheapr::attrs_modify(
     out,
+    class = class(quos),
     .optimised = attr(quos, ".optimised", TRUE)[i],
     .group_unaware = attr(quos, ".group_unaware", TRUE)[i],
     .set = TRUE

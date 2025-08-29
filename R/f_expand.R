@@ -32,17 +32,22 @@ f_expand <- function(data, ..., .sort = FALSE,
     GRP <- df_to_GRP(data, group_vars, order = .sort)
   }
 
-  # If the user is simply selecting cols then we can use an optimised method
   if (is.null(.cols)){
-    dots <- fastplyr_quos(..., .data = data, .groups = GRP)
-    dot_labels <- quo_labels(dots)
-    if (all(dot_labels %in% names(data)) && !any(names(dots) %in% names(data))){
-      .cols <- dot_labels
-    }
-  }
-  # Optimised method when just selecting cols
-  if (!is.null(.cols)){
-    data2 <- cpp_ungroup(data)
+
+    # Evaluate expressions before cross-join
+
+    dots <- fastplyr_quos(..., .data = data, .groups = GRP, .optimise = should_optimise(GRP))
+    data2 <- data
+    frames <- eval_all_tidy(data2, dots, recycle = FALSE)
+    frames <- purrr::map2(
+      frames[[1L]], cpp_as_list_of_frames(frames[[2L]]),
+      \(x, y) sort_unique(cheapr::col_c(x, y), .sort)
+    )
+  } else {
+
+    # Optimised method when just selecting cols
+
+    data2 <- f_ungroup(data)
     dot_vars <- col_select_names(data2, .cols = .cols)
     frames <- cheapr::new_list(length(dot_vars))
     for (i in seq_along(dot_vars)){
@@ -51,13 +56,6 @@ f_expand <- function(data, ..., .sort = FALSE,
         sort = .sort
       )
     }
-  } else {
-    data2 <- data
-    frames <- eval_all_tidy(data2, dots, recycle = FALSE)
-    frames <- purrr::map2(
-      frames[[1L]], cpp_as_list_of_frames(frames[[2L]]),
-      \(x, y) sort_unique(cheapr::col_c(x, y), .sort)
-    )
   }
   if (length(group_vars) > 0){
     anon_join <- function(x, y){
