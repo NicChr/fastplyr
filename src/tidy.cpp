@@ -15,8 +15,10 @@ SEXP eval_tidy(SEXP quo, SEXP mask){
 
 [[cpp11::register]]
 SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
+
   int32_t NP = 0;
   int n_exprs = Rf_length(quos);
+
   SEXP expr_names = SHIELD(get_names(quos)); ++NP;
 
   if (TYPEOF(expr_names) == NILSXP){
@@ -30,8 +32,6 @@ SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
   const SEXP *p_quos = VECTOR_PTR_RO(quos);
   const SEXP *p_expr_names = STRING_PTR_RO(expr_names);
 
-  bool any_named_exprs = false;
-
   for (int i = 0; i < n_exprs; ++i){
     SEXP result = SHIELD(eval_tidy(p_quos[i], mask)); ++NP;
     SEXP expr_name = p_expr_names[i];
@@ -40,13 +40,11 @@ SEXP cpp_eval_all_tidy(SEXP quos, SEXP mask){
       SEXP sym = Rf_installChar(expr_name);
       Rf_defineVar(sym, result, top_env);
       SET_STRING_ELT(out_names, i, expr_name);
-      any_named_exprs = true;
     }
     SET_VECTOR_ELT(out, i, result);
   }
-  if (any_named_exprs){
-    set_names(out, out_names);
-  }
+
+  set_names(out, out_names);
   YIELD(NP);
   return out;
 }
@@ -67,6 +65,26 @@ SEXP cpp_list_tidy(SEXP quos, bool named, bool keep_null){
   }
 
   SEXP out = SHIELD(cpp_eval_all_tidy(quos, mask)); ++NP;
+
+  // If all names are blank then set names to `NULL`
+
+  if (!named){
+
+    bool all_empty = true;
+
+    SEXP names = SHIELD(get_names(out)); ++NP;
+    int n = Rf_length(names);
+
+    for (int i = 0; i < n; ++i){
+      if (STRING_ELT(names, i) != R_BlankString){
+        all_empty = false;
+        break;
+      }
+    }
+    if (all_empty){
+      set_names(out, R_NilValue);
+    }
+  }
 
   YIELD(NP);
   return out;
