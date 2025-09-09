@@ -254,7 +254,8 @@ test_that("summarise2", {
 
   expect_equal(
     df |>
-      f_summarise(new1 = 0L, new2 = sum(.data$new1)),
+      f_summarise(new1 = 0L) |>
+      f_mutate(new2 = sum(.data$new1)),
     df |>
       dplyr::summarise(new1 = 0L, new2 = sum(.data$new1))
   )
@@ -263,7 +264,8 @@ test_that("summarise2", {
 
   expect_equal(
     df |>
-      f_summarise(a = 0L, b = sum(.data$a), c = sum(.env$a)),
+      f_summarise(a = 0L) |>
+      f_mutate(b = sum(.data$a), c = sum(.env$a)),
     df |>
       dplyr::summarise(a = 0L, b = sum(.data$a), c = sum(.env$a))
   )

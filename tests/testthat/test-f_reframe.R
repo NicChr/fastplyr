@@ -247,7 +247,8 @@ test_that("reframe2", {
 
   expect_equal(
     df |>
-      f_reframe(new1 = 0L, new2 = sum(.data$new1)),
+      f_reframe(new1 = 0L) |>
+      f_mutate(new2 = sum(.data$new1)),
     df |>
       dplyr::reframe(new1 = 0L, new2 = sum(.data$new1))
   )
@@ -256,7 +257,8 @@ test_that("reframe2", {
 
   expect_equal(
     df |>
-      f_reframe(a = 0L, b = sum(.data$a), c = sum(.env$a)),
+      f_reframe(a = 0L) |>
+      f_mutate(b = sum(.data$a), c = sum(.env$a)),
     df |>
       dplyr::reframe(a = 0L, b = sum(.data$a), c = sum(.env$a))
   )

@@ -61,48 +61,6 @@ is_optimised_call <- function(expr, env = rlang::caller_env()){
   is_fn_call(expr, names(.optimised_fn_list[["input_fns"]]), NULL, env)
 }
 
-# Somewhat safer check of the .by arg
-# e.g mutate(group_by(iris, Species), .by = any_of("okay"))
-# Should not produce an error with this check
-check_by <- function(data, .by){
-  if (inherits(data, "grouped_df") && !rlang::quo_is_null(rlang::enquo(.by))){
-    cli::cli_abort("{.arg .by} cannot be used on a {.cls grouped_df}")
-  }
-}
-check_cols <- function(n_dots, .cols = NULL){
-  if (n_dots > 0 && !is.null(.cols)){
-    cli::cli_abort("Cannot supply variables through {.arg ...} and {.arg .cols}, use one argument")
-  }
-}
-
-# This function returns the groups of a data frame
-get_groups <- function(data, .by = NULL, named = FALSE){
-  check_rowwise(data)
-  dplyr_groups <- f_group_vars(data)
-  if (named){
-    names(dplyr_groups) <- dplyr_groups
-  }
-  if (rlang::quo_is_null(rlang::enquo(.by))){
-    by_groups <- character()
-  } else {
-    by_groups <- tidy_select_names(data, {{ .by }})
-    if (any(names(by_groups) != by_groups)){
-      cli::cli_abort("Can't rename groups through {.arg .by}")
-    }
-    if (!named){
-      attr(by_groups, "names") <- NULL
-    }
-  }
-  if (length(by_groups) > 0L){
-    if (length(dplyr_groups) > 0L){
-      cli::cli_abort("{.arg .by} cannot be used on a grouped_df")
-    }
-    by_groups
-  } else {
-    dplyr_groups
-  }
-}
-
 # Turn character vector into named character vector
 as_named <- function(x){
   `names<-`(x, cheapr::str_coalesce(names(x), as.character(x)))
@@ -111,7 +69,7 @@ as_named <- function(x){
 tidy_as_list_of <- function (..., .keep_null = FALSE){
   dots <- list_tidy(...)
   if (length(dots) == 1 && !is.object(dots[[1L]]) && is.list(dots[[1L]])) {
-      out <- dots[[1L]]
+    out <- dots[[1L]]
   }
   else {
     out <- dots
@@ -250,7 +208,7 @@ unpack_across <- function(quo, data, groups = character(), unpack_default = FALS
       rlang::call2(fn, as.symbol(col)),
       # rlang::call2(fn, call("$", quote(.data), as.symbol(col))),
       quo_env
-      )
+    )
     set_add_attr(new_quo, ".unpack", unpack)
     out[[i]] <- new_quo
   }
@@ -315,7 +273,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
   optimised <- logical(length(out))
   group_unaware <- logical(length(out))
 
-  if (n_groups <= 1){
+  if (n_groups == 1){
     .fastplyr.g <- NULL
   } else {
     .fastplyr.g <- .groups
@@ -365,6 +323,18 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
 
       if (group_unaware_expr){
         group_unaware[i] <- TRUE
+      } else if (rlang::is_scalar_atomic(expr)){
+        if (is.null(.fastplyr.g)){
+          if (.optimise_expand){
+            expr <- cheapr::cheapr_rep_len(expr, df_nrow(.data))
+          }
+        } else {
+          if (.optimise_expand){
+            expr <- cheapr::cheapr_rep_len(expr, GRP_data_size(.fastplyr.g))
+          } else {
+            expr <- cheapr::cheapr_rep_len(expr, GRP_n_groups(.fastplyr.g))
+          }
+        }
       }
       ### Cases when we are just selecting columns
       ### We can just optimise it away by leaving the expression as is
@@ -381,7 +351,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
           } else {
             out <- GRP_group_sizes(.fastplyr.g)
             if (.optimise_expand){
-              out <- out[GRP_group_id(.fastplyr.g)]
+              out <- cheapr::sset(out, GRP_group_id(.fastplyr.g))
             }
           }
           out
@@ -410,7 +380,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
             if (.optimise_expand){
               GRP_group_id(.fastplyr.g)
             } else {
-              GRP_group_id(.fastplyr.g)[GRP_starts(.fastplyr.g)]
+              cheapr::sset(GRP_group_id(.fastplyr.g), GRP_starts(.fastplyr.g))
             }
           }
         })
@@ -554,6 +524,49 @@ sset_quos <- function(quos, i){
     vec_setdiff(names(attributes(quos)), c("names", "class", ".optimised", ".group_unaware")),
     FALSE
   )
+}
+
+
+# Somewhat safer check of the .by arg
+# e.g mutate(group_by(iris, Species), .by = any_of("okay"))
+# Should not produce an error with this check
+check_by <- function(data, .by){
+  if (inherits(data, "grouped_df") && !rlang::quo_is_null(rlang::enquo(.by))){
+    cli::cli_abort("{.arg .by} cannot be used on a {.cls grouped_df}")
+  }
+}
+check_cols <- function(n_dots, .cols = NULL){
+  if (n_dots > 0 && !is.null(.cols)){
+    cli::cli_abort("Cannot supply variables through {.arg ...} and {.arg .cols}, use one argument")
+  }
+}
+
+# This function returns the groups of a data frame
+get_groups <- function(data, .by = NULL, named = FALSE){
+  check_rowwise(data)
+  dplyr_groups <- f_group_vars(data)
+  if (named){
+    names(dplyr_groups) <- dplyr_groups
+  }
+  if (rlang::quo_is_null(rlang::enquo(.by))){
+    by_groups <- character()
+  } else {
+    by_groups <- tidy_select_names(data, {{ .by }})
+    if (any(names(by_groups) != by_groups)){
+      cli::cli_abort("Can't rename groups through {.arg .by}")
+    }
+    if (!named){
+      attr(by_groups, "names") <- NULL
+    }
+  }
+  if (length(by_groups) > 0L){
+    if (length(dplyr_groups) > 0L){
+      cli::cli_abort("{.arg .by} cannot be used on a grouped_df")
+    }
+    by_groups
+  } else {
+    dplyr_groups
+  }
 }
 
 # Tidyselect col positions with names

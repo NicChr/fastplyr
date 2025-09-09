@@ -60,7 +60,8 @@ test_that("mutate", {
 
     expect_equal(
       df |>
-        f_mutate(new1 = 0L, new2 = .data$new1),
+        f_mutate(new1 = 0L) |>
+        f_mutate(new2 = .data$new1),
       df |>
         dplyr::mutate(new1 = 0L, new2 = .data$new1)
     )
@@ -69,7 +70,8 @@ test_that("mutate", {
 
     expect_equal(
       df |>
-        f_mutate(a = 0L, b = .data$a, c = .env$a),
+        f_mutate(a = 0L) |>
+        f_mutate(b = .data$a, c = .env$a),
       df |>
         dplyr::mutate(a = 0L, b = .data$a, c = .env$a)
     )
