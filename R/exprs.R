@@ -101,7 +101,8 @@ inform_user_on_eval_split <- function(regular_quos, optimised_quos){
       paste("Normal exprs:", cli::col_blue("{names(regular_quos)}")),
       paste("Optimised exprs:", cli::col_red("{names(optimised_quos)}")),
       "",
-      "To always evaluate everything in the same mask run {.run fastplyr_disable_optimisations()}"
+      "To always evaluate everything in the same mask run {.run fastplyr::fastplyr_disable_optimisations()}",
+      "It is advised to run these exprs in separate e.g. `f_mutate/f_reframe/f_summarise` statements"
     ))
   }
 }
@@ -291,9 +292,9 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
           "",
           "Optimised expressions are independent from unoptimised ones and typical data-masking rules may not apply",
           "",
-          "Run {.run fastplyr_disable_optimisations()} to disable optimisations globally",
+          "Run {.run fastplyr::fastplyr_disable_optimisations()} to disable optimisations globally",
           "",
-          "Run {.run fastplyr_disable_informative_msgs()} to disable this and other informative messages"
+          "Run {.run fastplyr::fastplyr_disable_informative_msgs()} to disable this and other informative messages"
         ),
         .frequency = "once", .frequency_id = ".optimise_inform"
       )
@@ -325,9 +326,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
         group_unaware[i] <- TRUE
       } else if (rlang::is_scalar_atomic(expr)){
         if (is.null(.fastplyr.g)){
-          if (.optimise_expand){
-            expr <- cheapr::cheapr_rep_len(expr, df_nrow(.data))
-          }
+          next
         } else {
           if (.optimise_expand){
             expr <- cheapr::cheapr_rep_len(expr, GRP_data_size(.fastplyr.g))
