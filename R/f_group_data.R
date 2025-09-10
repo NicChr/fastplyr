@@ -33,3 +33,6 @@ f_n_groups <- function(x){
 f_group_GRP <- function(x){
   grouped_df_as_GRP(x)
 }
+is_fastplyr_grouped_df <- function(x){
+  inherits(x, "fastplyr_grouped_df")
+}
