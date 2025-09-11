@@ -274,6 +274,9 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
   optimised <- logical(length(out))
   group_unaware <- logical(length(out))
 
+  # .fastplyr.g is used internally for optimised calculations
+  # where setting `g = NULL` is more efficient when N groups is 1
+  # .groups is still needed to supply the group metadata to later functions
   if (n_groups == 1){
     .fastplyr.g <- NULL
   } else {
@@ -479,21 +482,22 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
     ### Calculate group locations here so that
     ### tidy evaluation can be done
     ### eval_all_tidy needs a plain or grouped data frame
-    if (!is.null(.fastplyr.g)){
+    if (!is.null(.groups)){
       if (identical(f_group_vars(.data), group_vars) &&
-          GRP_is_ordered(.fastplyr.g) == group_by_order_default(.data)){
-        if (is.null(.fastplyr.g[["locs"]])){
-          .fastplyr.g[["locs"]] <- f_group_rows(.data)
+          GRP_is_ordered(.groups) == group_by_order_default(.data)){
+        if (is.null(.groups[["locs"]])){
+          .groups[["locs"]] <- f_group_rows(.data)
         }
       } else {
-        .fastplyr.g[["locs"]] <- GRP_loc(.groups)
+        .groups[["locs"]] <- GRP_loc(.groups)
       }
     }
   }
+
   cheapr::attrs_modify(
     out,
     .optimised = optimised,
-    .GRP = .fastplyr.g,
+    .GRP = .groups,
     .group_unaware = group_unaware,
     .fastplyr_quos = TRUE,
     .set = TRUE
