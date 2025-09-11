@@ -1,4 +1,5 @@
 #include "fastplyr.h"
+#include <cheapr_api.h>
 
 static SEXP top_env_sym = NULL;
 static SEXP data_pronoun_sym = NULL;
@@ -17,11 +18,21 @@ SEXP get_mask_top_env(SEXP mask){
 }
 
 SEXP get_mask_data_vars(SEXP mask){
-  return R_lsInternal3(
-    get_mask_top_env(mask),
-    FALSE, // Exclude objects beginning with `.` like `.data`
-    FALSE // Unsorted
+  SEXP top_env_vars = SHIELD(
+    R_lsInternal3(
+      get_mask_top_env(mask),
+      TRUE, // Don't exclude objects beginning with `.` like `.data`
+      FALSE // Unsorted
+    )
   );
+
+  SEXP data_pronoun = SHIELD(rlang::sym_as_character(data_pronoun_sym));
+
+  SEXP out = SHIELD(cheapr::val_remove(top_env_vars, data_pronoun));
+
+  YIELD(3);
+  return out;
+
 }
 
 SEXP new_bare_data_mask(){
