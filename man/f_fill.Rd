@@ -5,7 +5,7 @@
 \title{Fill \code{NA} values forwards and backwards}
 \usage{
 f_fill(
-  data,
+  .data,
   ...,
   .by = NULL,
   .cols = NULL,
@@ -15,7 +15,7 @@ f_fill(
 )
 }
 \arguments{
-\item{data}{A data frame.}
+\item{.data}{A data frame.}
 
 \item{...}{Cols to fill \code{NA} values specified through \code{tidyselect} notation.
 If left empty all cols are used by default.}

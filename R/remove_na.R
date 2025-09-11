@@ -1,6 +1,6 @@
 #' Fast remove rows with `NA` values
 #'
-#' @param data A data frame.
+#' @param .data A data frame.
 #' @param ... Cols to fill `NA` values specified through `tidyselect` notation.
 #' If left empty all cols are used by default.
 #' @param .cols (Optional) alternative to `...` that accepts
@@ -12,33 +12,33 @@
 #'
 #' @rdname remove_na
 #' @export
-remove_rows_if_any_na <- function(data, ..., .cols = NULL){
+remove_rows_if_any_na <- function(.data, ..., .cols = NULL){
   if (is.null(.cols) && dots_length(...) == 0){
-    na_data <- data
+    na_data <- .data
   } else {
-    na_data <- f_select(data, ..., .cols = .cols)
+    na_data <- f_select(.data, ..., .cols = .cols)
   }
   drop <- cheapr::row_any_na(na_data)
   keep <- cheapr::val_find(drop, FALSE)
-  if (length(keep) == df_nrow(data)){
-    data
+  if (length(keep) == df_nrow(.data)){
+    .data
   } else {
-    cheapr::sset_df(data, keep)
+    cheapr::sset_df(.data, keep)
   }
 }
 #' @rdname remove_na
 #' @export
-remove_rows_if_all_na <- function(data, ..., .cols = NULL){
+remove_rows_if_all_na <- function(.data, ..., .cols = NULL){
   if (is.null(.cols) && dots_length(...) == 0){
-    na_data <- data
+    na_data <- .data
   } else {
-    na_data <- f_select(data, ..., .cols = .cols)
+    na_data <- f_select(.data, ..., .cols = .cols)
   }
   drop <- cheapr::row_all_na(na_data)
   keep <- cheapr::val_find(drop, FALSE)
-  if (length(keep) == df_nrow(data)){
-    data
+  if (length(keep) == df_nrow(.data)){
+    .data
   } else {
-    cheapr::sset_df(data, keep)
+    cheapr::sset_df(.data, keep)
   }
 }

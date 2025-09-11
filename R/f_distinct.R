@@ -3,7 +3,7 @@
 #' @description Like `dplyr::distinct()` but faster when lots of
 #' groups are involved.
 #'
-#' @param data A data frame.
+#' @param .data A data frame.
 #' @param ... Variables used to find distinct rows.
 #' @param .keep_all If `TRUE` then all columns of data frame are kept,
 #' default is `FALSE`.
@@ -20,7 +20,7 @@
 #' A `data.frame` of distinct groups.
 #'
 #' @export
-f_distinct <- function(data, ..., .keep_all = FALSE,
+f_distinct <- function(.data, ..., .keep_all = FALSE,
                        .order = FALSE,
                        .sort = deprecated(),
                        .by = NULL, .cols = NULL){
@@ -31,10 +31,10 @@ f_distinct <- function(data, ..., .keep_all = FALSE,
   }
 
   if (dots_length(...) == 0 && is.null(.cols)){
-    .cols <- names(data)
+    .cols <- names(.data)
   }
   group_info <- tidy_eval_groups(
-    data, ..., .by = {{ .by }},
+    .data, ..., .by = {{ .by }},
     .cols = .cols, .order = .order
   )
   data <- group_info[[1L]]

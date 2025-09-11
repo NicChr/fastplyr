@@ -4,7 +4,7 @@
 #' This works the exact same as `dplyr::group_by()` and typically
 #' performs around the same speed but uses slightly less memory.
 #'
-#' @param data data frame.
+#' @param .data data frame.
 #' @param ... Variables to group by.
 #' @param .add Should groups be added to existing groups?
 #' Default is `FALSE`.
@@ -87,13 +87,13 @@
 #' @rdname f_group_by
 #' @export
 #'
-f_group_by <- function(data, ..., .add = FALSE,
-                       .order = group_by_order_default(data),
+f_group_by <- function(.data, ..., .add = FALSE,
+                       .order = group_by_order_default(.data),
                        .by = NULL, .cols = NULL,
-                       .drop = df_group_by_drop_default(data)){
-  init_group_vars <- f_group_vars(data)
+                       .drop = df_group_by_drop_default(.data)){
+  init_group_vars <- f_group_vars(.data)
   group_info <- tidy_eval_groups(
-    cpp_ungroup(data), ...,
+    f_ungroup(.data), ...,
     .by = {{ .by }},
     .cols = .cols,
     .order = .order,
@@ -103,21 +103,13 @@ f_group_by <- function(data, ..., .add = FALSE,
   GRP <- group_info[[2L]]
   groups <- GRP_group_vars(GRP)
   if (.add){
-    order_unchanged <- .order == group_by_order_default(data)
-    drop_unchanged <- .drop == df_group_by_drop_default(data)
+    order_unchanged <- .order == group_by_order_default(.data)
+    drop_unchanged <- .drop == df_group_by_drop_default(.data)
     no_extra_groups <- length(groups) == 0 || (length(vec_setdiff(groups, init_group_vars)) == 0)
-    if (is_fastplyr_grouped_df(data) && order_unchanged && drop_unchanged && no_extra_groups){
-      return(data)
+    if (is_fastplyr_grouped_df(.data) && order_unchanged && drop_unchanged && no_extra_groups){
+      return(.data)
     }
     GRP <- df_to_GRP(out, c(init_group_vars, groups), order = .order)
   }
   construct_fastplyr_grouped_df(out, GRP, drop = .drop)
 }
-#' @rdname f_group_by
-#' @export
-group_ordered <- function(data){
-  attr(group_data(data), "ordered") %||% TRUE
-}
-#' @rdname f_group_by
-#' @export
-f_ungroup <- cpp_ungroup

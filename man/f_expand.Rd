@@ -7,16 +7,16 @@
 \alias{nesting}
 \title{Fast versions of \code{tidyr::expand()} and \code{tidyr::complete()}.}
 \usage{
-f_expand(data, ..., .sort = FALSE, .by = NULL, .cols = NULL)
+f_expand(.data, ..., .sort = FALSE, .by = NULL, .cols = NULL)
 
-f_complete(data, ..., .sort = FALSE, .by = NULL, .cols = NULL, fill = NA)
+f_complete(.data, ..., .sort = FALSE, .by = NULL, .cols = NULL, fill = NA)
 
 crossing(..., .sort = FALSE)
 
 nesting(..., .sort = FALSE)
 }
 \arguments{
-\item{data}{A data frame}
+\item{.data}{A data frame}
 
 \item{...}{Variables to expand.}
 

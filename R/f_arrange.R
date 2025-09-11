@@ -7,7 +7,7 @@
 #' `desc()` is like `dplyr::desc()` but works faster when
 #' called directly on vectors. \cr
 #'
-#' @param data A data frame.
+#' @param .data A data frame.
 #' @param ... Variables to arrange by.
 #' @param .by (Optional). A selection of columns to group by for this operation.
 #' Columns are specified using `tidyselect`.
@@ -25,20 +25,20 @@
 #' A sorted `data.frame`.
 #'
 #' @export
-f_arrange <- function(data, ..., .by = NULL, .by_group = FALSE,
+f_arrange <- function(.data, ..., .by = NULL, .by_group = FALSE,
                      .cols = NULL, .descending = FALSE){
   group_info <- tidy_dots_info(
     if (.by_group){
-      data
+      .data
     } else {
-      f_ungroup(data)
+      f_ungroup(.data)
     }, ..., .by = {{ .by }},
     .cols = .cols
   )
   dot_vars <- group_info[["new_cols"]]
   group_vars <- group_info[["all_groups"]]
   if (length(dot_vars) == 0L){
-    return(data)
+    return(.data)
   }
   if (.by_group){
     order_vars <- c(group_vars, dot_vars)
@@ -54,8 +54,8 @@ f_arrange <- function(data, ..., .by = NULL, .by_group = FALSE,
   )
   sorted <- attr(out_order, "sorted")
   if (isTRUE(sorted)){
-    data
+    .data
   } else {
-    cheapr::sset(data, out_order)
+    cheapr::sset(.data, out_order)
   }
 }

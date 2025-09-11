@@ -29,7 +29,7 @@
 #' The arguments of `f_slice_sample()` align more closely with `base::sample()` and thus
 #' by default re-samples each entire group without replacement.
 #'
-#' @param data A data frame.
+#' @param .data A data frame.
 #' @param i An [integer] vector of slice locations. \cr
 #' Please see the details below on how `i` works as it
 #' only accepts simple integer vectors.
@@ -56,8 +56,8 @@
 #'
 #' @rdname f_slice
 #' @export
-f_slice <- function(data, i = 0L, ..., .by = NULL,
-                    .order = group_by_order_default(data),
+f_slice <- function(.data, i = 0L, ..., .by = NULL,
+                    .order = group_by_order_default(.data),
                     keep_order = FALSE){
   rlang::check_dots_empty0(...)
   if (is.logical(i)){
@@ -66,9 +66,9 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
 
   # Groups
 
-  group_vars <- get_groups(data, .by = {{ .by }})
+  group_vars <- get_groups(.data, .by = {{ .by }})
 
-  N <- df_nrow(data)
+  N <- df_nrow(.data)
 
   if (length(group_vars) == 0L){
     data_locs <- i[cheapr::which_(i >= -N & i <= N)]
@@ -77,7 +77,7 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
     if (length(i) == 0L){
       i <- 0L
     }
-    groups <- df_collapse(data, group_vars, order = .order, size = TRUE)
+    groups <- df_collapse(.data, group_vars, order = .order, size = TRUE)
     group_locs <- groups[[".loc"]]
     group_sizes <- groups[[".size"]]
     GN <- max(group_sizes)
@@ -95,14 +95,14 @@ f_slice <- function(data, i = 0L, ..., .by = NULL,
   if (keep_order){
     data_locs <- sort(data_locs)
   }
-  cheapr::sset_df(data, data_locs)
+  cheapr::sset_df(.data, data_locs)
 }
 #' @rdname f_slice
 #' @export
-f_slice_head <- function(data, n, prop, .by = NULL,
-                         .order = group_by_order_default(data),
+f_slice_head <- function(.data, n, prop, .by = NULL,
+                         .order = group_by_order_default(.data),
                          keep_order = FALSE){
-  slice_info <- df_slice_prepare(data, n, prop,
+  slice_info <- df_slice_prepare(.data, n, prop,
                                  .by = {{ .by }},
                                  sort_groups = .order,
                                  default_n = 1L)
@@ -116,7 +116,7 @@ f_slice_head <- function(data, n, prop, .by = NULL,
 
   # Vectorised sequences
   if (length(slice_sizes) == 1){
-    if (slice_sizes < df_nrow(data)){
+    if (slice_sizes < df_nrow(.data)){
       i <- seq_len(slice_sizes)
     } else {
       slice <- FALSE
@@ -136,17 +136,17 @@ f_slice_head <- function(data, n, prop, .by = NULL,
     i <- sort(i)
   }
   if (slice){
-    cheapr::sset_df(data, i)
+    cheapr::sset_df(.data, i)
   } else {
-    data
+    .data
   }
 }
 #' @rdname f_slice
 #' @export
-f_slice_tail <- function(data, n, prop, .by = NULL,
-                         .order = group_by_order_default(data),
+f_slice_tail <- function(.data, n, prop, .by = NULL,
+                         .order = group_by_order_default(.data),
                          keep_order = FALSE){
-  slice_info <- df_slice_prepare(data, n, prop,
+  slice_info <- df_slice_prepare(.data, n, prop,
                                  .by = {{ .by }},
                                  sort_groups = .order,
                                  default_n = 1L)
@@ -169,19 +169,19 @@ f_slice_tail <- function(data, n, prop, .by = NULL,
   if (keep_order){
     i <- sort(i)
   }
-  cheapr::sset_df(data, i)
+  cheapr::sset_df(.data, i)
 }
 #' @rdname f_slice
 #' @export
-f_slice_min <- function(data, order_by, n, prop, .by = NULL,
-                       with_ties = TRUE, na_rm = FALSE,
-                       .order = group_by_order_default(data),
-                       keep_order = FALSE){
-  group_vars <- get_groups(data, .by = {{ .by }})
-  grp_nm1 <- unique_col_name(names(data), "g")
-  out <- data |>
+f_slice_min <- function(.data, order_by, n, prop, .by = NULL,
+                        with_ties = TRUE, na_rm = FALSE,
+                        .order = group_by_order_default(.data),
+                        keep_order = FALSE){
+  group_vars <- get_groups(.data, .by = {{ .by }})
+  grp_nm1 <- unique_col_name(names(.data), "g")
+  out <- .data |>
     add_group_id(.name = grp_nm1, .cols = group_vars, .order = .order) |>
-    cpp_ungroup()
+    f_ungroup()
 
   g1 <- out[[grp_nm1]]
   out_info <- mutate_summary(out, !!rlang::enquo(order_by), .keep = "none",
@@ -218,20 +218,20 @@ f_slice_min <- function(data, order_by, n, prop, .by = NULL,
   if (keep_order){
     i <- sort(i)
   }
-  cheapr::sset_df(data, i)
+  cheapr::sset_df(.data, i)
 }
 #' @rdname f_slice
 #' @export
-f_slice_max <- function(data, order_by, n, prop, .by = NULL,
+f_slice_max <- function(.data, order_by, n, prop, .by = NULL,
                        with_ties = TRUE, na_rm = FALSE,
-                       .order = group_by_order_default(data),
+                       .order = group_by_order_default(.data),
                        keep_order = FALSE){
-  group_vars <- get_groups(data, .by = {{ .by }})
-  grp_nm1 <- unique_col_name(names(data), "g")
+  group_vars <- get_groups(.data, .by = {{ .by }})
+  grp_nm1 <- unique_col_name(names(.data), "g")
 
-  out <- data |>
+  out <- .data |>
     add_group_id(.name = grp_nm1, .cols = group_vars, .order = .order) |>
-    cpp_ungroup()
+    f_ungroup()
 
   g1 <- out[[grp_nm1]]
   out_info <- mutate_summary(out,
@@ -270,20 +270,22 @@ f_slice_max <- function(data, order_by, n, prop, .by = NULL,
   if (keep_order){
     i <- sort(i)
   }
-  cheapr::sset_df(data, i)
+  cheapr::sset_df(.data, i)
 }
 #' @rdname f_slice
 #' @export
-f_slice_sample <- function(data, n, replace = FALSE, prop,
-                           .by = NULL, .order = group_by_order_default(data),
+f_slice_sample <- function(.data, n, replace = FALSE, prop,
+                           .by = NULL, .order = group_by_order_default(.data),
                            keep_order = FALSE,
                            weights = NULL){
-  groups <- get_groups(data, .by = {{ .by }})
+  groups <- get_groups(.data, .by = {{ .by }})
   has_weights <- !rlang::quo_is_null(rlang::enquo(weights))
   if (has_weights){
-    data_info <- mutate_summary(data, !!rlang::enquo(weights))
+    data_info <- mutate_summary(.data, !!rlang::enquo(weights))
     data <- data_info[["data"]]
     weights_var <- data_info[["new_cols"]]
+  } else {
+    data <- .data
   }
   slice_info <- df_slice_prepare(data, n, prop,
                                  .by = {{ .by }},
@@ -323,7 +325,7 @@ f_slice_sample <- function(data, n, replace = FALSE, prop,
   if (keep_order){
     i <- sort(i)
   }
-  cheapr::sset_df(data, i)
+  cheapr::sset_df(.data, i)
 }
 
 df_slice_prepare <- function(data, n, prop, .by = NULL,

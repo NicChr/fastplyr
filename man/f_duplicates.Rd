@@ -5,7 +5,7 @@
 \title{Find duplicate rows}
 \usage{
 f_duplicates(
-  data,
+  .data,
   ...,
   .keep_all = FALSE,
   .both_ways = FALSE,
@@ -18,7 +18,7 @@ f_duplicates(
 )
 }
 \arguments{
-\item{data}{A data frame.}
+\item{.data}{A data frame.}
 
 \item{...}{Variables used to find duplicate rows.}
 

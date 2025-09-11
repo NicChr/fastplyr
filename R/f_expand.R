@@ -1,6 +1,6 @@
 #' Fast versions of `tidyr::expand()` and `tidyr::complete()`.
 #'
-#' @param data A data frame
+#' @param .data A data frame
 #' @param ... Variables to expand.
 #' @param fill A named list containing value-name pairs
 #' to fill the named implicit missing values.
@@ -21,24 +21,24 @@
 #'
 #' @rdname f_expand
 #' @export
-f_expand <- function(data, ..., .sort = FALSE,
+f_expand <- function(.data, ..., .sort = FALSE,
                      .by = NULL, .cols = NULL){
   check_cols(dots_length(...), .cols = .cols)
-  group_vars <- get_groups(data, {{ .by }})
+  group_vars <- get_groups(.data, {{ .by }})
 
   if (length(group_vars) == 0L){
     GRP <- NULL
   } else {
-    GRP <- df_to_GRP(data, group_vars, order = .sort)
+    GRP <- df_to_GRP(.data, group_vars, order = .sort)
   }
 
   if (is.null(.cols)){
 
     # Evaluate expressions before cross-join
 
-    dots <- fastplyr_quos(..., .data = data, .groups = GRP, .optimise = should_optimise(GRP))
-    data2 <- data
-    frames <- eval_all_tidy(data2, dots, recycle = FALSE)
+    dots <- fastplyr_quos(..., .data = .data, .groups = GRP, .optimise = should_optimise(GRP))
+    data <- .data
+    frames <- eval_all_tidy(data, dots, recycle = FALSE)
     frames <- purrr::map2(
       frames[[1L]], cpp_as_list_of_frames(frames[[2L]]),
       \(x, y) sort_unique(cheapr::col_c(x, y), .sort)
@@ -47,12 +47,12 @@ f_expand <- function(data, ..., .sort = FALSE,
 
     # Optimised method when just selecting cols
 
-    data2 <- f_ungroup(data)
-    dot_vars <- col_select_names(data2, .cols = .cols)
+    data <- f_ungroup(.data)
+    dot_vars <- col_select_names(data, .cols = .cols)
     frames <- cheapr::new_list(length(dot_vars))
     for (i in seq_along(dot_vars)){
       frames[[i]] <- sort_unique(
-        f_select(data2, .cols = c(group_vars, dot_vars[i])),
+        f_select(data, .cols = c(group_vars, dot_vars[i])),
         sort = .sort
       )
     }
@@ -83,21 +83,21 @@ f_expand <- function(data, ..., .sort = FALSE,
   names(out) <- cheapr::name_repair(names(out))
   # If just empty list
   if (length(frames) == 0){
-    out <- f_distinct(data2, .cols = group_vars, .order = .sort)
+    out <- f_distinct(data, .cols = group_vars, .order = .sort)
   }
-  cheapr::rebuild(out, data)
+  cheapr::rebuild(out, .data)
 }
 #' @rdname f_expand
 #' @export
-f_complete <- function(data, ...,
+f_complete <- function(.data, ...,
                        .sort = FALSE,
                        .by = NULL, .cols = NULL,
                        fill = NA){
-  group_vars <- get_groups(data, {{ .by }})
-  expanded_df <- f_expand(data, ..., .sort = FALSE,
+  group_vars <- get_groups(.data, {{ .by }})
+  expanded_df <- f_expand(.data, ..., .sort = FALSE,
                           .by = {{ .by }}, .cols = .cols)
   fill_na <- any(!is.na(fill))
-  out <- data
+  out <- .data
 
   if (df_nrow(expanded_df) > 0 && df_ncol(expanded_df) > 0){
     # out <- f_full_join(out, expanded_df, by = names(expanded_df), sort = .sort)
@@ -123,9 +123,9 @@ f_complete <- function(data, ...,
         fill[[i]]
     }
   }
-  out_order <- c(names(data), vec_setdiff(names(out), names(data)))
+  out_order <- c(names(.data), vec_setdiff(names(out), names(.data)))
   out <- f_select(out, .cols = out_order)
-  cheapr::rebuild(out, data)
+  cheapr::rebuild(out, .data)
 }
 #' @rdname f_expand
 #' @export

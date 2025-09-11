@@ -4,10 +4,10 @@
 \alias{f_filter}
 \title{Alternative to \code{dplyr::filter()}}
 \usage{
-f_filter(data, ..., .by = NULL)
+f_filter(.data, ..., .by = NULL)
 }
 \arguments{
-\item{data}{A data frame.}
+\item{.data}{A data frame.}
 
 \item{...}{Expressions used to filter the data frame with.}
 

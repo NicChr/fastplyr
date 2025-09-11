@@ -5,17 +5,17 @@
 \title{Create a subset of data for each group}
 \usage{
 f_nest_by(
-  data,
+  .data,
   ...,
   .add = FALSE,
-  .order = group_by_order_default(data),
+  .order = group_by_order_default(.data),
   .by = NULL,
   .cols = NULL,
-  .drop = df_group_by_drop_default(data)
+  .drop = df_group_by_drop_default(.data)
 )
 }
 \arguments{
-\item{data}{data frame.}
+\item{.data}{data frame.}
 
 \item{...}{Variables to group by.}
 

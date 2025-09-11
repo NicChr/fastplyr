@@ -3,7 +3,7 @@
 #' @description
 #' Near-identical alternative to `dplyr::count()`.
 #'
-#' @param data A data frame.
+#' @param .data A data frame.
 #' @param ... Variables to group by.
 #' @param wt Frequency weights.
 #'   Can be `NULL` or a variable:
@@ -41,27 +41,27 @@
 #'
 #' @rdname f_count
 #' @export
-f_count <- function(data, ..., wt = NULL, sort = FALSE,
-                    .order = group_by_order_default(data),
+f_count <- function(.data, ..., wt = NULL, sort = FALSE,
+                    .order = group_by_order_default(.data),
                     name = NULL, .by = NULL, .cols = NULL){
   weights <- NULL
   wt_expr <- rlang::enquo(wt)
   if (!rlang::quo_is_null(wt_expr)){
-    weights <- mutate_summary(data, .fastplyr.wt = !!wt_expr)[["data"]][[".fastplyr.wt"]]
+    weights <- mutate_summary(.data, .fastplyr.wt = !!wt_expr)[["data"]][[".fastplyr.wt"]]
   }
 
   if (dots_length(...) == 0 &&
       rlang::quo_is_null(rlang::enquo(.by)) && is.null(.cols) &&
-      .order == group_by_order_default(data)){
+      .order == group_by_order_default(.data)){
 
-    counts <- grouped_df_counts(data, weights = weights, expand = FALSE)
-    group_vars <- f_group_vars(data)
-    out <- f_group_keys(data)
+    counts <- grouped_df_counts(.data, weights = weights, expand = FALSE)
+    group_vars <- f_group_vars(.data)
+    out <- f_group_keys(.data)
 
   } else {
 
     group_info <- tidy_eval_groups(
-      data, ...,
+      .data, ...,
       .by = {{ .by }},
       .cols = .cols,
       .order = .order
@@ -89,34 +89,34 @@ f_count <- function(data, ..., wt = NULL, sort = FALSE,
   if (sort){
     out <- f_arrange(out, .cols = count_col, .descending = TRUE)
   }
-  if ((length(f_group_vars(data)) + 1L) == df_ncol(out)){
-    cheapr::rebuild(out, f_ungroup(data))
+  if ((length(f_group_vars(.data)) + 1L) == df_ncol(out)){
+    cheapr::rebuild(out, f_ungroup(.data))
   } else {
-    cheapr::rebuild(out, data)
+    cheapr::rebuild(out, .data)
   }
 }
 #' @rdname f_count
 #' @export
-f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
-                        .order = group_by_order_default(data),
+f_add_count <- function(.data, ..., wt = NULL, sort = FALSE,
+                        .order = group_by_order_default(.data),
                         name = NULL, .by = NULL, .cols = NULL){
   weights <- NULL
   wt_expr <- rlang::enquo(wt)
   if (!rlang::quo_is_null(wt_expr)){
-    weights <- mutate_summary(data, .fastplyr.wt = !!wt_expr)[["data"]][[".fastplyr.wt"]]
+    weights <- mutate_summary(.data, .fastplyr.wt = !!wt_expr)[["data"]][[".fastplyr.wt"]]
   }
 
   if (dots_length(...) == 0 &&
       rlang::quo_is_null(rlang::enquo(.by)) && is.null(.cols) &&
-      .order == group_by_order_default(data)){
+      .order == group_by_order_default(.data)){
 
-    counts <- grouped_df_counts(data, weights = weights, expand = TRUE)
-    group_vars <- f_group_vars(data)
-    out <- data
+    counts <- grouped_df_counts(.data, weights = weights, expand = TRUE)
+    group_vars <- f_group_vars(.data)
+    out <- .data
   } else {
 
     group_info <- tidy_eval_groups(
-      data, ...,
+      .data, ...,
       .by = {{ .by }},
       .cols = .cols,
       .order = .order
@@ -139,10 +139,10 @@ f_add_count <- function(data, ..., wt = NULL, sort = FALSE,
       )
     }
   }
-  count_col <- name %||% unique_count_col(data)
+  count_col <- name %||% unique_count_col(.data)
   out <- df_add_col(out, count_col, cheapr::na_replace(counts, 0L))
   if (sort){
     out <- f_arrange(out, .cols = count_col, .descending = TRUE)
   }
-  cheapr::rebuild(out, data)
+  cheapr::rebuild(out, .data)
 }

@@ -5,12 +5,12 @@
 \alias{remove_rows_if_all_na}
 \title{Fast remove rows with \code{NA} values}
 \usage{
-remove_rows_if_any_na(data, ..., .cols = NULL)
+remove_rows_if_any_na(.data, ..., .cols = NULL)
 
-remove_rows_if_all_na(data, ..., .cols = NULL)
+remove_rows_if_all_na(.data, ..., .cols = NULL)
 }
 \arguments{
-\item{data}{A data frame.}
+\item{.data}{A data frame.}
 
 \item{...}{Cols to fill \code{NA} values specified through \code{tidyselect} notation.
 If left empty all cols are used by default.}

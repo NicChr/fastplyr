@@ -5,7 +5,7 @@
 \title{A \code{collapse} version of \code{dplyr::arrange()}}
 \usage{
 f_arrange(
-  data,
+  .data,
   ...,
   .by = NULL,
   .by_group = FALSE,
@@ -14,7 +14,7 @@ f_arrange(
 )
 }
 \arguments{
-\item{data}{A data frame.}
+\item{.data}{A data frame.}
 
 \item{...}{Variables to arrange by.}
 

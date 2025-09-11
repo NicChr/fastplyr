@@ -4,10 +4,10 @@
 \alias{f_rowwise}
 \title{A convenience function to group by every row}
 \usage{
-f_rowwise(data, ..., .ascending = TRUE, .cols = NULL, .name = ".row_id")
+f_rowwise(.data, ..., .ascending = TRUE, .cols = NULL, .name = ".row_id")
 }
 \arguments{
-\item{data}{data frame.}
+\item{.data}{data frame.}
 
 \item{...}{Variables to group by using \code{tidyselect}.}
 

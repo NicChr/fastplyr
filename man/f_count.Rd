@@ -6,29 +6,29 @@
 \title{A fast replacement to dplyr::count()}
 \usage{
 f_count(
-  data,
+  .data,
   ...,
   wt = NULL,
   sort = FALSE,
-  .order = group_by_order_default(data),
+  .order = group_by_order_default(.data),
   name = NULL,
   .by = NULL,
   .cols = NULL
 )
 
 f_add_count(
-  data,
+  .data,
   ...,
   wt = NULL,
   sort = FALSE,
-  .order = group_by_order_default(data),
+  .order = group_by_order_default(.data),
   name = NULL,
   .by = NULL,
   .cols = NULL
 )
 }
 \arguments{
-\item{data}{A data frame.}
+\item{.data}{A data frame.}
 
 \item{...}{Variables to group by.}
 

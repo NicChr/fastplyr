@@ -1,6 +1,6 @@
 #' Fill `NA` values forwards and backwards
 #'
-#' @param data A data frame.
+#' @param .data A data frame.
 #' @param ... Cols to fill `NA` values specified through `tidyselect` notation.
 #' If left empty all cols are used by default.
 #' @param .by Cols to group by for this operation.
@@ -25,36 +25,44 @@
 #' A data frame with `NA` values filled forward or backward.
 #'
 #' @export
-f_fill <- function(data, ..., .by = NULL, .cols = NULL,
+f_fill <- function(.data, ..., .by = NULL, .cols = NULL,
                    .direction = c("forwards", "backwards"),
                    .fill_limit = Inf,
                    .new_names = "{.col}"){
+
   .direction <- rlang::arg_match(.direction)
   locf <- .direction == "forwards"
-  nrows <- df_nrow(data)
+  nrows <- df_nrow(.data)
+
   if (is.null(.cols) && rlang::dots_n(...) == 0){
-    fill_cols <- names(data)
+    fill_cols <- names(.data)
   } else {
-    fill_cols <- unname(tidy_select_names(data, ..., .cols = .cols))
+    fill_cols <- unname(tidy_select_names(.data, ..., .cols = .cols))
   }
-  group_vars <- get_groups(data, .by = {{ .by }})
-  groups <- f_select(data, .cols = group_vars)
-  data_to_fill <- f_select(f_ungroup(data),
-                           .cols = vec_setdiff(fill_cols, group_vars))
+  group_vars <- get_groups(.data, .by = {{ .by }})
+  groups <- f_select(.data, .cols = group_vars)
+  data_to_fill <- f_select(
+    f_ungroup(.data),
+    .cols = vec_setdiff(fill_cols, group_vars)
+  )
 
   if (df_ncol(groups) == 0){
     if (locf){
       o <- seq_len(nrows)
     } else {
-      o <- seq(from = nrows, length.out = nrows, by = -1L)
+      o <- seq.int(from = nrows, length.out = nrows, by = -1L)
     }
     sizes <- nrows
   } else {
     # Use group metadata and just unlist `group_rows(data)`
     # `cpp_unlist_group_locs()` is a dedicated function to do this
-    if (identical(group_vars, group_vars(data))){
-      group_data <- group_data(data)
+    if (identical(group_vars, f_group_vars(.data))){
+      group_data <- f_group_data(.data)
+
+      # It's important that sizes is a new fresh vector
+      # as it may get reversed in-place when .direction = "backwards"
       sizes <- cheapr::list_lengths(group_data[[".rows"]])
+
       o <- cpp_unlist_group_locs(group_data[[".rows"]], sizes)
     } else {
       o <- radixorderv2(groups, group.sizes = TRUE,
@@ -70,8 +78,8 @@ f_fill <- function(data, ..., .by = NULL, .cols = NULL,
       rev_in_place <- function(x){
         cheapr_cpp_rev(x, set = TRUE)
       }
-      o <- rev_in_place(o)
-      sizes <- rev_in_place(sizes)
+      rev_in_place(o)
+      rev_in_place(sizes)
     }
   }
 
@@ -79,5 +87,5 @@ f_fill <- function(data, ..., .by = NULL, .cols = NULL,
 
   new_fill_names <- across_col_names(fill_cols, .fns = "", .names = .new_names)
   names(data_to_fill) <- new_fill_names
-  cheapr::df_modify(data, data_to_fill)
+  cheapr::df_modify(.data, data_to_fill)
 }

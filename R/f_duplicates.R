@@ -1,6 +1,6 @@
 #' Find duplicate rows
 #'
-#' @param data A data frame.
+#' @param .data A data frame.
 #' @param ... Variables used to find duplicate rows.
 #' @param .keep_all If `TRUE` then all columns of data frame are kept,
 #' default is `FALSE`.
@@ -35,7 +35,7 @@
 #'
 #' @rdname f_duplicates
 #' @export
-f_duplicates <- function(data, ..., .keep_all = FALSE,
+f_duplicates <- function(.data, ..., .keep_all = FALSE,
                          .both_ways = FALSE, .add_count = FALSE,
                          .drop_empty = FALSE,
                          .order = FALSE,
@@ -46,12 +46,13 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
     .order <- .sort
   }
   if (dots_length(...) == 0 && is.null(.cols)){
-    .cols <- names(data)
+    .cols <- names(.data)
   }
   group_info <- tidy_eval_groups(
-    data, ..., .by = {{ .by }}, .cols = .cols,
+    .data, ..., .by = {{ .by }}, .cols = .cols,
     .order = .order
   )
+
   out <- group_info[[1L]]
   GRP <- group_info[[2L]]
 
@@ -87,5 +88,5 @@ f_duplicates <- function(data, ..., .keep_all = FALSE,
     which_zero <- cheapr::which_val(out[[count_col]], 0L)
     cpp_loc_set_replace(out[[count_col]], which_zero, 1L)
   }
-  cheapr::rebuild(out, data)
+  cheapr::rebuild(out, .data)
 }

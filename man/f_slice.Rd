@@ -10,69 +10,69 @@
 \title{Faster \code{dplyr::slice()}}
 \usage{
 f_slice(
-  data,
+  .data,
   i = 0L,
   ...,
   .by = NULL,
-  .order = group_by_order_default(data),
+  .order = group_by_order_default(.data),
   keep_order = FALSE
 )
 
 f_slice_head(
-  data,
+  .data,
   n,
   prop,
   .by = NULL,
-  .order = group_by_order_default(data),
+  .order = group_by_order_default(.data),
   keep_order = FALSE
 )
 
 f_slice_tail(
-  data,
+  .data,
   n,
   prop,
   .by = NULL,
-  .order = group_by_order_default(data),
+  .order = group_by_order_default(.data),
   keep_order = FALSE
 )
 
 f_slice_min(
-  data,
+  .data,
   order_by,
   n,
   prop,
   .by = NULL,
   with_ties = TRUE,
   na_rm = FALSE,
-  .order = group_by_order_default(data),
+  .order = group_by_order_default(.data),
   keep_order = FALSE
 )
 
 f_slice_max(
-  data,
+  .data,
   order_by,
   n,
   prop,
   .by = NULL,
   with_ties = TRUE,
   na_rm = FALSE,
-  .order = group_by_order_default(data),
+  .order = group_by_order_default(.data),
   keep_order = FALSE
 )
 
 f_slice_sample(
-  data,
+  .data,
   n,
   replace = FALSE,
   prop,
   .by = NULL,
-  .order = group_by_order_default(data),
+  .order = group_by_order_default(.data),
   keep_order = FALSE,
   weights = NULL
 )
 }
 \arguments{
-\item{data}{A data frame.}
+\item{.data}{A data frame.}
 
 \item{i}{An \link{integer} vector of slice locations. \cr
 Please see the details below on how \code{i} works as it

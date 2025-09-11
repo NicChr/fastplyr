@@ -2,26 +2,20 @@
 % Please edit documentation in R/f_group_by.R
 \name{f_group_by}
 \alias{f_group_by}
-\alias{group_ordered}
-\alias{f_ungroup}
 \title{'collapse' version of \code{dplyr::group_by()}}
 \usage{
 f_group_by(
-  data,
+  .data,
   ...,
   .add = FALSE,
-  .order = group_by_order_default(data),
+  .order = group_by_order_default(.data),
   .by = NULL,
   .cols = NULL,
-  .drop = df_group_by_drop_default(data)
+  .drop = df_group_by_drop_default(.data)
 )
-
-group_ordered(data)
-
-f_ungroup(data)
 }
 \arguments{
-\item{data}{data frame.}
+\item{.data}{data frame.}
 
 \item{...}{Variables to group by.}
 

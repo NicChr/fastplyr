@@ -5,7 +5,7 @@
 \title{Find distinct rows}
 \usage{
 f_distinct(
-  data,
+  .data,
   ...,
   .keep_all = FALSE,
   .order = FALSE,
@@ -15,7 +15,7 @@ f_distinct(
 )
 }
 \arguments{
-\item{data}{A data frame.}
+\item{.data}{A data frame.}
 
 \item{...}{Variables used to find distinct rows.}
 
