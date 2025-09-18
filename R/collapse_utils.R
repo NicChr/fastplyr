@@ -692,9 +692,13 @@ vec_group_split <- function(x, g){
 
 gsplit2 <- function(x = NULL, g = NULL){
   g <- GRP2(g)
-  if (cpp_is_simple_atomic_vec(x)){
-    collapse::gsplit(x, g = g)
+  if (is.null(g)){
+    list(x)
   } else {
-    vec_group_split(x, g = g)
+    if (cpp_is_simple_atomic_vec(x)){
+      collapse::gsplit(x, g = g)
+    } else {
+      vec_group_split(x, g = g)
+    }
   }
 }
