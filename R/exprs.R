@@ -102,7 +102,8 @@ inform_user_on_eval_split <- function(regular_quos, optimised_quos){
       paste("Optimised exprs:", cli::col_red("{names(optimised_quos)}")),
       "",
       "To always evaluate everything in the same mask run {.run fastplyr::fastplyr_disable_optimisations()}",
-      "It is advised to run these exprs in separate e.g. `f_mutate/f_reframe/f_summarise` statements"
+      "It is advised to run these exprs in separate e.g. `f_mutate/f_reframe/f_summarise` statements",
+      "Run {.run fastplyr::fastplyr_disable_informative_msgs()} to disable this and other informative messages"
     ))
   }
 }
