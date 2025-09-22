@@ -1,5 +1,8 @@
 ---
 output: github_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -21,17 +24,28 @@ set.seed(949958487)
 
 <!-- badges: start -->
 
-[![R-CMD-check](https://github.com/NicChr/fastplyr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/fastplyr/actions/workflows/R-CMD-check.yaml) [![CRAN status](https://www.r-pkg.org/badges/version/fastplyr)](https://CRAN.R-project.org/package=fastplyr)
-[![Codecov test coverage](https://codecov.io/gh/NicChr/fastplyr/graph/badge.svg)](https://app.codecov.io/gh/NicChr/fastplyr)
+[![R-CMD-check](https://github.com/NicChr/fastplyr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/NicChr/fastplyr/actions/workflows/R-CMD-check.yaml)
+[![CRAN
+status](https://www.r-pkg.org/badges/version/fastplyr)](https://CRAN.R-project.org/package=fastplyr)
+[![Codecov test
+coverage](https://codecov.io/gh/NicChr/fastplyr/graph/badge.svg)](https://app.codecov.io/gh/NicChr/fastplyr)
+
 <!-- badges: end -->
 
-fastplyr aims to provide a [tidyverse](https://www.tidyverse.org/learn) frontend using a [collapse](https://sebkrantz.github.io/collapse/articles/collapse_intro.html) backend. This means from a user's point of view the functions behave like the tidyverse equivalents and thus require little to no changes to existing code to convert. 
+fastplyr aims to provide a [tidyverse](https://www.tidyverse.org/learn)
+frontend using a
+[collapse](https://sebkrantz.github.io/collapse/articles/collapse_intro.html)
+backend. This means from a user's point of view the functions behave
+like the tidyverse equivalents and thus require little to no changes to
+existing code to convert.
 
-fastplyr is designed to handle operations that involve larger numbers of groups and generally larger data. 
+fastplyr is designed to handle operations that involve larger numbers of
+groups and generally larger data.
 
 ## Installation
 
-You can install the development version of fastplyr from [GitHub](https://github.com/) with:
+You can install the development version of fastplyr from
+[GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("pak")
@@ -47,35 +61,76 @@ library(nycflights13)
 library(bench)
 ```
 
-While the syntax and user-interface of fastplyr aligns very closely with dplyr most of the time, there can be a few key differences.
+While the syntax and user-interface of fastplyr aligns very closely with
+dplyr most of the time, there can be a few key differences.
 
 ## Differences between fastplyr and dplyr
 
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-|                          | ### dplyr                                                                                                        | ### fastplyr                                                                                                                                |
-+==========================+==================================================================================================================+=============================================================================================================================================+
-| `.by`                    | Groups are sorted by order of first appearance always when using `.by`                                           | Groups are always sorted by default, even when using `.by`. One can use the other sorting through `f_group_by(.order = F)`                  |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Many groups              | Generally slow for data with many groups.                                                                        | Designed to be fast for data with many groups.                                                                                              |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Handling of dots (`...`) | dplyr almost always executes `...` expressions in a way that latter expressions depend on previous ones          | Some functions like `f_summarise` and `f_expand` execute the expressions in `...` independently.                                            |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Duplicate rows           | No dedicated function for this, solution using `group_by |> filter(n() > 1)` are generally slow for larger data. | Dedicated function `f_duplicates` can do this very fast and with fine control.                                                              |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Unique group IDs         | Achieved through `mutate(cur_group_id())`                                                                        | Dedicated fast function `add_group_id()`                                                                                                    |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Row slicing              | `slice()` supports data-masked expressions supplied to `...`                                                     | Data-masked expressions not supported in `f_slice_` functions. Use `f_filter()` for this behaviour.                                         |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Memory usage             | High memory usage                                                                                                | Lower usage compared to dplyr                                                                                                               |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| joins                    | Accepts different types of joins, e.g. rolling and equality joins.                                               | Accepts only equality joins of the form `x == y`                                                                                            |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| rowwise                  | `rowwise_df` accepted and everything sub-setted implictly using `[[`                                             | `rowwise_df` not accepted, must use `f_rowwise_df` which creates a `grouped_df` with a row ID col. Implicit `[[` subsetting does not occur. |
-+--------------------------+------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
++---------------+----------------------+-----------------------------+
+|               | ### dplyr            | ### fastplyr                |
++===============+======================+=============================+
+| `.by`         | Groups are sorted by | Groups are always sorted by |
+|               | order of first       | default, even when using    |
+|               | appearance always    | `.by`. One can use the      |
+|               | when using `.by`     | other by setting            |
+|               |                      | `.order = FALSE`            |
++---------------+----------------------+-----------------------------+
+| Many groups   | Generally slow for   | Designed to be fast for     |
+|               | data with many       | data with many groups.      |
+|               | groups.              |                             |
++---------------+----------------------+-----------------------------+
+| Handling of   | Executes expressions | Some expressions are        |
+| `...`         | in a way that latter | executed independently to   |
+| expressions   | expressions depend   | each other                  |
+|               | on prior ones        |                             |
++---------------+----------------------+-----------------------------+
+| Optimisations | Expressions are run  | Many functions are          |
+|               | by-group with        | optimised to either ignore  |
+|               | minimal overhead,    | groups or use faster        |
+|               | slow for many groups | methods                     |
++---------------+----------------------+-----------------------------+
+| Duplicate     | No dedicated         | Dedicated function          |
+| rows          | function for this,   | `f_duplicates` can do this  |
+|               | solution using       | very fast and with fine     |
+|               | `group_ by           | control.                    |
+|               |  |> filter(n() > 1)` |                             |
+|               | are generally slow   |                             |
+|               | for larger data.     |                             |
++---------------+----------------------+-----------------------------+
+| Row slicing   | `slice()` supports   | Data-masked expressions not |
+|               | data-masked          | supported in `f_slice_`     |
+|               | expressions supplied | functions. Use `f_filter()` |
+|               | to `...`             | for this behaviour.         |
++---------------+----------------------+-----------------------------+
+| Memory usage  | High memory usage    | Lower usage compared to     |
+|               |                      | dplyr                       |
++---------------+----------------------+-----------------------------+
+| joins         | Accepts different    | Accepts only equality joins |
+|               | types of joins, e.g. | of the form `x == y`        |
+|               | rolling and equality |                             |
+|               | joins.               |                             |
++---------------+----------------------+-----------------------------+
+| rowwise       | `rowwise_df`         | `rowwise_df` not accepted,  |
+|               | accepted and         | must use `f_rowwise_df`     |
+|               | everything           | which creates a             |
+|               | sub-setted implictly | `grouped_df` with a row ID  |
+|               | using `[[`           | col. Implicit `[[`          |
+|               |                      | subsetting does not occur.  |
++---------------+----------------------+-----------------------------+
+| Matrices in   | Fully supported      | Not supported               |
+| data frames   |                      |                             |
++---------------+----------------------+-----------------------------+
+| Grouped data  | N/A                  | `f_group_by` produces a     |
+| frames        |                      | `grouped_df` with some      |
+|               |                      | additional metadata to      |
+|               |                      | assist with making later    |
+|               |                      | operations faster           |
++---------------+----------------------+-----------------------------+
 
 ## dplyr alternatives
 
-All tidyverse alternative functions are prefixed with 'f\_'. For example, `dplyr::distinct` becomes `fastplyr::f_distinct`.
+All tidyverse alternative functions are prefixed with 'f\_'. For
+example, `dplyr::distinct` becomes `fastplyr::f_distinct`.
 
 ### distinct
 
@@ -84,7 +139,8 @@ flights |>
   f_distinct(origin, dest)
 ```
 
-`f_distinct` has an additional `.order` argument which is much faster than sorting afterwards.
+`f_distinct` has an additional `.order` argument which is much faster
+than sorting afterwards.
 
 ```{r}
 mark(
@@ -98,7 +154,11 @@ mark(
 
 ### group_by
 
-`f_group_by` operates very similarly with an additional feature that allows you to specify whether group data should be ordered or not. This ultimately controls if the groups end up sorted in expressions like `count` and `summarise`, but also in this case `f_count` and `f_summarise`.
+`f_group_by` operates very similarly with an additional feature that
+allows you to specify whether group data should be ordered or not. This
+ultimately controls if the groups end up sorted in expressions like
+`count` and `summarise`, but also in this case `f_count` and
+`f_summarise`.
 
 ```{r}
 # Like dplyr
@@ -112,7 +172,8 @@ flights |>
   f_count()
 ```
 
-Just a reminder that all fastplyr functions are interchangeable with dplyr ones both ways
+Just a reminder that all fastplyr functions are interchangeable with
+dplyr ones both ways
 
 ```{r}
 
@@ -137,7 +198,8 @@ flights |>
 `f_summarise` behaves like dplyr's `summarise` except for two things:
 
 -   It evaluates expressions independently
--   There are optimisations for common statistical functions which are very fast for many groups
+-   There are optimisations for common statistical functions which are
+    very fast for many groups
 
 ```{r}
 grouped_flights <- flights |> 
@@ -281,7 +343,8 @@ mark(
 
 ### expand
 
-Based closely on `tidyr::expand`, `f_expand()` can cross joins multiple vectors and data frames.
+Based closely on `tidyr::expand`, `f_expand()` can cross joins multiple
+vectors and data frames.
 
 ```{r}
 mark(
@@ -309,7 +372,8 @@ mark(
 
 ### duplicate rows
 
-Finding duplicate rows is a very common dataset operation and there is a dedicated function `f_duplicates()` to do exactly this.
+Finding duplicate rows is a very common dataset operation and there is a
+dedicated function `f_duplicates()` to do exactly this.
 
 ```{r}
 flights |> 
@@ -330,7 +394,10 @@ mark(
 
 ### filter
 
-In the worst-case scenarios, `f_filter()` is about the same speed as `filter()` and in the best-case is much faster and more efficient. This is especially true for large data where small subsets of the data are returned.
+In the worst-case scenarios, `f_filter()` is about the same speed as
+`filter()` and in the best-case is much faster and more efficient. This
+is especially true for large data where small subsets of the data are
+returned.
 
 ```{r}
 full <- new_tbl(x = rnorm(5e07))
@@ -356,7 +423,8 @@ mark(
 
 ### bind rows and cols
 
-Binding columns is particular much faster but binding rows is also sufficiently faster
+Binding columns is particular much faster but binding rows is also
+sufficiently faster
 
 ```{r}
 mark(
@@ -375,7 +443,8 @@ mark(
 
 ### Quantiles
 
-A typical tidy approach might use a mixture of `reframe()` and `enframe()` which is a perfectly tidy and neat solution
+A typical tidy approach might use a mixture of `reframe()` and
+`enframe()` which is a perfectly tidy and neat solution
 
 ```{r}
 probs <- seq(0, 1, 0.25)
@@ -387,7 +456,8 @@ mtcars |>
  reframe(enframe(quantile(mpg, probs), "quantile", "mpg"))
 ```
 
-fastplyr though has a dedicated function for quantile calculation, `tidy_quantiles()` which requires less code to type
+fastplyr though has a dedicated function for quantile calculation,
+`tidy_quantiles()` which requires less code to type
 
 ```{r}
 
@@ -400,7 +470,8 @@ mtcars |>
   tidy_quantiles(mpg, .by = cyl, pivot = "long")
 ```
 
-Not only can you choose how to pivot as shown above, you can also calculate quantiles for multiple variables.
+Not only can you choose how to pivot as shown above, you can also
+calculate quantiles for multiple variables.
 
 ```{r}
 multiple_quantiles <- mtcars |> 
@@ -431,25 +502,26 @@ mark(
 
 fastplyr categorises all expressions into one of 3 categories
 
-1. Standard expressions
-2. Group-unaware expressions
-3. Group-aware optimisable expressions
+1.  Standard expressions
+2.  Group-unaware expressions
+3.  Group-aware optimisable expressions
 
-The first category are normal expressions which simply don't
-belong to the other 2 categories and are evaluated normally.
+The first category are normal expressions which simply don't belong to
+the other 2 categories and are evaluated normally.
 
 The second category consists of group-unaware expressions. These can be
-be evaluated once on the entire data instead of by-group. 
-For example the plus function `+` is group-unaware.
+be evaluated once on the entire data instead of by-group. For example
+the plus function `+` is group-unaware.
 
 The third category consists of functions that are group-aware but can be
-optimised, such as most of the common statistical functions like `sum`, `mean`,
-etc.
+optimised, such as most of the common statistical functions like `sum`,
+`mean`, etc.
 
 ### Group-unaware functions
 
-Some common base R functions can be thought of as group-unaware in the sense that
-they return the same results regardless of if they are called in a grouped context.
+Some common base R functions can be thought of as group-unaware in the
+sense that they return the same results regardless of if they are called
+in a grouped context.
 
 fastplyr evaluates these functions once as if there are no groups.
 
@@ -464,8 +536,8 @@ names(fns)
 fns$round
 ```
 
-An expression is marked as group-unaware if and only if all calls in the call-tree
-are group-unaware.
+An expression is marked as group-unaware if and only if all calls in the
+call-tree are group-unaware.
 
 ```{r}
 
@@ -492,7 +564,7 @@ expr <- quote(sum(x - y))
 rlang::is_call(expr, fn_names)
 ```
 
-This allows us to write out more complex expressions and evaluate them 
+This allows us to write out more complex expressions and evaluate them
 very efficiently
 
 ```{r}
@@ -506,10 +578,10 @@ mark(
 
 ### Group-aware optimised functions
 
-fastplyr also optimises many common statistical functions like `sum`, `mean`
-for use on large grouped data frames.
+fastplyr also optimises many common statistical functions like `sum`,
+`mean` for use on large grouped data frames.
 
-A list of currently optimised group-aware functions can be viewed in 
+A list of currently optimised group-aware functions can be viewed in
 `f_summarise.Rd` or by running `?f_summarise` in Rstudio.
 
 ```{r}
@@ -519,9 +591,8 @@ res <- grouped_flights |>
 res$result;res
 ```
 
-
-Other group-aware functions that fastplyr optimises include dplyr group metadata
-functions like `n()`, `row_number()`, `cur_group_id()`, etc.
+Other group-aware functions that fastplyr optimises include dplyr group
+metadata functions like `n()`, `row_number()`, `cur_group_id()`, etc.
 
 ```{r}
 grouped_flights |> 
@@ -547,9 +618,9 @@ flights |>
   )
 ```
 
-The caveat about this approach is that the usual behaviour of expressions being
-able to reference the results of previous expressions is lost when combining
-standard and non-standard expressions.
+The caveat about this approach is that the usual behaviour of
+expressions being able to reference the results of previous expressions
+is lost when combining standard and non-standard expressions.
 
 Here is an example of this
 
@@ -572,10 +643,11 @@ iris |>
   f_mutate(y = mean(sum(x)), .by = Species)
 ```
 
-
 ## tidytable vs fastplyr
 
-Let's run some more benchmarks for fun, this time including tidytable which fastplyr is very similar to as it also uses a tidy frontend but a data.table backend
+Let's run some more benchmarks for fun, this time including tidytable
+which fastplyr is very similar to as it also uses a tidy frontend but a
+data.table backend
 
 ### 10 million rows
 
@@ -592,7 +664,10 @@ tbl
 
 ### slice benchmark
 
-For this we will be using the `.by` argument from each package. Because fastplyr still sorts the groups by default here we will set an internal option to use the alternative grouping algorithm that sorts groups by order of first appearance. This will likely be revisited at some point.
+For this we will be using the `.by` argument from each package. Because
+fastplyr still sorts the groups by default here we will set an internal
+option to use the alternative grouping algorithm that sorts groups by
+order of first appearance. This will likely be revisited at some point.
 
 To read about the differences, see `?collapse::GRP`.
 
@@ -636,7 +711,10 @@ mark(
 
 Here we'll calculate the mean of x by each group of g
 
-Both tidytable and fastplyr have optimisations for `mean()` when it involves groups. tidytable internally uses data.table's 'gforce' mean function. This is basically a dedicated C function to calculate means for many groups.
+Both tidytable and fastplyr have optimisations for `mean()` when it
+involves groups. tidytable internally uses data.table's 'gforce' mean
+function. This is basically a dedicated C function to calculate means
+for many groups.
 
 ```{r}
 mark(
@@ -676,4 +754,5 @@ mark(
 )
 ```
 
-It's clear both fastplyr and tidytable are fast and each have their strengths and weaknesses.
+It's clear both fastplyr and tidytable are fast and each have their
+strengths and weaknesses.
