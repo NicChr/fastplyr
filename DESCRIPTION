@@ -1,6 +1,6 @@
 Package: fastplyr
 Title: Fast Alternatives to 'tidyverse' Functions
-Version: 0.9.9
+Version: 0.9.9.9000
 Authors@R: 
     person("Nick", "Christofides", , "nick.christofides.r@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9743-7342"))
