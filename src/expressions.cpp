@@ -13,11 +13,17 @@ bool functions_equal(SEXP x, SEXP y){
 
 // Helper to get exported package function
 SEXP find_pkg_fun(const char *name, const char *pkg, bool all_fns){
+
+  SEXP expr = R_NilValue;
+
   if (all_fns){
-    return Rf_eval(Rf_lang3(R_TripleColonSymbol, Rf_install(pkg), Rf_install(name)), R_BaseEnv);
+    expr = SHIELD(Rf_lang3(R_TripleColonSymbol, Rf_install(pkg), Rf_install(name)));
   } else {
-    return Rf_eval(Rf_lang3(R_DoubleColonSymbol, Rf_install(pkg), Rf_install(name)), R_BaseEnv);
+    expr = SHIELD(Rf_lang3(R_DoubleColonSymbol, Rf_install(pkg), Rf_install(name)));
   }
+  SEXP out = SHIELD(Rf_eval(expr, R_BaseEnv));
+  YIELD(2);
+  return out;
 }
 
 // Match fn to a list of fns
@@ -421,8 +427,10 @@ bool is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
 
 SEXP r_deparse(SEXP quo){
 
+  SEXP deparse_fun = SHIELD(find_pkg_fun("deparse2", "fastplyr", true));
+
   SEXP deparse_expr = SHIELD(Rf_lang2(
-    find_pkg_fun("deparse2", "fastplyr", true),
+    deparse_fun,
     Rf_lang2(
       Rf_lang3(R_DoubleColonSymbol, Rf_install("rlang"), Rf_install("quo_get_expr")),
       quo
@@ -430,7 +438,7 @@ SEXP r_deparse(SEXP quo){
   ));
   SEXP out = SHIELD(Rf_eval(deparse_expr, R_BaseEnv));
 
-  YIELD(2);
+  YIELD(3);
   return out;
 }
 
@@ -532,7 +540,8 @@ bool is_group_unaware_call(SEXP expr, SEXP env, SEXP mask){
 
     SEXP var = SHIELD(Rf_installChar(data_pronoun_var(expr, env))); ++NP;
 
-    bool sym_in_mask = exists(var, get_mask_top_env(mask));
+    SEXP top_env = SHIELD(get_mask_top_env(mask)); ++NP;
+    bool sym_in_mask = exists(var, top_env);
 
     YIELD(NP);
     return sym_in_mask;

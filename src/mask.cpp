@@ -18,9 +18,12 @@ SEXP get_mask_top_env(SEXP mask){
 }
 
 SEXP get_mask_data_vars(SEXP mask){
+
+  SEXP top_env = SHIELD(get_mask_top_env(mask));
+
   SEXP top_env_vars = SHIELD(
     R_lsInternal3(
-      get_mask_top_env(mask),
+      top_env,
       TRUE, // Don't exclude objects beginning with `.` like `.data`
       FALSE // Unsorted
     )
@@ -30,7 +33,7 @@ SEXP get_mask_data_vars(SEXP mask){
 
   SEXP out = SHIELD(cheapr::val_remove(top_env_vars, data_pronoun));
 
-  YIELD(3);
+  YIELD(4);
   return out;
 
 }

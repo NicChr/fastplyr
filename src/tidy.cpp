@@ -107,9 +107,10 @@ void set_as_vctrs_new_list_of_int(SEXP x){
   SET_STRING_ELT(rows_class, 0, Rf_mkChar("vctrs_list_of"));
   SET_STRING_ELT(rows_class, 1, Rf_mkChar("vctrs_vctr"));
   SET_STRING_ELT(rows_class, 2, Rf_mkChar("list"));
-  Rf_setAttrib(x, Rf_install("ptype"), new_vec(INTSXP, 0));
+  SEXP ptype = SHIELD(new_vec(INTSXP, 0));
+  Rf_setAttrib(x, Rf_install("ptype"), ptype);
   Rf_classgets(x, rows_class);
-  YIELD(1);
+  YIELD(2);
 }
 
 // Inspired by purrr::transpose

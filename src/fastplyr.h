@@ -70,7 +70,6 @@ bool call_is_namespaced(SEXP expr);
 SEXP get_fun_ns(SEXP x, SEXP rho);
 void set_as_vctrs_new_list_of_int(SEXP x);
 void set_as_tbl(SEXP x);
-SEXP binary_combine(SEXP x, SEXP y);
 SEXP get_mask_data_vars(SEXP mask);
 SEXP quo_vars(SEXP quos, SEXP mask, bool combine);
 bool exists(SEXP sym, SEXP rho);
