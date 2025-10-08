@@ -458,7 +458,7 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
   group_unaware <- attr(quos, ".group_unaware", TRUE)
 
   if (is.null(GRP)){
-    GRP <- df_as_one_GRP(data)
+    GRP <- grouped_df_as_GRP(f_ungroup(data))
     cheapr::attrs_modify(
       quos, .GRP = GRP, .set = TRUE
     )
@@ -490,7 +490,7 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
     cheapr::attrs_modify(
       quos, .GRP = GRP, .set = TRUE
     )
-    data <- df_add_cols(
+    data <- cheapr::df_modify(
       data, list(.internal.x = GRP_group_id(GRP))
     )
   }
