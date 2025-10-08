@@ -291,8 +291,7 @@ fastplyr_quos <- function(..., .data, .groups = NULL, .named = TRUE, .drop_null 
     if (is.null(getOption("fastplyr.inform"))){
       cli::cli_inform(
         c(
-          "!" = "The following functions will be optimised package-wide:",
-          paste0("`", paste(.optimised_fns_inform, sep = "``"), "`"),
+          "!" = "Expressions will be optimised where possible.",
           "",
           "Optimised expressions are independent from unoptimised ones and typical data-masking rules may not apply",
           "",
