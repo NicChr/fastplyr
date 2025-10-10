@@ -298,7 +298,7 @@ f_slice_sample <- function(.data, n, replace = FALSE, prop,
   rows <- cheapr::new_list(n_groups)
   if (has_weights){
     g <- cpp_group_indices(slice_info[["rows"]], df_nrow(data))
-    weights <- gsplit2(data[[weights_var]], g = g)
+    weights <- vec_group_split(data[[weights_var]], g)
   } else {
     weights <- NULL
   }

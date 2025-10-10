@@ -569,7 +569,7 @@ eval_all_tidy <- function(data, quos, recycle = FALSE){
         x
       })
 
-      split_results <- purrr::map2(results, grps, \(x, g) gsplit2(x, g = g))
+      split_results <- purrr::map2(results, grps, \(x, g) vec_group_split(x, g))
       split_results <- transpose_eval_results(split_results)
       split_results <- recycle_eval_results(split_results)
       split_results <- transpose_eval_results(split_results)

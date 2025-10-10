@@ -71,7 +71,7 @@ f_duplicates <- function(.data, ..., .keep_all = FALSE,
   # Neat way to return sorted duplicate rows
 
   if (.order){
-    which_dup <- which_dup[order(GRP_group_id(GRP)[which_dup])]
+    which_dup <- cheapr::sset(which_dup, order(cheapr::sset(GRP_group_id(GRP), which_dup)))
   }
   out <- cheapr::sset_row(out, which_dup)
 

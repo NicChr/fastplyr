@@ -51,14 +51,6 @@ inline void *safe_memmove(void *dst, const void *src, size_t n){
   return n ? memmove(dst, src, n) : dst;
 }
 
-inline void *safe_memcpy(void *dst, const void *src, size_t n){
-  return n ? memcpy(dst, src, n) : dst;
-}
-
-inline void *safe_memset(void *dst, int val, size_t n){
-  return n ? memset(dst, val, n) : dst;
-}
-
 SEXP get_list_element(SEXP list, const char *str);
 int cpp_n_group_vars(SEXP x);
 SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes);

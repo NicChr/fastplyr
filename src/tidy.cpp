@@ -1259,7 +1259,7 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
     p_sorted_group_starts[0] = 1;
     max_group_size = max_group_size < group_size ? group_size : max_group_size;
 
-    safe_memcpy(&p_group_order[k], &p_rows_i[0], group_size * sizeof(int));
+    std::copy(&p_rows_i[0], &p_rows_i[group_size], &p_group_order[k]);
 
     for (int j = 0; j < group_size; ++j, ++k){
       p_group_id[p_rows_i[j] - 1] = 1;
@@ -1275,7 +1275,7 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
       p_group_sizes[i] = group_size;
       max_group_size = max_group_size < group_size ? group_size : max_group_size;
 
-      safe_memcpy(&p_group_order[k], &p_rows_i[0], group_size * sizeof(int));
+      std::copy(&p_rows_i[0], &p_rows_i[group_size], &p_group_order[k]);
 
       for (int j = 0; j < group_size; ++j, ++k){
         p_group_id[p_rows_i[j] - 1] = i + 1;

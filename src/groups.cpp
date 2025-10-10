@@ -267,7 +267,7 @@ SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
 
     for (int i = 0; i < n; k += m, ++i){
       m = Rf_length(p_x[i]);
-      safe_memcpy(&p_out[k], &loc_ptrs[i][0], m * sizeof(int));
+      std::copy(&loc_ptrs[i][0], &loc_ptrs[i][m], &p_out[k]);
     }
     YIELD(1);
     return out;
@@ -289,7 +289,7 @@ SEXP cpp_unlist_group_locs(SEXP x, SEXP group_sizes){
 
     for (int i = 0; i < n; k += m, ++i){
       m = p_gs[i];
-      safe_memcpy(&p_out[k], &loc_ptrs[i][0], m * sizeof(int));
+      std::copy(&loc_ptrs[i][0], &loc_ptrs[i][m], &p_out[k]);
     }
     YIELD(1);
     return out;
@@ -332,7 +332,7 @@ SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
   for (unsigned int i = 0; i < n_groups; ++i, k += group_size){
     group_size = p_gs[i];
     SET_VECTOR_ELT(group_locs, i, new_vec(INTSXP, group_size));
-    safe_memcpy(&INTEGER(p_out[i])[0], &p_o[k], group_size * sizeof(int));
+    std::copy(&p_o[k], &p_o[k + group_size], INTEGER(p_out[i]));
   }
   YIELD(NP);
   return group_locs;
@@ -352,7 +352,7 @@ SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
   const int* __restrict__ p_group_id = INTEGER_RO(group_id);
   const SEXP *p_out = VECTOR_PTR_RO(group_locs);
 
-  // Store a vector of pointers
+  // Store an array of pointers
   // Speeds up later allocation
   int **loc_ptrs = (int **) R_Calloc(n_groups, int*);
 
@@ -362,25 +362,18 @@ SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
     loc_ptrs[i] = INTEGER(p_out[i]);
   }
 
-  // Initialise a vector of group location indices
-
-  SEXP loc_indices = SHIELD(new_vec(INTSXP, n_groups)); ++NP;
-  int* __restrict__ p_loc_indices = INTEGER(loc_indices);
-  safe_memset(p_loc_indices, 0, n_groups * sizeof(int));
-
   int n = Rf_length(group_id);
   int cur_group;
-  int cur_group_loc;
 
   for (int i = 0; i < n; ++i){
     cur_group = p_group_id[i] - 1;
-    cur_group_loc = p_loc_indices[cur_group]++;
-    loc_ptrs[cur_group][cur_group_loc] = i + 1;
+    *(loc_ptrs[cur_group]++) = i + 1;
   }
   R_Free(loc_ptrs);
   YIELD(NP);
   return group_locs;
 }
+
 [[cpp11::register]]
 SEXP cpp_vec_group_split(SEXP x, SEXP locs){
 
@@ -388,10 +381,124 @@ SEXP cpp_vec_group_split(SEXP x, SEXP locs){
 
   const SEXP *p_locs = VECTOR_PTR_RO(locs);
   SEXP out = SHIELD(new_vec(VECSXP, n_groups));
+  const SEXP *p_out = VECTOR_PTR_RO(out);
 
-  for (int i = 0; i < n_groups; ++i){
-    SET_VECTOR_ELT(out, i, cheapr::sset(x, p_locs[i], true));
+  if (!Rf_isObject(x)){
+
+    switch (TYPEOF(x)){
+    case LGLSXP:
+    case INTSXP: {
+      const int *p_x = INTEGER_RO(x);
+
+      for (int i = 0; i < n_groups; ++i){
+        int *loc_set = INTEGER(p_locs[i]);
+        int group_size = Rf_length(p_locs[i]);
+
+        SET_VECTOR_ELT(out, i, new_vec(INTSXP, group_size));
+        int* __restrict__ cur_split = INTEGER(p_out[i]);
+
+        for (int j = 0; j < group_size; ++j){
+          cur_split[j] = p_x[loc_set[j] - 1];
+        }
+      }
+      break;
+    }
+    case REALSXP: {
+      const double *p_x = REAL_RO(x);
+
+      for (int i = 0; i < n_groups; ++i){
+        int *loc_set = INTEGER(p_locs[i]);
+        int group_size = Rf_length(p_locs[i]);
+
+        SET_VECTOR_ELT(out, i, new_vec(REALSXP, group_size));
+        double* __restrict__ cur_split = REAL(p_out[i]);
+
+        for (int j = 0; j < group_size; ++j){
+          cur_split[j] = p_x[loc_set[j] - 1];
+        }
+      }
+      break;
+    }
+    case STRSXP: {
+
+      const SEXP *p_x = STRING_PTR_RO(x);
+
+      for (int i = 0; i < n_groups; ++i){
+        int *loc_set = INTEGER(p_locs[i]);
+        int group_size = Rf_length(p_locs[i]);
+
+        SET_VECTOR_ELT(out, i, new_vec(STRSXP, group_size));
+
+        for (int j = 0; j < group_size; ++j){
+          SET_STRING_ELT(p_out[i], j, p_x[loc_set[j] - 1]);
+        }
+      }
+      break;
+    }
+    case CPLXSXP: {
+
+      const Rcomplex *p_x = COMPLEX_RO(x);
+
+      for (int i = 0; i < n_groups; ++i){
+        int *loc_set = INTEGER(p_locs[i]);
+        int group_size = Rf_length(p_locs[i]);
+
+        SET_VECTOR_ELT(out, i, new_vec(CPLXSXP, group_size));
+
+        for (int j = 0; j < group_size; ++j){
+          SET_COMPLEX_ELT(p_out[i], j, p_x[loc_set[j] - 1]);
+        }
+      }
+      break;
+    }
+    case RAWSXP: {
+
+      const Rbyte *p_x = RAW_RO(x);
+
+      for (int i = 0; i < n_groups; ++i){
+        int *loc_set = INTEGER(p_locs[i]);
+        int group_size = Rf_length(p_locs[i]);
+
+        SET_VECTOR_ELT(out, i, new_vec(RAWSXP, group_size));
+
+        for (int j = 0; j < group_size; ++j){
+          SET_RAW_ELT(p_out[i], j, p_x[loc_set[j] - 1]);
+        }
+      }
+      break;
+    }
+    case VECSXP: {
+
+      const SEXP *p_x = VECTOR_PTR_RO(x);
+
+      for (int i = 0; i < n_groups; ++i){
+        int *loc_set = INTEGER(p_locs[i]);
+        int group_size = Rf_length(p_locs[i]);
+
+        SET_VECTOR_ELT(out, i, new_vec(VECSXP, group_size));
+
+        for (int j = 0; j < group_size; ++j){
+          SET_VECTOR_ELT(p_out[i], j, p_x[loc_set[j] - 1]);
+        }
+      }
+      break;
+    }
+    default: {
+      for (int i = 0; i < n_groups; ++i){
+      SET_VECTOR_ELT(out, i, cheapr::sset(x, p_locs[i], true));
+    }
+      break;
+    }
+    }
+
+  } else {
+    // Slower catch-all method that relies on
+    // cheapr::sset which can handle many types of objects
+    for (int i = 0; i < n_groups; ++i){
+      SET_VECTOR_ELT(out, i, cheapr::sset(x, p_locs[i], true));
+    }
   }
+
   YIELD(1);
   return out;
 }

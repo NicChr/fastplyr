@@ -274,7 +274,7 @@ SEXP cpp_which_all(SEXP x){
   } else {
     SEXP lgl = SHIELD(new_vec(LGLSXP, n_rows)); ++NP;
     int* __restrict__ p_lgl = INTEGER(lgl);
-    safe_memset(p_lgl, 0, n_rows * sizeof(int));
+    std::fill(p_lgl, p_lgl + n_rows, 0);
 
     // Save pointers to logical cols
 

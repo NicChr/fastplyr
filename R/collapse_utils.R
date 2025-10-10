@@ -146,7 +146,7 @@ GRP_group_sizes <- function(GRP){
   GRP[["group.sizes"]]
 }
 GRP_expanded_group_sizes <- function(GRP){
-  GRP_group_sizes(GRP)[GRP_group_id(GRP)]
+  cheapr::sset(GRP_group_sizes(GRP), GRP_group_id(GRP))
 }
 # Groups
 GRP_groups <- function(GRP){
@@ -236,7 +236,7 @@ GRP_starts <- function(GRP, use.g.names = FALSE){
       starts <- attr(o, "starts")
       if (collapse::anyv(GRP_sizes, 0L)){
         out <- integer(GRP_n_groups(GRP))
-        out[cheapr::which_val(GRP_sizes, 0L, invert = TRUE)] <- o[starts]
+        out[cheapr::which_val(GRP_sizes, 0L, invert = TRUE)] <- cheapr::sset(o, starts)
       } else {
         out <- cheapr::attrs_rm(cheapr::sset(o, starts), .set = TRUE)
       }
@@ -272,10 +272,6 @@ GRP_ends <- function(GRP, use.g.names = FALSE){
 }
 # Extract group order from GRP object safely
 GRP_order <- function(GRP){
-  ### Only use the below arguments
-  ### If GRP_order is called from radixorderv2
-  ### Otherwise leave as is
-  # starts = TRUE, group.sizes = FALSE, sort = TRUE){
   if (is.null(GRP)){
     return(NULL)
   }
@@ -301,7 +297,7 @@ GRP_order <- function(GRP){
 }
 
 # Alternative to gsplit(NULL, g)
-GRP_loc <- function(GRP, use.g.names = FALSE){
+GRP_loc <- function(GRP){
 
   locs <- GRP[["locs"]]
   if (!is.null(locs)){
@@ -312,18 +308,11 @@ GRP_loc <- function(GRP, use.g.names = FALSE){
   group_order <- GRP[["order"]]
   if (!is.null(group_order)){
     out <- cpp_group_locs(group_order, group_sizes)
-    if (use.g.names){
-      names(out) <- GRP_names(GRP)
-    }
   } else if (length(group_id) == 0L){
-    if (use.g.names){
-      out <- add_names(list(), character(0))
-    } else {
-      out <- list()
-    }
+    out <- list()
   } else {
     out <- cpp_group_locs2(group_id, group_sizes)
-    # out <- collapse::gsplit(NULL, g = GRP, use.g.names = use.g.names)
+    # out <- collapse::gsplit(NULL, g = GRP, use.g.names = FALSE)
   }
   out
 }
@@ -375,7 +364,7 @@ GRP_group_data <- function(GRP, expand = FALSE){
 GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
   g_names <- collapse::GRPnames(GRP, force.char = force.char, sep = sep)
   if (expand && !is.null(g_names)){
-    g_names[GRP_group_id(GRP)]
+    cheapr::sset(g_names, GRP_group_id(GRP))
   } else {
     g_names
   }
@@ -533,20 +522,6 @@ radixorderv2 <- function(x, na.last = TRUE, decreasing = FALSE,
                         na.last = na.last, decreasing = decreasing)
 }
 
-# Helper to grab group sizes
-group_sizes <- function(x, sort = FALSE, expand = FALSE){
-  if (sort && !expand){
-    groups <- radixorderv2(x, group.sizes = TRUE, sort = TRUE)
-  } else {
-    groups <- group2(x)
-  }
-  out <- attr(groups, "group.sizes")
-  if (expand){
-    out <- out[groups]
-  }
-  out
-}
-
 ## Construct a grouped data frame from a GRP object
 
 construct_grouped_df <- function(data, g, group_vars){
@@ -568,17 +543,6 @@ construct_grouped_df <- function(data, g, group_vars){
   attr(out, "groups") <- groups
   class(out) <- c("grouped_df", "tbl_df", "tbl", "data.frame")
   out
-}
-
-GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
-  g_names <- collapse::GRPnames(GRP, force.char = force.char,
-                                sep = sep)
-  if (expand && !is.null(g_names)) {
-    g_names[GRP_group_id(GRP)]
-  }
-  else {
-    g_names
-  }
 }
 
 grouped_first <- function(x, na.rm = TRUE, g = NULL, TRA = NULL, use.g.names = FALSE){
