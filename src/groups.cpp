@@ -332,7 +332,8 @@ SEXP cpp_group_locs(SEXP order, SEXP group_sizes){
   for (unsigned int i = 0; i < n_groups; ++i, k += group_size){
     group_size = p_gs[i];
     SET_VECTOR_ELT(group_locs, i, new_vec(INTSXP, group_size));
-    std::copy(&p_o[k], &p_o[k + group_size], INTEGER(p_out[i]));
+    int* __restrict__ dest = INTEGER(p_out[i]);
+    std::copy(&p_o[k], &p_o[k + group_size], dest);
   }
   YIELD(NP);
   return group_locs;

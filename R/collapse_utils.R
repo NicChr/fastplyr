@@ -65,11 +65,11 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
     out[[8L]] <- GRP_starts(out)
     if (!"locs" %in% names(out)){
       out <- c(unclass(out), list(locs = NULL))
+      class(out) <- "GRP"
     }
     if (return.locs){
       out[[10L]] <- GRP_loc(out)
     }
-    class(out) <- "GRP"
   }
   out
 }
@@ -306,15 +306,12 @@ GRP_loc <- function(GRP){
   group_id <- GRP_group_id(GRP)
   group_sizes <- GRP_group_sizes(GRP)
   group_order <- GRP[["order"]]
-  if (!is.null(group_order)){
-    out <- cpp_group_locs(group_order, group_sizes)
-  } else if (length(group_id) == 0L){
-    out <- list()
+
+  if (is.null(group_order)){
+    cpp_group_locs2(group_id, group_sizes)
   } else {
-    out <- cpp_group_locs2(group_id, group_sizes)
-    # out <- collapse::gsplit(NULL, g = GRP, use.g.names = FALSE)
+    cpp_group_locs(group_order, group_sizes)
   }
-  out
 }
 
 group_locs <- function(x){
@@ -326,18 +323,6 @@ group_locs <- function(x){
     o <- radixorderv2(x, group.sizes = TRUE, starts = FALSE, sort = TRUE)
     cpp_group_locs(o, attr(o, "group.sizes"))
   }
-}
-# GRP starts & ends from list of group locations
-# Groups are assumed to be sorted and
-# index locations are also assumed to be sorted
-GRP_loc_starts <- function(loc){
-  cpp_pluck_list_of_integers(loc, 1L, 0L)
-}
-GRP_loc_ends <- function(loc, sizes = NULL){
-  if (is.null(sizes)){
-    sizes <- cheapr::list_lengths(loc)
-  }
-  cpp_pluck_list_of_integers(loc, sizes, 0L)
 }
 GRP_ordered <- function(GRP){
   GRP[["ordered"]]
@@ -644,25 +629,16 @@ grouped_lead <- function(x, n = 1L, fill = NULL, g = NULL, order_by = NULL){
   grouped_lag(x, n = -n, fill = fill, g = g, order_by = order_by)
 }
 
-vec_group_split <- function(x, g){
+vec_group_split <- function(x, g, order = TRUE){
   if (is.null(g)){
     list(x)
   } else {
-    g <- GRP2(g)
+    g <- GRP2(g, return.locs = TRUE, return.order = order, sort = order)
     locs <- GRP_loc(g)
     cpp_vec_group_split(x, locs)
   }
 }
 
 gsplit2 <- function(x = NULL, g = NULL){
-  g <- GRP2(g)
-  if (is.null(g)){
-    list(x)
-  } else {
-    if (cpp_is_simple_atomic_vec(x)){
-      collapse::gsplit(x, g = g)
-    } else {
-      vec_group_split(x, g = g)
-    }
-  }
+  vec_group_split(x, g)
 }
