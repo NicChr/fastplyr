@@ -41,10 +41,24 @@ f_nest_by <- function(.data, ..., .add = FALSE,
                       .order = group_by_order_default(.data),
                       .by = NULL, .cols = NULL,
                       .drop = df_group_by_drop_default(.data)){
-  .data |>
-    f_group_by(..., .cols = .cols, .order = .order,
-               .add = .add,
-               .by = {{ .by }},
-               .drop = .drop) |>
-    cpp_nest_split(.drop, .order)
+  data <- .data |>
+    f_group_by(
+      ..., .cols = .cols, .order = .order,
+      .add = .add, .by = {{ .by }}, .drop = .drop
+    )
+  GRP <- f_group_GRP(data)
+  group_vars <- f_group_vars(data)
+  group_keys <- f_group_keys(data)
+
+  data <- as_tbl(data)
+  chunks <- vec_group_split(data, GRP)
+  chunks <- vctrs::new_list_of(chunks, ptype = cheapr::sset(data, 0))
+
+  out <- cheapr::df_modify(group_keys, list(data = chunks))
+
+  # Below line can be replaced more efficiently by just adding the attributes
+  # directly since we know each row is a new group
+  # Ultimately it won't make much of a difference as much of the computation
+  # is done in splitting the data
+  f_group_by(out, .cols = group_vars, .order = .order, .drop = .drop)
 }

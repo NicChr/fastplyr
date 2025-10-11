@@ -212,10 +212,6 @@ cpp_grouped_eval_mutate <- function(data, quos) {
   .Call(`_fastplyr_cpp_grouped_eval_mutate`, data, quos)
 }
 
-cpp_nest_split <- function(data, drop, order) {
-  .Call(`_fastplyr_cpp_nest_split`, data, drop, order)
-}
-
 cpp_grouped_df_as_grp <- function(data) {
   .Call(`_fastplyr_cpp_grouped_df_as_grp`, data)
 }

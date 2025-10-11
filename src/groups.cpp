@@ -375,6 +375,8 @@ SEXP cpp_group_locs2(SEXP group_id, SEXP group_sizes){
   return group_locs;
 }
 
+// locs must be well-defined, unsafe for end-users
+
 [[cpp11::register]]
 SEXP cpp_vec_group_split(SEXP x, SEXP locs){
 
@@ -486,12 +488,16 @@ SEXP cpp_vec_group_split(SEXP x, SEXP locs){
     }
     default: {
       for (int i = 0; i < n_groups; ++i){
-      SET_VECTOR_ELT(out, i, cheapr::sset(x, p_locs[i], true));
+      SET_VECTOR_ELT(out, i, cheapr::sset(x, p_locs[i], false));
     }
       break;
     }
     }
 
+  } else if (Rf_inherits(x, "data.frame")){
+    for (int i = 0; i < n_groups; ++i){
+      SET_VECTOR_ELT(out, i, cheapr::df_slice(x, p_locs[i], false));
+    }
   } else {
     // Slower catch-all method that relies on
     // cheapr::sset which can handle many types of objects
