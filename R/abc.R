@@ -183,3 +183,30 @@ vec_rename <- function(.x, ...){
 #
 #   cheapr::cheapr_c(.args = vecs)
 # }
+
+# From ggplot2: https://github.com/tidyverse/ggplot2/blob/6e8ac77790c90ef6f8cedf91f932bb77c7a4b19e/R/utilities.R
+prompt_install <- function(pkg, reason = NULL) {
+  if (length(pkg) < 1 || rlang::is_installed(pkg)) {
+    return(TRUE)
+  }
+  if (!interactive()) {
+    return(FALSE)
+  }
+
+  pkg <- pkg[!vapply(pkg, rlang::is_installed, logical(1))]
+
+  message <- "The {.pkg {pkg}} package{?s} {?is/are} required"
+  if (is.null(reason)) {
+    message <- paste0(message, ".")
+  } else {
+    message <- paste0(message, " ", reason)
+  }
+  question <- "Would you like to install {cli::qty(pkg)}{?it/them}?"
+
+  cli::cli_bullets(c("!" = message, "i" = question))
+  if (utils::menu(c("Yes", "No")) != 1) {
+    return(FALSE)
+  }
+  utils::install.packages(pkg)
+  rlang::is_installed(pkg)
+}

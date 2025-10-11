@@ -166,3 +166,48 @@ datasets_identical <- function(x, y, cols){
   }
 
 }
+# A `data.table::setorder()` that works for any data frame
+df_set_order <- function(x, .cols = names(x), .order = 1L){
+
+  if (!prompt_install("data.table")){
+    cli::cli_abort(
+      "{.pkg data.table} is not available and therefore
+      fastplyr cannot sort in-place"
+    )
+  }
+
+  ## Make sure this only works for data frames of simple vectors
+
+  group_vars <- f_group_vars(x)
+
+  temp_list <- cheapr::new_list(length(names(x)))
+  names(temp_list) <- names(x)
+  for (i in seq_along(temp_list)){
+    cpp_set_list_element(temp_list, i, x[[i]])
+  }
+
+  # setDT() creates a sort of shallow copy
+  # so we can't directly use it on x
+  data.table::setDT(temp_list)
+  data.table::setorderv(
+    temp_list,
+    cols = col_select_names(x, .cols),
+    na.last = TRUE,
+    order = .order
+  )
+
+  # Add cols back to x by reference
+  # This ensures materialised ALTREP objects in temp_list
+  # are definitely copied back to x
+
+  for (i in seq_along(temp_list)){
+    cpp_set_list_element(x, i, temp_list[[i]])
+  }
+  if (length(group_vars) > 0){
+    # Add re-calculated group data
+    groups <- f_group_data(f_group_by(f_ungroup(x), .cols = group_vars))
+    cheapr::attrs_modify(x, groups = groups, .set = TRUE)
+  } else {
+    x
+  }
+}

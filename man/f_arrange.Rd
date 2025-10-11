@@ -10,7 +10,8 @@ f_arrange(
   .by = NULL,
   .by_group = FALSE,
   .cols = NULL,
-  .descending = FALSE
+  .descending = FALSE,
+  .in_place = FALSE
 )
 }
 \arguments{
@@ -32,6 +33,16 @@ If speed is an expensive resource, it is recommended to use this.}
 \code{FALSE}. In simple cases this can be easily achieved through \code{desc()} but
 for a mixture of ascending and descending variables, it's easier to use
 the \code{.descending} arg to reverse the order.}
+
+\item{.in_place}{Should data be sorted in-place?
+This can be very efficient for large data frames and can be safely used
+when overwriting a freshly allocated data frame.
+If you're unsure whether the data frame is a freshly allocated object,
+use \code{cheapr::semi_copy()} before sorting.
+
+Please note that no new vectors and no copies are created,
+data is directly sorted in-memory.
+This only works on data frames consisting of atomic vectors.}
 }
 \value{
 A sorted \code{data.frame}.

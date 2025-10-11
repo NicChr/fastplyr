@@ -22,6 +22,7 @@ Imports:
     tidyselect,
     vctrs (>= 0.6.0)
 Suggests:
+    data.table,
     nycflights13,
     testthat (>= 3.0.0),
     tidyr
