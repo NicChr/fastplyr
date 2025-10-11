@@ -1,5 +1,7 @@
 # fastplyr (development version)
 
+- `f_arrange()` can now sort data frames in-place via the `.in_place` argument.
+
 - Fixed rchk issues flagged on CRAN.
 
 # fastplyr 0.9.9
