@@ -1,5 +1,7 @@
 # fastplyr (development version)
 
+- Fixed rchk issues flagged on CRAN.
+
 # fastplyr 0.9.9
 
 ### Improvements
