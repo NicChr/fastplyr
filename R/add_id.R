@@ -34,11 +34,6 @@
 #' @rdname add_id
 #' @export
 add_group_id <- function(.data, ...){
-  # cli::cli_warn(
-  #   c("i" = "{.fn add_group_id} has been superseded by the use of",
-  #     "{.code f_mutate(data, group_id = cur_group_id()}"),
-  #   .frequency = "once", .frequency_id = "deprecate_add_group_id"
-  # )
   UseMethod("add_group_id")
 }
 #' @rdname add_id
@@ -58,8 +53,6 @@ add_group_id.data.frame <- function(.data, ...,
   GRP <- group_info[[2L]]
   all_groups <- GRP_group_vars(GRP)
 
-  .name <- .name %||% unique_col_name(names(data), "group_id")
-
   ids <- GRP_group_id(GRP)
   if (as_qg){
     ids <- group_id_to_qg(ids,
@@ -68,16 +61,13 @@ add_group_id.data.frame <- function(.data, ...,
                           group_starts = GRP_starts(GRP),
                           ordered = .order)
   }
+
+  .name <- .name %||% unique_col_name(names(.data), "group_id")
   df_add_col(.data, .name, ids)
 }
 #' @rdname add_id
 #' @export
 add_row_id <- function(.data, ...){
-#   cli::cli_warn(
-#     c("i" = "{.fn add_row_id} has been superseded by the use of",
-#       "{.code f_mutate(data, row_id = row_number()}"),
-#     .frequency = "once", .frequency_id = "deprecate_add_row_id"
-#   )
   UseMethod("add_row_id")
 }
 #' @rdname add_id
@@ -86,41 +76,70 @@ add_row_id.data.frame <- function(.data, ...,
                                   .ascending = TRUE,
                                   .by = NULL, .cols = NULL,
                                   .name = NULL){
-  if (is.null(.name)){
-    .name <- unique_col_name(names(.data), "row_id")
-  }
+
   N <- df_nrow(.data)
-  group_info <- tidy_group_info(.data, ..., .by = {{ .by }},
-                                .cols = .cols)
-  # data <- group_info[["data"]]
-  extra_groups <- group_info[["extra_groups"]]
-  group_vars <- group_info[["dplyr_groups"]]
-  groups_changed <- group_info[["groups_changed"]]
-  all_groups <- group_info[["all_groups"]]
-  if (length(all_groups) == 0L){
+
+  group_info <- tidy_dots_info(
+    .data, ..., .by = {{ .by }},
+    .cols = .cols, .order = FALSE
+  )
+
+  group_vars <- get_groups(.data, .by = {{ .by }})
+  dot_vars <- group_info[["used_cols"]]
+  all_vars <- c(vec_setdiff(group_vars, dot_vars), dot_vars)
+
+  data <- group_info[["data"]]
+
+  # Plain row numbers
+  if (length(all_vars) == 0L){
     if (.ascending){
       row_ids <- seq_len(N)
     } else {
       row_ids <- seq.int(length.out = N, from = N, by = -1L)
     }
   } else {
-    if (length(extra_groups) == 0 &&
-        length(group_vars) == length(group_vars(.data)) &&
-        !groups_changed){
-      groups <- group_data(.data)
-      sizes <- cheapr::list_lengths(groups[[".rows"]])
-      o <- cpp_unlist_group_locs(groups[[".rows"]], sizes)
-      row_ids <- cpp_row_id(o, sizes, .ascending)
-    } else {
-      row_ids <- row_id(
-        f_select(group_info[["data"]], .cols = all_groups),
-        ascending = .ascending
-      )
-    }
+    row_ids <- row_id(
+      cheapr::sset_col(data, all_vars),
+      ascending = .ascending
+    )
   }
-  col_to_add <- add_names(list(row_ids), .name)
-  cheapr::df_modify(.data, col_to_add)
+  .name <- .name %||% unique_col_name(names(.data), "row_id")
+  cheapr::df_modify(.data, list_tidy(!!.name := row_ids))
 }
+
+# Alternative (a bit slower)
+# add_row_id.data.frame <- function(.data, ...,
+#                                   .ascending = TRUE,
+#                                   .by = NULL, .cols = NULL,
+#                                   .name = NULL){
+#   if (is.null(.name)){
+#     .name <- unique_col_name(names(.data), "row_id")
+#   }
+#
+#   N <- df_nrow(.data)
+#
+#   group_info <- tidy_eval_groups(
+#     .data, ..., .by = {{ .by }},
+#     .cols = .cols, .order = FALSE
+#   )
+#
+#   GRP <- group_info[["GRP"]]
+#   group_ids <- GRP_group_id(GRP)
+#   n_groups <- GRP_n_groups(GRP)
+#
+#   # Plain row numbers
+#   if (n_groups <= 1){
+#     if (.ascending){
+#       row_ids <- seq_len(N)
+#     } else {
+#       row_ids <- seq.int(length.out = N, from = N, by = -1L)
+#     }
+#   } else {
+#     row_ids <- row_id(group_ids, ascending = .ascending)
+#   }
+#   cheapr::df_modify(.data, list_tidy(!!.name := row_ids))
+# }
+
 #' @rdname add_id
 #' @export
 add_consecutive_id <- function(.data, ...){
@@ -132,31 +151,34 @@ add_consecutive_id.data.frame <- function(.data, ...,
                                           .order = group_by_order_default(.data),
                                           .by = NULL, .cols = NULL,
                                           .name = NULL){
-  group_info <- tidy_group_info(.data, ..., .by = {{ .by }},
-                                .cols = .cols,
-                                ungroup = TRUE,
-                                rename = FALSE)
-  extra_groups <- group_info[["extra_groups"]]
-  group_vars <- group_info[["dplyr_groups"]]
-  all_groups <- group_info[["all_groups"]]
-  temp <- group_info[["data"]]
 
-  if (length(extra_groups) == 0){
-    ids <- rep_len(1L, df_nrow(.data))
+  N <- df_nrow(.data)
+
+  group_info <- tidy_dots_info(
+    .data, ..., .by = {{ .by }},
+    .cols = .cols, .order = FALSE
+  )
+
+  group_vars <- get_groups(.data, .by = {{ .by }})
+  dot_vars <- group_info[["new_cols"]]
+  all_vars <- c(vec_setdiff(group_vars, dot_vars), dot_vars)
+
+  data <- group_info[["data"]]
+  GRP <- group_info[["GRP"]]
+
+  if (length(dot_vars) == 0){
+    ids <- cheapr::cheapr_rep_len(1L, N)
   } else if (length(group_vars) == 0){
-    ids <- f_consecutive_id(f_select(temp, .cols = extra_groups))
+    ids <- f_consecutive_id(cheapr::sset_col(data, all_vars))
   } else {
-    group_ids <- add_group_id(temp, .order = .order,
-                              .cols = all_groups)[[df_ncol(temp) + 1L]]
-    o <- radixorderv2(f_select(temp, .cols = group_vars),
-                      group.sizes = TRUE,
-                      sort = .order)
-    sizes <- attr(o, "group.sizes")
+    o <- GRP_order(GRP)
+    sizes <- GRP_group_sizes(GRP)
+    group_ids <- group_id(cheapr::sset_col(data, dot_vars))
     ids <- cpp_grouped_run_id(group_ids, o, sizes)
   }
-  if (is.null(.name)){
-    .name <- unique_col_name(names(.data), "consecutive_id")
-  }
-  col_to_add <- add_names(list(ids), .name)
-  cheapr::df_modify(.data, col_to_add)
+
+  .name <- .name %||% unique_col_name(names(.data), "consecutive_id")
+  cheapr::df_modify(.data, list_tidy(!!.name := ids))
 }
+
+

@@ -347,7 +347,8 @@ GRP_group_data <- function(GRP, expand = FALSE){
 }
 
 GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
-  g_names <- collapse::GRPnames(GRP, force.char = force.char, sep = sep)
+  groups <- GRP_group_data(GRP)
+  g_names <- df_paste_names(groups, sep = sep)
   if (expand && !is.null(g_names)){
     cheapr::sset(g_names, GRP_group_id(GRP))
   } else {

@@ -1083,42 +1083,6 @@ SEXP cpp_nest_split(SEXP data, SEXP drop, SEXP order){
   return out;
 }
 
-[[cpp11::register]]
-SEXP cpp_group_split(SEXP data){
-
-  SEXP rows = SHIELD(cpp_group_rows(data));
-  SEXP tbl_class = SHIELD(new_vec(STRSXP, 3));
-  SET_STRING_ELT(tbl_class, 0, Rf_mkChar("tbl_df"));
-  SET_STRING_ELT(tbl_class, 1, Rf_mkChar("tbl"));
-  SET_STRING_ELT(tbl_class, 2, Rf_mkChar("data.frame"));
-
-  const SEXP *p_rows = VECTOR_PTR_RO(rows);
-  int n_groups = Rf_length(rows);
-  SEXP frames = SHIELD(new_vec(VECSXP, n_groups));
-
-  SHIELD(data = cpp_ungroup(data));
-
-
-  SEXP frame;
-  PROTECT_INDEX frame_idx;
-  R_ProtectWithIndex(frame = R_NilValue, &frame_idx);
-
-  // Slice group chunks
-
-  for (int i = 0; i < n_groups; ++i){
-    R_Reprotect(frame = cheapr::df_slice(data, p_rows[i], false), frame_idx);
-    Rf_classgets(frame, tbl_class);
-    SET_VECTOR_ELT(frames, i, frame);
-
-    // A method that is fast and preserves structure of input data
-    // R_Reprotect(frame = cheapr::df_slice(data, p_rows[i], false), frame_idx);
-    // SET_VECTOR_ELT(frames, i, cheapr::rebuild(frame, data, false));
-  }
-
-  YIELD(5);
-  return frames;
-}
-
 // A fast method for converting a 'grouped_df' into a 'GRP'
 
 [[cpp11::register]]

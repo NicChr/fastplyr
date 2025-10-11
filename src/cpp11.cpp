@@ -384,13 +384,6 @@ extern "C" SEXP _fastplyr_cpp_nest_split(SEXP data, SEXP drop, SEXP order) {
   END_CPP11
 }
 // tidy.cpp
-SEXP cpp_group_split(SEXP data);
-extern "C" SEXP _fastplyr_cpp_group_split(SEXP data) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(cpp_group_split(cpp11::as_cpp<cpp11::decay_t<SEXP>>(data)));
-  END_CPP11
-}
-// tidy.cpp
 SEXP cpp_grouped_df_as_grp(SEXP data);
 extern "C" SEXP _fastplyr_cpp_grouped_df_as_grp(SEXP data) {
   BEGIN_CPP11
@@ -425,7 +418,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_cpp_group_locs2",                      (DL_FUNC) &_fastplyr_cpp_group_locs2,                      2},
     {"_fastplyr_cpp_group_rows",                       (DL_FUNC) &_fastplyr_cpp_group_rows,                       1},
     {"_fastplyr_cpp_group_size",                       (DL_FUNC) &_fastplyr_cpp_group_size,                       1},
-    {"_fastplyr_cpp_group_split",                      (DL_FUNC) &_fastplyr_cpp_group_split,                      1},
     {"_fastplyr_cpp_group_starts",                     (DL_FUNC) &_fastplyr_cpp_group_starts,                     2},
     {"_fastplyr_cpp_group_unaware_fns",                (DL_FUNC) &_fastplyr_cpp_group_unaware_fns,                0},
     {"_fastplyr_cpp_group_vars",                       (DL_FUNC) &_fastplyr_cpp_group_vars,                       1},

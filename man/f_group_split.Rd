@@ -11,7 +11,8 @@ f_group_split(
   .order = group_by_order_default(.data),
   .by = NULL,
   .cols = NULL,
-  .drop = df_group_by_drop_default(.data)
+  .drop = df_group_by_drop_default(.data),
+  .group_names = FALSE
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ a named character vector or numeric vector.
 If speed is an expensive resource, it is recommended to use this.}
 
 \item{.drop}{Should unused factor levels be dropped? Default is \code{TRUE}.}
+
+\item{.group_names}{Should group names be added? Default is \code{FALSE}.}
 }
 \value{
 A list of data frames split by group.

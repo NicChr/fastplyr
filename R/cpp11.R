@@ -216,10 +216,6 @@ cpp_nest_split <- function(data, drop, order) {
   .Call(`_fastplyr_cpp_nest_split`, data, drop, order)
 }
 
-cpp_group_split <- function(data) {
-  .Call(`_fastplyr_cpp_group_split`, data)
-}
-
 cpp_grouped_df_as_grp <- function(data) {
   .Call(`_fastplyr_cpp_grouped_df_as_grp`, data)
 }

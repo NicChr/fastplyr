@@ -188,10 +188,9 @@ select_summary <- function(.data, ..., .by = NULL, .cols = NULL, .order = group_
 }
 
 tidy_dots_info <- function(.data, ..., .by = NULL, .cols = NULL,
-                           .order = group_by_order_default(.data),
-                           .type = "data-mask"){
+                           .order = group_by_order_default(.data)){
   check_cols(n_dots = dots_length(...), .cols = .cols)
-  if (is.null(.cols) && .type == "data-mask"){
+  if (is.null(.cols)){
     mutate_summary(.data, ..., .by = {{ .by }}, .order = .order)
   } else {
     select_summary(.data, ..., .by = {{ .by }}, .order = .order, .cols = .cols)
@@ -204,11 +203,10 @@ tidy_dots_info <- function(.data, ..., .by = NULL, .cols = NULL,
 
 tidy_eval_groups <- function(.data, ..., .by = NULL, .cols = NULL,
                              .order = group_by_order_default(.data),
-                             .type = "data-mask",
                              return_order = FALSE){
 
   info <- tidy_dots_info(.data, ..., .by = {{ .by }}, .cols = .cols,
-                         .order = .order, .type = .type)
+                         .order = .order)
   data <- info[["data"]]
   groups <- info[["all_groups"]]
   new_cols <- info[["new_cols"]]
@@ -696,63 +694,6 @@ eval_mutate <- function(data, quos){
   names(results) <- quo_names
   results <- unpack_results(results, quos)
   results
-}
-
-# `tidy_group_info` and `tidy_group_info_datamask` are legacy code
-# TO BE REMOVED
-tidy_group_info_datamask <- function(data, ..., .by = NULL,
-                                     ungroup = TRUE,
-                                     unique_groups = TRUE){
-  group_vars <- get_groups(data, {{ .by }})
-  extra_groups <- character()
-  if (ungroup){
-    out <- cpp_ungroup(data)
-  } else {
-    out <- data
-  }
-  # Data-masking for dots expressions
-  if (dots_length(...) > 0){
-    out_info <- mutate_summary(out, ..., .by = {{ .by }})
-    out <- out_info[["data"]]
-    extra_groups <- out_info[["new_cols"]]
-    GRP <- out_info[["GRP"]]
-  } else {
-    out_info <- NULL
-    GRP <- NULL
-  }
-  if (unique_groups){
-    extra_groups <- vec_setdiff(extra_groups, group_vars)
-    all_groups <- c(group_vars, extra_groups)
-  } else {
-    all_groups <- c(group_vars, vec_setdiff(extra_groups, group_vars))
-  }
-  if (is.null(out_info)){
-    changed_groups <- character()
-    address_equal <- add_names(logical(length(names(data))), names(data))
-  } else {
-    changed_groups <- vec_intersect(names(data), out_info[["changed_cols"]])
-    address_equal <- add_names(is.na(match(names(data), out_info[["changed_cols"]])), names(data))
-  }
-  list(
-    data = out,
-    dplyr_groups = group_vars,
-    extra_groups = extra_groups,
-    all_groups = all_groups,
-    changed_groups = changed_groups,
-    groups_changed = !all(address_equal[group_vars]),
-    address_equal = address_equal,
-    GRP = GRP
-  )
-}
-
-tidy_group_info <- function(data, ..., .by = NULL, .cols = NULL,
-                            ungroup = TRUE, rename = TRUE,
-                            unique_groups = TRUE){
-  check_cols(n_dots = dots_length(...), .cols = .cols)
-  tidy_group_info_datamask(data, ..., .by = {{ .by }},
-                           ungroup = ungroup,
-                           unique_groups = unique_groups)
-
 }
 
 # tidy_overview <- function(x, ...){
