@@ -9,6 +9,11 @@ test_that("row IDs", {
   )
 
   expect_equal(
+    add_row_id(df, .ascending = FALSE),
+    cheapr::df_modify(df, list(row_id = nrow(df):1))
+  )
+
+  expect_equal(
     add_row_id(df, Species),
     cheapr::df_modify(df, list(row_id = row_id(df$Species)))
   )
@@ -54,6 +59,13 @@ test_that("group IDs", {
   expect_equal(
     add_group_id(df),
     cheapr::df_modify(df, list(group_id = rep_len(1L, nrow(df))))
+  )
+
+  expect_equal(
+    add_group_id(df, as_qg = TRUE),
+    cheapr::df_modify(df, list(group_id = group_id(
+      rep_len(1L, nrow(df)), as_qg = TRUE
+      )))
   )
 
   expect_equal(

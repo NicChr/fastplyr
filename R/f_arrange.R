@@ -60,7 +60,8 @@ f_arrange <- function(.data, ..., .by = NULL, .by_group = FALSE,
       c("{.arg .in_place} has been set to `TRUE` and will arrange that data
      in-place.",
         "Please be aware this may sort all objects that point to the same
-     underlying data")
+     underlying data"),
+      .frequency = "once", .frequency_id = "f_arrange_in_place_arg"
     )
 
     is_exotic <- vapply(.data, \(x) cpp_is_exotic(x) && !rlang::is_bare_list(x), TRUE)
@@ -86,13 +87,36 @@ f_arrange <- function(.data, ..., .by = NULL, .by_group = FALSE,
       df_set_order(group_info[["data"]], order_vars, .order = 1L)
     }
 
+    # Rebuild attributes to be on the safe side
     .data <- cheapr::rebuild(cheapr::as_df(.data), .data)
+    temp <- .data # Save it in case we need it below
 
-    # Rebuild attributes and make sure it's from a fresh source without attributes
+    # Recompute group attributes directly
     # as rebuilding grouped_df relies on comparing memory addresses
     # which haven't been touched when we sort in-place
+
     if (length(f_group_vars(.data))){
-      .data <- f_group_by(.data, .cols = f_group_vars(.data))
+      if (is_fastplyr_grouped_df(.data)){
+        .data <- f_group_by(.data, .cols = f_group_vars(.data))
+      } else {
+        .data <- dplyr::group_by(.data, across(all_of(f_group_vars(.data))))
+      }
+
+      # Copy attributes that get dropped via `f_group_by/group_by`
+      # The idea is that `rebuild()` theoretically rebuilt all attributes
+      # correctly EXCEPT the group attributes which this package uses
+      # memory address comparisons
+
+      old_attrs <- attributes(temp)
+      new_attrs <- attributes(.data)
+
+      # `cpp_rebuild()` is a low-level attribute constructor
+      .data <- cpp_rebuild(
+        .data, temp,
+        names(new_attrs), # Keep all current attrs
+        setdiff(names(old_attrs), names(new_attrs)), # Add attrs that were dropped
+        shallow_copy = TRUE
+      )
     }
     .data
 
