@@ -71,9 +71,15 @@ df_is_sorted <- function(data){
   isTRUE(attr(df_order, "sorted"))
 }
 
-df_paste_names <- function(data,  sep = "_", .cols = names(data)){
-  do.call(paste, c(f_select(data, .cols = .cols),
-                   list(sep = sep)))
+df_paste_names <- function(data, sep = "_", .cols = names(data)){
+
+  data_to_paste <- cheapr::sset_col(data, .cols)
+
+  if (df_ncol(data_to_paste) == 0){
+    character(df_nrow(data_to_paste))
+  } else {
+    do.call(paste, c(data_to_paste, list(sep = sep)))
+  }
 }
 
 grouped_df_counts <- function(data, weights = NULL, expand = FALSE){

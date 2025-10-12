@@ -339,7 +339,7 @@ GRP_is_sorted <- function(GRP){
   isTRUE(ordered[names(ordered) == "sorted"])
 }
 GRP_group_data <- function(GRP, expand = FALSE){
-  out <- list_as_tbl(as.list(GRP_groups(GRP)))
+  out <- as_tbl(GRP_groups(GRP))
   if (expand){
     out <- cheapr::sset_df(out, GRP_group_id(GRP))
   }
@@ -347,6 +347,11 @@ GRP_group_data <- function(GRP, expand = FALSE){
 }
 
 GRP_names <- function(GRP, sep = "_", expand = FALSE, force.char = FALSE){
+
+  if (is.null(GRP)){
+    return(NULL)
+  }
+
   groups <- GRP_group_data(GRP)
   g_names <- df_paste_names(groups, sep = sep)
   if (expand && !is.null(g_names)){
