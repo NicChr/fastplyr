@@ -1,4 +1,17 @@
 
+# Explicit method for tibble
+
+#' @exportS3Method cheapr::rebuild
+rebuild.tbl_df <- function(x, template, shallow_copy = TRUE, ...){
+  out <- NextMethod("rebuild")
+
+  # Make sure class is a plain tbl
+  cheapr::attrs_modify(
+    out, class = c("tbl_df", "tbl", "data.frame"),
+    .set = !shallow_copy
+  )
+}
+
 #' @exportS3Method cheapr::rebuild
 rebuild.grouped_df <- function(x, template, ...){
 
