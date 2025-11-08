@@ -36,7 +36,7 @@ f_rowwise <- function(.data, ..., .ascending = TRUE,
 
   if (!.ascending){
     rev_seq <- seq(from = df_nrow(out), by = -1L, length.out = df_nrow(out))
-    groups <- cheapr::sset_df(groups, rev_seq)
+    groups <- cheapr::sset(groups, rev_seq)
     row_ids <- as.list(rev_seq)
   } else {
     row_ids <- as.list(df_seq_along(out))

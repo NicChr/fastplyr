@@ -248,7 +248,7 @@ tidy_quantiles <- function(data, ..., probs = seq(0, 1, 0.25),
       )
 
       # Replace values in-place
-      # this is fine because out is a fresh data because we called `sset_df()`
+      # this is fine because out is a fresh data because we called `sset()`
 
       for (p in quant_probs) {
         p_seq <- quant_starts + k

@@ -134,7 +134,7 @@ mutate_summary <- function(.data, ...,
 
     # Add missed group vars and keep original ordering
     keep_cols <- vec_intersect(all_cols, c(all_groups, keep_cols))
-    out_data <- cheapr::sset_df(out_data, j = keep_cols)
+    out_data <- cheapr::sset(out_data, j = keep_cols)
   }
   list(
     data = out_data,

@@ -95,7 +95,7 @@ f_slice <- function(.data, i = 0L, ..., .by = NULL,
   if (keep_order){
     data_locs <- sort(data_locs)
   }
-  cheapr::sset_df(.data, data_locs)
+  cheapr::sset(.data, data_locs)
 }
 #' @rdname f_slice
 #' @export
@@ -136,7 +136,7 @@ f_slice_head <- function(.data, n, prop, .by = NULL,
     i <- sort(i)
   }
   if (slice){
-    cheapr::sset_df(.data, i)
+    cheapr::sset(.data, i)
   } else {
     .data
   }
@@ -169,7 +169,7 @@ f_slice_tail <- function(.data, n, prop, .by = NULL,
   if (keep_order){
     i <- sort(i)
   }
-  cheapr::sset_df(.data, i)
+  cheapr::sset(.data, i)
 }
 #' @rdname f_slice
 #' @export
@@ -218,7 +218,7 @@ f_slice_min <- function(.data, order_by, n, prop, .by = NULL,
   if (keep_order){
     i <- sort(i)
   }
-  cheapr::sset_df(.data, i)
+  cheapr::sset(.data, i)
 }
 #' @rdname f_slice
 #' @export
@@ -270,7 +270,7 @@ f_slice_max <- function(.data, order_by, n, prop, .by = NULL,
   if (keep_order){
     i <- sort(i)
   }
-  cheapr::sset_df(.data, i)
+  cheapr::sset(.data, i)
 }
 #' @rdname f_slice
 #' @export
@@ -325,7 +325,7 @@ f_slice_sample <- function(.data, n, replace = FALSE, prop,
   if (keep_order){
     i <- sort(i)
   }
-  cheapr::sset_df(.data, i)
+  cheapr::sset(.data, i)
 }
 
 df_slice_prepare <- function(data, n, prop, .by = NULL,

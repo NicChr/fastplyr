@@ -34,7 +34,7 @@ GRP3 <- function(X, by = NULL, sort = TRUE,
   }
   if (!sort && !return.groups && !is.factor(X)) {
     if (!is.null(by)) {
-      X <- cheapr::sset_df(X, j = by)
+      X <- cheapr::sset(X, j = by)
     }
     out <- cheapr::new_list(10L)
     # groups <- group2(X)
@@ -341,7 +341,7 @@ GRP_is_sorted <- function(GRP){
 GRP_group_data <- function(GRP, expand = FALSE){
   out <- as_tbl(GRP_groups(GRP))
   if (expand){
-    out <- cheapr::sset_df(out, GRP_group_id(GRP))
+    out <- cheapr::sset(out, GRP_group_id(GRP))
   }
   out
 }
@@ -379,7 +379,7 @@ df_to_GRP <- function(data, .cols = character(),
   dplyr_groups <- f_group_vars(data)
   cols <- drop_names(col_select_names(data, .cols = .cols))
   extra_groups <- vec_setdiff(cols, dplyr_groups)
-  data2 <- cheapr::sset_df(data, j = cols)
+  data2 <- cheapr::sset(data, j = cols)
 
   if (length(names(data2)) == 0L){
     out <- grouped_df_as_GRP(cpp_ungroup(data2),
@@ -524,7 +524,7 @@ construct_grouped_df <- function(data, g, group_vars){
   groups <- GRP_groups(g)
 
   if (is.null(groups)){
-    groups <- cheapr::sset_df(cpp_ungroup(data), GRP_starts(g), j = group_vars)
+    groups <- cheapr::sset(cpp_ungroup(data), GRP_starts(g), j = group_vars)
   }
   group_locs <- GRP_loc(g)
   groups[[".rows"]] <- as_list_of_ints(group_locs)

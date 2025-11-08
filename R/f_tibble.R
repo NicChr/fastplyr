@@ -50,7 +50,7 @@ f_enframe <- function(x, name = "name", value = "value"){
     out <- list(x_nms, x)
     names(out) <- c(name, value)
   }
-  as_tbl(out)
+  as_tbl(cheapr::new_df(.args = out))
 }
 #' @rdname new_tbl
 #' @export

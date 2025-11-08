@@ -25,7 +25,7 @@ f_select <- function(data, ..., .cols = NULL){
 #' @export
 f_select.data.frame <- function(data, ..., .cols = NULL){
   pos <- tidy_select_pos(data, ..., .cols = .cols)
-  out <- cheapr::sset_df(data, j = pos)
+  out <- cheapr::sset(data, j = pos)
   names(out) <- names(pos)
   out
 }

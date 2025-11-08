@@ -238,16 +238,17 @@ test_that("Standard tests", {
   )
 
   expect_equal(
-    dplyr_quantiles(as_tbl(EuStockMarkets), colnames(EuStockMarkets),
+    dplyr_quantiles(as.data.frame(EuStockMarkets), colnames(EuStockMarkets),
                     probs = seq(0, 1, 0.01)),
-    tidy_quantiles(as_tbl(EuStockMarkets), .cols = colnames(EuStockMarkets),
+    tidy_quantiles(as.data.frame(EuStockMarkets), .cols = colnames(EuStockMarkets),
                    probs = seq(0, 1, 0.01), pivot = "long")
   )
   expect_equal(
-    dplyr_quantiles(as_tbl(EuStockMarkets), colnames(EuStockMarkets),
+    dplyr_quantiles(as.data.frame(EuStockMarkets), colnames(EuStockMarkets),
                     probs = seq(0, 1, 0.01)) |>
-      tidyr::pivot_wider(names_from = 1, values_from = -1),
-    tidy_quantiles(as_tbl(EuStockMarkets), .cols = colnames(EuStockMarkets),
+      tidyr::pivot_wider(names_from = 1, values_from = -1) |>
+      as.data.frame(),
+    tidy_quantiles(as.data.frame(EuStockMarkets), .cols = colnames(EuStockMarkets),
                    probs = seq(0, 1, 0.01), pivot = "wide")
   )
 

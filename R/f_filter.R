@@ -19,7 +19,7 @@ f_filter <- function(.data, ..., .by = NULL){
     if (!all(vapply(filter_df, is.logical, FALSE))){
       cli::cli_abort("All expressions in {.fn f_filter} must be logical vectors")
     }
-    cheapr::sset_df(.data, cpp_which_all(filter_df))
+    cheapr::sset(.data, cpp_which_all(filter_df))
   }
 }
 
