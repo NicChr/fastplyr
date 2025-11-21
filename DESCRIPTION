@@ -1,6 +1,6 @@
 Package: fastplyr
 Title: Fast Alternatives to 'tidyverse' Functions
-Version: 0.9.9.9000
+Version: 0.9.91
 Authors@R: 
     person("Nick", "Christofides", , "nick.christofides.r@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-9743-7342"))
@@ -29,6 +29,7 @@ Suggests:
 LinkingTo: 
     cheapr,
     cpp11
+SystemRequirements: C++17
 Config/testthat/edition: 3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

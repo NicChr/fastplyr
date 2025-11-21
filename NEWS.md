@@ -1,4 +1,4 @@
-# fastplyr (development version)
+# fastplyr 0.9.91
 
 - `f_arrange()` can now sort data frames in-place via the `.in_place` argument.
 
