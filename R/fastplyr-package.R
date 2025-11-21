@@ -13,7 +13,7 @@
 #' You can learn more about the tidyverse, collapse and cheapr
 #' using the links below.
 #'
-#' \href{https://www.tidyverse.org/learn/}{tidyverse}
+#' \href{https://tidyverse.org/learn/}{tidyverse}
 #'
 #' \href{https://sebkrantz.github.io/collapse/articles/collapse_intro.html}{collapse}
 #'
