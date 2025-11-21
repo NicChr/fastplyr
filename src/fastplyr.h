@@ -55,11 +55,15 @@ inline void *safe_memmove(void *dst, const void *src, size_t n){
 
 // Helper to get exported package function
 inline SEXP find_pkg_fun(const char *name, const char *pkg, bool all_fns){
+  SEXP expr;
   if (all_fns){
-    return Rf_eval(Rf_lang3(R_TripleColonSymbol, Rf_install(pkg), Rf_install(name)), R_BaseEnv);
+    expr = SHIELD(Rf_lang3(R_TripleColonSymbol, Rf_install(pkg), Rf_install(name)));
   } else {
-    return Rf_eval(Rf_lang3(R_DoubleColonSymbol, Rf_install(pkg), Rf_install(name)), R_BaseEnv);
+    expr = SHIELD(Rf_lang3(R_DoubleColonSymbol, Rf_install(pkg), Rf_install(name)));
   }
+  SEXP out = SHIELD(Rf_eval(expr, R_BaseEnv));
+  YIELD(2);
+  return out;
 }
 
 #endif // End of cheapr API header guard check
