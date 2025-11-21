@@ -32,7 +32,7 @@ coverage](https://codecov.io/gh/NicChr/fastplyr/graph/badge.svg)](https://app.co
 
 <!-- badges: end -->
 
-fastplyr aims to provide a [tidyverse](https://www.tidyverse.org/learn)
+fastplyr aims to provide a [tidyverse](https://tidyverse.org/learn)
 frontend using a
 [collapse](https://sebkrantz.github.io/collapse/articles/collapse_intro.html)
 backend. This means from a user's point of view the functions behave
@@ -66,69 +66,70 @@ dplyr most of the time, there can be a few key differences.
 
 ## Differences between fastplyr and dplyr
 
-+----------------+---------------------+----------------------------+
-|                | ### dplyr           | ### fastplyr               |
-+================+=====================+============================+
-| `.by`          | Groups are sorted   | Groups are always sorted   |
-|                | by order of first   | by default, even when      |
-|                | appearance always   | using `.by`. One can use   |
-|                | when using `.by`    | the other by setting       |
-|                |                     | `.order = FALSE`           |
-+----------------+---------------------+----------------------------+
-| Many groups    | Generally slow for  | Designed to be fast for    |
-|                | data with many      | data with many groups.     |
-|                | groups.             |                            |
-+----------------+---------------------+----------------------------+
-| Handling of    | Executes            | Some expressions are       |
-| `...`          | expressions in a    | executed independently to  |
-| expressions    | way that latter     | each other                 |
-|                | expressions depend  |                            |
-|                | on prior ones       |                            |
-+----------------+---------------------+----------------------------+
-| Optimisations  | Expressions are run | Many functions are         |
-|                | by-group with       | optimised to either ignore |
-|                | minimal overhead,   | groups or use faster       |
-|                | slow for many       | methods                    |
-|                | groups              |                            |
-+----------------+---------------------+----------------------------+
-| Duplicate rows | No dedicated        | Dedicated function         |
-|                | function for this,  | `f_duplicates` can do this |
-|                | solution using      | very fast and with fine    |
-|                | `group_ by          | control.                   |
-|                | |> filter(n() > 1)` |                            |
-|                | are generally slow  |                            |
-|                | for larger data.    |                            |
-+----------------+---------------------+----------------------------+
-| Row slicing    | `slice()` supports  | Data-masked expressions    |
-|                | data-masked         | not supported in           |
-|                | expressions         | `f_slice_` functions. Use  |
-|                | supplied to `...`   | `f_filter()` for this      |
-|                |                     | behaviour.                 |
-+----------------+---------------------+----------------------------+
-| Memory usage   | High memory usage   | Lower usage compared to    |
-|                |                     | dplyr                      |
-+----------------+---------------------+----------------------------+
-| joins          | Accepts different   | Accepts only equality      |
-|                | types of joins,     | joins of the form `x == y` |
-|                | e.g. rolling and    |                            |
-|                | equality joins.     |                            |
-+----------------+---------------------+----------------------------+
-| rowwise        | `rowwise_df`        | `rowwise_df` not accepted, |
-|                | accepted and        | must use `f_rowwise_df`    |
-|                | everything          | which creates a            |
-|                | sub-setted          | `grouped_df` with a row ID |
-|                | implictly using     | col. Implicit `[[`         |
-|                | `[[`                | subsetting does not occur. |
-+----------------+---------------------+----------------------------+
-| Matrices in    | Fully supported     | Not supported              |
-| data frames    |                     |                            |
-+----------------+---------------------+----------------------------+
-| Grouped data   | N/A                 | `f_group_by` produces a    |
-| frames         |                     | `grouped_df` with some     |
-|                |                     | additional metadata to     |
-|                |                     | assist with making later   |
-|                |                     | operations faster          |
-+----------------+---------------------+----------------------------+
++----------------+--------------------+---------------------------+
+|                | ### dplyr          | ### fastplyr              |
++================+====================+===========================+
+| `.by`          | Groups are sorted  | Groups are always sorted  |
+|                | by order of first  | by default, even when     |
+|                | appearance always  | using `.by`. One can use  |
+|                | when using `.by`   | the other by setting      |
+|                |                    | `.order = FALSE`          |
++----------------+--------------------+---------------------------+
+| Many groups    | Generally slow for | Designed to be fast for   |
+|                | data with many     | data with many groups.    |
+|                | groups.            |                           |
++----------------+--------------------+---------------------------+
+| Handling of    | Executes           | Some expressions are      |
+| `...`          | expressions in a   | executed independently to |
+| expressions    | way that latter    | each other                |
+|                | expressions depend |                           |
+|                | on prior ones      |                           |
++----------------+--------------------+---------------------------+
+| Optimisations  | Expressions are    | Many functions are        |
+|                | run by-group with  | optimised to either       |
+|                | minimal overhead,  | ignore groups or use      |
+|                | slow for many      | faster methods            |
+|                | groups             |                           |
++----------------+--------------------+---------------------------+
+| Duplicate rows | No dedicated       | Dedicated function        |
+|                | function for this, | `f_duplicates` can do     |
+|                | solution using     | this very fast and with   |
+|                | `group_ by |       | fine control.             |
+|                | > filter(n() > 1)` |                           |
+|                | are generally slow |                           |
+|                | for larger data.   |                           |
++----------------+--------------------+---------------------------+
+| Row slicing    | `slice()` supports | Data-masked expressions   |
+|                | data-masked        | not supported in          |
+|                | expressions        | `f_slice_` functions. Use |
+|                | supplied to `...`  | `f_filter()` for this     |
+|                |                    | behaviour.                |
++----------------+--------------------+---------------------------+
+| Memory usage   | High memory usage  | Lower usage compared to   |
+|                |                    | dplyr                     |
++----------------+--------------------+---------------------------+
+| joins          | Accepts different  | Accepts only equality     |
+|                | types of joins,    | joins of the form         |
+|                | e.g. rolling and   | `x == y`                  |
+|                | equality joins.    |                           |
++----------------+--------------------+---------------------------+
+| rowwise        | `rowwise_df`       | `rowwise_df` not          |
+|                | accepted and       | accepted, must use        |
+|                | everything         | `f_rowwise_df` which      |
+|                | sub-setted         | creates a `grouped_df`    |
+|                | implicitly using   | with a row ID col.        |
+|                | `[[`               | Implicit `[[` subsetting  |
+|                |                    | does not occur.           |
++----------------+--------------------+---------------------------+
+| Matrices in    | Fully supported    | Not supported             |
+| data frames    |                    |                           |
++----------------+--------------------+---------------------------+
+| Grouped data   | N/A                | `f_group_by` produces a   |
+| frames         |                    | `grouped_df` with some    |
+|                |                    | additional metadata to    |
+|                |                    | assist with making later  |
+|                |                    | operations faster         |
++----------------+--------------------+---------------------------+
 
 ## dplyr alternatives
 
