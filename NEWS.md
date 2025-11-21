@@ -1,5 +1,7 @@
 # fastplyr 0.9.91
 
+- C++17 or later is now required.
+
 - `f_arrange()` can now sort data frames in-place via the `.in_place` argument.
 
 - Fixed rchk issues flagged on CRAN.
