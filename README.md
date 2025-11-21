@@ -13,7 +13,7 @@ coverage](https://codecov.io/gh/NicChr/fastplyr/graph/badge.svg)](https://app.co
 
 <!-- badges: end -->
 
-fastplyr aims to provide a [tidyverse](https://tidyverse.org/learn)
+fastplyr aims to provide a [tidyverse](https://tidyverse.org/learn/)
 frontend using a
 [collapse](https://sebkrantz.github.io/collapse/articles/collapse_intro.html)
 backend. This means from a user’s point of view the functions behave
