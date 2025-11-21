@@ -1,5 +1,4 @@
 #include "fastplyr.h"
-#include "cheapr_api.h"
 #include <R.h>
 
 SEXP get_list_element(SEXP list, const char *str){

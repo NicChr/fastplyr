@@ -1,5 +1,4 @@
 #include "fastplyr.h"
-#include "cheapr_api.h"
 
 // Helpers for working with R expressions
 
@@ -9,21 +8,6 @@ bool functions_equal(SEXP x, SEXP y){
   }
 
   return R_compute_identical(x, y, 8);
-}
-
-// Helper to get exported package function
-SEXP find_pkg_fun(const char *name, const char *pkg, bool all_fns){
-
-  SEXP expr = R_NilValue;
-
-  if (all_fns){
-    expr = SHIELD(Rf_lang3(R_TripleColonSymbol, Rf_install(pkg), Rf_install(name)));
-  } else {
-    expr = SHIELD(Rf_lang3(R_DoubleColonSymbol, Rf_install(pkg), Rf_install(name)));
-  }
-  SEXP out = SHIELD(Rf_eval(expr, R_BaseEnv));
-  YIELD(2);
-  return out;
 }
 
 // Match fn to a list of fns

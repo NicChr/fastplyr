@@ -1,6 +1,5 @@
 #include "fastplyr.h"
 #include <R.h>
-#include <cheapr_api.h>
 
 SEXP get_data_GRP(SEXP x){
   return Rf_getAttrib(x, Rf_install("GRP"));

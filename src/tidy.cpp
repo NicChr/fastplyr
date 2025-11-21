@@ -1,5 +1,4 @@
 #include "fastplyr.h"
-#include "cheapr_api.h"
 
 // Just a wrapper around rlang::eval_tidy
 // but only supplying a quosure and data mask

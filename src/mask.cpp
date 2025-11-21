@@ -1,5 +1,4 @@
 #include "fastplyr.h"
-#include <cheapr_api.h>
 
 static SEXP top_env_sym = NULL;
 static SEXP data_pronoun_sym = NULL;

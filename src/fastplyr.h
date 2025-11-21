@@ -1,9 +1,13 @@
-#ifndef fastplyr_cpp_
-#define fastplyr_cpp_
+#ifndef FASTPLYR_H
+#define FASTPLYR_H
 
 #include <cpp11.hpp>
-#include <Rinternals.h>
+#include <cheapr_api.h>
 #include <vector>
+
+using namespace cheapr;
+
+#ifndef CHEAPR_CORE_H
 
 #ifndef R_NO_REMAP
 #define R_NO_REMAP
@@ -24,8 +28,6 @@
 #ifndef YIELD
 #define YIELD Rf_unprotect
 #endif
-
-inline cpp11::function fp_group_id = cpp11::package("fastplyr")["group_id"];
 
 inline int df_nrow(SEXP x){
   return Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
@@ -51,6 +53,27 @@ inline void *safe_memmove(void *dst, const void *src, size_t n){
   return n ? memmove(dst, src, n) : dst;
 }
 
+// Helper to get exported package function
+inline SEXP find_pkg_fun(const char *name, const char *pkg, bool all_fns){
+  if (all_fns){
+    return Rf_eval(Rf_lang3(R_TripleColonSymbol, Rf_install(pkg), Rf_install(name)), R_BaseEnv);
+  } else {
+    return Rf_eval(Rf_lang3(R_DoubleColonSymbol, Rf_install(pkg), Rf_install(name)), R_BaseEnv);
+  }
+}
+
+#endif // End of cheapr API header guard check
+
+inline void *safe_memcpy(void *dst, const void *src, size_t n){
+  return n ? memcpy(dst, src, n) : dst;
+}
+
+inline void *safe_memset(void *dst, int val, size_t n){
+  return n ? memset(dst, val, n) : dst;
+}
+
+inline cpp11::function fp_group_id = cpp11::package("fastplyr")["group_id"];
+
 SEXP get_list_element(SEXP list, const char *str);
 int cpp_n_group_vars(SEXP x);
 SEXP cpp_orig_order(SEXP group_id, SEXP group_sizes);
@@ -62,13 +85,13 @@ bool call_is_namespaced(SEXP expr);
 SEXP get_fun_ns(SEXP x, SEXP rho);
 void set_as_vctrs_new_list_of_int(SEXP x);
 void set_as_tbl(SEXP x);
+SEXP binary_combine(SEXP x, SEXP y);
 SEXP get_mask_data_vars(SEXP mask);
 SEXP quo_vars(SEXP quos, SEXP mask, bool combine);
 bool exists(SEXP sym, SEXP rho);
 bool is_data_pronoun_call(SEXP expr, SEXP env);
 SEXP data_pronoun_var(SEXP expr, SEXP env);
 SEXP get_mask_top_env(SEXP mask);
-SEXP find_pkg_fun(const char *name, const char *pkg, bool all_fns);
 SEXP new_bare_data_mask();
 SEXP cpp_quos_drop_null(SEXP quos);
 SEXP r_deparse(SEXP quo);
