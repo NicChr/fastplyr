@@ -577,8 +577,8 @@ bool is_data_pronoun_call(SEXP expr, SEXP env){
     return false;
   }
 
-  SEXP dollar_str = SHIELD(Rf_ScalarString(Rf_mkCharCE("$", CE_UTF8))); ++NP;
-  SEXP double_brackets_str = SHIELD(Rf_ScalarString(Rf_mkCharCE("[[", CE_UTF8))); ++NP;
+  SEXP dollar_str = SHIELD(make_utf8_str("$")); ++NP;
+  SEXP double_brackets_str = SHIELD(make_utf8_str("[[")); ++NP;
 
   if (!(is_fn_call(expr, dollar_str, R_NilValue, env) ||
       is_fn_call(expr, double_brackets_str, R_NilValue, env))){
@@ -586,7 +586,7 @@ bool is_data_pronoun_call(SEXP expr, SEXP env){
     return false;
   }
 
-  bool out = CAR(CDR(expr)) == Rf_installChar(Rf_mkCharCE(".data", CE_UTF8));
+  bool out = CAR(CDR(expr)) == install_utf8(".data");
 
   YIELD(NP);
   return out;
@@ -602,7 +602,7 @@ SEXP data_pronoun_var(SEXP expr, SEXP env){
     Rf_error("`expr` must be a `.data` pronoun expression");
   }
 
-  SEXP double_brackets_sym = SHIELD(Rf_installChar(Rf_mkCharCE("[[", CE_UTF8))); ++NP;
+  SEXP double_brackets_sym = SHIELD(install_utf8("[[")); ++NP;
 
   SEXP out = CAR(CDDR(expr));
 
@@ -707,10 +707,10 @@ SEXP cpp_quos_drop_null(SEXP quos){
   SEXP r_true = SHIELD(new_vec(LGLSXP, 1));
   LOGICAL(r_true)[0] = TRUE;
   SEXP not_null_locs = SHIELD(cheapr::val_find(not_null, r_true, false));
-  SEXP out = SHIELD(cheapr::sset_vec(quos, not_null_locs, false));
+  SEXP out = SHIELD(cheapr::sset_vec(quos, not_null_locs, true));
   Rf_copyMostAttrib(quos, out);
   SEXP names = SHIELD(get_names(quos));
-  set_names(out, cheapr::sset_vec(names, not_null_locs, false));
+  set_names(out, cheapr::sset_vec(names, not_null_locs, true));
   SEXP cls = SHIELD(Rf_getAttrib(quos, R_ClassSymbol));
   Rf_classgets(out, cls);
   YIELD(6);
@@ -724,20 +724,14 @@ bool call_contains_dplyr_mask(SEXP expr, SEXP rho){
 
   int32_t NP = 0;
 
-  SEXP dplyr_mask_fns = SHIELD(new_vec(STRSXP, 11)); ++NP;
-  SET_STRING_ELT(dplyr_mask_fns, 0, Rf_mkCharCE("n", CE_UTF8));
-  SET_STRING_ELT(dplyr_mask_fns, 1, Rf_mkCharCE("pick", CE_UTF8));
-  SET_STRING_ELT(dplyr_mask_fns, 2, Rf_mkCharCE("row_number", CE_UTF8));
-  SET_STRING_ELT(dplyr_mask_fns, 3, Rf_mkCharCE("cur_group_id", CE_UTF8));
-  SET_STRING_ELT(dplyr_mask_fns, 4, Rf_mkCharCE("cur_group_rows", CE_UTF8));
-  SET_STRING_ELT(dplyr_mask_fns, 5, Rf_mkCharCE("cur_column", CE_UTF8));
-  SET_STRING_ELT(dplyr_mask_fns, 6, Rf_mkCharCE("cur_data", CE_UTF8));
-  SET_STRING_ELT(dplyr_mask_fns, 7, Rf_mkCharCE("cur_data_all", CE_UTF8));
-  SET_STRING_ELT(dplyr_mask_fns, 8, Rf_mkCharCE("if_any", CE_UTF8));
-  SET_STRING_ELT(dplyr_mask_fns, 9, Rf_mkCharCE("if_all", CE_UTF8));
-  SET_STRING_ELT(dplyr_mask_fns, 10, Rf_mkCharCE("c_across", CE_UTF8));
-  SEXP dplyr_str = SHIELD(Rf_ScalarString(Rf_mkCharCE("dplyr", CE_UTF8))); ++NP;
+  SEXP dplyr_mask_fns = SHIELD(new_r_vec(
+    "n", "pick", "row_number", "cur_group_id",
+    "cur_group_rows", "cur_column", "cur_data",
+    "cur_data_all", "if_any", "if_all",
+    "c_across"
+  )); ++NP;
 
+  SEXP dplyr_str = SHIELD(new_r_vec("dplyr")); ++NP;
   if (is_fn_call(expr, dplyr_mask_fns, dplyr_str, rho)){
     YIELD(NP);
     return true;

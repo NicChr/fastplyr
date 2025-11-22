@@ -1,80 +1,10 @@
 #ifndef FASTPLYR_H
 #define FASTPLYR_H
 
-#include <cpp11.hpp>
 #include <cheapr_api.h>
 #include <vector>
 
 using namespace cheapr;
-
-#ifndef CHEAPR_CORE_H
-
-#ifndef R_NO_REMAP
-#define R_NO_REMAP
-#endif
-
-#ifndef VECTOR_PTR_RO
-#define VECTOR_PTR_RO(x) ((const SEXP*) DATAPTR_RO(x))
-#endif
-
-#ifndef INTEGER64_PTR
-#define INTEGER64_PTR(x) ((int64_t*) REAL(x))
-#endif
-
-#ifndef SHIELD
-#define SHIELD Rf_protect
-#endif
-
-#ifndef YIELD
-#define YIELD Rf_unprotect
-#endif
-
-inline int df_nrow(SEXP x){
-  return Rf_length(Rf_getAttrib(x, R_RowNamesSymbol));
-}
-
-inline void set_names(SEXP x, SEXP names){
-  names == R_NilValue ? Rf_setAttrib(x, R_NamesSymbol, R_NilValue) : Rf_namesgets(x, names);
-}
-
-inline SEXP get_names(SEXP x){
-  return Rf_getAttrib(x, R_NamesSymbol);
-}
-
-inline SEXP new_vec(SEXPTYPE type, R_xlen_t n){
-  return Rf_allocVector(type, n);
-}
-
-inline SEXP coerce_vec(SEXP x, SEXPTYPE type){
-  return Rf_coerceVector(x, type);
-}
-
-inline void *safe_memmove(void *dst, const void *src, size_t n){
-  return n ? memmove(dst, src, n) : dst;
-}
-
-// Helper to get exported package function
-inline SEXP find_pkg_fun(const char *name, const char *pkg, bool all_fns){
-  SEXP expr;
-  if (all_fns){
-    expr = SHIELD(Rf_lang3(R_TripleColonSymbol, Rf_install(pkg), Rf_install(name)));
-  } else {
-    expr = SHIELD(Rf_lang3(R_DoubleColonSymbol, Rf_install(pkg), Rf_install(name)));
-  }
-  SEXP out = SHIELD(Rf_eval(expr, R_BaseEnv));
-  YIELD(2);
-  return out;
-}
-
-#endif // End of cheapr API header guard check
-
-inline void *safe_memcpy(void *dst, const void *src, size_t n){
-  return n ? memcpy(dst, src, n) : dst;
-}
-
-inline void *safe_memset(void *dst, int val, size_t n){
-  return n ? memset(dst, val, n) : dst;
-}
 
 inline cpp11::function fp_group_id = cpp11::package("fastplyr")["group_id"];
 
@@ -89,7 +19,6 @@ bool call_is_namespaced(SEXP expr);
 SEXP get_fun_ns(SEXP x, SEXP rho);
 void set_as_vctrs_new_list_of_int(SEXP x);
 void set_as_tbl(SEXP x);
-SEXP binary_combine(SEXP x, SEXP y);
 SEXP get_mask_data_vars(SEXP mask);
 SEXP quo_vars(SEXP quos, SEXP mask, bool combine);
 bool exists(SEXP sym, SEXP rho);

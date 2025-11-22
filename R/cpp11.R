@@ -112,10 +112,6 @@ cpp_group_ends <- function(group_id, n_groups) {
   .Call(`_fastplyr_cpp_group_ends`, group_id, n_groups)
 }
 
-common_length <- function(x) {
-  .Call(`_fastplyr_common_length`, x)
-}
-
 cpp_group_data <- function(x) {
   .Call(`_fastplyr_cpp_group_data`, x)
 }

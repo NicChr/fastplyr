@@ -1,6 +1,8 @@
 #include "fastplyr.h"
 #include <R.h>
 
+using namespace cheapr;
+
 SEXP get_list_element(SEXP list, const char *str){
   SEXP out = R_NilValue;
   SEXP names = SHIELD(get_names(list));
@@ -27,9 +29,9 @@ SEXP cpp_frame_addresses_equal(SEXP x, SEXP y) {
     Rf_error("x and y must be of the same length");
   }
   SEXP out = SHIELD(new_vec(LGLSXP, n1));
-  int* __restrict__ p_out = LOGICAL(out);
+  int* RESTRICT p_out = LOGICAL(out);
   for (int i = 0; i < n1; ++i) {
-    p_out[i] = (cheapr::r_address(p_x[i]) == cheapr::r_address(p_y[i]));
+    p_out[i] = (cheapr::address(p_x[i]) == cheapr::address(p_y[i]));
   }
   YIELD(1);
   return out;
@@ -45,8 +47,8 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
   int n = Rf_length(x);
   SEXP nrows = SHIELD(new_vec(INTSXP, n)); ++NP;
   SEXP ncols = SHIELD(new_vec(INTSXP, n)); ++NP;
-  int* __restrict__ p_nrows = INTEGER(nrows);
-  int* __restrict__ p_ncols = INTEGER(ncols);
+  int* RESTRICT p_nrows = INTEGER(nrows);
+  int* RESTRICT p_ncols = INTEGER(ncols);
 
   if (n < 2){
     for (int i = 0; i < n; ++i) {
@@ -89,9 +91,7 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
       }
     }
   }
-  SEXP out = SHIELD(new_vec(VECSXP, 2)); ++NP;
-  SET_VECTOR_ELT(out, 0, nrows);
-  SET_VECTOR_ELT(out, 1, ncols);
+  SEXP out = SHIELD(new_r_list(nrows, ncols)); ++NP;
   YIELD(NP);
   return out;
 }
@@ -147,10 +147,7 @@ SEXP cpp_as_list_of_frames(SEXP x){
   SEXP out = SHIELD(new_vec(VECSXP, n));
   SEXP names = SHIELD(get_names(x));
   bool has_names = !Rf_isNull(names);
-  SEXP tbl_class = SHIELD(new_vec(STRSXP, 3));
-  SET_STRING_ELT(tbl_class, 0, Rf_mkChar("tbl_df"));
-  SET_STRING_ELT(tbl_class, 1, Rf_mkChar("tbl"));
-  SET_STRING_ELT(tbl_class, 2, Rf_mkChar("data.frame"));
+  SEXP tbl_class = SHIELD(new_r_vec("tbl_df", "tbl", "data.frame"));
 
   SEXP result;
   PROTECT_INDEX index;
@@ -193,10 +190,10 @@ SEXP cpp_pluck_list_of_integers(SEXP x, SEXP i, SEXP default_value){
     YIELD(NP);
     Rf_error("i must be an integer vector of length 1 or of length(x)");
   }
-  const int* __restrict__ p_i = INTEGER_RO(i);
+  const int* RESTRICT p_i = INTEGER_RO(i);
   int replace = Rf_asInteger(default_value);
   SEXP out = SHIELD(new_vec(INTSXP, n)); ++NP;
-  int* __restrict__ p_out = INTEGER(out);
+  int* RESTRICT p_out = INTEGER(out);
 
   for (int j = 0; j < n; ++j) {
     k = (i_n == 1 ? p_i[0] : p_i[j]);
@@ -219,9 +216,9 @@ SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
 
   SEXP out = SHIELD(new_vec(INTSXP, n));
 
-  int* __restrict__ p_out = INTEGER(out);
-  const int* __restrict__ p_o = INTEGER_RO(order);
-  const int* __restrict__ p_group_sizes = INTEGER_RO(group_sizes);
+  int* RESTRICT p_out = INTEGER(out);
+  const int* RESTRICT p_o = INTEGER_RO(order);
+  const int* RESTRICT p_group_sizes = INTEGER_RO(group_sizes);
 
   int row_number, group_size;
   int k = 0;
@@ -272,7 +269,7 @@ SEXP cpp_which_all(SEXP x){
     out = SHIELD(cheapr::val_find(p_x[0], r_true, false)); ++NP;
   } else {
     SEXP lgl = SHIELD(new_vec(LGLSXP, n_rows)); ++NP;
-    int* __restrict__ p_lgl = INTEGER(lgl);
+    int* RESTRICT p_lgl = INTEGER(lgl);
     std::fill(p_lgl, p_lgl + n_rows, 0);
 
     // Save pointers to logical cols
@@ -295,7 +292,7 @@ SEXP cpp_which_all(SEXP x){
       p_lgl[i] = is_true;
     }
     out = SHIELD(new_vec(INTSXP, n_true)); ++NP;
-    int* __restrict__ p_out = INTEGER(out);
+    int* RESTRICT p_out = INTEGER(out);
     int whichi = 0;
     int i = 0;
     while (whichi < n_true){
@@ -314,7 +311,7 @@ SEXP int_slice(SEXP x, SEXP indices, const int *p_x, int xn, const int *pi, int 
   int32_t NP = 0;
   int k = 0;
   SEXP out = SHIELD(new_vec(INTSXP, indn)); ++NP;
-  int* __restrict__ p_out = INTEGER(out);
+  int* RESTRICT p_out = INTEGER(out);
   int j;
   for (int i = 0; i < indn; ++i){
     j = pi[i];
@@ -386,7 +383,7 @@ SEXP cpp_df_run_id(SEXP x){
   p_x = VECTOR_PTR_RO(x);
 
   SEXP out = SHIELD(new_vec(INTSXP, n_rows)); ++NP;
-  int* __restrict__ p_out = INTEGER(out);
+  int* RESTRICT p_out = INTEGER(out);
 
   if (n_cols < 1){
     std::fill(p_out, p_out + n_rows, 1);
@@ -464,8 +461,7 @@ SEXP cpp_consecutive_id(SEXP x){
   if (Rf_inherits(x, "data.frame")){
     return cpp_df_run_id(x);
   } else {
-    SEXP temp = SHIELD(new_vec(VECSXP, 1));
-    SET_VECTOR_ELT(temp, 0, x);
+    SEXP temp = SHIELD(new_r_list(x));
     SHIELD(temp = cheapr::new_df(temp, R_NilValue, false, false));
     SEXP out = SHIELD(cpp_df_run_id(temp));
     YIELD(3);
@@ -721,7 +717,7 @@ SEXP cpp_group_starts(SEXP group_id, int n_groups){
 
   SEXP out = SHIELD(new_vec(INTSXP, n_groups));
   const int* p_group_id = INTEGER_RO(group_id);
-  int* __restrict__ p_out = INTEGER(out);
+  int* RESTRICT p_out = INTEGER(out);
 
 
   // Slower but easier to read alternative
@@ -778,7 +774,7 @@ SEXP cpp_group_starts(SEXP group_id, int n_groups){
 //   SEXP out = SHIELD(new_vec(REALSXP, n_groups));
 //
 //   const double *p_x = REAL_RO(x);
-//   double* __restrict__ p_out = REAL(out);
+//   double* RESTRICT p_out = REAL(out);
 //
 //   int g;
 //
@@ -804,7 +800,7 @@ SEXP cpp_group_ends(SEXP group_id, int n_groups){
 
   SEXP out = SHIELD(new_vec(INTSXP, n_groups));
   const int* p_group_id = INTEGER_RO(group_id);
-  int* __restrict__ p_out = INTEGER(out);
+  int* RESTRICT p_out = INTEGER(out);
 
   // Initialise start locations
   std::fill(p_out, p_out + n_groups, 0);
@@ -815,27 +811,6 @@ SEXP cpp_group_ends(SEXP group_id, int n_groups){
   return out;
 }
 
-[[cpp11::register]]
-SEXP common_length(SEXP x){
-
-  const SEXP *p_x = VECTOR_PTR_RO(x);
-  R_xlen_t n = Rf_xlength(x);
-
-  R_xlen_t out = 0;
-
-  for (R_xlen_t i = 0; i < n; ++i){
-
-    // Ignore NULL elements
-    if (Rf_isNull(p_x[i])){
-      continue;
-    } else if (cheapr::vec_length(p_x[i]) == 0){
-      return Rf_ScalarInteger(0);
-    } else {
-      out = std::max(out, cheapr::vec_length(p_x[i]));
-    }
-  }
-  return out <= std::numeric_limits<int>::max() ? Rf_ScalarInteger(out) : Rf_ScalarReal(out);
-}
 
 SEXP compact_int_seq_len(int n){
   if (n == NA_INTEGER || n < 0){

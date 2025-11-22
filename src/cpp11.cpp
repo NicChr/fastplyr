@@ -201,13 +201,6 @@ extern "C" SEXP _fastplyr_cpp_group_ends(SEXP group_id, SEXP n_groups) {
     return cpp11::as_sexp(cpp_group_ends(cpp11::as_cpp<cpp11::decay_t<SEXP>>(group_id), cpp11::as_cpp<cpp11::decay_t<int>>(n_groups)));
   END_CPP11
 }
-// fastplyr.cpp
-SEXP common_length(SEXP x);
-extern "C" SEXP _fastplyr_common_length(SEXP x) {
-  BEGIN_CPP11
-    return cpp11::as_sexp(common_length(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
-  END_CPP11
-}
 // groups.cpp
 SEXP cpp_group_data(SEXP x);
 extern "C" SEXP _fastplyr_cpp_group_data(SEXP x) {
@@ -388,7 +381,6 @@ extern "C" {
 static const R_CallMethodDef CallEntries[] = {
     {"_fastplyr_call_args",                            (DL_FUNC) &_fastplyr_call_args,                            1},
     {"_fastplyr_call_is_namespaced",                   (DL_FUNC) &_fastplyr_call_is_namespaced,                   1},
-    {"_fastplyr_common_length",                        (DL_FUNC) &_fastplyr_common_length,                        1},
     {"_fastplyr_cpp_any_frames",                       (DL_FUNC) &_fastplyr_cpp_any_frames,                       1},
     {"_fastplyr_cpp_any_frames_exotic",                (DL_FUNC) &_fastplyr_cpp_any_frames_exotic,                1},
     {"_fastplyr_cpp_any_quo_contains_dplyr_mask_call", (DL_FUNC) &_fastplyr_cpp_any_quo_contains_dplyr_mask_call, 1},

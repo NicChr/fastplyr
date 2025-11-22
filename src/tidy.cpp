@@ -90,10 +90,7 @@ SEXP cpp_list_tidy(SEXP quos, bool named, bool keep_null){
 }
 
 void set_as_tbl(SEXP x){
-  SEXP tbl_class = SHIELD(new_vec(STRSXP, 3));
-  SET_STRING_ELT(tbl_class, 0, Rf_mkChar("tbl_df"));
-  SET_STRING_ELT(tbl_class, 1, Rf_mkChar("tbl"));
-  SET_STRING_ELT(tbl_class, 2, Rf_mkChar("data.frame"));
+  SEXP tbl_class = SHIELD(new_r_vec("tbl_df", "tbl", "data.frame"));
   Rf_classgets(x, tbl_class);
   YIELD(1);
 }
@@ -102,10 +99,9 @@ void set_as_vctrs_new_list_of_int(SEXP x){
   if (TYPEOF(x) != VECSXP){
     Rf_error("`x` must be a list of integers in %s", __func__);
   }
-  SEXP rows_class = SHIELD(new_vec(STRSXP, 3));
-  SET_STRING_ELT(rows_class, 0, Rf_mkChar("vctrs_list_of"));
-  SET_STRING_ELT(rows_class, 1, Rf_mkChar("vctrs_vctr"));
-  SET_STRING_ELT(rows_class, 2, Rf_mkChar("list"));
+  SEXP rows_class = SHIELD(new_r_vec(
+    "vctrs_list_of", "vctrs_vctr", "list"
+  ));
   SEXP ptype = SHIELD(new_vec(INTSXP, 0));
   Rf_setAttrib(x, Rf_install("ptype"), ptype);
   Rf_classgets(x, rows_class);
@@ -170,7 +166,7 @@ SEXP transpose_eval_results(SEXP x) {
     SEXP names_i = get_names(xi);
     SEXP index;
 
-    int* __restrict__ p_index;
+    int* RESTRICT p_index;
 
     if (!Rf_isNull(names2) && !Rf_isNull(names_i)) {
       R_Reprotect(index = Rf_match(names_i, names2, 0), index_idx);
@@ -234,16 +230,14 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
   int n_quos = Rf_length(quos);
 
   if (n_quos == 0){
-    SEXP out = SHIELD(new_vec(VECSXP, 2));
-    SET_VECTOR_ELT(out, 0, new_vec(VECSXP, 0));
-    SET_VECTOR_ELT(out, 1, new_vec(VECSXP, 0));
-    set_names(VECTOR_ELT(out, 0), new_vec(STRSXP, 0));
-    set_names(VECTOR_ELT(out, 1), new_vec(STRSXP, 0));
-    SEXP out_names = SHIELD(new_vec(STRSXP, 2));
-    SET_STRING_ELT(out_names, 0, Rf_mkChar("groups"));
-    SET_STRING_ELT(out_names, 1, Rf_mkChar("results"));
-    set_names(out, out_names);
-    YIELD(2);
+    SEXP empty_list = SHIELD(new_vec(VECSXP, 0));
+    SEXP empty_str = SHIELD(new_vec(STRSXP, 0));
+    set_names(empty_list, empty_str);
+    SEXP out = SHIELD(new_r_list(
+      arg("groups") = empty_list,
+      arg("results") = empty_list
+    ));
+    YIELD(3);
     return out;
   }
 
@@ -381,7 +375,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
         Rf_defineVar(p_quo_name_syms[m], result, top_env);
       }
       SET_VECTOR_ELT(inner_container, m, result);
-      result_size = cheapr::vec_length(result);
+      result_size = cheapr::vector_length(result);
       recycled_size = recycle ? (result_size == 0 ? 0 : recycled_size > result_size ? recycled_size : result_size) : result_size;
       recycled_pointers[m][i] = recycled_size;
     }
@@ -431,13 +425,10 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
     }
     SET_VECTOR_ELT(results, m, result);
   }
-  SEXP out = SHIELD(new_vec(VECSXP, 2)); ++NP;
-  SET_VECTOR_ELT(out, 0, groups_container);
-  SET_VECTOR_ELT(out, 1, results);
-  SEXP out_names = SHIELD(new_vec(STRSXP, 2)); ++NP;
-  SET_STRING_ELT(out_names, 0, Rf_mkChar("groups"));
-  SET_STRING_ELT(out_names, 1, Rf_mkChar("results"));
-  set_names(out, out_names);
+  SEXP out = SHIELD(new_r_list(
+    arg("groups") = groups_container,
+    arg("results") = results
+  )); ++NP;
   YIELD(NP);
   return out;
 }
@@ -620,7 +611,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
 //         Rf_defineVar(p_quo_name_syms[m], result, top_env);
 //       }
 //       SET_VECTOR_ELT(inner_container, m, result);
-//       result_size = cheapr::vec_length(result);
+//       result_size = cheapr::vector_length(result);
 //       recycled_size = recycle ? (result_size == 0 ? 0 : recycled_size > result_size ? recycled_size : result_size) : result_size;
 //       recycled_pointers[m][i] = recycled_size;
 //     }
@@ -698,9 +689,7 @@ SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos){
   // Add groups
 
   SEXP out = SHIELD(new_vec(VECSXP, 2)); ++NP;
-  SEXP out_names = SHIELD(new_vec(STRSXP, 2)); ++NP;
-  SET_STRING_ELT(out_names, 0, Rf_mkCharCE("groups", CE_UTF8));
-  SET_STRING_ELT(out_names, 1, Rf_mkCharCE("results", CE_UTF8));
+  SEXP out_names = SHIELD(new_r_vec("groups", "results")); ++NP;
   set_names(out, out_names);
 
   SET_VECTOR_ELT(out, 0, group_keys);
@@ -795,7 +784,7 @@ SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos){
     for (int m = 0; m < n_quos; ++m){
       R_Reprotect(result = rlang::eval_tidy(p_exprs[m], mask, p_envs[m]), result_idx);
 
-      int result_size = cheapr::vec_length(result);
+      int result_size = cheapr::vector_length(result);
 
       if (result_size != 1 && n_rows > 0){
         YIELD(NP);
@@ -1013,25 +1002,13 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
   int nrows = df_nrow(data);
 
   // Initialise needed symbols
-  SEXP grp_char = SHIELD(Rf_mkCharCE("GRP", CE_UTF8)); ++NP;
-
-  SEXP n_groups_char = SHIELD(Rf_mkCharCE("N.groups", CE_UTF8)); ++NP;
-  SEXP group_id_char = SHIELD(Rf_mkCharCE("group.id", CE_UTF8)); ++NP;
-  SEXP group_sizes_char = SHIELD(Rf_mkCharCE("group.sizes", CE_UTF8)); ++NP;
-  SEXP groups_char = SHIELD(Rf_mkCharCE("groups", CE_UTF8)); ++NP;
-  SEXP group_vars_char = SHIELD(Rf_mkCharCE("group.vars", CE_UTF8)); ++NP;
-  SEXP order_char = SHIELD(Rf_mkCharCE("order", CE_UTF8)); ++NP;
-  SEXP group_starts_char = SHIELD(Rf_mkCharCE("group.starts", CE_UTF8)); ++NP;
-  SEXP call_char = SHIELD(Rf_mkCharCE("call", CE_UTF8)); ++NP;
-  SEXP locs_char = SHIELD(Rf_mkCharCE("locs", CE_UTF8)); ++NP;
-
-  SEXP starts_char = SHIELD(Rf_mkCharCE("starts", CE_UTF8)); ++NP;
-  SEXP maxgrpn_char = SHIELD(Rf_mkCharCE("maxgrpn", CE_UTF8)); ++NP;
-  SEXP ordered_char = SHIELD(Rf_mkCharCE("ordered", CE_UTF8)); ++NP;
-  SEXP sorted_char = SHIELD(Rf_mkCharCE("sorted", CE_UTF8)); ++NP;
-
-
+  SEXP grp_char = SHIELD(make_utf8_char("GRP")); ++NP;
+  SEXP starts_char = SHIELD(make_utf8_char("starts")); ++NP;
+  SEXP maxgrpn_char = SHIELD(make_utf8_char("maxgrpn")); ++NP;
+  SEXP ordered_char = SHIELD(make_utf8_char("ordered")); ++NP;
+  SEXP sorted_char = SHIELD(make_utf8_char("sorted")); ++NP;
   SEXP grp = SHIELD(Rf_getAttrib(data, Rf_installChar(grp_char))); ++NP;
+
   if (TYPEOF(grp) != NILSXP){
     YIELD(NP);
     return grp;
@@ -1039,18 +1016,14 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
 
   // Initialise needed components
 
-  SEXP out = SHIELD(new_vec(VECSXP, 10)); ++NP;
-  SEXP out_names = SHIELD(new_vec(STRSXP, 10)); ++NP;
-  SET_STRING_ELT(out_names, 0, n_groups_char);
-  SET_STRING_ELT(out_names, 1, group_id_char);
-  SET_STRING_ELT(out_names, 2, group_sizes_char);
-  SET_STRING_ELT(out_names, 3, groups_char);
-  SET_STRING_ELT(out_names, 4, group_vars_char);
-  SET_STRING_ELT(out_names, 5, ordered_char);
-  SET_STRING_ELT(out_names, 6, order_char);
-  SET_STRING_ELT(out_names, 7, group_starts_char);
-  SET_STRING_ELT(out_names, 8, call_char);
-  SET_STRING_ELT(out_names, 9, locs_char);
+  SEXP out_names = SHIELD(
+    new_r_vec(
+      "N.groups", "group.id", "group.sizes",
+      "groups", "group.vars", "ordered",
+      "order", "group.starts", "call", "locs"
+    )
+  ); ++NP;
+  SEXP out = SHIELD(new_vec(VECSXP, Rf_length(out_names))); ++NP;
   set_names(out, out_names);
 
   SEXP group_data = SHIELD(cpp_group_data(data)); ++NP;
@@ -1085,11 +1058,11 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
 
   // Pointers
 
-  int* __restrict__ p_group_id = INTEGER(group_id);
-  int* __restrict__ p_group_order = INTEGER(group_order);
-  int* __restrict__ p_group_starts = INTEGER(group_starts);
-  int* __restrict__ p_group_sizes = INTEGER(group_sizes);
-  int* __restrict__ p_sorted_group_starts = INTEGER(sorted_group_starts);
+  int* RESTRICT p_group_id = INTEGER(group_id);
+  int* RESTRICT p_group_order = INTEGER(group_order);
+  int* RESTRICT p_group_starts = INTEGER(group_starts);
+  int* RESTRICT p_group_sizes = INTEGER(group_sizes);
+  int* RESTRICT p_sorted_group_starts = INTEGER(sorted_group_starts);
   const SEXP* p_group_rows = VECTOR_PTR_RO(group_rows);
 
   // If no groups then the results are trivial
@@ -1138,7 +1111,7 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
 
     rows_i = p_group_rows[0];
     group_size = Rf_length(rows_i);
-    const int* __restrict__ p_rows_i = INTEGER_RO(rows_i);
+    const int* RESTRICT p_rows_i = INTEGER_RO(rows_i);
 
     p_group_starts[0] = p_rows_i[0];
     p_group_sizes[0] = group_size;
@@ -1154,7 +1127,7 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
     for (int i = 1; i < ngroups; ++i){
       rows_i = p_group_rows[i];
       group_size = Rf_length(rows_i);
-      const int* __restrict__ p_rows_i = INTEGER_RO(rows_i);
+      const int* RESTRICT p_rows_i = INTEGER_RO(rows_i);
 
       p_group_starts[i] = p_rows_i[0];
       p_sorted_group_starts[i] = k + 1;
