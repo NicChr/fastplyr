@@ -688,12 +688,10 @@ SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos){
 
   // Add groups
 
-  SEXP out = SHIELD(new_vec(VECSXP, 2)); ++NP;
-  SEXP out_names = SHIELD(new_r_vec("groups", "results")); ++NP;
-  set_names(out, out_names);
-
-  SET_VECTOR_ELT(out, 0, group_keys);
-  SET_VECTOR_ELT(out, 1, new_vec(VECSXP, 0));
+  SEXP out = SHIELD(new_r_list(
+    arg("groups") = group_keys,
+    arg("results") = new_vec(VECSXP, 0)
+  ));++NP;
   set_names(VECTOR_ELT(out, 1), new_vec(STRSXP, 0));
 
   if (n_quos == 0){

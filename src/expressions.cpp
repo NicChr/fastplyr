@@ -501,11 +501,8 @@ bool is_group_unaware_call(SEXP expr, SEXP env, SEXP mask){
   int32_t NP = 0;
 
   if (TYPEOF(expr) == SYMSXP){
-    SEXP temp = SHIELD(new_vec(VECSXP, 1)); ++NP;
-    SEXP new_quo = SHIELD(rlang::new_quosure(expr, env)); ++NP;
-    SET_VECTOR_ELT(temp, 0, new_quo);
+    SEXP temp = SHIELD(new_r_list(rlang::new_quosure(expr, env))); ++NP;
     SEXP expr_vars = SHIELD(quo_vars(temp, mask, true)); ++NP;
-
     SEXP expr_str = SHIELD(rlang::sym_as_string(expr)); ++NP;
 
     bool sym_in_mask = false;
