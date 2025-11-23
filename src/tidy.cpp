@@ -1031,8 +1031,8 @@ SEXP cpp_grouped_df_as_grp(SEXP data){
 
   bool groups_are_ordered = cpp_group_by_order_default(data);
 
-  SEXP grp_class = SHIELD(Rf_ScalarString(grp_char)); ++NP;
-  SEXP n_groups = SHIELD(Rf_ScalarInteger(ngroups)); ++NP;
+  SEXP grp_class = SHIELD(new_r_vec(grp_char)); ++NP;
+  SEXP n_groups = SHIELD(new_r_vec(ngroups)); ++NP;
   SEXP group_id = SHIELD(new_vec(INTSXP, nrows)); ++NP;
   SEXP group_order = SHIELD(new_vec(INTSXP, nrows)); ++NP;
   SEXP group_starts = SHIELD(new_vec(INTSXP, nrows == 0 ? 0 : ngroups)); ++NP;

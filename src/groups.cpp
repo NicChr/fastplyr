@@ -34,7 +34,7 @@ SEXP cpp_group_keys(SEXP x){
     SEXP seq = SHIELD(cheapr::seq_len(Rf_length(group_data) - 1));
     out = SHIELD(cheapr::df_select(group_data, seq));
   } else {
-    SEXP r_nrows = SHIELD(Rf_ScalarInteger(1));
+    SEXP r_nrows = SHIELD(new_r_vec(1));
     SEXP empty_list = SHIELD(new_vec(VECSXP, 0));
     out = SHIELD(cheapr::new_df(empty_list, r_nrows, false, false));
   }
@@ -153,7 +153,7 @@ bool cpp_group_by_order_default(SEXP x){
   if (Rf_inherits(x, "grouped_df")){
     SEXP group_data = SHIELD(cpp_group_data(x)); ++NP;
     SEXP ordered = SHIELD(Rf_getAttrib(group_data, ordered_sym)); ++NP;
-    if (TYPEOF(ordered) == NILSXP){
+    if (is_null(ordered)){
       out = true;
       YIELD(NP);
       return out;
@@ -202,7 +202,7 @@ SEXP cpp_group_id(SEXP x){
   int n = df_nrow(x);
   SEXP out;
   if (n_group_vars(x) == 0){
-    SEXP r_one = SHIELD(Rf_ScalarInteger(1));
+    SEXP r_one = SHIELD(new_r_vec(1));
     out = SHIELD(cheapr::rep_len(r_one, n));
   } else {
     SEXP group_rows = SHIELD(cpp_group_rows(x));

@@ -160,7 +160,7 @@ SEXP cpp_as_list_of_frames(SEXP x){
       R_Reprotect(result = new_vec(VECSXP, 1), index);
       SET_VECTOR_ELT(result, 0, p_x[i]);
       if (has_names){
-        set_names(result, Rf_ScalarString(STRING_ELT(names, i)));
+        set_names(result, new_r_vec(STRING_ELT(names, i)));
       }
       R_Reprotect(result = cheapr::list_as_df(result), index);
       Rf_classgets(result, tbl_class);
@@ -819,8 +819,8 @@ SEXP compact_int_seq_len(int n){
   if (n == 0){
     return new_vec(INTSXP, 0);
   }
-  SEXP start = SHIELD(Rf_ScalarInteger(1));
-  SEXP end = SHIELD(Rf_ScalarInteger(n));
+  SEXP start = SHIELD(as_r_vec<int>(1));
+  SEXP end = SHIELD(as_r_vec<int>(n));
   SEXP expr = SHIELD(Rf_lang3(Rf_install(":"), start, end));
   SEXP out = SHIELD(Rf_eval(expr, R_BaseEnv));
   YIELD(4);

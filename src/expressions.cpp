@@ -271,7 +271,7 @@ SEXP get_fun_ns(SEXP x, SEXP rho){
 
 [[cpp11::register]]
 SEXP fun_ns(SEXP x, SEXP rho){
-  return Rf_ScalarString(get_fun_ns(x, rho));
+  return new_r_vec(get_fun_ns(x, rho));
 }
 
 // is this call a call to any function supplied to `fn`?
