@@ -33,32 +33,14 @@ int match_fun(SEXP x, SEXP fns){
 // Basically R's get()
 
 SEXP get(SEXP sym, SEXP rho){
-
-  int32_t NP = 0;
-  if (TYPEOF(sym) != SYMSXP){
-    SHIELD(sym = Rf_coerceVector(sym, SYMSXP)); ++NP;
+  if (Rf_isSymbol(sym)){
+    return R_getVarEx(sym, rho, TRUE, R_NilValue);
+  } else {
+    SEXP sym_ = Rf_protect(Rf_coerceVector(sym, SYMSXP));
+    SEXP out = Rf_protect(R_getVarEx(sym_, rho, TRUE, R_NilValue));
+    Rf_unprotect(2);
+    return out;
   }
-
-  if (TYPEOF(rho) != ENVSXP){
-    Rf_error("second argument to '%s' must be an environment", __func__);
-  }
-
-  // SEXP val = Rf_findVarInFrame(rho, sym); // get(inherits = F)
-  SEXP val = Rf_findVar(sym, rho); // get(inherits = T)
-
-  if (val == R_MissingArg){
-    YIELD(NP);
-    Rf_error("arg `sym` cannot be missing");
-  } else if (val == R_UnboundValue){
-    YIELD(NP);
-    return R_NilValue;
-  } else if (TYPEOF(val) == PROMSXP){
-    SHIELD(val);
-    val = eval(val, rho);
-    YIELD(1);
-  }
-  YIELD(NP);
-  return val;
 }
 
 bool exists(SEXP sym, SEXP rho){
@@ -477,7 +459,7 @@ SEXP cpp_group_unaware_fns(){
 
   for (int i = 0; i < n; ++i){
     SEXP fn_name = Rf_installChar(STRING_ELT(names, i));
-    SEXP fn = Rf_findVarInFrame(group_unaware_fns, fn_name);
+    SEXP fn = get(fn_name, group_unaware_fns);
     SET_VECTOR_ELT(out, i, fn);
   }
   attr::set_old_names(out, names);
@@ -541,7 +523,6 @@ bool is_group_unaware_call(SEXP expr, SEXP env, SEXP mask){
   SEXP actual_fn = SHIELD(eval(CAR(expr), env)); ++NP;
   SEXP group_unaware_functions = SHIELD(cpp_group_unaware_fns()); ++NP;
   maybe = match_fun(actual_fn, group_unaware_functions) != NA_INTEGER;
-
   if (!maybe){
     YIELD(NP);
     return false;

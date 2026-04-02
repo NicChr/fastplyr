@@ -13,7 +13,7 @@ void init_mask_symbols(DllInfo* dll){
 }
 
 SEXP get_mask_top_env(SEXP mask){
-  return Rf_findVarInFrame(mask, top_env_sym);
+  return R_getVar(top_env_sym, mask, FALSE);
 }
 
 SEXP get_mask_data_vars(SEXP mask){
