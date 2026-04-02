@@ -272,11 +272,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
   for (int i = 0; i < n_quos; ++i){
     SET_VECTOR_ELT(exprs, i, rlang::quo_get_expr(VECTOR_ELT(quos, i)));
     SET_VECTOR_ELT(envs, i, rlang::quo_get_env(VECTOR_ELT(quos, i)));
-    if (STRING_ELT(quo_names, i) == R_BlankString){
-      SET_VECTOR_ELT(quo_name_syms, i, R_UnboundValue);
-    } else {
-      SET_VECTOR_ELT(quo_name_syms, i, Rf_installChar(STRING_ELT(quo_names, i)));
-    }
+    SET_VECTOR_ELT(quo_name_syms, i, Rf_installChar(STRING_ELT(quo_names, i)));
   }
 
   // Initialise components
@@ -371,9 +367,7 @@ SEXP cpp_grouped_eval_tidy(SEXP data, SEXP quos, bool recycle, bool add_groups){
       ), result_idx);
 
       // Only add result to mask if expr is named
-      if (p_quo_name_syms[m] != R_UnboundValue){
-        Rf_defineVar(p_quo_name_syms[m], result, top_env);
-      }
+      Rf_defineVar(p_quo_name_syms[m], result, top_env);
       SET_VECTOR_ELT(inner_container, m, result);
       result_size = vec::length(result);
       recycled_size = recycle ? (result_size == 0 ? 0 : recycled_size > result_size ? recycled_size : result_size) : result_size;
@@ -733,11 +727,7 @@ SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos){
   for (int i = 0; i < n_quos; ++i){
     SET_VECTOR_ELT(exprs, i, rlang::quo_get_expr(p_quos[i]));
     SET_VECTOR_ELT(envs, i, rlang::quo_get_env(p_quos[i]));
-    if (STRING_ELT(quo_names, i) == R_BlankString){
-      SET_VECTOR_ELT(quo_name_syms, i, R_UnboundValue);
-    } else {
-      SET_VECTOR_ELT(quo_name_syms, i, Rf_installChar(STRING_ELT(quo_names, i)));
-    }
+    SET_VECTOR_ELT(quo_name_syms, i, Rf_installChar(STRING_ELT(quo_names, i)));
   }
 
   // Initialise components
@@ -794,9 +784,7 @@ SEXP cpp_grouped_eval_summarise(SEXP data, SEXP quos){
         );
       }
 
-      if (p_quo_name_syms[m] != R_UnboundValue){
-        Rf_defineVar(p_quo_name_syms[m], result, top_env);
-      }
+      Rf_defineVar(p_quo_name_syms[m], result, top_env);
       SET_VECTOR_ELT(inner_container, m, result);
     }
     SET_VECTOR_ELT(outer_container, i, inner_container);
@@ -864,11 +852,7 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
   for (int i = 0; i < n_quos; ++i){
     SET_VECTOR_ELT(exprs, i, rlang::quo_get_expr(VECTOR_ELT(quos, i)));
     SET_VECTOR_ELT(envs, i, rlang::quo_get_env(VECTOR_ELT(quos, i)));
-    if (STRING_ELT(quo_names, i) == R_BlankString){
-      SET_VECTOR_ELT(quo_name_syms, i, R_UnboundValue);
-    } else {
-      SET_VECTOR_ELT(quo_name_syms, i, Rf_installChar(STRING_ELT(quo_names, i)));
-    }
+    SET_VECTOR_ELT(quo_name_syms, i, Rf_installChar(STRING_ELT(quo_names, i)));
   }
 
   // Initialise components
@@ -931,9 +915,7 @@ SEXP cpp_grouped_eval_mutate(SEXP data, SEXP quos){
         p_exprs[m], mask, p_envs[m]
       ), result_idx);
       R_Reprotect(result = rep_len(result, chunk_size), result_idx);
-      if (p_quo_name_syms[m] != R_UnboundValue){
-        Rf_defineVar(p_quo_name_syms[m], result, top_env);
-      }
+      Rf_defineVar(p_quo_name_syms[m], result, top_env);
       if (Rf_isNull(result)){
         R_removeVarFromFrame(p_quo_name_syms[m], top_env);
       }
