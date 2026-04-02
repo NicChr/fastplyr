@@ -54,7 +54,7 @@ SEXP get(SEXP sym, SEXP rho){
     return R_NilValue;
   } else if (TYPEOF(val) == PROMSXP){
     SHIELD(val);
-    val = Rf_eval(val, rho);
+    val = eval(val, rho);
     YIELD(1);
   }
   YIELD(NP);
@@ -74,8 +74,8 @@ SEXP as_list_call(SEXP expr) {
 
   int n = Rf_length(expr);
 
-  SEXP out = SHIELD(new_vec(VECSXP, n));
-  SEXP names = SHIELD(new_vec(STRSXP, n));
+  SEXP out = SHIELD(new_list(n));
+  SEXP names = SHIELD(new_vector<r_string_t>(n));
 
   SEXP current = expr;
 
@@ -95,7 +95,7 @@ SEXP as_list_call(SEXP expr) {
 
     current = CDR(current);
   }
-  set_names(out, names);
+  attr::set_old_names(out, names);
   YIELD(2);
   return out;
 }
@@ -109,8 +109,8 @@ SEXP call_args(SEXP expr) {
     Rf_error("`expr` must be a language object in %s", __func__);
   }
   int n = Rf_length(expr);
-  SEXP out = SHIELD(new_vec(VECSXP, n - 1));
-  SEXP names = SHIELD(new_vec(STRSXP, n - 1));
+  SEXP out = SHIELD(new_list(n - 1));
+  SEXP names = SHIELD(new_vector<r_string_t>(n - 1));
 
   SEXP current = CDR(expr);
   for (int i = 1; i < n; i++) {
@@ -124,7 +124,7 @@ SEXP call_args(SEXP expr) {
     SET_VECTOR_ELT(out, j, CAR(current));
     current = CDR(current);
   }
-  set_names(out, names);
+  attr::set_old_names(out, names);
   YIELD(2);
   return out;
 }
@@ -245,14 +245,14 @@ SEXP get_fun_ns(SEXP x, SEXP rho){
     YIELD(NP); return Rf_mkChar("base");
   }
   SEXP env_call = SHIELD(Rf_lang2(Rf_install("environment"), x)); ++NP;
-  SEXP env = SHIELD(Rf_eval(env_call, rho)); ++NP;
+  SEXP env = SHIELD(eval(env_call, rho)); ++NP;
   if (Rf_isNull(x) || Rf_isNull(env)){
     YIELD(NP); return R_BlankString;
   } else if (env == R_BaseNamespace){
     YIELD(NP); return Rf_mkChar("base");
   } else if (R_IsNamespaceEnv(env)) {
     SEXP ns_name = SHIELD(R_NamespaceEnvSpec(env)); ++NP;
-    SEXP names = SHIELD(get_names(ns_name)); ++NP;
+    SEXP names = SHIELD(attr::get_old_names(ns_name)); ++NP;
     SEXP name = SHIELD(Rf_mkString("name")); ++NP;
     SEXP name_loc = SHIELD(Rf_match(names, name, NA_INTEGER)); ++NP;
 
@@ -271,7 +271,7 @@ SEXP get_fun_ns(SEXP x, SEXP rho){
 
 [[cpp11::register]]
 SEXP fun_ns(SEXP x, SEXP rho){
-  return new_r_vec(get_fun_ns(x, rho));
+  return Rf_ScalarString(get_fun_ns(x, rho));
 }
 
 // is this call a call to any function supplied to `fn`?
@@ -411,7 +411,7 @@ bool is_fn_call(SEXP expr, SEXP fn, SEXP ns, SEXP rho){
 
 SEXP r_deparse(SEXP quo){
 
-  SEXP deparse_fun = SHIELD(find_pkg_fun("deparse2", "fastplyr", true));
+  SEXP deparse_fun = SHIELD(fn::find_pkg_fun("deparse2", "fastplyr", true));
 
   SEXP deparse_expr = SHIELD(Rf_lang2(
     deparse_fun,
@@ -420,7 +420,7 @@ SEXP r_deparse(SEXP quo){
       quo
     )
   ));
-  SEXP out = SHIELD(Rf_eval(deparse_expr, R_BaseEnv));
+  SEXP out = SHIELD(eval(deparse_expr, env::base_env));
 
   YIELD(3);
   return out;
@@ -459,20 +459,20 @@ void init_group_unaware_fns(DllInfo* dll) {
   for (int i = 0; i < 48; ++i) {
     fn = Rf_install(names[i]);
     SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
-    Rf_defineVar(fn, get(fn, R_BaseEnv), group_unaware_fns);
+    Rf_defineVar(fn, get(fn, env::base_env), group_unaware_fns);
   }
 
   for (int i = 48; i < 50; ++i) {
     fn = Rf_install(names[i]);
     SET_STRING_ELT(group_unaware_fn_names, i, Rf_mkChar(names[i]));
-    Rf_defineVar(fn, find_pkg_fun(names[i], "cheapr", false), group_unaware_fns);
+    Rf_defineVar(fn, fn::find_pkg_fun(names[i], "cheapr", false), group_unaware_fns);
   }
 }
 
 [[cpp11::register]]
 SEXP cpp_group_unaware_fns(){
   int n = Rf_length(group_unaware_fns);
-  SEXP out = SHIELD(new_vec(VECSXP, n));
+  SEXP out = SHIELD(new_list(n));
   SEXP names = SHIELD(Rf_duplicate(group_unaware_fn_names));
 
   for (int i = 0; i < n; ++i){
@@ -480,7 +480,7 @@ SEXP cpp_group_unaware_fns(){
     SEXP fn = Rf_findVarInFrame(group_unaware_fns, fn_name);
     SET_VECTOR_ELT(out, i, fn);
   }
-  set_names(out, names);
+  attr::set_old_names(out, names);
   YIELD(2);
   return out;
 }
@@ -501,7 +501,7 @@ bool is_group_unaware_call(SEXP expr, SEXP env, SEXP mask){
   int32_t NP = 0;
 
   if (TYPEOF(expr) == SYMSXP){
-    SEXP temp = SHIELD(new_r_list(rlang::new_quosure(expr, env))); ++NP;
+    SEXP temp = SHIELD(make_list(rlang::new_quosure(expr, env))); ++NP;
     SEXP expr_vars = SHIELD(quo_vars(temp, mask, true)); ++NP;
     SEXP expr_str = SHIELD(rlang::sym_as_string(expr)); ++NP;
 
@@ -538,7 +538,7 @@ bool is_group_unaware_call(SEXP expr, SEXP env, SEXP mask){
   // Verify that the fn the user is calling is the same as the one
   // stored in our internal group-unaware fn list
 
-  SEXP actual_fn = SHIELD(Rf_eval(CAR(expr), env)); ++NP;
+  SEXP actual_fn = SHIELD(eval(CAR(expr), env)); ++NP;
   SEXP group_unaware_functions = SHIELD(cpp_group_unaware_fns()); ++NP;
   maybe = match_fun(actual_fn, group_unaware_functions) != NA_INTEGER;
 
@@ -574,8 +574,8 @@ bool is_data_pronoun_call(SEXP expr, SEXP env){
     return false;
   }
 
-  SEXP dollar_str = SHIELD(make_utf8_str("$")); ++NP;
-  SEXP double_brackets_str = SHIELD(make_utf8_str("[[")); ++NP;
+  SEXP dollar_str = SHIELD(as_vector("$")); ++NP;
+  SEXP double_brackets_str = SHIELD(as_vector("[[")); ++NP;
 
   if (!(is_fn_call(expr, dollar_str, R_NilValue, env) ||
       is_fn_call(expr, double_brackets_str, R_NilValue, env))){
@@ -583,7 +583,7 @@ bool is_data_pronoun_call(SEXP expr, SEXP env){
     return false;
   }
 
-  bool out = CAR(CDR(expr)) == install_utf8(".data");
+  bool out = CAR(CDR(expr)) == r_cast<r_symbol_t>(".data");
 
   YIELD(NP);
   return out;
@@ -599,11 +599,9 @@ SEXP data_pronoun_var(SEXP expr, SEXP env){
     Rf_error("`expr` must be a `.data` pronoun expression");
   }
 
-  SEXP double_brackets_sym = SHIELD(install_utf8("[[")); ++NP;
-
   SEXP out = CAR(CDDR(expr));
 
-  if (CAR(expr) == double_brackets_sym){
+  if (CAR(expr) == symbol::double_brackets_sym){
     SHIELD(out = rlang::eval_tidy(out, R_NilValue, env)); ++NP;
   }
 
@@ -635,7 +633,7 @@ cpp11::writable::strings all_call_names(cpp11::sexp expr, cpp11::environment env
     out.push_back(data_pronoun_var(expr, env));
   } else if (TYPEOF(expr) == SYMSXP){
     out.push_back(rlang::sym_as_string(expr));
-  }else if (TYPEOF(expr) == LANGSXP){
+  } else if (TYPEOF(expr) == LANGSXP){
     list tree = call_args(expr);
     for (int i = 0; i < tree.size(); ++i){
       sexp branch = tree[i];
@@ -655,9 +653,9 @@ SEXP quo_vars(SEXP quos, SEXP mask, bool combine){
 
   int n_quos = Rf_length(quos);
 
-  SEXP quo_vars = SHIELD(new_vec(VECSXP, n_quos));
-  SEXP quo_names = SHIELD(get_names(quos));
-  set_names(quo_vars, quo_names);
+  SEXP quo_vars = SHIELD(new_list(n_quos));
+  SEXP quo_names = SHIELD(attr::get_old_names(quos));
+  attr::set_old_names(quo_vars, quo_names);
   SEXP names = SHIELD(get_mask_data_vars(mask));
 
   SEXP expr, env;
@@ -669,11 +667,11 @@ SEXP quo_vars(SEXP quos, SEXP mask, bool combine){
     R_Reprotect(expr = rlang::quo_get_expr(VECTOR_ELT(quos, i)), expr_idx);
     R_Reprotect(env = rlang::quo_get_env(VECTOR_ELT(quos, i)), env_idx);
     SET_VECTOR_ELT(quo_vars, i, all_call_names(expr, env));
-    SET_VECTOR_ELT(quo_vars, i, cheapr::intersect(names, VECTOR_ELT(quo_vars, i), false));
+    SET_VECTOR_ELT(quo_vars, i, intersect(names, VECTOR_ELT(quo_vars, i), false));
   }
   if (combine){
-    SEXP out = SHIELD(cheapr::c(quo_vars));
-    SHIELD(out = cheapr::intersect(names, out, false));
+    SEXP out = SHIELD(collapse::combine(quo_vars));
+    SHIELD(out = intersect(names, out, false));
     YIELD(7);
     return out;
   } else {
@@ -688,7 +686,7 @@ SEXP cpp_quos_drop_null(SEXP quos){
 
   int n = Rf_length(quos);
 
-  SEXP not_null = SHIELD(new_vec(LGLSXP, n));
+  SEXP not_null = SHIELD(new_vector<r_bool_t>(n));
   int *p_not_null = INTEGER(not_null);
   const SEXP *p_quos = VECTOR_PTR_RO(quos);
   int n_null = 0;
@@ -701,13 +699,12 @@ SEXP cpp_quos_drop_null(SEXP quos){
     YIELD(1);
     return quos;
   }
-  SEXP r_true = SHIELD(new_vec(LGLSXP, 1));
-  LOGICAL(r_true)[0] = TRUE;
-  SEXP not_null_locs = SHIELD(cheapr::val_find(not_null, r_true, false));
-  SEXP out = SHIELD(cheapr::sset_vec(quos, not_null_locs, true));
+  SEXP scalar_true = SHIELD(as_vector(r_true));
+  SEXP not_null_locs = SHIELD(vec::val_find(not_null, scalar_true, false));
+  SEXP out = SHIELD(vec::sset(quos, not_null_locs));
   Rf_copyMostAttrib(quos, out);
-  SEXP names = SHIELD(get_names(quos));
-  set_names(out, cheapr::sset_vec(names, not_null_locs, true));
+  SEXP names = SHIELD(attr::get_old_names(quos));
+  attr::set_old_names(out, vec::sset(names, not_null_locs));
   SEXP cls = SHIELD(Rf_getAttrib(quos, R_ClassSymbol));
   Rf_classgets(out, cls);
   YIELD(6);
@@ -721,14 +718,14 @@ bool call_contains_dplyr_mask(SEXP expr, SEXP rho){
 
   int32_t NP = 0;
 
-  SEXP dplyr_mask_fns = SHIELD(new_r_vec(
+  SEXP dplyr_mask_fns = SHIELD(make_vec(
     "n", "pick", "row_number", "cur_group_id",
     "cur_group_rows", "cur_column", "cur_data",
     "cur_data_all", "if_any", "if_all",
     "c_across"
   )); ++NP;
 
-  SEXP dplyr_str = SHIELD(new_r_vec("dplyr")); ++NP;
+  SEXP dplyr_str = SHIELD(as_vector("dplyr")); ++NP;
   if (is_fn_call(expr, dplyr_mask_fns, dplyr_str, rho)){
     YIELD(NP);
     return true;
@@ -835,7 +832,7 @@ SEXP make_named_quos(SEXP quos){
   int n = Rf_length(quos);
 
   SEXP out = SHIELD(Rf_duplicate(quos)); ++NP;
-  SEXP names = SHIELD(get_names(out)); ++NP;
+  SEXP names = SHIELD(attr::get_old_names(out)); ++NP;
 
   SEXP expr;
   PROTECT_INDEX expr_idx;
@@ -843,7 +840,7 @@ SEXP make_named_quos(SEXP quos){
 
   if (Rf_isNull(names)){
 
-    SHIELD(names = new_vec(STRSXP, n)); ++NP;
+    SHIELD(names = new_vector<r_string_t>(n)); ++NP;
 
     for (int i = 0; i < n; ++i){
       SEXP quo = VECTOR_ELT(quos, i);
@@ -856,7 +853,7 @@ SEXP make_named_quos(SEXP quos){
       }
     }
 
-    set_names(out, names);
+    attr::set_old_names(out, names);
 
   } else {
     for (int i = 0; i < n; ++i){

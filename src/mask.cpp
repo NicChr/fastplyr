@@ -8,8 +8,8 @@ void init_mask_symbols(DllInfo* dll){
 
   // Symbols get added to internal R protected list so no need to preserve
 
-  top_env_sym = install_utf8(".top_env");
-  data_pronoun_sym = install_utf8(".data");
+  top_env_sym = r_cast<r_symbol_t>(".top_env");
+  data_pronoun_sym = r_cast<r_symbol_t>(".data");
 }
 
 SEXP get_mask_top_env(SEXP mask){
@@ -30,7 +30,7 @@ SEXP get_mask_data_vars(SEXP mask){
 
   SEXP data_pronoun = SHIELD(rlang::sym_as_character(data_pronoun_sym));
 
-  SEXP out = SHIELD(cheapr::val_remove(top_env_vars, data_pronoun));
+  SEXP out = SHIELD(val_remove(top_env_vars, data_pronoun));
 
   YIELD(4);
   return out;

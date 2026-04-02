@@ -5,7 +5,7 @@ using namespace cheapr;
 
 SEXP get_list_element(SEXP list, const char *str){
   SEXP out = R_NilValue;
-  SEXP names = SHIELD(get_names(list));
+  SEXP names = SHIELD(attr::get_old_names(list));
 
   for (int i = 0; i < Rf_length(list); ++i){
     if (std::strcmp(CHAR(STRING_ELT(names, i)), str) == 0){
@@ -28,7 +28,7 @@ SEXP cpp_frame_addresses_equal(SEXP x, SEXP y) {
   if (n1 != n2){
     Rf_error("x and y must be of the same length");
   }
-  SEXP out = SHIELD(new_vec(LGLSXP, n1));
+  SEXP out = SHIELD(new_vector<r_bool_t>(n1));
   int* RESTRICT p_out = LOGICAL(out);
   for (int i = 0; i < n1; ++i) {
     p_out[i] = (cheapr::address(p_x[i]) == cheapr::address(p_y[i]));
@@ -45,8 +45,8 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
   int32_t NP = 0;
   const SEXP *p_x = VECTOR_PTR_RO(x);
   int n = Rf_length(x);
-  SEXP nrows = SHIELD(new_vec(INTSXP, n)); ++NP;
-  SEXP ncols = SHIELD(new_vec(INTSXP, n)); ++NP;
+  SEXP nrows = SHIELD(new_vector<int>(n)); ++NP;
+  SEXP ncols = SHIELD(new_vector<int>(n)); ++NP;
   int* RESTRICT p_nrows = INTEGER(nrows);
   int* RESTRICT p_ncols = INTEGER(ncols);
 
@@ -56,7 +56,7 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
         YIELD(NP);
         Rf_error("All inputs must be data frames");
       }
-      p_nrows[i] = df_nrow(p_x[i]);
+      p_nrows[i] = df::nrow(p_x[i]);
       p_ncols[i] = Rf_length(p_x[i]);
     }
   } else {
@@ -67,7 +67,7 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
       YIELD(NP);
       Rf_error("All inputs must be data frames");
     }
-    int n_rows = df_nrow(p_x[0]);
+    int n_rows = df::nrow(p_x[0]);
     int n_cols = Rf_length(p_x[0]);
     p_nrows[0] = n_rows;
     p_ncols[0] = n_cols;
@@ -79,7 +79,7 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
         YIELD(NP);
         Rf_error("All inputs must be data frames");
       }
-      p_nrows[i] = df_nrow(p_x[i]);
+      p_nrows[i] = df::nrow(p_x[i]);
       p_ncols[i] = Rf_length(p_x[i]);
       if (check_rows_equal && p_nrows[i] != n_rows){
         YIELD(NP);
@@ -91,14 +91,17 @@ SEXP cpp_frame_dims(SEXP x, bool check_rows_equal, bool check_cols_equal) {
       }
     }
   }
-  SEXP out = SHIELD(new_r_list(nrows, ncols)); ++NP;
+  SEXP out = SHIELD(make_list(nrows, ncols)); ++NP;
   YIELD(NP);
   return out;
 }
 
 [[cpp11::register]]
 bool cpp_is_exotic(SEXP x){
-  return !cheapr::is_simple_atomic_vec(x);
+  SEXP simple_classes = SHIELD(combine("Date", "factor", "POSIXct"));
+  bool is_simple = vec::is_atomic(x) && (!vec::is_object(x) || attr::inherits(x, simple_classes));
+  YIELD(1);
+  return !is_simple;
 }
 
 // Are any list elements data frames?
@@ -144,10 +147,10 @@ SEXP cpp_as_list_of_frames(SEXP x){
 
   int n = Rf_length(x);
 
-  SEXP out = SHIELD(new_vec(VECSXP, n));
-  SEXP names = SHIELD(get_names(x));
+  SEXP out = SHIELD(new_list(n));
+  SEXP names = SHIELD(attr::get_old_names(x));
   bool has_names = !Rf_isNull(names);
-  SEXP tbl_class = SHIELD(new_r_vec("tbl_df", "tbl", "data.frame"));
+  SEXP tbl_class = SHIELD(make_vec("tbl_df", "tbl", "data.frame"));
 
   SEXP result;
   PROTECT_INDEX index;
@@ -157,18 +160,18 @@ SEXP cpp_as_list_of_frames(SEXP x){
   for (int i = 0; i < n; ++i) {
     result = p_x[i];
     if (!Rf_inherits(result, "data.frame")){
-      R_Reprotect(result = new_vec(VECSXP, 1), index);
+      R_Reprotect(result = new_list(1), index);
       SET_VECTOR_ELT(result, 0, p_x[i]);
       if (has_names){
-        set_names(result, new_r_vec(STRING_ELT(names, i)));
+        attr::set_old_names(result, Rf_ScalarString(STRING_ELT(names, i)));
       }
-      R_Reprotect(result = cheapr::list_as_df(result), index);
+      R_Reprotect(result = df::list_as_df(result), index);
       Rf_classgets(result, tbl_class);
     }
     SET_VECTOR_ELT(out, i, result);
   }
   if (has_names){
-    set_names(out, names);
+    attr::set_old_names(out, names);
   }
   YIELD(4);
   return out;
@@ -184,7 +187,7 @@ SEXP cpp_pluck_list_of_integers(SEXP x, SEXP i, SEXP default_value){
   int k;
   if (n == 0){
     YIELD(NP);
-    return new_vec(INTSXP, 0);
+    return new_vector<int>(0);
   }
   if (!(i_n == 1 || (n > 0 && i_n == n))){
     YIELD(NP);
@@ -192,7 +195,7 @@ SEXP cpp_pluck_list_of_integers(SEXP x, SEXP i, SEXP default_value){
   }
   const int* RESTRICT p_i = INTEGER_RO(i);
   int replace = Rf_asInteger(default_value);
-  SEXP out = SHIELD(new_vec(INTSXP, n)); ++NP;
+  SEXP out = SHIELD(new_vector<int>(n)); ++NP;
   int* RESTRICT p_out = INTEGER(out);
 
   for (int j = 0; j < n; ++j) {
@@ -214,7 +217,7 @@ SEXP cpp_row_id(SEXP order, SEXP group_sizes, bool ascending){
   int n = Rf_length(order);
   int n_groups = Rf_length(group_sizes);
 
-  SEXP out = SHIELD(new_vec(INTSXP, n));
+  SEXP out = SHIELD(new_vector<int>(n));
 
   int* RESTRICT p_out = INTEGER(out);
   const int* RESTRICT p_o = INTEGER_RO(order);
@@ -257,47 +260,46 @@ SEXP cpp_which_all(SEXP x){
   int32_t NP = 0;
   int n_true = 0;
   int n_cols = Rf_length(x);
-  int n_rows = df_nrow(x);
+  int n_rows = df::nrow(x);
 
   SEXP out;
 
   if (n_cols == 0){
-    out = SHIELD(new_vec(INTSXP, 0)); ++NP;
+    out = SHIELD(new_vector<int>(0)); ++NP;
   } else if (n_cols == 1){
-    SEXP r_true = SHIELD(new_vec(LGLSXP, 1)); ++NP;
-    LOGICAL(r_true)[0] = TRUE;
-    out = SHIELD(cheapr::val_find(p_x[0], r_true, false)); ++NP;
+    SEXP true_scalar = SHIELD(as_vector(r_true)); ++NP;
+    out = SHIELD(vec::val_find(p_x[0], true_scalar, false)); ++NP;
   } else {
-    SEXP lgl = SHIELD(new_vec(LGLSXP, n_rows)); ++NP;
-    int* RESTRICT p_lgl = INTEGER(lgl);
-    std::fill(p_lgl, p_lgl + n_rows, 0);
+    SEXP lgl = SHIELD(new_vector<r_bool_t>(n_rows)); ++NP;
+    r_bool_t* RESTRICT p_lgl = vector_ptr<r_bool_t>(lgl);
+    std::fill(p_lgl, p_lgl + n_rows, r_false);
 
     // Save pointers to logical cols
 
-    std::vector<const int*> col_ptrs(n_cols);
+    std::vector<const r_bool_t*> col_ptrs(n_cols);
 
     for (int i = 0; i < n_cols; ++i){
-      col_ptrs[i] = INTEGER_RO(p_x[i]);
+      col_ptrs[i] = vector_ptr<const r_bool_t>(p_x[i]);
     }
 
-    bool is_true = false;
+    r_bool_t is_true = r_false;
     int j;
     for (int i = 0; i < n_rows; ++i){
-      is_true = true;
+      is_true = r_true;
       j = 0;
-      while (j < n_cols && is_true){
-        is_true = col_ptrs[j++][i] == 1;
+      while (j < n_cols && static_cast<bool>(is_true)){
+        is_true = static_cast<r_bool_t>(col_ptrs[j++][i] == r_true);
       }
-      n_true += is_true;
+      n_true += static_cast<int>(is_true);
       p_lgl[i] = is_true;
     }
-    out = SHIELD(new_vec(INTSXP, n_true)); ++NP;
+    out = SHIELD(new_vector<int>(n_true)); ++NP;
     int* RESTRICT p_out = INTEGER(out);
     int whichi = 0;
     int i = 0;
     while (whichi < n_true){
       p_out[whichi] = i + 1;
-      whichi += (p_lgl[i++] == TRUE);
+      whichi += (p_lgl[i++] == r_true);
     }
   }
   YIELD(NP);
@@ -310,14 +312,14 @@ SEXP cpp_which_all(SEXP x){
 SEXP int_slice(SEXP x, SEXP indices, const int *p_x, int xn, const int *pi, int indn){
   int32_t NP = 0;
   int k = 0;
-  SEXP out = SHIELD(new_vec(INTSXP, indn)); ++NP;
+  SEXP out = SHIELD(new_vector<int>(indn)); ++NP;
   int* RESTRICT p_out = INTEGER(out);
   int j;
   for (int i = 0; i < indn; ++i){
     j = pi[i];
     if (j < 0){
-      SEXP new_indices = SHIELD(cheapr::exclude_locs(indices, xn)); ++NP;
-      SEXP out2 = SHIELD(cheapr::sset_vec(x, new_indices, false)); ++NP;
+      SEXP new_indices = SHIELD(clean_indices(indices, x)); ++NP;
+      SEXP out2 = SHIELD(internal::sset_vec(x, new_indices, false)); ++NP;
       YIELD(NP);
       return out2;
     } else if (j != 0 && j <= xn){
@@ -343,7 +345,7 @@ SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
   const SEXP *p_group_locs = VECTOR_PTR_RO(group_locs);
   const int *p_locs = INTEGER_RO(locs);
 
-  SEXP out = SHIELD(new_vec(VECSXP, n_groups)); ++NP;
+  SEXP out = SHIELD(new_list(n_groups)); ++NP;
   SEXP elem = R_NilValue;
 
   for (int i = 0; i < n_groups; ++i){
@@ -362,18 +364,19 @@ SEXP cpp_slice_locs(SEXP group_locs, SEXP locs){
 SEXP cpp_df_run_id(SEXP x){
   int32_t NP = 0;
   int n_cols = Rf_length(x);
-  int n_rows = df_nrow(x);
+  int n_rows = df::nrow(x);
 
   const SEXP *p_x = VECTOR_PTR_RO(x);
 
   for (int l = n_cols - 1; l >= 0; --l){
-    if (cheapr::is_compact_seq(p_x[l])){
+    if (altrep::is_compact_seq(p_x[l])){
       SEXP out = SHIELD(compact_int_seq_len(n_rows)); ++NP;
       YIELD(NP);
       return out;
     }
     if (cpp_is_exotic(p_x[l])){
-      SEXP group_ids = SHIELD(fp_group_id(p_x[l], cpp11::named_arg("order") = false)); ++NP;
+      SEXP fp_group_id_fn = SHIELD(fn::find_pkg_fun("group_id", "fastplyr", false)); ++NP;
+      SEXP group_ids = SHIELD(fn::eval_fn(fp_group_id_fn, p_x[l], arg("order") = false)); ++NP;
       SHIELD(x = Rf_shallow_duplicate(x)); ++NP;
       SET_VECTOR_ELT(x, l, group_ids);
     }
@@ -382,7 +385,7 @@ SEXP cpp_df_run_id(SEXP x){
   // Re-point to the possibly shallow duplicated list `x`
   p_x = VECTOR_PTR_RO(x);
 
-  SEXP out = SHIELD(new_vec(INTSXP, n_rows)); ++NP;
+  SEXP out = SHIELD(new_vector<int>(n_rows)); ++NP;
   int* RESTRICT p_out = INTEGER(out);
 
   if (n_cols < 1){
@@ -412,7 +415,7 @@ SEXP cpp_df_run_id(SEXP x){
         }
       case REALSXP: {
         if (Rf_inherits(x, "integer64")){
-        int64_t *p_xj = INTEGER64_PTR(p_x[j]);
+        int64_t *p_xj = internal::INTEGER64_PTR(p_x[j]);
         diff = (p_xj[i] != p_xj[i - 1]);
         p_out[i] = (k += diff);
       } else {
@@ -461,10 +464,9 @@ SEXP cpp_consecutive_id(SEXP x){
   if (Rf_inherits(x, "data.frame")){
     return cpp_df_run_id(x);
   } else {
-    SEXP temp = SHIELD(new_r_list(x));
-    SHIELD(temp = cheapr::new_df(temp, R_NilValue, false, false));
+    SEXP temp = SHIELD(df::make_df(x));
     SEXP out = SHIELD(cpp_df_run_id(temp));
-    YIELD(3);
+    YIELD(2);
     return out;
   }
 }
@@ -489,7 +491,7 @@ SEXP cpp_grouped_run_id(SEXP x, SEXP order, SEXP group_sizes){
   if (n != Rf_length(order)){
     Rf_error("length(order) must match length(x)");
   }
-  SEXP out = SHIELD(new_vec(INTSXP, n));
+  SEXP out = SHIELD(new_vector<int>(n));
   int *p_out = INTEGER(out);
   int n_groups = Rf_length(group_sizes);
   int k = 0;
@@ -590,8 +592,8 @@ SEXP cpp_fill_grouped(SEXP x, SEXP order, SEXP group_sizes, double fill_limit) {
     }
     int64_t last_obs;
     out = SHIELD(Rf_duplicate(x)); ++NP;
-    int64_t *p_x = INTEGER64_PTR(x);
-    int64_t *p_out = INTEGER64_PTR(out);
+    int64_t *p_x = internal::INTEGER64_PTR(x);
+    int64_t *p_out = internal::INTEGER64_PTR(out);
     for (int i = 0; i < n_groups; ++i){
       nfill = 0; // Reset fill limit
       FASTPLYR_GROUP_RESET
@@ -676,7 +678,7 @@ SEXP cpp_fill_grouped(SEXP x, SEXP order, SEXP group_sizes, double fill_limit) {
   }
   case VECSXP: {
     const SEXP *p_x = VECTOR_PTR_RO(x);
-    out = SHIELD(new_vec(VECSXP, n)); ++NP;
+    out = SHIELD(new_list(n)); ++NP;
     SHALLOW_DUPLICATE_ATTRIB(out, x);
     for (int i = 0; i < n; ++i){
       SET_VECTOR_ELT(out, i, cpp_fill_grouped(p_x[i], order, group_sizes, fill_limit));
@@ -698,15 +700,15 @@ SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg){
     Rf_error("x must be a data frame");
   }
   SEXP out = SHIELD(Rf_shallow_duplicate(x));
+  SEXP fp_group_id_fn = SHIELD(fn::find_pkg_fun("group_id", "fastplyr", false));
   for (int i = 0; i < Rf_length(x); ++i){
     if (cpp_is_exotic(VECTOR_ELT(x, i))){
-     SET_VECTOR_ELT(out, i, fp_group_id(
-         VECTOR_ELT(x, i), cpp11::named_arg("order") = order,
-         cpp11::named_arg("as_qg") = as_qg
+     SET_VECTOR_ELT(out, i, fn::eval_fn(fp_group_id_fn,
+         VECTOR_ELT(x, i), arg("order") = order, arg("as_qg") = as_qg
      ));
     }
   }
-  YIELD(1);
+  YIELD(2);
   return out;
 }
 
@@ -715,7 +717,7 @@ SEXP cpp_group_starts(SEXP group_id, int n_groups){
 
   int n = Rf_length(group_id);
 
-  SEXP out = SHIELD(new_vec(INTSXP, n_groups));
+  SEXP out = SHIELD(new_vector<int>(n_groups));
   const int* p_group_id = INTEGER_RO(group_id);
   int* RESTRICT p_out = INTEGER(out);
 
@@ -771,7 +773,7 @@ SEXP cpp_group_starts(SEXP group_id, int n_groups){
 //
 //   const int* p_group_id = INTEGER_RO(group_id);
 //
-//   SEXP out = SHIELD(new_vec(REALSXP, n_groups));
+//   SEXP out = SHIELD(new_vector<double>(n_groups));
 //
 //   const double *p_x = REAL_RO(x);
 //   double* RESTRICT p_out = REAL(out);
@@ -798,7 +800,7 @@ SEXP cpp_group_ends(SEXP group_id, int n_groups){
 
   int n = Rf_length(group_id);
 
-  SEXP out = SHIELD(new_vec(INTSXP, n_groups));
+  SEXP out = SHIELD(new_vector<int>(n_groups));
   const int* p_group_id = INTEGER_RO(group_id);
   int* RESTRICT p_out = INTEGER(out);
 
@@ -817,12 +819,12 @@ SEXP compact_int_seq_len(int n){
     Rf_error("`n` must be >= 0");
   }
   if (n == 0){
-    return new_vec(INTSXP, 0);
+    return new_vector<int>(0);
   }
-  SEXP start = SHIELD(as_r_vec<int>(1));
-  SEXP end = SHIELD(as_r_vec<int>(n));
+  SEXP start = SHIELD(as_vector<int>(1));
+  SEXP end = SHIELD(as_vector<int>(n));
   SEXP expr = SHIELD(Rf_lang3(Rf_install(":"), start, end));
-  SEXP out = SHIELD(Rf_eval(expr, R_BaseEnv));
+  SEXP out = SHIELD(eval(expr, env::base_env));
   YIELD(4);
   return out;
 }

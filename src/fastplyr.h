@@ -1,12 +1,11 @@
 #ifndef FASTPLYR_H
 #define FASTPLYR_H
 
-#include <cheapr_api.h>
+#include <cheapr/c_api.h>
 #include <vector>
 
 using namespace cheapr;
-
-inline cpp11::function fp_group_id = cpp11::package("fastplyr")["group_id"];
+using namespace vec;
 
 SEXP get_list_element(SEXP list, const char *str);
 int cpp_n_group_vars(SEXP x);
