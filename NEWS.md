@@ -1,6 +1,8 @@
 # fastplyr 0.9.92
 
-Removed non-API C functions.
+- Removed non-API C functions.
+
+- fastplyr now depends on R 4.5.0.
 
 # fastplyr 0.9.91
 
