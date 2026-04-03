@@ -15,7 +15,7 @@
 #'
 #' \href{https://tidyverse.org/learn/}{tidyverse}
 #'
-#' \href{https://sebkrantz.github.io/collapse/articles/collapse_intro.html}{collapse}
+#' \href{https://fastverse.org/collapse/articles/collapse_intro.html}{collapse}
 #'
 #' \href{https://github.com/NicChr/cheapr}{cheapr}
 #'
