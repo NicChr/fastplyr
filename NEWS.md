@@ -1,4 +1,6 @@
-# fastplyr (development version)
+# fastplyr 0.9.92
+
+Removed non-API C functions.
 
 # fastplyr 0.9.91
 
