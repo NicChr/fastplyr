@@ -703,7 +703,7 @@ SEXP cpp_df_transform_exotic(SEXP x, bool order, bool as_qg){
   SEXP fp_group_id_fn = SHIELD(fn::find_pkg_fun("group_id", "fastplyr", false));
   for (int i = 0; i < Rf_length(x); ++i){
     if (cpp_is_exotic(VECTOR_ELT(x, i))){
-     SET_VECTOR_ELT(out, i, fn::eval_fn(fp_group_id_fn,
+     SET_VECTOR_ELT(out, i, fn::eval_fn(fp_group_id_fn, R_BaseEnv,
          VECTOR_ELT(x, i), arg("order") = order, arg("as_qg") = as_qg
      ));
     }
